@@ -5,19 +5,44 @@ import (
 	"math"
 
 	"github.com/charmbracelet/lipgloss"
+	"strings"
 )
 
 // --- 辅助函数 ---
+
+// renderFieldLabel dựng nhãn trường, ĐẢM BẢO luôn còn ít nhất một khoảng trắng
+// trước giá trị.
+//
+// fieldLabelStyle có Width(10) và tự đệm bằng khoảng trắng, nhưng Width là chiều
+// rộng TỐI THIỂU chứ không phải tối đa: nhãn dài hơn thì lipgloss trả nguyên nhãn,
+// không đệm gì. Nhãn tiếng Trung không bao giờ chạm ngưỡng đó (运行态 chỉ 6 cột
+// hiển thị) nên bản gốc luôn có đệm sẵn. Nhãn tiếng Việt thì chạm: "Trạng thái"
+// và "Đẩy chương" đúng 10 cột, "Đang viết lại" thì vượt — và giao diện in ra
+// "Trạng tháiĐã tạm dừng", dính liền, không đọc được.
+//
+// Lỗi này KHÔNG test nào bắt được và tôi chỉ thấy khi chạy TUI thật rồi nhìn.
+// Test cột đã có chỉ kiểm nhãn có bị cắt hay không, không kiểm khoảng cách giữa
+// nhãn và giá trị.
+func renderFieldLabel(label string) string {
+	rendered := fieldLabelStyle.Render(label)
+	// lipgloss đã đệm tới Width thì ký tự cuối là khoảng trắng; nhãn vượt Width
+	// thì không có gì. Chỉ thêm khi thật sự thiếu, để không đẩy lệch cột ở nhánh
+	// tiếng Trung đang hiển thị đúng.
+	if !strings.HasSuffix(rendered, " ") {
+		rendered += " "
+	}
+	return rendered
+}
 
 func renderField(label, value string) string {
 	if value == "" {
 		value = "-"
 	}
-	return fieldLabelStyle.Render(label) + fieldValueStyle.Render(value) + "\n"
+	return renderFieldLabel(label) + fieldValueStyle.Render(value) + "\n"
 }
 
 func renderHighlightField(label, value string) string {
-	return fieldLabelStyle.Render(label) + highlightValueStyle.Render(value) + "\n"
+	return renderFieldLabel(label) + highlightValueStyle.Render(value) + "\n"
 }
 
 // contextPercentColor returns a health-gradient color based on context usage.
@@ -45,7 +70,7 @@ func renderContextUsageField(label string, percent float64, tokens, window int) 
 		Render(fmt.Sprintf("%.0f%%", percent)) +
 		contextUsageMetaStyle.Render(" · ") +
 		contextUsageMetaStyle.Render(fmt.Sprintf("%s/%s", formatNumber(tokens), formatNumber(window)))
-	return fieldLabelStyle.Render(label) + usage + "\n"
+	return renderFieldLabel(label) + usage + "\n"
 }
 
 // formatContextWindow 把 token 数格式化成紧凑窗口标记："128K" / "200K" / "1M" / "2M"。
