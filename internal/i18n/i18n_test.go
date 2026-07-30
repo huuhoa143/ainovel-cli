@@ -19,6 +19,17 @@ func TestExtractVerbs(t *testing.T) {
 		{"%v và %#v", []string{"%v", "%#v"}},               // flag #
 		{"%[2]s trước %[1]d", []string{"%[2]s", "%[1]d"}},  // chỉ số tường minh
 		{"đạt 50%% ở chương %d", []string{"%d"}},           // literal lẫn verb
+
+		// Chỉ số tường minh phải nằm SAU width/precision, đúng như Go quy định.
+		// Đã kiểm bằng Go thật: %.2[2]f cho "2.00", còn %[2].2f cho BADINDEX.
+		{"%.2[2]f", []string{"%.2[2]f"}},
+		{"%-8[2]s", []string{"%-8[2]s"}},
+		{"%.0[3]f%% của %[1]s", []string{"%.0[3]f", "%[1]s"}},
+
+		// KHÔNG phải dương tính giả, dù trông giống: Go cũng đọc "% c" là một verb
+		// (space là flag, c là verb). Nên một bản dịch quên nhân đôi dấu phần trăm
+		// sẽ bị bắt — đúng ý muốn, vì chuỗi đó lúc chạy sẽ in ra rác.
+		{"đạt 80% của", []string{"% c"}},
 	}
 	for _, c := range cases {
 		got := ExtractVerbs(c.in)

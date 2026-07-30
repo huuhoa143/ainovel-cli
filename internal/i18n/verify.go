@@ -35,17 +35,6 @@ func ExtractVerbs(s string) []Verb {
 		for j < len(s) && strings.IndexByte("+-# 0", s[j]) >= 0 {
 			j++
 		}
-		// chỉ số tham số tường minh %[n]v — cách duy nhất được phép để đảo trật
-		// tự khi tiếng Việt cần thứ tự khác tiếng Trung.
-		if j < len(s) && s[j] == '[' {
-			k := j + 1
-			for k < len(s) && s[k] >= '0' && s[k] <= '9' {
-				k++
-			}
-			if k < len(s) && s[k] == ']' && k > j+1 {
-				j = k + 1
-			}
-		}
 		// width
 		for j < len(s) && (s[j] >= '0' && s[j] <= '9' || s[j] == '*') {
 			j++
@@ -55,6 +44,27 @@ func ExtractVerbs(s string) []Verb {
 			j++
 			for j < len(s) && (s[j] >= '0' && s[j] <= '9' || s[j] == '*') {
 				j++
+			}
+		}
+		// Chỉ số tham số tường minh %[n]v — cách duy nhất được phép để đảo trật
+		// tự khi tiếng Việt cần thứ tự khác tiếng Trung.
+		//
+		// Vị trí của khối này phải là SAU width/precision, đúng như Go quy định:
+		// [n] nằm ngay trước verb. Đã kiểm bằng cách chạy Go thật:
+		//     %.2[2]f  → "2.00"            (đúng)
+		//     %[2].2f  → "%!f(BADINDEX)"   (sai)
+		// Bản đầu của hàm này phân tích [n] TRƯỚC width/precision, nên với verb có
+		// precision — tức chính các chuỗi tiền tệ %.2f/%.0f — không còn lối nào an
+		// toàn: viết đúng Go thì bộ đối chiếu báo lệch verb (build đỏ oan), viết
+		// theo bộ đối chiếu thì runtime in BADINDEX. Bộ soát đã phát hiện ra điều
+		// này bằng cách đối chiếu với hành vi thật của Go.
+		if j < len(s) && s[j] == '[' {
+			k := j + 1
+			for k < len(s) && s[k] >= '0' && s[k] <= '9' {
+				k++
+			}
+			if k < len(s) && s[k] == ']' && k > j+1 {
+				j = k + 1
 			}
 		}
 		if j >= len(s) {
