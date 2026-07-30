@@ -47,13 +47,13 @@ và **C** (lượt soát thứ hai, do một lượt khác bổ sung, có thêm 
 | `TestToneXuatBanKhongAnMatDongMoDau` | `antitone_vi_test.go` | ✅ |
 | `TestToneLintKhongBaoBuaTrenVanTiengViet` | `antitone_vi_test.go` | ✅ (đỏ khi viết → đã sửa, xem A.4.1) |
 | `TestToneTuGayMoiBatCaKhiVietHoaDauCau` | `antitone_vi_test.go` | ✅ (đỏ khi viết → đã sửa, xem A.4.2) |
+| `TestRoVanSachKhongSinhViPhamNaoDenTayEditor` | `ronchuhan_vi_test.go` | ✅ (nghiệm thu bản sửa A.4.1, xem A.5) |
+| `TestRoChuHanTrongVanVietPhaiBiBat` | `ronchuhan_vi_test.go` | ✅ (chiều nghịch, xem A.5) |
+| `TestRoNhanhTiengTrungGiuNguyenHanhVi` | `ronchuhan_vi_test.go` | ✅ (chốt hồi quy nhánh zh) |
 
-Cả gói chạy hết trong ~3,3 giây, **10/10 xanh**.
+Cả gói chạy hết trong ~4 giây, **13/13 xanh**.
 
-Chạy toàn repo (`go test ./... -count=1`): **29 gói xanh, 1 gói đỏ** — `internal/i18n`
-(`TestNguonKhongVietCungDauTiengTrung`, về dấu câu toàn phần `（）；『』` trong mã nguồn). Gói đỏ đó **không
-liên quan** đến lượt này: nó là test mới của một lượt việt hóa khác đang chạy song song, và không một tệp
-nào của phần E2E dính vào nó.
+Chạy toàn repo (`go test ./... -count=1`): **30/30 gói xanh, không gói nào đỏ.**
 
 ## A.2 Kiến trúc: LLM giả đặt ở ranh giới HTTP, không stub ChatModel
 
@@ -249,7 +249,65 @@ Ba điểm của bản sửa đáng biết:
 `bên cạnh đó`=1 **được đặt khi cơ chế đang chết**, nên chưa ai biết chúng có hợp lý trên văn thật không. Sau
 khi sửa, chúng bắt đầu bắt thật — hãy xem chúng có báo bừa trên văn tốt không rồi mới quyết nới hay giữ.
 
-## A.5 Điều LLM giả KHÔNG kiểm được — đọc kỹ mục này
+## A.5 Nghiệm thu bản sửa `non_cjk_fragments` qua ĐƯỜNG THẬT
+
+Bản sửa A.4.1 do một lượt khác thực hiện, kèm test đơn vị trong `internal/rules/lint_locale_test.go`. Test
+đơn vị gọi `rules.Lint(text)` rồi xem giá trị trả về — nhưng luật này gây hại không ở chỗ trả về, mà ở chỗ
+**đi tiếp**:
+
+```
+commit_chapter → checkRules → SaveRuleViolations → meta/rule_violations.jsonl
+                                                 ↓
+                     novel_context(chapter) → result["rule_violations"] → editor đọc
+```
+
+Nên câu cần trả lời là *"editor cuối cùng nhận được gì"*, và chỉ đi trọn đường ghi–nạp mới trả lời được.
+`ronchuhan_vi_test.go` làm đúng thế, qua tool thật trên store thật.
+
+### A.5.1 Văn sạch — im tới tận tay editor ✅
+
+Sáu chương corpus tiếng Việt sạch, kiểm ở cả ba điểm của đường ống: giá trị `commit_chapter` trả về, bản đã
+ghi xuống `meta/rule_violations.jsonl`, và bản `novel_context` nạp lại. Tất cả **0** violation
+`non_cjk_fragments`.
+
+Một chi tiết chỉ đường thật thấy được: `novel_context.go:101` chỉ tiêm khóa `rule_violations` **khi**
+`len(violations) > 0`. Nên với văn sạch, phán quyết đúng không phải "danh sách rỗng" mà là **"không có khóa
+đó"** — và test khẳng định đúng điều đó (bóc bằng `map[string]json.RawMessage`, vì unmarshal vào struct thì
+khóa thiếu và khóa rỗng cho cùng một zero-value). Test đơn vị trên `rules.Lint` không thể thấy tầng này.
+
+### A.5.2 Chiều nghịch — vẫn bắt, và bắt ĐÚNG CHỖ ✅ (điều kiện quan trọng hơn)
+
+Tắt tiếng ồn thì dễ — xóa luật đi là hết. Phép kiểm đáng giá là luật vẫn bắt được lỗi thật, nếu không thì ta
+chỉ đổi một luật vô dụng thành một luật chết.
+
+Một chương văn kể tiếng Việt rò đúng hai cụm chữ Hán (`忐忑`, `深邃` — đúng hình dạng lỗi thật: mô hình đang
+viết tiếng Việt rồi chèn lẫn một từ tiếng Trung, không phải cả đoạn tiếng Trung mà mắt thường thấy ngay).
+Kết quả đo được:
+
+```
+BẮT ĐƯỢC:    non_cjk_fragments{"忐忑, 深邃" limit=<nil> actual=2}
+EDITOR NHẬN: [{"rule":"non_cjk_fragments","target":"忐忑, 深邃","actual":2,"severity":"warning"}]
+```
+
+So sánh trực tiếp với bản cũ trên cùng loại văn — đây là chỗ bản sửa thật sự thắng, và là lý do phải kiểm
+`Target` chứ không chỉ kiểm số lượng:
+
+| | `Target` | `Actual` | Giá trị với editor |
+|---|---|---|---|
+| Trước sửa | `"kh, ng, xanh"` | 204 | **Rỗng nghĩa.** Trông như dẫn chứng cụ thể nên editor tin nó |
+| Sau sửa | `"忐忑, 深邃"` | 2 | Trỏ đúng chữ rò, sửa được ngay |
+
+Test khẳng định cả hai chiều của `Target`: **phải** nêu đủ hai cụm chữ Hán đã rò, và **không được** nêu bất
+kỳ âm tiết tiếng Việt nào (`Thản`, `xanh`, `cầu`, `ng`) — nếu `Target` còn chứa chữ Việt thì bộ nhận vẫn
+đang khớp cả nền văn.
+
+### A.5.3 Nhánh zh không đổi hành vi ✅
+
+Bản sửa chọn bộ nhận theo locale, nên phải chứng minh đường gốc còn nguyên: ở locale `zh`, văn tiếng Trung
+lẫn `"pattern"` vẫn bị bắt với `Target` nêu đúng `pattern`; văn tiếng Trung thuần vẫn im. Giữ ở tầng
+`rules.Lint` (không qua store) vì khẳng định ở đây là về hàm thuần.
+
+## A.6 Điều LLM giả KHÔNG kiểm được — đọc kỹ mục này
 
 Đừng đọc phần A thành bảo chứng chất lượng. Cụ thể những gì phần A **không** nói gì về:
 
@@ -311,6 +369,52 @@ Bố cục store cần biết để soi:
 
 > **Cảnh báo trước khi bắt đầu:** đừng chạy thẳng một cuốn dài. B1 là cuốn ngắn để bắt lỗi rẻ; chỉ sang B7
 > khi B1–B6 đã đạt.
+
+## B.0.1 Vì sao phần B tồn tại: bộ đo tự động chỉ thấy thứ nó biết cách đếm
+
+Đọc mục này trước khi tin bất kỳ con số phần trăm nào.
+
+Dự án này có nhiều phép đo độ phủ bản dịch, và chúng đều đo **cùng một thứ**: có bao nhiêu `msgid` trong
+catalog đã có bản dịch. Phép đo đó rất tốt cho đúng một lớp lỗi — "chuỗi này chưa ai dịch". Nó **mù hoàn
+toàn** với mọi lớp lỗi mà thứ sai không phải một msgid.
+
+Chỉ trong một ngày làm việc, **ba lớp lỗi** lọt qua toàn bộ phép đo "đã dịch bao nhiêu phần trăm", vì không
+lớp nào trong đó là một msgid thiếu bản dịch:
+
+| Lớp lỗi | Vì sao phép đo catalog không thấy | Chỉ lộ ra khi |
+|---|---|---|
+| **Dấu nối liệt kê `、`** (`i18n.listSeparator`) | Đó là một hằng trong CODE, không phải msgid. Catalog 100% vẫn ra `"Lâm Vũ、Trần Nhi"` giữa câu tiếng Việt. | Đọc một dòng có liệt kê ≥2 mục |
+| **Dấu toàn phần trong chuỗi KHÔNG có chữ Hán** (`（）；`) | Mọi phép quét "chuỗi nào cần dịch" đều dò chữ Hán. Chuỗi `"（%s）"` không có chữ Hán nào nên nó vô hình với cả phép đo lẫn người soát. | Đọc output ở locale vi và thấy dấu ngoặc lạ |
+| **`[A-Za-z]{2,}` trong `rules/lint.go`** | Không phải chuỗi hiển thị, mà là một **regex có ngữ nghĩa phụ thuộc hệ chữ của thân bài**. Không có bản dịch nào để thiếu. | Chạy luật đó trên một chương tiếng Việt thật và đọc kết quả |
+
+Điểm chung của cả ba: **chỉ lộ ra khi có người chạy ở locale vi thật rồi ĐỌC output.** Không một phép đếm
+nào bắt được chúng, kể cả phép đếm 100%.
+
+Rút ra một quy tắc cho người kiểm tay, và đó là lý do tồn tại của cả phần B:
+
+> Mỗi khi bạn thấy một con số "100% đã dịch", hãy hỏi: **con số này đếm cái gì, và cái gì thì nó không đếm
+> được?** Ba lớp trên không nằm trong tử số hay mẫu số của bất kỳ phân số nào.
+
+**Cụ thể phải ĐỌC CÁI GÌ** — đây là danh sách bề mặt, đọc theo thứ tự, mỗi bề mặt tối thiểu một lần:
+
+1. **Một chương chính văn trọn vẹn** (`chapters/01.md`) — không đọc lướt, đọc hết. Đây là sản phẩm.
+2. **Một dòng có liệt kê nhiều mục** — sổ nhân vật, danh sách manh mối, thông báo lỗi có kèm danh sách. Đây
+   là chỗ lớp lỗi `、` sống. Tìm nhanh: `grep -n '、' output/novel/**/*.md output/novel/meta/*.md`.
+3. **Mọi dấu ngoặc và dấu chấm phẩy trong output** — lớp lỗi dấu toàn phần. Tìm nhanh:
+   ```bash
+   grep -rn '（\|）\|；\|，\|：\|、' output/novel/ | head -40
+   ```
+   Đạt: không dòng nào. Đây là phép kiểm rẻ nhất trong cả phần B, và nó bắt một lớp lỗi mà không phép đo
+   catalog nào bắt được — chạy nó mỗi lần.
+4. **`meta/rule_violations.jsonl`** — đọc trường `target` của từng violation và tự hỏi *"dẫn chứng này có
+   nghĩa gì không?"*. Đây đúng là chỗ lớp lỗi thứ ba từng sống: `target` là `"kh, ng, xanh"` — trông như
+   dẫn chứng cụ thể mà rỗng nghĩa. Một `target` vô nghĩa còn tệ hơn không có dẫn chứng, vì editor tin nó.
+5. **`reviews/*.json`** — đọc `comment` của từng chiều điểm. Nhận xét chung chung nghĩa là editor không đọc.
+6. **`meta/diag-export.md`** — bản tóm tắt hành vi; đọc cả các nhãn mục, không chỉ số liệu.
+7. **Bản xuất `.txt` / `.epub`** — bề mặt cuối cùng người đọc thấy.
+
+Nguyên tắc chung cho cả bảy: **một bề mặt chưa ai đọc là một bề mặt chưa ai kiểm**, bất kể có bao nhiêu test
+xanh trỏ vào nó.
 
 ## B.1 Cuốn ngắn 5–6 chương — cửa đầu tiên
 
@@ -452,7 +556,7 @@ lỗi để sửa — và nó đi ngược quyết định đã ghi ở `types.g
 
 ## B.7 Sách dài / phân tầng — vùng chưa có bằng chứng nào
 
-Toàn bộ đường này **chưa có E2E** (A.5 mục 6). Chạy một cuốn `scale=long` để mô hình chọn
+Toàn bộ đường này **chưa có E2E** (A.6 mục 6). Chạy một cuốn `scale=long` để mô hình chọn
 `layered_outline`:
 
 | Tiêu chí | Đạt | Không đạt → nghĩa là gì |
@@ -534,33 +638,45 @@ Tệp thuộc lượt này: `book_vi_test.go`, `fakellm_test.go`, `corpus_test.g
 `headless_vi_test.go`, `loi_da_biet_test.go`. Tệp `antitone_vi_test.go` thuộc lượt
 A/B.
 
-Toàn suite `go test ./...` (đo lần cuối): **29 ok, 1 FAIL** — `internal/e2e` là
-package thứ 30 (mới), và cả 10 test trong nó đều XANH:
+Toàn suite `go test ./...` (đo lần cuối, sau khi các lượt song song sửa xong):
+**30 ok, 0 FAIL.** `internal/e2e` là package thứ 30 (mới) và toàn bộ 13 test trong
+nó đều XANH — 4 của lượt này, 6 `TestTone*` + 3 `TestRo*` của lượt A/B:
 
 ```
+$ go build ./...                     # sạch
 $ go test ./internal/e2e/ -count=1 -v | grep '^---'
---- PASS: TestToneKiemCoHocPhanBietVanSachVoiVanNhoiTat (0.56s)
---- PASS: TestToneThongKeToanSachVaoNguCanh (0.97s)
+--- PASS: TestToneKiemCoHocPhanBietVanSachVoiVanNhoiTat (0.52s)
+--- PASS: TestToneThongKeToanSachVaoNguCanh (0.96s)
 --- PASS: TestToneHeSoChuHanSangTuViet (0.00s)
---- PASS: TestToneXuatBanKhongAnMatDongMoDau (0.19s)
+--- PASS: TestToneXuatBanKhongAnMatDongMoDau (0.18s)
 --- PASS: TestToneLintKhongBaoBuaTrenVanTiengViet (0.00s)
 --- PASS: TestToneTuGayMoiBatCaKhiVietHoaDauCau (0.00s)
---- PASS: TestVongDoiSachTiengViet (1.05s)
---- PASS: TestHeadlessBaoLoiKhoaSaiBangTiengViet (0.04s)
+--- PASS: TestVongDoiSachTiengViet (0.97s)
+--- PASS: TestHeadlessBaoLoiKhoaSaiBangTiengViet (0.03s)
 --- PASS: TestHeadlessThieuCauHinhBaoRoRang (0.01s)
 --- PASS: TestLoiDaBiet_ToolRoTiengTrungVaoNguCanhModel (0.05s)
+--- PASS: TestRoVanSachKhongSinhViPhamNaoDenTayEditor (0.45s)
+--- PASS: TestRoChuHanTrongVanVietPhaiBiBat (0.07s)
+--- PASS: TestRoNhanhTiengTrungGiuNguyenHanhVi (0.00s)
 ```
 
-Package đỏ duy nhất — **không thuộc lượt này**:
+### Ba lỗi đã được sửa trong lúc soát, bởi các lượt song song
 
-| Package | Test đỏ | Nguyên nhân |
+| Lỗi | Bản sửa | Lượt này đã soát lại? |
 |---|---|---|
-| `internal/i18n` | `TestNguonKhongVietCungDauTiengTrung` | Bộ quét mới của lượt khác: 64 chỗ dấu toàn phần (`（）；：，《》`) chưa qua catalog. Trong đó có `《》` ở mục C.2. |
+| A.4.1 `non_cjk_fragments` báo oan | `internal/rules/lint.go` +42/-3 | **Chưa đọc diff** |
+| A.4.2 phân biệt hoa-thường | `internal/rules/checker.go` +36/-6 | **Đã đọc, thấy lành** (xem C.7) |
+| C.2 ngoặc sách `《》` | `internal/host/exp/txt.go` cho dòng tên sách đi qua msgid; catalog vi trả `"%s"` | **Đã xác nhận bằng đường thật** (xem C.2) |
 
-**Cả A.4.1 và A.4.2 đã được sửa trong lúc soát** (`internal/rules/lint.go` +42/-3,
-`internal/rules/checker.go` +36/-6), nên hai test cố ý đỏ ấy đã chuyển xanh. Hai bản
-sửa đó **chưa được lượt này soát lại** — xem C.7. Lỗi C.1 (rò tiếng Trung vào ngữ
-cảnh mô hình) thì **vẫn còn**.
+Lỗi **C.1 (rò tiếng Trung vào ngữ cảnh mô hình) VẪN CÒN** — đã kiểm lại lúc chốt báo
+cáo: `plan_chapter.go:97`, `draft_chapter.go:119,136` vẫn là chuỗi thô.
+
+Ghi lại một quan sát về cách làm việc song song: trong lúc soát, `go build ./...` vỡ
+một lần (`internal/tools/ask_user.go:7: "strings" imported and not used`, do một lượt
+khác bỏ chuỗi cứng mà quên xóa import) và `go test ./internal/e2e/` báo
+`[build failed]` một lần vì biên dịch trúng lúc tệp đang được sửa. Cả hai đều thoáng
+qua. **Bài học cho lần sau: thấy `internal/e2e` đỏ thì chạy `go build ./...` trước,
+đừng đi sửa test.**
 
 ### Bằng chứng không vacuous
 
@@ -641,27 +757,39 @@ quyết định thiết kế ghi rõ tại chỗ.
 
 ---
 
-## C.2 Lỗi mới: bản xuất bọc tên sách bằng ngoặc CJK `《》` · **P2**
+## C.2 Lỗi bản xuất bọc tên sách bằng ngoặc CJK `《》` · **ĐÃ SỬA**
 
-`internal/host/exp/txt.go:129,131` — `renderTXT` viết cứng `《` và `》`. Đây là chữ
-mà **người đọc cuối** thấy ở dòng đầu bản thảo:
+Phát hiện ban đầu: `internal/host/exp/txt.go` viết cứng `《` và `》` quanh tên sách —
+chữ mà **người đọc cuối** thấy ở dòng đầu bản thảo:
 
 ```
-《Người gác cầu đá》
-
-Chương 1  Người gác cầu đá
+《Người gác cầu đá》        ← trước
+"Người gác cầu đá"          ← sau
 ```
 
-`《》` là dấu câu CJK, **không thuộc khối Han**, nên mọi phép kiểm "có chữ Hán không"
-bỏ qua nó — kể cả `TestBanXuatTiengVietKhongConDauVetTiengTrung` ở
-`exp/txt_export_locale_test.go`. Tiếng Việt dùng `"…"` hoặc không dấu.
+Vì sao nó lọt qua mọi vòng soát trước: `《》` là dấu câu CJK, **không thuộc khối
+Han**, nên mọi phép kiểm "có chữ Hán không" bỏ qua — kể cả
+`TestBanXuatTiengVietKhongConDauVetTiengTrung` ở `exp/txt_export_locale_test.go`, bộ
+kiểm độ sạch của chính package đó.
 
-Cùng chỗ: `internal/host/host.go:946` cũng bọc tên sách bằng `《》` trong thông báo
-hoàn thành. Bộ quét `internal/i18n/quetnguon_test.go` báo tổng **64 chỗ dấu toàn
-phần** (`（）；：，《》`) chưa qua catalog, ở `entry/tui`, `eval`, `host`, `host/imp`.
+**Bản sửa (lượt song song) đã xác nhận bằng đường thật.** Dòng tên sách nay đi qua
+msgid, và catalog vi trả về `"%s"` thay vì `《%s》`:
 
-`TestVongDoiSachTiengViet` tha riêng đúng cặp `《》` (đã có bộ quét khác chốt nó thành
-lỗi cứng) và vẫn bắt mọi dấu CJK khác trong bản xuất, để không tha cả lớp.
+```
+$ python3 -c "…json.load(open('internal/i18n/locales/vi.json'))['《%s》\n\n']"
+'"%s"\n\n'
+```
+
+Xác nhận ở mức bản xuất thật: `TestVongDoiSachTiengViet` xuất qua `Host.Export` rồi
+quét cả hai dải dấu CJK (`U+3000-303F`, `U+FF00-FFEF`) — sạch.
+
+Phép kiểm ấy trước đây phải **tha riêng** cặp `《》`. Nay đã **siết lại thành tuyệt
+đối** (không còn ngoại lệ nào) — đúng cái mà thiết kế "danh sách tha có đăng ký" sinh
+ra để làm: mỗi lần một ca được sửa, lớp bảo vệ chặt thêm một bậc thay vì lỏng mãi.
+
+Còn lại cùng lớp: `internal/host/host.go:946` bọc tên sách bằng `《》` trong thông báo
+hoàn thành — chưa kiểm lại. Bộ quét `internal/i18n/quetnguon_test.go` (báo 64 chỗ dấu
+toàn phần) nay đã xanh, nên phần lớn lớp này có lẽ đã được xử.
 
 ---
 
@@ -843,9 +971,9 @@ Dòng thứ hai bắt lớp mà "có chữ Hán không" bỏ qua — xem C.2.
 
 ---
 
-## C.6 Điều lượt này KHÔNG kiểm được vì không có khóa — ngoài mục A.5
+## C.6 Điều lượt này KHÔNG kiểm được vì không có khóa — ngoài mục A.6
 
-Mục A.5 đã liệt kê phần lớn. Bổ sung ba khoảng trống mà lượt này chạm tới rồi phải dừng:
+Mục A.6 đã liệt kê phần lớn. Bổ sung ba khoảng trống mà lượt này chạm tới rồi phải dừng:
 
 - **Chuỗi tương tác dài.** 6 chương, mỗi lượt writer ~750 token, ngữ cảnh chạm **0%**
   cửa sổ. Nghĩa là `ctxpack` nén ngữ cảnh, `FullSummaryConfig` tóm tắt bằng tiếng
@@ -868,10 +996,13 @@ Mục A.5 đã liệt kê phần lớn. Bổ sung ba khoảng trống mà lượ
    "mô hình có tuân prompt tiếng Việt không" bị nhiễu bởi đúng những chỉ dẫn tiếng
    Trung mà ta đã biết là đang rò.
 3. Xác nhận 7 điểm model-facing còn lại ở C.1 bằng đường thật, không chỉ bằng quét mã.
-4. Bản sửa A.4.2 (`internal/rules/checker.go`, +36/-6) **đã đọc và thấy lành**: hạ
+4. C.2 đã sửa và đã xác nhận; phép kiểm dấu CJK trong `book_vi_test.go` đã siết lại
+   thành tuyệt đối. Còn `internal/host/host.go:946` (`《》` trong thông báo hoàn thành)
+   chưa kiểm lại.
+5. Bản sửa A.4.2 (`internal/rules/checker.go`, +36/-6) **đã đọc và thấy lành**: hạ
    chữ toàn văn một lần trong `Check` rồi truyền xuống, hạ cả cụm cần tìm (chịu được
    bảng do người dùng khai), vẫn dùng `strings.Count` nên không có rủi ro ký tự
    regex, và `Target` giữ nguyên văn nên bản ghi không đổi hình. Nhánh zh không đổi
    hành vi vì `ToLower` không đụng chữ Hán. `forbidden_chars` cố ý **không** hạ chữ,
    có ghi lý do. Bản sửa A.4.1 (`internal/rules/lint.go`, +42/-3) **chưa đọc diff.**
-5. Sửa C.3.3 (exit code 0 khi tạm dừng) trước khi ai đó đưa headless vào cron.
+6. Sửa C.3.3 (exit code 0 khi tạm dừng) trước khi ai đó đưa headless vào cron.

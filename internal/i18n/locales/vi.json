@@ -124,7 +124,6 @@
  "%s进行中，请先完成后再继续创作": "%s đang chạy, hãy hoàn tất rồi mới sáng tác tiếp",
  "%s进行中，请先完成后再重开": "%s đang chạy, hãy hoàn tất rồi mới mở lại",
  "%v，请重试。\n": "%v, vui lòng thử lại.\n",
- "%v；%w": "%v; %w",
  "%w: 预标第 %d 章进行中失败: %w": "%w: đánh dấu trước chương %d đang chạy thất bại: %w",
  "'%s'状态变化章": "Chương thay đổi trạng thái của '%s'",
  "(%d 条)": "(%d mục)",

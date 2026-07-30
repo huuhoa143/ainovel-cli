@@ -597,7 +597,10 @@ func (h *Host) doIntervention(text string, restart bool) error {
 		// 已当面告知 → 清除 pending(否则下次 Resume 会自动重放同一条失败干预)。
 		h.emitEvent(newInterventionFailureEvent(derr))
 		if err := clearPending(); err != nil {
-			return fmt.Errorf(i18n.F("%v；%w"), derr, err)
+			// Bọc lỗi theo quy ước ASCII của Go, KHÔNG qua catalog: đây là chuỗi
+			// ghép hai lỗi, không phải chữ hiển thị có ngữ pháp. Cùng cách với 28
+			// chỗ fmt.Errorf ở host/imp/publish.go.
+			return fmt.Errorf("%v; %w", derr, err)
 		}
 		return derr
 	}

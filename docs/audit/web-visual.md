@@ -1,11 +1,28 @@
 # Kiểm định giao diện web studio — bằng mắt, trên trình duyệt thật
 
-**Commit kiểm:** `3ee5279` (`feat(i18n): dấu nối liệt kê theo ngôn ngữ + 4 bề mặt rail còn lại + E2E LLM giả`)
+**Commit nền:** `3ee5279` (`feat(i18n): dấu nối liệt kê theo ngôn ngữ + 4 bề mặt rail còn lại + E2E LLM giả`)
 **Ngày:** 2026-07-31
 **Cách kiểm:** Chrome DevTools MCP trên bản `next build` tĩnh, phục vụ bởi `ainovel-cli serve --web`. Ba bề rộng: 1440, 1024, 390.
 **Ảnh:** `docs/audit/screenshots/` (30 ảnh, tên có tiền tố bề rộng).
 
-> ⚠️ `web/components/DocTruyen.tsx`, `NhanVat.tsx`, `BanDuyet.tsx` đang được sửa song song. Mọi số dòng dưới đây đúng tại `3ee5279` và có thể lệch sau đó.
+> ### Bản nào được kiểm — đọc kỹ, chỗ này có bẫy
+>
+> Tôi bắt đầu kiểm ở `3ee5279` nhưng build từ working tree khi đó **đã có các thay đổi chưa commit** (riêng `web/app/globals.css` lệch `+284/-4` dòng so với commit). Trong lúc tôi kiểm, hai commit của agent khác đã land: `e8bfdcf` (*gộp bản duyệt về một hiện thực*) và `a8cd1d2`.
+>
+> **Kết quả kiểm lại sau khi xong:** `git status` cho `web/`, `internal/serve/`, `internal/store/` hiện **rỗng**, nghĩa là đúng cái tôi đã build và chụp giờ chính là `a8cd1d2` = HEAD. Số dòng trong báo cáo đã được **định vị lại trên HEAD** và đúng với HEAD.
+>
+> **Đã xác nhận từng phát hiện vẫn còn ở HEAD** (`a8cd1d2`), không cái nào bị hai commit kia sửa mất:
+>
+> | Phát hiện | Còn ở HEAD? |
+> |---|---|
+> | §2.1 `LoadChapterContent` không ngã về bản chốt | ✓ `internal/store/drafts.go` không đổi từ `3ee5279` |
+> | §2.2 nhánh rỗng của `Inspector.tsx` bỏ nút | ✓ không có `docthem` trong nhánh đó |
+> | §2.3 `.st.gold .ky` đập vô điều kiện | ✓ còn nguyên, `BangChuong.tsx` vẫn `<TrangThai tt={tt} />` |
+> | §3.1 rail đếm cửa kiểm định | ✓ `state === 'gate'` còn nguyên |
+> | §3.2 `10.5px/1.35` · §3.3 `line-height: 1.45` | ✓ còn nguyên |
+> | §4.5 bộ chọn bỏ mất `id` | ✓ `b.name ? b.name` còn nguyên |
+>
+> ⚠️ **Một chuyện cần nói với người phụ trách commit:** commit `a8cd1d2` (một commit i18n) đã quét luôn `docs/audit/web-visual.md` và `docs/audit/screenshots/` vào cùng nó, trong khi tôi còn đang soạn. Bản bị commit là **bản nháp đầu, số dòng còn sai**. Bản đúng là bản đang nằm ở working tree (` M`). Tôi không chạy lệnh git ghi nào — chỉ `log`/`status`/`diff`/`show`/`ls-files`/`check-ignore`.
 
 ---
 
@@ -85,7 +102,7 @@ Sau khi tôi tạo thêm `drafts/01.draft.md`, cùng endpoint trả `"words":172
 
 Cả repo còn lại đều dùng `LoadChapterText` để đọc bản chốt — `internal/tools/read_chapter.go:151`, `internal/host/exp/exporter.go:86`, `internal/eval/collect.go:120`, `internal/store/store.go:84`. Chỉ hai chỗ trong `serve` dùng `LoadChapterContent`, và cả hai đều là bề mặt đọc:
 
-- `internal/serve/serve.go:204` → toàn văn của khu **Đọc bản thảo**
+- `internal/serve/serve.go:226` → toàn văn của khu **Đọc bản thảo**
 - `internal/serve/snapshot.go:438` → trích đoạn + số từ của tab **Bản thảo**
 
 **Cách sửa:** trong `internal/store/drafts.go:71-80`, cho `LoadChapterContent` ngã về bản chốt khi không có nháp:
@@ -207,7 +224,7 @@ Rail đếm **cửa kiểm định trên trục**; bề mặt liệt kê **chư�
 ### 3.3 Tiêu đề chương trong danh sách đọc: `line-height 1.45`, khe mực xấu nhất **1,62px**
 
 **Ảnh:** `1440-13-doc-ban-thao-co-van.png` (`Thư không người / nhận` ngắt hai dòng)
-**Tệp:** `web/app/globals.css:1793-1801` — `.dsChuong .ten { -webkit-line-clamp: 2; line-height: 1.45; }`
+**Tệp:** `web/app/globals.css:1807-1814` — `.dsChuong .ten { -webkit-line-clamp: 2; line-height: 1.45; }` (dòng `line-height` là **1812**)
 
 | | khe mực |
 |---|---|
@@ -217,7 +234,7 @@ Rail đếm **cửa kiểm định trên trục**; bề mặt liệt kê **chư�
 
 Chú thích ngay trên rule đó tự nói tiêu đề **cố ý ngắt hai dòng** và "tiêu đề chương do mô hình đặt, không có giới hạn trên" — nghĩa là ca xấu nhất chắc chắn tới, chỉ là chưa tới.
 
-**Cách sửa:** `line-height: 1.45` → `1.72`. Hộp clamp 2 dòng cao thêm 6,8px.
+**Cách sửa:** `globals.css:1812` `line-height: 1.45` → `1.72`. Hộp clamp 2 dòng cao thêm 6,8px.
 
 ### 3.4 Ở 390px, 56% thanh transport bị đẩy ra ngoài — mất đúng phần giá thành và năng suất
 
@@ -246,7 +263,7 @@ Chú thích ngay trên rule đó tự nói tiêu đề **cố ý ngắt hai dòn
 
 ### 4.1 Vạch đỏ mốc 85% của thước ngữ cảnh bị `overflow: hidden` cắt phần nhô ra
 
-**Tệp:** `web/app/globals.css:1572-1594`
+**Tệp:** `web/app/globals.css:1572` (`.ctxbar`) và `1587` (`.ctxbar::after`)
 
 ```css
 .ctxbar   { height: 5px; overflow: hidden; position: relative; }
@@ -325,8 +342,8 @@ Nhưng `--ink-3` trên `--raised` (theo `DESIGN.md:26` là "nút bật, nền th
 
 | Tệp | Rule | ratio | khe xấu nhất | Ghi chú |
 |---|---|---|---|---|
-| `globals.css:1799` | `.title` (tiêu đề chương ở bảng Dòng sản xuất) | 1.5 | 2,24px | ngắt hai dòng ở 390 — ảnh `390-01` |
-| `globals.css:2121` | `.chuamoNoi` | 1.66 | 4,07px | chỉ lệch chuẩn, không có rủi ro chạm dấu |
+| `globals.css:945` | `.title` (tiêu đề chương ở bảng Dòng sản xuất) | 1.5 | 2,24px | ngắt hai dòng ở 390 — ảnh `390-01` |
+| `globals.css:2134` | `.chuamoNoi` | 1.66 | 4,07px | chỉ lệch chuẩn, không có rủi ro chạm dấu |
 | `globals.css:603` | `.canhbao li` | 1.6 | *chưa đo* | không dựng được trạng thái cảnh báo trong đợt này |
 
 `.title` nên lên 1.72 cùng lúc với §3.3 (cùng một loại nội dung: tiêu đề chương do mô hình đặt).
@@ -387,7 +404,7 @@ Ghi ra để đợt sau không sửa hỏng chúng.
 
 **Không tràn ngang ở bất kỳ bề rộng nào.** `document.documentElement.scrollWidth === innerWidth` ở cả 1440, 1024, 390 trên cả 9 khu.
 
-**Không vi phạm danh sách CẤM.** Soát cả CSS lẫn ảnh: không `backdrop-filter`, không gradient chữ, không glow, không sidebar navy, không bảng viền đầy ô (bảng chỉ có kẻ ngang 1px), không nhãn chữ hoa giãn cách (`grp` là sentence case; chỗ duy nhất có `text-transform`/`letter-spacing` là `globals.css:2597-2598` và nó *tắt* cả hai). Hai `repeating-linear-gradient` duy nhất là vân sọc chéo của khối "chờ mở" — đúng `DESIGN.md:114` yêu cầu.
+**Không vi phạm danh sách CẤM.** Soát cả CSS lẫn ảnh: không `backdrop-filter`, không gradient chữ, không glow, không sidebar navy, không bảng viền đầy ô (bảng chỉ có kẻ ngang 1px), không nhãn chữ hoa giãn cách (`grp` là sentence case; chỗ duy nhất có `text-transform`/`letter-spacing` là `globals.css:2638-2639` và nó *tắt* cả hai). Hai `repeating-linear-gradient` duy nhất là vân sọc chéo của khối "chờ mở" — đúng `DESIGN.md:114` yêu cầu.
 
 **Hàng được chọn dùng đúng `inset 1px`, không phải viền dày.** Đo `box-shadow` ô đầu hàng: `lab(77.4575 12.5001 55.13) 1px 0 0 0 inset`, `border-left-width: 0px`. Đúng `DESIGN.md:115`.
 
@@ -407,7 +424,7 @@ Ghi ra để đợt sau không sửa hỏng chúng.
 
 **Kiểm định là hàng mảnh có dẫn chứng, không phải thẻ điểm** (`DESIGN.md:116`). Mỗi chiều một hàng: tên chiều, verdict có đốm + chữ, điểm mono, rồi một câu kết luận. Vấn đề kèm `Dẫn chứng:` in serif nghiêng — dùng serif đúng chỗ `DESIGN.md:60` cho phép ("dẫn chứng của Editor").
 
-**Cột nhãn tiếng Việt được nới thật.** `globals.css:597-599` ghi rõ 96px chứ không phải 74px của bản mockup vì "Cung, tập 3" bị ngắt hai dòng. Ở cả 1440 và 1024, `Cung, tập 1` nằm một dòng. Luật 2 của `DESIGN.md:81` được thi hành, không chỉ chép lại.
+**Cột nhãn tiếng Việt được nới thật.** `globals.css:608-609` ghi rõ 96px chứ không phải 74px của bản mockup vì "Cung, tập 3" bị ngắt hai dòng. Ở cả 1440 và 1024, `Cung, tập 1` nằm một dòng. Luật 2 của `DESIGN.md:81` được thi hành, không chỉ chép lại.
 
 **Số liệu định dạng theo tiếng Việt:** `2.901` (dấu chấm hàng nghìn), `1,2s` (dấu phẩy thập phân), `$0,00`.
 
@@ -428,7 +445,46 @@ Cả hai đều **không** thuộc ba loại được liệt kê. Về mặt ch�
 
 ---
 
-## 8. Trả lời thẳng: giao diện này đã dùng được chưa?
+## 8. Mục lục ảnh
+
+Cả 30 ảnh, kể cả những ảnh chỉ dùng để chứng minh "chỗ này không có lỗi".
+
+| Ảnh | Bề mặt | Dùng cho |
+|---|---|---|
+| `1440-01-to-san-xuat.png` | Dòng sản xuất, chưa chọn chương | ảnh nền, inspector rỗng đúng cách |
+| `1440-02-inspector-hopdong.png` | Inspector → Hợp đồng | hàng chọn dùng `inset 1px` |
+| `1440-03-insp-kiemdinh-rong.png` | Inspector → Kiểm định, rỗng | rỗng đúng cách |
+| `1440-04-insp-banthao-trong.png` | Inspector → Bản thảo, rỗng | **§2.1** bảng 2.901 vs "chưa có bản thảo" |
+| `1440-05-doc-truyen.png` | sau khi bấm Đọc toàn văn | **§2.2** nút biến mất |
+| `1440-06-khu-ban-thao.png` | Đọc bản thảo, chưa có nháp | **§2.1** trạng thái rỗng tự chẩn đoán |
+| `1440-07-kiem-dinh.png` | Kiểm định, chưa có bản duyệt | rỗng đúng cách |
+| `1440-08-hang-cho-viet-lai.png` | Hàng chờ, rỗng | rỗng đúng cách |
+| `1440-09-dan-y.png` | Dàn ý, đầu trang | vân sọc chéo khối chưa mở |
+| `1440-10-dan-y-cuoi.png` | Dàn ý, cuối trang | **§5** "Chưa có dàn ý nào trong store" |
+| `1440-11-nhan-vat.png` | Nhân vật, rỗng | rỗng đúng cách |
+| `1440-12-nhan-vat-co-du-lieu.png` | Nhân vật, có dữ liệu | thẻ tier, cột nhãn |
+| `1440-13-doc-ban-thao-co-van.png` | Đọc bản thảo, có văn | **§3.3** + drop cap `Ấ` nguyên dấu |
+| `1440-14-doc-ban-thao-cuoi-7chieu.png` | Đọc bản thảo, cuộn hết | **§4.4** cột văn trống |
+| `1440-15-kiem-dinh-7chieu.png` | Kiểm định, có bản duyệt | **§3.1** rail 0 vs 7 chiều |
+| `1440-16-hang-cho-co-mot.png` | Hàng chờ, có 1 chương | hàng thu gọn |
+| `1440-17-hang-cho-mo-rong.png` | Hàng chờ, mở rộng | **§5** mở ra không có lý do |
+| `1440-18-luat-the-gioi.png` | Luật thế giới | **§4.2** amber 15,1% |
+| `1440-19-phuc-but.png` | Phục bút | ký hiệu 3 trạng thái + serif `.tavan` (**§7**) |
+| `1440-20-to-san-xuat.png` | Tổ sản xuất | **§3.2** nhãn phụ 1.35 |
+| `1440-21-o-can-thiep-nhat-ky.png` | Nhật ký + Dòng sự kiện + Ô can thiệp | **§2.3** ba chỗ nói ba điều |
+| `1440-22-xuong-trong.png` | Xưởng trống @1440 | **§4.10** + nội dung mẫu mực |
+| `1440-23-picker-chon-tac-pham.png` | Bộ chọn tác phẩm | **§4.5** hai mục y hệt |
+| `1440-24-truc-muc-xem-chuong.png` | Mục xem = Chương | đổi phạm vi bảng, **§4.5** |
+| `1024-01-dong-san-xuat.png` | Dòng sản xuất @1024 | inspector bỏ đúng ở 1240 |
+| `1024-02-truc.png` | Trục @1024 | cửa sổ chương co còn 1–43 |
+| `390-01-dong-san-xuat.png` | Dòng sản xuất @390 | **§3.4** transport cắt, **§4.3** dấu `·` mồ côi |
+| `390-02-doc-ban-thao.png` | Đọc bản thảo @390 | drop cap `Ấ` ở 390 |
+| `390-03-to-san-xuat.png` | Tổ sản xuất @390 | **§3.2** nhãn phụ ngắt hai dòng |
+| `390-04-xuong-trong.png` | Xưởng trống @390 | rail biến mất đúng |
+
+---
+
+## 9. Trả lời thẳng: giao diện này đã dùng được chưa?
 
 **Chưa — còn ba chỗ làm người vận hành hiểu sai, và cả ba đều nằm đúng vào ba câu hỏi mà `PRODUCT.md` nói người vận hành mở studio để hỏi.**
 

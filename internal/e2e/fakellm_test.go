@@ -89,7 +89,12 @@ type call struct {
 	LastUser    string   // task do Engine/Route phái xuống
 	ToolResults int      // số message role=tool đã có → dùng để biết đang ở bước nào
 	ToolNames   []string // các tool được chào trong lượt này
-	Texts       []string // toàn bộ chữ của mọi message (dùng để soi ngữ cảnh đã tiêm)
+	Texts       []string // toàn bộ chữ của mọi message
+	// ToolTexts là chữ của riêng các message role=tool, tức KẾT QUẢ THẬT do tool
+	// trả về. Đây là chỗ duy nhất quan sát được ngữ cảnh mà engine tiêm cho mô
+	// hình (novel_context: user_rules, style_stats, tóm tắt trước đó) — nếu phần
+	// đó rò tiếng Trung thì mô hình sẽ học theo, và không log nào bắt được.
+	ToolTexts []string
 }
 
 // reply là câu trả lời script muốn server giả phát ra.
@@ -111,6 +116,11 @@ func toolReply(name string, args any) reply { return reply{ToolName: name, ToolA
 type fakeLLM struct {
 	t      *testing.T
 	script func(call) reply
+
+	// tuChoi401 làm server trả 401 kèm body kiểu OpenRouter cho MỌI yêu cầu.
+	// Dùng cho ca "khóa API sai/hết hạn" — đường đi qua litellm → agentcore →
+	// arbiter → headless giống hệt ca thật, chỉ khác là không tốn khóa nào.
+	tuChoi401 bool
 
 	mu    sync.Mutex
 	calls []call
@@ -143,6 +153,12 @@ func (f *fakeLLM) handle(w http.ResponseWriter, r *http.Request) {
 	}
 	if !strings.HasSuffix(r.URL.Path, "/chat/completions") {
 		http.NotFound(w, r)
+		return
+	}
+	if f.tuChoi401 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":{"message":"Missing Authentication header","code":401}}`))
 		return
 	}
 	var req wireRequest
@@ -198,6 +214,7 @@ func parseCall(req wireRequest) call {
 			c.LastUser = txt
 		case "tool":
 			c.ToolResults++
+			c.ToolTexts = append(c.ToolTexts, txt)
 		}
 	}
 	return c

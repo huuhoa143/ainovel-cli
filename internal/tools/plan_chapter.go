@@ -92,9 +92,13 @@ func (t *PlanChapterTool) Execute(_ context.Context, args json.RawMessage) (json
 	}
 
 	return json.Marshal(map[string]any{
-		"planned":   true,
-		"chapter":   plan.Chapter,
-		"next_step": "立即调用 draft_chapter(chapter=本章节号, content=完整正文字符串) 写入正文，不要重复规划同一章",
+		"planned": true,
+		"chapter": plan.Chapter,
+		// next_step là CHỈ DẪN mô hình đọc rồi làm theo, không phải chữ cho người
+		// xem — nên nó phải cùng ngôn ngữ với phần ngữ cảnh còn lại. Để tiếng Trung
+		// ở đây là trộn ngôn ngữ vào đúng chỗ ta đang bảo mô hình đừng trộn (xem
+		// nhánh vi của non_cjk_fragments trong rules/lint.go).
+		"next_step": i18n.F("立即调用 draft_chapter(chapter=本章节号, content=完整正文字符串) 写入正文，不要重复规划同一章"),
 	})
 }
 
