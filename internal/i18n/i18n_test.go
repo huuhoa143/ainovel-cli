@@ -78,6 +78,15 @@ func TestCatalogViKhopVerb(t *testing.T) {
 
 // Bản dịch phải giữ ký tự xuống dòng ở đầu/cuối: TUI dựa vào chúng để canh dòng,
 // mất "\n" là layout xô lệch mà test khác không bắt được.
+//
+// Bản đầu của test này RỖNG mà trông như đang gác: nó so `HasSuffix(msgid, "\n")`
+// với newline THẬT, nhưng catalog cũ lưu msgid ở dạng nguyên văn nguồn nên chỗ
+// xuống dòng là hai ký tự `\` + `n`. Với những entry đó cả hai vế đều false, nên
+// điều kiện luôn đúng và không có gì bị kiểm. Hai agent soát độc lập cùng chỉ ra
+// điều này.
+//
+// Cách sửa: chuẩn hóa cả hai phía về dạng lúc chạy trước khi so, để test kiểm
+// đúng cái mà người dùng thấy — bất kể catalog lưu ở dạng nào.
 func TestCatalogViGiuXuongDong(t *testing.T) {
 	if err := SetLocale(Vietnamese); err != nil {
 		t.Fatalf("SetLocale: %v", err)
@@ -86,15 +95,81 @@ func TestCatalogViGiuXuongDong(t *testing.T) {
 	if p == nil {
 		t.Fatal("catalog chưa nạp")
 	}
+
+	var kiemTra int
 	for msgid, target := range *p {
 		if target == "" {
 			continue
 		}
-		if strings.HasSuffix(msgid, "\n") != strings.HasSuffix(target, "\n") {
-			t.Errorf("lệch \\n ở cuối:\n  nguồn: %q\n  dịch : %q", msgid, target)
+		src, dst := unescapeGo(msgid), unescapeGo(target)
+		if !strings.Contains(src, "\n") {
+			continue // chỉ những chuỗi CÓ xuống dòng mới đáng kiểm
 		}
-		if strings.HasPrefix(msgid, "\n") != strings.HasPrefix(target, "\n") {
-			t.Errorf("lệch \\n ở đầu:\n  nguồn: %q\n  dịch : %q", msgid, target)
+		kiemTra++
+
+		if strings.HasSuffix(src, "\n") != strings.HasSuffix(dst, "\n") {
+			t.Errorf("lệch \\n ở cuối:\n  nguồn: %q\n  dịch : %q", src, dst)
+		}
+		if strings.HasPrefix(src, "\n") != strings.HasPrefix(dst, "\n") {
+			t.Errorf("lệch \\n ở đầu:\n  nguồn: %q\n  dịch : %q", src, dst)
+		}
+	}
+
+	// Chốt rằng test không rỗng: nếu không có entry nào chứa xuống dòng thì test
+	// này chẳng gác gì, và ta phải biết điều đó thay vì thấy màu xanh giả.
+	if kiemTra == 0 {
+		t.Error("không kiểm được entry nào có xuống dòng — test đang rỗng")
+	} else {
+		t.Logf("đã kiểm %d entry có xuống dòng", kiemTra)
+	}
+}
+
+// Bí danh dạng lúc chạy phải hoạt động: msgid được thu thập ở dạng nguyên văn
+// nguồn (có `\` + `n`) vẫn phải tra được khi i18n.F nhận newline thật. Đây là
+// bug đã làm 111 msgid hiển thị tiếng Trung dù đã dịch.
+func TestMsgidCoEscapeTraDuocODangLucChay(t *testing.T) {
+	if err := SetLocale(Vietnamese); err != nil {
+		t.Fatalf("SetLocale: %v", err)
+	}
+	p := current.Load()
+	if p == nil {
+		t.Fatal("catalog chưa nạp")
+	}
+
+	var soCoEscape, traDuoc int
+	for msgid, target := range *p {
+		if target == "" || !strings.Contains(msgid, `\n`) {
+			continue
+		}
+		soCoEscape++
+		if Has(unescapeGo(msgid)) {
+			traDuoc++
+		} else {
+			t.Errorf("msgid có escape không tra được ở dạng lúc chạy: %q", msgid)
+		}
+	}
+
+	if soCoEscape == 0 {
+		t.Skip("catalog không còn msgid dạng escape — bí danh không còn cần thiết")
+	}
+	t.Logf("%d/%d msgid dạng escape tra được ở dạng lúc chạy", traDuoc, soCoEscape)
+}
+
+func TestUnescapeGo(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"không có escape", "không có escape"},
+		{`a\nb`, "a\nb"},
+		{`a\tb`, "a\tb"},
+		{`\n đầu dòng`, "\n đầu dòng"},
+		{`cuối dòng \n`, "cuối dòng \n"},
+		{`dấu \" ngoặc`, `dấu " ngoặc`},
+		{`gạch \\ chéo`, `gạch \ chéo`},
+		// Escape không nhận ra phải giữ nguyên, không đoán.
+		{`\q lạ`, `\q lạ`},
+	}
+	for _, c := range cases {
+		if got := unescapeGo(c.in); got != c.want {
+			t.Errorf("unescapeGo(%q) = %q, muốn %q", c.in, got, c.want)
 		}
 	}
 }

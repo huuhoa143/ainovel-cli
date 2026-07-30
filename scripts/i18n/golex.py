@@ -15,12 +15,72 @@ def has_cjk(s: str) -> bool:
     return bool(CJK.search(s))
 
 
+def unescape_go(s):
+    """Giải escape của chuỗi Go thường ("...") về giá trị LÚC CHẠY.
+
+    Đây là chỗ từng gây một bug im lặng nghiêm trọng: trước đây hàm tokenize trả
+    nguyên văn nguồn, nên `"a\\nb"` trong code cho ra msgid chứa HAI ký tự `\` và
+    `n`. Nhưng lúc chạy, i18n.F() nhận chuỗi đã được Go giải escape — một ký tự
+    newline thật. Hai thứ đó không bằng nhau, nên 111 msgid trong catalog không
+    bao giờ tra được và cứ hiển thị tiếng Trung dù đã dịch xong. Không lỗi, không
+    log — chỉ là bản dịch vô hiệu.
+
+    Chỉ áp dụng cho chuỗi thường. Chuỗi thô (`...`) KHÔNG có escape: trong Go,
+    dấu \ trong chuỗi thô là dấu \ thật, nên giải escape nó sẽ làm sai lệch.
+    """
+    out = []
+    i = 0
+    n = len(s)
+    simple = {"n": "\n", "t": "\t", "r": "\r", "\\": "\\", '"': '"', "'": "'",
+              "a": "\a", "b": "\b", "f": "\f", "v": "\v", "0": "\0"}
+    while i < n:
+        c = s[i]
+        if c != "\\" or i + 1 >= n:
+            out.append(c)
+            i += 1
+            continue
+        nxt = s[i + 1]
+        if nxt in simple:
+            out.append(simple[nxt])
+            i += 2
+        elif nxt == "x" and i + 3 < n:
+            try:
+                out.append(chr(int(s[i + 2:i + 4], 16)))
+                i += 4
+            except ValueError:
+                out.append(c)
+                i += 1
+        elif nxt == "u" and i + 5 < n:
+            try:
+                out.append(chr(int(s[i + 2:i + 6], 16)))
+                i += 6
+            except ValueError:
+                out.append(c)
+                i += 1
+        elif nxt == "U" and i + 9 < n:
+            try:
+                out.append(chr(int(s[i + 2:i + 10], 16)))
+                i += 10
+            except ValueError:
+                out.append(c)
+                i += 1
+        else:
+            # Escape không nhận ra: giữ nguyên cả hai ký tự thay vì đoán, để
+            # không âm thầm làm méo msgid.
+            out.append(c)
+            i += 1
+    return "".join(out)
+
+
 class Token:
-    __slots__ = ("kind", "text", "line", "col", "start", "end")
+    __slots__ = ("kind", "text", "raw", "line", "col", "start", "end")
 
     def __init__(self, kind, text, line, col, start, end):
         self.kind = kind  # 'line_comment' | 'block_comment' | 'string' | 'raw_string'
-        self.text = text  # nội dung bên trong (không gồm dấu mở/đóng)
+        # text = giá trị LÚC CHẠY (đã giải escape với chuỗi thường). Đây là thứ
+        # phải dùng làm msgid, vì i18n.F() nhận đúng giá trị này.
+        self.raw = text  # nguyên văn trong nguồn, cần khi ghi lại vào file
+        self.text = unescape_go(text) if kind == "string" else text
         self.line = line
         self.col = col
         self.start = start  # offset tuyệt đối của dấu mở

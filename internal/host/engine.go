@@ -694,7 +694,13 @@ func interventionDispatchTask(task, original string) string {
 	if strings.TrimSpace(original) == "" {
 		return task
 	}
-	return task + "\n\n用户原始干预（本次修改授权的唯一来源；上下文只用于理解，不得扩大目标或范围）：\n" + original
+	// Nhãn này là HỢP ĐỒNG với assets/prompts/editor.md: prompt dặn editor coi
+	// phần sau nhãn là nguồn thẩm quyền duy nhất cho lần sửa. Hai đầu nằm ở hai
+	// vùng khác nhau (code Go và tệp prompt) nên rất dễ dịch lệch pha, và khi lệch
+	// thì editor không nhận ra ranh giới phạm vi rồi tự mở rộng can thiệp thành
+	// viết lại diện rộng — không lỗi, không log. TestNhanCanThiepKhopVoiPrompt
+	// trong package này chốt hai đầu phải khớp.
+	return task + "\n\n" + i18n.F("用户原始干预（本次修改授权的唯一来源；上下文只用于理解，不得扩大目标或范围）：") + "\n" + original
 }
 
 func (e *engine) recordStale(op controlOp) {
