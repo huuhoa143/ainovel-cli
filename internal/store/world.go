@@ -450,7 +450,7 @@ func renderTimeline(events []domain.TimelineEvent) string {
 	for _, e := range events {
 		chars := ""
 		if len(e.Characters) > 0 {
-			chars = "(" + i18n.JoinList(e.Characters) + ")"
+			chars = fmt.Sprintf(i18n.F("（%s）"), i18n.JoinList(e.Characters))
 		}
 		fmt.Fprintf(&b, i18n.F("- **第 %d 章 [%s]**：%s%s\n"), e.Chapter, e.Time, e.Event, chars)
 	}

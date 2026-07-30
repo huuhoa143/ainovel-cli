@@ -21,10 +21,34 @@ func Check(text string, s Structured) []Violation {
 
 	var violations []Violation
 	violations = appendForbiddenChars(violations, text, s.ForbiddenChars)
-	violations = appendForbiddenPhrases(violations, text, s.ForbiddenPhrases)
-	violations = appendFatigueWords(violations, text, s.FatigueWords)
+	// Hạ chữ MỘT lần rồi truyền xuống, không hạ trong vòng lặp: bảng từ gây mỏi có
+	// 16 mục nên hạ trong vòng lặp là 16 lần cấp phát trên toàn văn mỗi chương.
+	lower := strings.ToLower(text)
+	violations = appendForbiddenPhrases(violations, lower, s.ForbiddenPhrases)
+	violations = appendFatigueWords(violations, lower, s.FatigueWords)
 	return violations
 }
+
+// Vì sao so khớp không phân biệt hoa thường, và vì sao chỉ cho cụm/từ chứ không
+// cho ký tự:
+//
+// Bảng ở snapshot.go toàn chữ thường, còn strings.Count thì phân biệt hoa thường.
+// Các cụm bị cấm và liên từ gây mỏi tiếng Việt BẢN CHẤT là từ mở câu — "Tuy
+// nhiên,", "Ngoài ra,", "Đáng chú ý là" — nên trong văn thật chúng luôn viết hoa
+// và không bao giờ bị bắt. Đo được: "Tuy nhiên," mở câu 4 lần với ngưỡng 2 mà lọt
+// sạch. Với forbidden_phrases thì nặng hơn nữa vì nó là SeverityError.
+//
+// Đây là lỗi RIÊNG của bản việt hóa: tiếng Trung không có chữ hoa nên upstream
+// không thể gặp. Và vì strings.ToLower không đổi chữ Hán, nhánh zh giữ nguyên
+// hành vi từng byte — sửa này không có rủi ro hồi quy cho đường gốc.
+//
+// Chú thích ở snapshot.go tự đặt yêu cầu "phải khớp với bộ mẫu của stylestat", mà
+// stylestat dùng `(?i)` ở cả 11 mẫu tiếng Việt. Trước sửa này, hai lớp nói là đo
+// cùng một thứ nhưng một bên phân biệt hoa thường, một bên không.
+//
+// forbidden_chars CỐ Ý không hạ chữ: đó là ký tự do người dùng tự khai, và chữ
+// hoa/thường ở đó có thể là chủ ý (cấm đúng một biến thể). Hạ chữ giúp nó bắt
+// rộng hơn nhưng là quyết định thay người dùng.
 
 // forbidden_chars：出现 ≥1 次即 error。
 // 同一条规则只产生一条 violation，actual 是出现次数。
@@ -48,12 +72,16 @@ func appendForbiddenChars(vs []Violation, text string, list []string) []Violatio
 }
 
 // forbidden_phrases：出现 ≥1 次即 error；行为与 forbidden_chars 一致，仅 rule 名区分。
-func appendForbiddenPhrases(vs []Violation, text string, list []string) []Violation {
+//
+// lower là văn bản ĐÃ hạ chữ (xem Check). Cụm cần tìm cũng hạ chữ tại đây vì
+// ForbiddenPhrases còn được trộn từ tệp rule của người dùng, nơi họ có thể viết
+// hoa. Target vẫn trả nguyên văn người dùng khai để bản ghi và hiển thị không đổi.
+func appendForbiddenPhrases(vs []Violation, lower string, list []string) []Violation {
 	for _, ph := range list {
 		if ph == "" {
 			continue
 		}
-		n := strings.Count(text, ph)
+		n := strings.Count(lower, strings.ToLower(ph))
 		if n == 0 {
 			continue
 		}
@@ -69,12 +97,14 @@ func appendForbiddenPhrases(vs []Violation, text string, list []string) []Violat
 
 // fatigue_words：本章出现次数超过阈值才违规，warning 级。
 // 不跨章累计——跨章问题后续交诊断。
-func appendFatigueWords(vs []Violation, text string, m map[string]int) []Violation {
+// lower là văn bản ĐÃ hạ chữ (xem Check); từ trong bảng cũng hạ để chịu được bảng
+// do người dùng khai. Target giữ nguyên văn để ngưỡng và bản ghi đọc khớp bảng.
+func appendFatigueWords(vs []Violation, lower string, m map[string]int) []Violation {
 	for word, limit := range m {
 		if word == "" || limit <= 0 {
 			continue
 		}
-		n := strings.Count(text, word)
+		n := strings.Count(lower, strings.ToLower(word))
 		if n <= limit {
 			continue
 		}

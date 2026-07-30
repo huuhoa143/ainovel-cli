@@ -597,7 +597,7 @@ func (h *Host) doIntervention(text string, restart bool) error {
 		// 已当面告知 → 清除 pending(否则下次 Resume 会自动重放同一条失败干预)。
 		h.emitEvent(newInterventionFailureEvent(derr))
 		if err := clearPending(); err != nil {
-			return fmt.Errorf("%v；%w", derr, err)
+			return fmt.Errorf(i18n.F("%v；%w"), derr, err)
 		}
 		return derr
 	}
@@ -943,7 +943,7 @@ func (h *Host) runEnded() {
 // runEndBody 组装 run_end 通知正文：书名 + 进度摘要 + 累计花费。
 func (h *Host) runEndBody(novelName, summary string) string {
 	if name := strings.TrimSpace(novelName); name != "" {
-		summary = "《" + name + "》" + summary
+		summary = fmt.Sprintf(i18n.F("《%s》"), name) + summary
 	}
 	cost, _, _, _, _ := h.usage.Totals()
 	if cost > 0 {
@@ -1201,7 +1201,7 @@ func (h *Host) fillDetails(snap *UISnapshot, progress *domain.Progress) {
 		for _, c := range chars {
 			label := c.Name
 			if c.Role != "" {
-				label += "（" + c.Role + "）"
+				label += fmt.Sprintf(i18n.F("（%s）"), c.Role)
 			}
 			snap.Characters = append(snap.Characters, label)
 		}
@@ -1212,7 +1212,7 @@ func (h *Host) fillDetails(snap *UISnapshot, progress *domain.Progress) {
 		for _, e := range recent {
 			label := e.Name
 			if e.BriefRole != "" {
-				label += "（" + e.BriefRole + "）"
+				label += fmt.Sprintf(i18n.F("（%s）"), e.BriefRole)
 			}
 			snap.RecentSupporting = append(snap.RecentSupporting, label)
 		}

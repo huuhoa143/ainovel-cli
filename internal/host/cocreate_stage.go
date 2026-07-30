@@ -48,7 +48,7 @@ func buildStoryStateSummary(s *store.Store) string {
 			fmt.Fprintf(&b, i18n.F("- 预估规模：%s\n"), compass.EstimatedScale)
 		}
 		if len(compass.OpenThreads) > 0 {
-			fmt.Fprintf(&b, i18n.F("- 活跃长线：%s\n"), strings.Join(compass.OpenThreads, "；"))
+			fmt.Fprintf(&b, i18n.F("- 活跃长线：%s\n"), i18n.JoinRecords(compass.OpenThreads))
 		}
 	} else {
 		warn("story_compass", err)
@@ -71,7 +71,7 @@ func buildStoryStateSummary(s *store.Store) string {
 			}
 			line := c.Name
 			if role := strings.TrimSpace(c.Role); role != "" {
-				line += "（" + role + "）"
+				line += fmt.Sprintf(i18n.F("（%s）"), role)
 			}
 			names = append(names, line)
 			if len(names) >= 8 {
@@ -94,13 +94,13 @@ func buildStoryStateSummary(s *store.Store) string {
 				break
 			}
 		}
-		fmt.Fprintf(&b, i18n.F("- 未收伏笔：%s\n"), strings.Join(items, "；"))
+		fmt.Fprintf(&b, i18n.F("- 未收伏笔：%s\n"), i18n.JoinRecords(items))
 	} else {
 		warn("foreshadow", err)
 	}
 
 	if len(warnings) > 0 {
-		fmt.Fprintf(&b, i18n.F("- 数据告警：%s\n"), strings.Join(warnings, "；"))
+		fmt.Fprintf(&b, i18n.F("- 数据告警：%s\n"), i18n.JoinRecords(warnings))
 	}
 
 	return strings.TrimSpace(b.String())

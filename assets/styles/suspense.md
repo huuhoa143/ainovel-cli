@@ -1,4 +1,4 @@
-## Phong Cách Trinh Thám - Ly Kỳ
+## Phong cách trinh thám - ly kỳ
 
 - **Cấu trúc cốt truyện**: Nhiều tuyến truyện đan xen, tạo căng thẳng qua khoảng cách thông tin, dần dần tiết lộ sự thật
 - **Kỹ thuật đánh lạc hướng**: Đặt bẫy red herring hợp lý, lợi dụng điểm mù góc nhìn kể chuyện để dẫn dắt người đọc sai hướng

@@ -126,9 +126,10 @@ func renderTXT(
 	var b strings.Builder
 
 	if name := strings.TrimSpace(novelName); name != "" {
-		b.WriteString("《")
-		b.WriteString(name)
-		b.WriteString("》\n\n")
+		// Dấu bọc tên tác phẩm là thuộc tính của ngôn ngữ, nên nó thuộc catalog chứ
+		// không viết cứng tại chỗ: tiếng Việt không dùng 《》. Đi qua msgid cũng là
+		// cách duy nhất giữ được đường zh nguyên văn upstream trong tệp xuất ra.
+		fmt.Fprintf(&b, i18n.F("《%s》\n\n"), name)
 	}
 
 	useLayered := len(locations) > 0

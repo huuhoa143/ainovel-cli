@@ -17,6 +17,28 @@
 // LoadQueueAfter(seq). Nhờ vậy package này không chạm một dòng nào của core —
 // điều quan trọng với một fork đang phải đuổi theo upstream phát triển nhanh.
 // Seq cũng map thẳng sang Last-Event-ID nên client kết nối lại không bỏ sót.
+//
+// # Vì sao chuỗi ở đây KHÔNG đi qua i18n
+//
+// Đây là ngoại lệ duy nhất trong repo, và nó có chủ đích. Ghi lại để không ai
+// "sửa" nó thành đúng-hình-thức mà sai-mục-đích.
+//
+// Lớp i18n của repo dùng chính chuỗi tiếng Trung làm msgid, và locale zh là
+// catalog RỖNG — mọi msgid rơi về chính nó, tức đúng chuỗi gốc của upstream. Cơ
+// chế đó tồn tại cho MỘT việc: đối chiếu hành vi với upstream (xem
+// i18n.EnvLocale). Nó chỉ chạy được khi có một chuỗi upstream để rơi về.
+//
+// Package này là mã mới của fork, upstream không có `serve`. Nên bọc chuỗi ở đây
+// đòi phải TỰ BỊA msgid tiếng Trung cho từng câu — 18 câu tiếng Trung do người
+// không viết tiếng Trung soạn, đặt vào một fork tiếng Việt, để phục vụ một phép
+// đối chiếu không tồn tại. Cái giá là thật, cái lợi thì không.
+//
+// Nên chuỗi ở đây là tiếng Việt trực tiếp, và `AINOVEL_LANG=zh` KHÔNG đổi được
+// chúng. Đó là hệ quả đã biết, không phải lỗi bỏ sót.
+//
+// Điều này KHÔNG áp cho phần còn lại của repo: mọi chuỗi có nguyên bản tiếng
+// Trung đều phải qua i18n.F/T, và có bộ canh soi mã nguồn để bảo đảm
+// (internal/i18n/quetnguon_test.go, internal/serve/web_chu_test.go).
 package serve
 
 import (

@@ -69,7 +69,7 @@ export function ToSanXuat({ snapshot }: { snapshot: Snapshot }) {
       </div>
 
       <section className="sect">
-        <h2>{CHU.colVai}</h2>
+        <h2>{CHU.vaiTrongTo}</h2>
 
         {dong.length === 0 ? (
           <p className="trongSect">{GIAI_THICH.toChuaCoVaiNao}</p>

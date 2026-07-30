@@ -1,10 +1,10 @@
-# Danh Sách Kiểm Tra Chất Lượng
+# Danh sách kiểm tra chất lượng
 
 Dùng danh sách kiểm tra chất lượng này trước khi bàn giao chương để đảm bảo chất lượng.
 
-## Kiểm Tra Tổng Thể
+## Kiểm tra tổng thể
 
-### Yếu Tố Cơ Bản
+### Yếu tố cơ bản
 
 - [ ] **Chương có tiêu đề rõ ràng**
   - Tiêu đề liên quan đến nội dung
@@ -25,7 +25,7 @@ Dùng danh sách kiểm tra chất lượng này trước khi bàn giao chương
 
 ---
 
-## Kiểm Tra Phần Mở Đầu
+## Kiểm tra phần mở đầu
 
 - [ ] **Thu hút người đọc trong 3 đoạn đầu**
   - Có hành động / xung đột / hồi hộp
@@ -41,9 +41,9 @@ Dùng danh sách kiểm tra chất lượng này trước khi bàn giao chương
 
 ---
 
-## Kiểm Tra Nội Dung
+## Kiểm tra nội dung
 
-### Đẩy Cốt Truyện
+### Đẩy cốt truyện
 
 - [ ] **Chương có sự kiện cốt lõi**
   - Có điều gì đó xảy ra không thể bỏ qua
@@ -59,7 +59,7 @@ Dùng danh sách kiểm tra chất lượng này trước khi bàn giao chương
   - Không có tình huống may mắn dẫn dắt cốt truyện
   - Hành vi nhân vật phù hợp với động cơ
 
-### Xung Đột và Căng Thẳng
+### Xung đột và căng thẳng
 
 - [ ] **Có xung đột rõ ràng**
   - Người với người, người với hoàn cảnh, người với bản thân
@@ -75,7 +75,7 @@ Dùng danh sách kiểm tra chất lượng này trước khi bàn giao chương
 
 ---
 
-## Kiểm Tra Nhân Vật
+## Kiểm tra nhân vật
 
 - [ ] **Hành vi nhân vật nhất quán**
   - Phù hợp với tính cách đã được xây dựng
@@ -95,7 +95,7 @@ Dùng danh sách kiểm tra chất lượng này trước khi bàn giao chương
 
 ---
 
-## Kiểm Tra Đối Thoại
+## Kiểm tra đối thoại
 
 - [ ] **Mỗi câu đối thoại có mục đích**
   - Thúc đẩy cốt truyện / tiết lộ nhân vật / tạo xung đột
@@ -115,7 +115,7 @@ Dùng danh sách kiểm tra chất lượng này trước khi bàn giao chương
 
 ---
 
-## Kiểm Tra Điểm Móc
+## Kiểm tra điểm móc
 
 - [ ] **Kết thúc có điểm móc**
   - Dùng ít nhất một kỹ thuật tạo hồi hộp
@@ -135,9 +135,9 @@ Dùng danh sách kiểm tra chất lượng này trước khi bàn giao chương
 
 ---
 
-## Kiểm Tra Thể Hiện Chứ Không Kể
+## Kiểm tra thể hiện chứ không kể
 
-### Các Dấu Hiệu "Kể" Thường Gặp
+### Các dấu hiệu "kể" thường gặp
 
 Kiểm tra và sửa các mẫu sau:
 
@@ -149,7 +149,7 @@ Kiểm tra và sửa các mẫu sau:
 | Căn phòng rất bừa bộn | Quần áo vứt trên sofa, hộp đồ ăn mang về chồng chất trên bàn |
 | Anh ấy rất giàu | Anh móc từ túi ra một xấp tiền mặt |
 
-### Câu Hỏi Tự Kiểm
+### Câu hỏi tự kiểm
 
 - [ ] Có trực tiếp phát biểu cảm xúc không? (Đổi thành phản ứng cơ thể)
 - [ ] Có dùng tính từ để tóm tắt không? (Đổi thành mô tả cụ thể)
@@ -157,7 +157,7 @@ Kiểm tra và sửa các mẫu sau:
 
 ---
 
-## Kiểm Tra Nhịp Điệu
+## Kiểm tra nhịp điệu
 
 - [ ] **Độ dài câu có biến đổi**
   - Không có 3 câu liên tiếp cùng độ dài
@@ -173,7 +173,7 @@ Kiểm tra và sửa các mẫu sau:
 
 ---
 
-## Kiểm Tra Ngôn Ngữ
+## Kiểm tra ngôn ngữ
 
 - [ ] **Không có dấu hiệu văn phong AI**
   - Tránh các từ AI điển hình như "ngoài ra", "tuy nhiên", "nhấn mạnh"
@@ -190,7 +190,7 @@ Kiểm tra và sửa các mẫu sau:
 
 ---
 
-## Kiểm Tra Tính Nhất Quán
+## Kiểm tra tính nhất quán
 
 - [ ] **Nhất quán với phần trước**
   - Điểm móc của chương trước được phản hồi
@@ -206,27 +206,27 @@ Kiểm tra và sửa các mẫu sau:
 
 ---
 
-## Kiểm Tra Theo Thể Loại
+## Kiểm tra theo thể loại
 
-### Thể Loại Trinh Thám / Huyền Bí
+### Thể loại trinh thám / huyền bí
 
 - [ ] Có tiết lộ manh mối
 - [ ] Có đặt ra bí ẩn mới
 - [ ] Logic không có lỗ hổng
 
-### Thể Loại Ngôn Tình
+### Thể loại ngôn tình
 
 - [ ] Mối quan hệ có tiến triển
 - [ ] Có căng thẳng cảm xúc
 - [ ] Người đọc quan tâm đến cặp đôi
 
-### Thể Loại Huyền Huyễn / Khoa Học Viễn Tưởng
+### Thể loại huyền huyễn / khoa học viễn tưởng
 
 - [ ] Thế giới quan nhất quán
 - [ ] Không phá vỡ quy tắc đã thiết lập
 - [ ] Không giải thích quá nhiều
 
-### Thể Loại Hành Động
+### Thể loại hành động
 
 - [ ] Cảnh hành động rõ ràng
 - [ ] Nhịp độ nhanh
@@ -234,7 +234,7 @@ Kiểm tra và sửa các mẫu sau:
 
 ---
 
-## Kiểm Tra Cuối Trước Khi Bàn Giao
+## Kiểm tra cuối trước khi bàn giao
 
 - [ ] Đọc lại toàn bộ, không có lỗi chính tả
 - [ ] Dấu câu đúng
@@ -245,7 +245,7 @@ Kiểm tra và sửa các mẫu sau:
 
 ---
 
-## Thang Điểm Chất Lượng
+## Thang điểm chất lượng
 
 Tự chấm điểm trước khi bàn giao (mỗi mục 1–10 điểm):
 

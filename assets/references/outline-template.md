@@ -1,22 +1,22 @@
-# Mẫu Lập Kế Hoạch Dàn Ý
+# Mẫu lập kế hoạch dàn ý
 
 Mẫu này không nhằm ép tất cả tác phẩm vào một độ dài cố định, mà giúp xác định cấp độ tác phẩm trước, rồi mới chọn độ chi tiết của dàn ý.
 
 ## Bước 1: Xác định cấp độ độ dài tác phẩm
 
-### Truyện ngắn / Đơn tập
+### Truyện ngắn / đơn tập
 
 - Phù hợp: xung đột đơn, mục tiêu đơn, ít nhân vật, kết thúc tập trung
 - Độ dài tham khảo: 8-25 chương
 - Định dạng đề xuất: `outline` dạng phẳng
 
-### Truyện vừa / Đa giai đoạn
+### Truyện vừa / đa giai đoạn
 
 - Phù hợp: có nâng cấp theo giai đoạn, nhiều tuyến phụ, quan hệ nhân vật thay đổi
 - Độ dài tham khảo: 25-60 chương
 - Định dạng đề xuất: `outline` dạng phẳng hoặc phân lớp nhẹ
 
-### Truyện dài kỳ / Kiểu web novel
+### Truyện dài kỳ / kiểu web novel
 
 - Phù hợp: thể loại tự nhiên có không gian nâng cấp liên tục, căng thẳng quan hệ dài hạn, nhiều mục tiêu giai đoạn, thế giới có thể mở rộng, bí ẩn dài hạn hoặc tuyến tăng trưởng dài hạn
 - Độ dài tham khảo: 80-200+ chương
@@ -50,7 +50,7 @@ Những sai lầm thường gặp:
 - Chỉ nâng cấp tuyến chính, không nâng cấp tuyến quan hệ
 - Giai đoạn đầu đã tiêu hết mọi bí mật lớn, giữa và cuối truyện chỉ có thể lặp lại công thức
 
-## Mẫu Dàn Ý Phẳng (Truyện ngắn / vừa)
+## Mẫu dàn ý phẳng (truyện ngắn / vừa)
 
 ```json
 [
@@ -64,7 +64,7 @@ Những sai lầm thường gặp:
 ]
 ```
 
-## Mẫu Dàn Ý Phân Lớp (Truyện dài - Cuộn mở hai lớp tập-cung)
+## Mẫu dàn ý phân lớp (truyện dài - cuộn mở hai lớp tập-cung)
 
 Lập kế hoạch ban đầu dùng cuộn hai lớp: 2 tập đầu có khung cung truyện, các tập còn lại là tập khung; cung đầu tiên có chương chi tiết.
 
@@ -114,7 +114,7 @@ Lập kế hoạch ban đầu dùng cuộn hai lớp: 2 tập đầu có khung c
 - Mở rộng cấp cung: khi viết tiến đến cung khung, Architect sẽ mở rộng các chương chi tiết của cung đó
 - Mở rộng cấp tập: khi viết tiến đến tập khung, Architect sẽ mở rộng cấu trúc cung của tập đó + các chương của cung đầu tiên
 
-## Danh Sách Kiểm Tra Chất Lượng Cấp Tập (Truyện dài)
+## Danh sách kiểm tra chất lượng cấp tập (truyện dài)
 
 Mỗi tập đều cần trả lời:
 
@@ -124,7 +124,7 @@ Mỗi tập đều cần trả lời:
 - Tập này thay đổi quan hệ nhân vật chính như thế nào?
 - Sau khi tập này kết thúc, tại sao câu chuyện bắt buộc phải tiếp tục sang tập tiếp theo?
 
-## Danh Sách Kiểm Tra Chất Lượng Cấp Cung Truyện (Truyện dài)
+## Danh sách kiểm tra chất lượng cấp cung truyện (truyện dài)
 
 Mỗi cung truyện đều cần trả lời:
 
@@ -133,7 +133,7 @@ Mỗi cung truyện đều cần trả lời:
 - Bước ngoặt là gì?
 - Sau khi cung này kết thúc, những trạng thái nào đã thay đổi không thể đảo ngược?
 
-## Danh Sách Kiểm Tra Chất Lượng Cấp Chương
+## Danh sách kiểm tra chất lượng cấp chương
 
 - Mỗi chương phải phục vụ mục tiêu của cung truyện chứa nó
 - Mỗi chương phải chứa một sự kiện đẩy truyện tiến không thể xóa bỏ

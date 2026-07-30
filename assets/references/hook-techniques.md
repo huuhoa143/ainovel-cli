@@ -1,10 +1,10 @@
-# Kỹ Thuật Thiết Lập Điểm Móc
+# Kỹ thuật thiết lập điểm móc
 
 Điểm móc là yếu tố then chốt giữ chân độc giả tiếp tục đọc. Mỗi chương phải kết thúc bằng một điểm móc hiệu quả.
 
-## Mười Loại Điểm Móc Kinh Điển
+## Mười loại điểm móc kinh điển
 
-### 1. Tiết Lộ Bất Ngờ
+### 1. Tiết lộ bất ngờ
 
 Tiết lộ đột ngột một thông tin thay đổi toàn bộ cục diện ngay cuối chương.
 
@@ -16,7 +16,7 @@ Tiết lộ đột ngột một thông tin thay đổi toàn bộ cục diện n
 - Thay đổi cách hiểu hiện tại
 - Để lại câu hỏi "tại sao"
 
-### 2. Khủng Hoảng Khẩn Cấp
+### 2. Khủng hoảng khẩn cấp
 
 Nhân vật đối mặt với nguy hiểm cận kề, chương tiếp theo phải xử lý ngay lập tức.
 
@@ -28,7 +28,7 @@ Nhân vật đối mặt với nguy hiểm cận kề, chương tiếp theo ph�
 - Mối đe dọa rõ ràng
 - Hậu quả nghiêm trọng
 
-### 3. Hành Động Bị Gián Đoạn
+### 3. Hành động bị gián đoạn
 
 Một hành động bị cắt đứt giữa chừng, để lại câu hỏi "điều gì xảy ra tiếp theo".
 
@@ -40,7 +40,7 @@ Một hành động bị cắt đứt giữa chừng, để lại câu hỏi "đ
 - Kết quả không chắc chắn
 - Biến số mới xuất hiện
 
-### 4. Đảo Lộn Danh Tính
+### 4. Đảo lộn danh tính
 
 Ai đó bị tiết lộ không phải là người chúng ta tưởng.
 
@@ -52,7 +52,7 @@ Ai đó bị tiết lộ không phải là người chúng ta tưởng.
 - Quan hệ được định nghĩa lại
 - Động cơ cần diễn giải lại
 
-### 5. Tình Huống Tiến Thoái Lưỡng Nan
+### 5. Tình huống tiến thoái lưỡng nan
 
 Nhân vật phải đưa ra lựa chọn khó khăn, nhưng chương kết thúc trước khi quyết định được đưa ra.
 
@@ -64,7 +64,7 @@ Nhân vật phải đưa ra lựa chọn khó khăn, nhưng chương kết thúc
 - Buộc phải chọn
 - Rủi ro cao
 
-### 6. Vật Thể/Manh Mối Bí Ẩn
+### 6. Vật thể/manh mối bí ẩn
 
 Phát hiện ra thứ gì đó quan trọng nhưng chưa rõ ý nghĩa.
 
@@ -76,7 +76,7 @@ Phát hiện ra thứ gì đó quan trọng nhưng chưa rõ ý nghĩa.
 - Ám chỉ mối đe dọa
 - Kích thích sự tò mò
 
-### 7. Giới Hạn Thời Gian
+### 7. Giới hạn thời gian
 
 Một hạn chót được thiết lập, tạo ra cảm giác cấp bách.
 
@@ -88,7 +88,7 @@ Một hạn chót được thiết lập, tạo ra cảm giác cấp bách.
 - Nguồn lực không đủ
 - Hậu quả đã biết
 
-### 8. Lời Hứa/Lời Đe Dọa
+### 8. Lời hứa/lời đe dọa
 
 Ai đó đưa ra lời hứa hoặc đe dọa, thay đổi kỳ vọng.
 
@@ -100,7 +100,7 @@ Ai đó đưa ra lời hứa hoặc đe dọa, thay đổi kỳ vọng.
 - Đe dọa gây hại/phơi bày
 - Khung thời gian cụ thể
 
-### 9. Biến Mất Kỳ Lạ
+### 9. Biến mất kỳ lạ
 
 Ai đó hoặc thứ gì đó đột nhiên biến mất, để lại một bí ẩn.
 
@@ -112,7 +112,7 @@ Ai đó hoặc thứ gì đó đột nhiên biến mất, để lại một bí 
 - Thiếu vắng lý giải
 - Mất đi cảm giác an toàn
 
-### 10. Hàm Ý Ẩn
+### 10. Hàm ý ẩn
 
 Một câu nói bề ngoài bình thường nhưng ẩn chứa điều sâu xa hơn.
 
@@ -126,9 +126,9 @@ Một câu nói bề ngoài bình thường nhưng ẩn chứa điều sâu xa h
 
 ---
 
-## Kết Nối Điểm Móc Giữa Các Chương
+## Kết nối điểm móc giữa các chương
 
-### Phục Bút và Hô Ứng
+### Phục bút và hô ứng
 
 **Kỹ thuật phục bút:**
 - Chôn giấu chi tiết nhỏ không bắt mắt từ sớm
@@ -140,7 +140,7 @@ Một câu nói bề ngoài bình thường nhưng ẩn chứa điều sâu xa h
 - Đối thoại lặp lại (ngữ cảnh khác, ý nghĩa mới)
 - Vật thể quay trở lại (vật quan trọng xuất hiện lần nữa)
 
-### Leo Thang Điểm Móc
+### Leo thang điểm móc
 
 **Nguyên tắc tiến dần:** Điểm móc sau phải mạnh hơn hoặc sâu hơn điểm móc trước
 
@@ -151,7 +151,7 @@ Chương 3: Đồng nghiệp là điệp viên nằm vùng
 Chương 4: Điệp viên biết danh tính bí mật của nhân vật chính
 ```
 
-### Đa Tuyến Điểm Móc
+### Đa tuyến điểm móc
 
 **Duy trì nhiều tuyến điểm móc đồng thời:**
 - Điểm móc tuyến chính (bí ẩn cốt lõi)
@@ -161,7 +161,7 @@ Chương 4: Điệp viên biết danh tính bí mật của nhân vật chính
 
 ---
 
-## Điều Cấm Kỵ Khi Thiết Lập Điểm Móc
+## Điều cấm kỵ khi thiết lập điểm móc
 
 ### Tránh:
 
@@ -182,7 +182,7 @@ Chương 4: Điệp viên biết danh tính bí mật của nhân vật chính
 
 ---
 
-## Cấp Độ Cường Độ Điểm Móc
+## Cấp độ cường độ điểm móc
 
 | Cấp độ | Loại | Phản ứng độc giả | Vị trí áp dụng |
 |--------|------|-----------------|----------------|

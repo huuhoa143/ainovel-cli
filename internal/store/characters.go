@@ -88,7 +88,7 @@ func renderCharacters(chars []domain.Character) string {
 	var b strings.Builder
 	b.WriteString(i18n.F("# 角色档案\n\n"))
 	for _, c := range chars {
-		fmt.Fprintf(&b, "## %s (%s)\n\n", c.Name, c.Role)
+		fmt.Fprintf(&b, i18n.F("## %s（%s）\n\n"), c.Name, c.Role)
 		fmt.Fprintf(&b, "%s\n\n", c.Description)
 		if c.Arc != "" {
 			fmt.Fprintf(&b, i18n.F("**角色弧线**：%s\n\n"), c.Arc)

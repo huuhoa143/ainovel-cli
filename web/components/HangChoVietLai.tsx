@@ -105,9 +105,7 @@ function MotChuong({
           </span>
           {tt.nhan}
         </span>
-        <span className="ch">
-          {CHU.chuong} {r.chapter}
-        </span>
+        <span className="ch">{CHU.chuongNgan(r.chapter)}</span>
         <span className="ten">
           {r.title ? r.title : <em className="draft">{CHU.chuaDatTieuDe}</em>}
         </span>

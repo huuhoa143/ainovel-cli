@@ -1,21 +1,21 @@
-# Hướng Dẫn Viết Chương
+# Hướng dẫn viết chương
 
 Mỗi chương phải là một đơn vị tự sự hoàn chỉnh, đồng thời đẩy toàn bộ câu chuyện tiến về phía trước.
 
-## ⚠️ Nguyên Tắc Cốt Lõi: 20% Đầu Tiên Quyết Định Tất Cả
+## ⚠️ Nguyên tắc cốt lõi: 20% đầu tiên quyết định tất cả
 
 **Độc giả quyết định có tiếp tục đọc hay không dựa vào 20% nội dung đầu tiên.**
 
 Nếu phần mở đầu không đủ hấp dẫn, độc giả sẽ bỏ đi — dù phần sau có hay đến đâu.
 
-### Hiệu Quả Mà 20% Đầu Phải Đạt Được
+### Hiệu quả mà 20% đầu phải đạt được
 
 1. **Căng thẳng tức thì** - Độc giả lập tức cảm nhận được khủng hoảng/xung đột
 2. **Sự kiện trọng đại** - Có điều gì đó quan trọng xảy ra, đẩy cốt truyện tiến lên
 3. **Cú sốc cảm xúc** - Độc giả dâng lên cảm xúc mạnh (tò mò, kinh ngạc, lo lắng)
 4. **Ham muốn đọc tiếp** - Khát khao biết điều gì xảy ra tiếp theo
 
-### Những Lỗi Chết Người Ở Phần Mở Đầu (Tuyệt Đối Tránh)
+### Những lỗi chết người ở phần mở đầu (tuyệt đối tránh)
 
 | Loại lỗi | Ví dụ | Tại sao chết người |
 |---------|------|-----------|
@@ -28,9 +28,9 @@ Nếu phần mở đầu không đủ hấp dẫn, độc giả sẽ bỏ đi �
 
 ---
 
-## Mười Kỹ Thuật Mở Đầu Mạnh Mẽ
+## Mười kỹ thuật mở đầu mạnh mẽ
 
-### 1. Mở Cảnh Giữa Hành Động (In Media Res)
+### 1. Mở cảnh giữa hành động (In Media Res)
 
 Bắt đầu ngay tại đỉnh điểm của xung đột/hành động.
 
@@ -39,7 +39,7 @@ Bắt đầu ngay tại đỉnh điểm của xung đột/hành động.
 
 **Tại sao hiệu quả:** Lập tức tạo căng thẳng, độc giả muốn biết tại sao nhân vật bị bắn.
 
-### 2. Tình Huống Bất Thường
+### 2. Tình huống bất thường
 
 Trình bày một cảnh không hợp lý với thực tế, kích thích sự tò mò.
 
@@ -48,7 +48,7 @@ Trình bày một cảnh không hợp lý với thực tế, kích thích sự t
 
 **Tại sao hiệu quả:** Điều không thể xảy ra — độc giả muốn biết chuyện gì đang xảy ra.
 
-### 3. Đối Thoại Gây Sốc
+### 3. Đối thoại gây sốc
 
 Mở đầu bằng một câu đối thoại kinh ngạc.
 
@@ -57,7 +57,7 @@ Mở đầu bằng một câu đối thoại kinh ngạc.
 
 **Tại sao hiệu quả:** Lập tức tạo cú sốc cảm xúc và bầu không khí hồi hộp.
 
-### 4. Mở Đầu Đếm Ngược
+### 4. Mở đầu đếm ngược
 
 Bắt đầu từ áp lực thời gian.
 
@@ -66,7 +66,7 @@ Bắt đầu từ áp lực thời gian.
 
 **Tại sao hiệu quả:** Cảm giác cấp bách, độc giả muốn biết liệu có kịp không.
 
-### 5. Khám Phá Trọng Đại
+### 5. Khám phá trọng đại
 
 Bắt đầu từ việc phát hiện ra manh mối/sự thật then chốt.
 
@@ -75,7 +75,7 @@ Bắt đầu từ việc phát hiện ra manh mối/sự thật then chốt.
 
 **Tại sao hiệu quả:** Bước ngoặt lớn, buộc người đọc nhìn nhận lại mọi sự kiện trước đó.
 
-### 6. Khoảnh Khắc Khủng Hoảng
+### 6. Khoảnh khắc khủng hoảng
 
 Bắt đầu từ khi nhân vật đối mặt với khủng hoảng lớn nhất.
 
@@ -84,7 +84,7 @@ Bắt đầu từ khi nhân vật đối mặt với khủng hoảng lớn nhấ
 
 **Tại sao hiệu quả:** Rủi ro cao, độc giả quan tâm đến số phận nhân vật.
 
-### 7. Bí Ẩn Xuất Hiện
+### 7. Bí ẩn xuất hiện
 
 Bắt đầu từ hiện tượng không thể giải thích.
 
@@ -93,7 +93,7 @@ Bắt đầu từ hiện tượng không thể giải thích.
 
 **Tại sao hiệu quả:** Bầu không khí huyền bí, độc giả muốn giải mã câu đố.
 
-### 8. Mở Đầu Bằng Phản Bội
+### 8. Mở đầu bằng phản bội
 
 Bắt đầu từ sự phản bội/sụp đổ niềm tin.
 
@@ -102,7 +102,7 @@ Bắt đầu từ sự phản bội/sụp đổ niềm tin.
 
 **Tại sao hiệu quả:** Cú sốc cảm xúc, nhân vật rơi vào tuyệt cảnh.
 
-### 9. Lựa Chọn Trọng Đại
+### 9. Lựa chọn trọng đại
 
 Bắt đầu từ quyết định khó khăn của nhân vật.
 
@@ -111,7 +111,7 @@ Bắt đầu từ quyết định khó khăn của nhân vật.
 
 **Tại sao hiệu quả:** Thế lưỡng nan về đạo đức, độc giả muốn biết cô sẽ chọn ai.
 
-### 10. Báo Trước Kết Cục
+### 10. Báo trước kết cục
 
 Bắt đầu từ một khoảnh khắc then chốt trong tương lai, rồi kể ngược lại.
 
@@ -122,9 +122,9 @@ Bắt đầu từ một khoảnh khắc then chốt trong tương lai, rồi k�
 
 ---
 
-## Cấu Trúc Chương Tiêu Chuẩn
+## Cấu trúc chương tiêu chuẩn
 
-### 1. Điểm Móc Mở Đầu (20% Đầu) ⚠️ Quan Trọng Nhất
+### 1. Điểm móc mở đầu (20% đầu) ⚠️ quan trọng nhất
 
 **Phải bao gồm:**
 - ✅ Xung đột/khủng hoảng tức thì
@@ -134,7 +134,7 @@ Bắt đầu từ một khoảnh khắc then chốt trong tương lai, rồi k�
 
 **Sử dụng một trong mười kỹ thuật trên, hoặc kết hợp nhiều kỹ thuật.**
 
-### 2. Phát Triển Đẩy Mạnh (50-60% Giữa)
+### 2. Phát triển đẩy mạnh (50-60% giữa)
 
 Nội dung cốt lõi của chương — phải đẩy cốt truyện tiến lên hoặc làm sâu sắc thêm nhân vật.
 
@@ -149,7 +149,7 @@ Nội dung cốt lõi của chương — phải đẩy cốt truyện tiến lê
 - Tương tác giữa các nhân vật không liên quan đến cốt truyện
 - Lặp lại các đối thoại đã biết
 
-### 3. Đỉnh Điểm (15-20% Cuối)
+### 3. Đỉnh điểm (15-20% cuối)
 
 Đỉnh điểm cảm xúc hoặc hành động của chương.
 
@@ -158,34 +158,34 @@ Nội dung cốt lõi của chương — phải đẩy cốt truyện tiến lê
 - **Đỉnh điểm cảm xúc**: Khám phá lớn, phản bội, thú nhận, hy sinh
 - **Đỉnh điểm tâm lý**: Bước ngoặt nội tâm của nhân vật chính
 
-### 4. Điểm Móc Kết Chương (5-10% Cuối)
+### 4. Điểm móc kết chương (5-10% cuối)
 
 Để lại bầu không khí hồi hộp, khiến độc giả muốn đọc chương tiếp theo. Xem chi tiết tại [hook-techniques.md](hook-techniques.md)
 
 ---
 
-## Phân Loại Chương
+## Phân loại chương
 
-### Chương Đẩy Cốt Truyện
+### Chương đẩy cốt truyện
 
 **Mục đích**: Thúc đẩy cốt truyện chính phát triển
 **Đặc điểm**: Có diễn biến sự kiện rõ ràng, tiết lộ thông tin quan trọng
 **Ví dụ**: Nhân vật chính tìm ra manh mối, kẻ thù tấn công, đồng minh phản bội
 
-### Chương Làm Sâu Sắc Nhân Vật
+### Chương làm sâu sắc nhân vật
 
 **Mục đích**: Làm độc giả hiểu nhân vật sâu hơn
 **Đặc điểm**: Tiết lộ bối cảnh, động cơ, xung đột nội tâm của nhân vật
 **Ví dụ**: Đoạn hồi ức, đối thoại thân mật, khoảnh khắc cô đơn
 **Lưu ý**: Phải liên quan đến cốt truyện chính, không được chỉ là tiểu sử nhân vật thuần túy
 
-### Chương Xây Dựng Bầu Không Khí
+### Chương xây dựng bầu không khí
 
 **Mục đích**: Tạo cảm xúc hoặc căng thẳng cụ thể
 **Đặc điểm**: Chú trọng miêu tả giác quan, kiểm soát nhịp truyện
 **Ví dụ**: Yên bình trước bão tố, hành động mai phục, chờ đợi phán xét
 
-### Chương Chuyển Tiếp
+### Chương chuyển tiếp
 
 **Mục đích**: Kết nối hai sự kiện lớn
 **Đặc điểm**: Sắp xếp lại thông tin, chuyển đổi địa điểm, nhảy cóc thời gian
@@ -193,9 +193,9 @@ Nội dung cốt lõi của chương — phải đẩy cốt truyện tiến lê
 
 ---
 
-## Kiểm Soát Nhịp Truyện Trong Chương
+## Kiểm soát nhịp truyện trong chương
 
-### Biến Đổi Nhịp Điệu
+### Biến đổi nhịp điệu
 
 Trong cùng một chương nên có sự biến đổi nhịp điệu:
 
@@ -211,7 +211,7 @@ Căng thẳng mới: Phát hiện nhà an toàn đã bị xâm nhập
 Càng căng thẳng hơn: Phải rời đi ngay lập tức
 ```
 
-### Mật Độ Thông Tin
+### Mật độ thông tin
 
 - **Mật độ cao**: Cảnh hành động, nhiều đối thoại, sự kiện nhanh
 - **Mật độ thấp**: Độc thoại nội tâm, miêu tả môi trường, lắng đọng cảm xúc
@@ -220,7 +220,7 @@ Càng căng thẳng hơn: Phải rời đi ngay lập tức
 
 ---
 
-## Đối Chiếu Độ Dài Chương Và Mật Độ Nội Dung
+## Đối chiếu độ dài chương và mật độ nội dung
 
 | Số từ chương | Số sự kiện cốt lõi | Số cảnh |
 |---------|-------------|---------|
@@ -232,11 +232,11 @@ Càng căng thẳng hơn: Phải rời đi ngay lập tức
 
 ---
 
-## Danh Sách Kiểm Tra Chất Lượng Viết Chương
+## Danh sách kiểm tra chất lượng viết chương
 
 Tự kiểm tra sau khi viết mỗi chương:
 
-### ⚠️ Kiểm Tra Phần Mở Đầu (Quan Trọng Nhất)
+### ⚠️ Kiểm tra phần mở đầu (quan trọng nhất)
 - [ ] **20% đầu có cực kỳ hấp dẫn không?** (Nếu không, hãy viết lại)
 - [ ] Có xây dựng xung đột/căng thẳng ngay trong đoạn đầu tiên không?
 - [ ] Có sự kiện lớn hoặc tiết lộ thông tin quan trọng không?
@@ -244,7 +244,7 @@ Tự kiểm tra sau khi viết mỗi chương:
 - [ ] Độc giả có khẩn thiết muốn biết điều gì xảy ra tiếp theo không?
 - [ ] Có tránh được tất cả các "lỗi chết người" không? (thời tiết, thường ngày, ôn bài, v.v.)
 
-### Kiểm Tra Nội Dung
+### Kiểm tra nội dung
 - [ ] Chương này có đẩy cốt truyện chính tiến lên hoặc làm sâu sắc thêm nhân vật không?
 - [ ] Có xung đột hoặc bước ngoặt không?
 - [ ] Đối thoại có đẩy cốt truyện hoặc tiết lộ nhân vật không?
@@ -252,7 +252,7 @@ Tự kiểm tra sau khi viết mỗi chương:
 - [ ] Phần kết có để lại điểm móc hồi hộp không?
 - [ ] Có phục bút cho chương tiếp theo không?
 
-### Câu Hỏi Tự Kiểm Tra Phần Mở Đầu
+### Câu hỏi tự kiểm tra phần mở đầu
 Nếu có bất kỳ câu hỏi nào về phần mở đầu trả lời "không", phải viết lại:
 1. Sau khi đọc ba đoạn đầu, độc giả có muốn đọc tiếp không?
 2. Phần mở đầu có xung đột hoặc khủng hoảng không?

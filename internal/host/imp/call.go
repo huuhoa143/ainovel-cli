@@ -92,7 +92,7 @@ func snippet(s string, max int) string {
 func briefErr(err error) string {
 	s := err.Error()
 	if d := modelErrDetail(err); d != "" {
-		s = d + "：" + s
+		s = d + ": " + s
 	}
 	return snippet(s, 100)
 }
@@ -147,7 +147,7 @@ func modelErrDetail(err error) string {
 	if le.Model != "" {
 		parts = append(parts, le.Model)
 	}
-	return strings.Join(parts, "，")
+	return strings.Join(parts, ", ")
 }
 
 // callOptions 组装本次调用的 CallOption：始终带输出上限；按能力可选 thinking。

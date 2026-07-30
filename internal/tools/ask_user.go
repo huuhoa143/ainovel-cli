@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 	"unicode/utf8"
 
@@ -165,9 +164,25 @@ func formatAnswers(questions []Question, resp *AskUserResponse) string {
 		}
 		entry := fmt.Sprintf("[%s] %s", q.Header, answer)
 		if note, hasNote := resp.Notes[q.Question]; hasNote {
-			entry += i18n.F("（补充：") + note + "）"
+			// Cả hai dấu ngoặc nằm TRONG msgid, không xé một đầu ra ngoài.
+			//
+			// Trước đây là `i18n.F("（补充：") + note + "）"`: dấu mở đi qua catalog
+			// nên thành `(` ASCII, dấu đóng viết cứng nên vẫn là `）` toàn phần —
+			// một cặp ngoặc hai kiểu. Và bản dịch của dấu mở không có khoảng trắng
+			// đầu nên nó dính vào chữ trước: `Leo thang(bổ sung: …）`.
+			//
+			// Gộp thành một msgid thì cả cặp ngoặc lẫn khoảng trắng đều nằm trong
+			// bản dịch, tức nằm ở chỗ duy nhất biết ngôn ngữ đích cần gì.
+			entry += fmt.Sprintf(i18n.F("（补充：%s）"), note)
 		}
 		parts = append(parts, entry)
 	}
-	return fmt.Sprintf(i18n.F("用户回答：%s"), strings.Join(parts, "；"))
+	// JoinRecords chứ không JoinList: mỗi phần tử là một bản ghi `[Header] answer`
+	// mà answer là chữ người dùng tự nhập nên có dấu phẩy bất cứ lúc nào. Nối bằng
+	// dấu phẩy là làm mất biên bản ghi, và mất không báo lỗi.
+	//
+	// Chuỗi này đi vào ngữ cảnh cho LLM, và chính mô tả công cụ ở trên đã khai báo
+	// định dạng dùng `;` — nên đây cũng là chỗ giữ cho mô tả và đầu ra thật khớp
+	// nhau.
+	return fmt.Sprintf(i18n.F("用户回答：%s"), i18n.JoinRecords(parts))
 }

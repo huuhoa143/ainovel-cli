@@ -1,8 +1,8 @@
-# Tham Chiếu Chung cho Lập Kế Hoạch Truyện Dài
+# Tham chiếu chung cho lập kế hoạch truyện dài
 
 Tài liệu tham chiếu này dành cho các đề tài "phù hợp với truyện dài kỳ", không giới hạn thể loại cụ thể.
 
-## Truyện Dài Không Phải Là Truyện Ngắn Kéo Dài
+## Truyện dài không phải là truyện ngắn kéo dài
 
 Cốt lõi của truyện dài không phải là có nhiều chương hơn, mà là có khả năng triển khai lâu dài. Để đánh giá một tác phẩm có thể viết dài hay không, điều then chốt là nó có đủ các "động cơ truyện" sau đây không:
 
@@ -14,9 +14,9 @@ Cốt lõi của truyện dài không phải là có nhiều chương hơn, mà 
 
 Nếu những động cơ này đều yếu, dù có thêm bao nhiêu chương cũng chỉ trở thành lặp lại nhàm chán.
 
-## Thứ Tự Lập Kế Hoạch Được Khuyến Nghị Cho Truyện Dài
+## Thứ tự lập kế hoạch được khuyến nghị cho truyện dài
 
-### 1. Điểm Bán Hàng Của Tác Phẩm
+### 1. Điểm bán hàng của tác phẩm
 
 Trước tiên cần làm rõ:
 
@@ -24,7 +24,7 @@ Trước tiên cần làm rõ:
 - Điểm khác biệt lớn nhất so với các cách viết phổ biến cùng đề tài là gì
 - Tại sao độc giả sẵn sàng theo dõi nhân vật chính đến giai đoạn giữa và cuối
 
-### 2. Xung Đột Dài Hạn
+### 2. Xung đột dài hạn
 
 Đừng chỉ có một "phản diện tối thượng". Truyện dài phù hợp hơn với xung đột đa giai đoạn:
 
@@ -32,7 +32,7 @@ Trước tiên cần làm rõ:
 - Xung đột trung hạn: Tranh giành thế lực, tái cơ cấu quan hệ, thay đổi danh phận
 - Xung đột dài hạn: Sự thật về thế giới, mệnh đề thời đại, lựa chọn cuối cùng
 
-### 3. Thiết Kế Cấp Tập
+### 3. Thiết kế cấp tập
 
 Mỗi tập cần có ít nhất một chức năng rõ ràng, các chức năng phổ biến bao gồm:
 
@@ -47,7 +47,7 @@ Mỗi tập cần có ít nhất một chức năng rõ ràng, các chức năng
 
 Mỗi tập không chỉ nâng cấp cường độ, mà còn phải nâng cấp loại vấn đề.
 
-### 4. Thiết Kế Cấp Cung Truyện
+### 4. Thiết kế cấp cung truyện
 
 Mỗi cung truyện nên có dạng "một câu chuyện nhỏ có thể độc lập":
 
@@ -56,7 +56,7 @@ Mỗi cung truyện nên có dạng "một câu chuyện nhỏ có thể độc 
 - Có bước ngoặt giai đoạn
 - Có kết quả và đánh đổi
 
-### 5. Thiết Kế Cấp Chương
+### 5. Thiết kế cấp chương
 
 Các chương không phân bổ sự kiện đều đặn, mà phục vụ cho cung truyện:
 
@@ -67,9 +67,9 @@ Các chương không phân bổ sự kiện đều đặn, mà phục vụ cho c
 - Chương bước ngoặt
 - Chương thu hẹp và dẫn sang cung truyện tiếp theo
 
-## Tránh Đồng Nhất Hóa Trong Truyện Dài
+## Tránh đồng nhất hóa trong truyện dài
 
-### Cách Làm Sai
+### Cách làm sai
 
 - Mỗi tập chỉ là "thay bản đồ + thay kẻ thù"
 - Mỗi lần nâng cấp chỉ là "nhân vật chính mạnh hơn"
@@ -77,14 +77,14 @@ Các chương không phân bổ sự kiện đều đặn, mà phục vụ cho c
 - Nhân vật phụ chỉ xuất hiện khi cần, không có động cơ độc lập
 - Luật thế giới chỉ được viết trong phần thiết định, không tạo ra áp lực trong cốt truyện
 
-### Cách Làm Đúng
+### Cách làm đúng
 
 - Nâng cấp "loại xung đột", không chỉ nâng cấp "cường độ kẻ thù"
 - Nâng cấp "cái giá của lựa chọn", không chỉ nâng cấp "quy mô tài nguyên"
 - Nâng cấp "độ phức tạp quan hệ", không chỉ nâng cấp "số lượng nhân vật xuất hiện"
 - Nâng cấp "mệnh đề", không chỉ nâng cấp "quy mô sân khấu"
 
-## Chuyển Hướng Giai Đoạn Giữa Phải Được Lên Kế Hoạch Trước
+## Chuyển hướng giai đoạn giữa phải được lên kế hoạch trước
 
 Nhiều tác phẩm có thể viết tốt 20 chương đầu, nhưng sau chương 50 bắt đầu lặp lại — nguyên nhân gốc rễ là thiếu chuyển hướng giai đoạn giữa.
 
@@ -95,7 +95,7 @@ Khi lập kế hoạch phải nghĩ rõ trước:
 - Nhân vật chính phải học được tư duy mới nào đến giai đoạn giữa
 - Sức hút cốt lõi của giai đoạn giữa-cuối khác gì so với giai đoạn đầu
 
-## Mật Độ Nhịp Điệu Cấp Cung Truyện
+## Mật độ nhịp điệu cấp cung truyện
 
 Mỗi cung truyện nên tuân theo vòng nhịp điệu "phủ nền → tích lũy → bùng nổ → thu hoạch". Dưới đây là mật độ tham chiếu cho các kiểu cung truyện phổ biến (tự điều chỉnh theo thể loại):
 
@@ -111,7 +111,7 @@ Nguyên tắc then chốt:
 - Các chương trong cung truyện phải có thăng trầm, không thúc đẩy đều đặn
 - Luân phiên sử dụng các loại cung truyện khác nhau, tránh nhịp điệu đơn điệu
 
-## Danh Sách Kiểm Tra Chất Lượng Chung Cho Truyện Dài
+## Danh sách kiểm tra chất lượng chung cho truyện dài
 
 - Cuốn sách này có ít nhất 3 mâu thuẫn chính theo giai đoạn không?
 - 3 tập đầu có đảm nhận các chức năng khác nhau không?

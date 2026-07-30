@@ -1,4 +1,4 @@
-# Tham Chiếu Thiết Kế Khác Biệt Hóa Tổng Quát
+# Tham chiếu thiết kế khác biệt hóa tổng quát
 
 Tài liệu tham chiếu này dùng để tránh các tác phẩm cùng thể loại tự động trượt vào "mẫu có tần suất cao nhất".
 

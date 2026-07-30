@@ -27,83 +27,83 @@ func publishFoundation(st *store.Store, f *Foundation) error {
 		return err
 	}
 	if err := st.RunMeta.SetPlanningTier(f.PlanningTier); err != nil {
-		return fmt.Errorf("planning tier：%w", err)
+		return fmt.Errorf("planning tier: %w", err)
 	}
 	// premise
 	if err := st.Outline.SavePremise(f.Premise); err != nil {
-		return fmt.Errorf("premise：%w", err)
+		return fmt.Errorf("premise: %w", err)
 	}
 	if name := domain.ExtractNovelNameFromPremise(f.Premise); name != "" {
 		if err := st.Progress.SetNovelName(name); err != nil {
-			return fmt.Errorf("novel name：%w", err)
+			return fmt.Errorf("novel name: %w", err)
 		}
 	}
 	if err := st.Progress.UpdatePhase(domain.PhasePremise); err != nil {
-		return fmt.Errorf("phase premise：%w", err)
+		return fmt.Errorf("phase premise: %w", err)
 	}
 	if _, err := st.Checkpoints.AppendArtifact(domain.GlobalScope(), "premise", "premise.md"); err != nil {
-		return fmt.Errorf("checkpoint premise：%w", err)
+		return fmt.Errorf("checkpoint premise: %w", err)
 	}
 	// characters
 	if err := st.Characters.Save(f.Characters); err != nil {
-		return fmt.Errorf("characters：%w", err)
+		return fmt.Errorf("characters: %w", err)
 	}
 	if _, err := st.Checkpoints.AppendArtifact(domain.GlobalScope(), "characters", "characters.json"); err != nil {
-		return fmt.Errorf("checkpoint characters：%w", err)
+		return fmt.Errorf("checkpoint characters: %w", err)
 	}
 	// world rules
 	if err := st.World.SaveWorldRules(f.WorldRules); err != nil {
-		return fmt.Errorf("world_rules：%w", err)
+		return fmt.Errorf("world_rules: %w", err)
 	}
 	if _, err := st.Checkpoints.AppendArtifact(domain.GlobalScope(), "world_rules", "world_rules.json"); err != nil {
-		return fmt.Errorf("checkpoint world_rules：%w", err)
+		return fmt.Errorf("checkpoint world_rules: %w", err)
 	}
 	// layered + flat outline
 	if err := st.Outline.SaveLayeredOutline(f.Volumes); err != nil {
-		return fmt.Errorf("layered outline：%w", err)
+		return fmt.Errorf("layered outline: %w", err)
 	}
 	if err := st.Outline.SaveOutline(domain.FlattenOutline(f.Volumes)); err != nil {
-		return fmt.Errorf("flat outline：%w", err)
+		return fmt.Errorf("flat outline: %w", err)
 	}
 	// 大纲阶段的进度是引擎重算路由的依据（总章数/分层/当前卷弧），写入失败会留下不一致的
 	// 已发布状态，必须暴露而非吞掉（RFC §12.2）。
 	if err := st.Progress.UpdatePhase(domain.PhaseOutline); err != nil {
-		return fmt.Errorf("phase outline：%w", err)
+		return fmt.Errorf("phase outline: %w", err)
 	}
 	if err := st.Progress.SetTotalChapters(domain.TotalChapters(f.Volumes)); err != nil {
-		return fmt.Errorf("total chapters：%w", err)
+		return fmt.Errorf("total chapters: %w", err)
 	}
 	if err := st.Progress.SetLayered(true); err != nil {
-		return fmt.Errorf("set layered：%w", err)
+		return fmt.Errorf("set layered: %w", err)
 	}
 	if len(f.Volumes) > 0 && len(f.Volumes[0].Arcs) > 0 {
 		if err := st.Progress.UpdateVolumeArc(f.Volumes[0].Index, f.Volumes[0].Arcs[0].Index); err != nil {
-			return fmt.Errorf("volume arc：%w", err)
+			return fmt.Errorf("volume arc: %w", err)
 		}
 	}
 	if _, err := st.Checkpoints.AppendArtifact(domain.GlobalScope(), "layered_outline", "layered_outline.json"); err != nil {
-		return fmt.Errorf("checkpoint layered outline：%w", err)
+		return fmt.Errorf("checkpoint layered outline: %w", err)
 	}
 	// compass
 	if err := st.Outline.SaveCompass(f.Compass); err != nil {
-		return fmt.Errorf("compass：%w", err)
+		return fmt.Errorf("compass: %w", err)
 	}
 	if _, err := st.Checkpoints.AppendArtifact(domain.GlobalScope(), "compass", "meta/compass.json"); err != nil {
-		return fmt.Errorf("checkpoint compass：%w", err)
+		return fmt.Errorf("checkpoint compass: %w", err)
 	}
 	// 导入 Foundation 的全部正式写入均已成功，可以显式进入 writing。
 	// 不能复用普通创作流程的 FoundationMissing：导入允许 world_rules 为空，
 	// 把“合法空值”当成缺失会令进度永远停在 outline，随后 StartChapter 被阶段门禁拒绝。
 	p, err := st.Progress.Load()
 	if err != nil {
-		return fmt.Errorf("load progress：%w", err)
+		return fmt.Errorf("load progress: %w", err)
 	}
 	if p == nil {
 		return errors.New(i18n.F("load progress：progress 未初始化"))
 	}
 	if p.Phase != domain.PhaseWriting && p.Phase != domain.PhaseComplete {
 		if err := st.Progress.UpdatePhase(domain.PhaseWriting); err != nil {
-			return fmt.Errorf("phase writing：%w", err)
+			return fmt.Errorf("phase writing: %w", err)
 		}
 	}
 	return nil
@@ -157,7 +157,7 @@ func jsonEqual(a, b any) bool {
 func publishChapter(ctx context.Context, st *store.Store, commit ChapterCommitter, chapter int, content string, f ImportedChapterFacts) error {
 	completed, err := st.Progress.IsChapterCompleted(chapter)
 	if err != nil {
-		return fmt.Errorf("load progress ch%d：%w", chapter, err)
+		return fmt.Errorf("load progress ch%d: %w", chapter, err)
 	}
 	if completed {
 		// 崩溃可能落在 MarkChapterComplete 与 ClearPendingCommit 之间：pending_commit 残留
@@ -166,31 +166,31 @@ func publishChapter(ctx context.Context, st *store.Store, commit ChapterCommitte
 		// 需手工删 meta/pending_commit.json 才能解锁。命中残留时仍走工具幂等路径完成清理。
 		pending, err := st.Signals.LoadPendingCommit()
 		if err != nil {
-			return fmt.Errorf("load pending commit ch%d：%w", chapter, err)
+			return fmt.Errorf("load pending commit ch%d: %w", chapter, err)
 		}
 		if pending != nil && pending.Chapter == chapter {
 			raw, err := json.Marshal(commitArgs(chapter, f))
 			if err != nil {
-				return fmt.Errorf("marshal commit ch%d：%w", chapter, err)
+				return fmt.Errorf("marshal commit ch%d: %w", chapter, err)
 			}
 			if _, err := commit.Execute(ctx, raw); err != nil {
-				return fmt.Errorf("commit ch%d：%w", chapter, err)
+				return fmt.Errorf("commit ch%d: %w", chapter, err)
 			}
 		}
 		return nil
 	}
 	if err := st.Drafts.SaveDraft(chapter, content); err != nil {
-		return fmt.Errorf("save draft ch%d：%w", chapter, err)
+		return fmt.Errorf("save draft ch%d: %w", chapter, err)
 	}
 	if err := st.Progress.StartChapter(chapter); err != nil {
-		return fmt.Errorf("start ch%d：%w", chapter, err)
+		return fmt.Errorf("start ch%d: %w", chapter, err)
 	}
 	raw, err := json.Marshal(commitArgs(chapter, f))
 	if err != nil {
-		return fmt.Errorf("marshal commit ch%d：%w", chapter, err)
+		return fmt.Errorf("marshal commit ch%d: %w", chapter, err)
 	}
 	if _, err := commit.Execute(ctx, raw); err != nil {
-		return fmt.Errorf("commit ch%d：%w", chapter, err)
+		return fmt.Errorf("commit ch%d: %w", chapter, err)
 	}
 	return nil
 }

@@ -1,8 +1,8 @@
-# Quy Chuẩn Viết Đối Thoại
+# Quy chuẩn viết đối thoại
 
 Đối thoại hay là công cụ mạnh mẽ để khắc họa nhân vật, đẩy cốt truyện và tạo xung đột.
 
-## Nguyên Tắc Cốt Lõi Của Đối Thoại
+## Nguyên tắc cốt lõi của đối thoại
 
 ### 1. Đối thoại phải có mục đích
 
@@ -52,7 +52,7 @@ Con người nói chuyện không viết luận văn. Hãy cắt bỏ những t�
 
 ---
 
-## Quy Chuẩn Định Dạng Đối Thoại
+## Quy chuẩn định dạng đối thoại
 
 ### Dấu câu trong đối thoại tiếng Việt
 
@@ -84,7 +84,7 @@ Câu thứ hai," anh nói, "câu thứ ba."
 Anh thực hiện một hành động. "Nội dung lời thoại."
 ```
 
-### Sử Dụng Thẻ Đối Thoại
+### Sử dụng thẻ đối thoại
 
 **Quy tắc:**
 - Khi người đọc nhận ra được người nói, bỏ thẻ đi
@@ -102,7 +102,7 @@ Anh thực hiện một hành động. "Nội dung lời thoại."
 - Sau đối thoại: "Lời thoại." [thẻ]
 - Giữa đoạn thoại: "Lời thoại," [thẻ] "lời thoại tiếp."
 
-### Phân Đoạn
+### Phân đoạn
 
 **Quy tắc:** Mỗi người nói bắt đầu một đoạn mới.
 
@@ -118,11 +118,11 @@ Sai:
 
 ---
 
-## Phân Biệt Giọng Nói Của Các Nhân Vật
+## Phân biệt giọng nói của các nhân vật
 
 Mỗi nhân vật phải có cách nói chuyện khác nhau.
 
-### Các Chiều Phân Biệt
+### Các chiều phân biệt
 
 | Chiều | Ví dụ |
 |-----|------|
@@ -132,7 +132,7 @@ Mỗi nhân vật phải có cách nói chuyện khác nhau.
 | **Giọng điệu** | Nhẹ nhàng / gay gắt / mỉa mai / bình thản |
 | **Cửa miệng** | Câu cửa miệng hay thói quen dùng từ đặc trưng |
 
-### Ví Dụ Về Giọng Nói Nhân Vật
+### Ví dụ về giọng nói nhân vật
 
 **Nhân vật kiểu giáo sư:**
 > "Nhìn từ góc độ lý thuyết, giả thuyết này tồn tại ba khiếm khuyết chính. Thứ nhất, mẫu dữ liệu không đủ; thứ hai, điều kiện thực nghiệm chưa được kiểm soát; cuối cùng, kết luận quá vội vã."
@@ -148,11 +148,11 @@ Mỗi nhân vật phải có cách nói chuyện khác nhau.
 
 ---
 
-## Ngầm Ý (Subtext)
+## Ngầm ý (Subtext)
 
 Đối thoại hay — ý nghĩa thực sự nằm bên dưới bề mặt.
 
-### Trực Tiếp vs. Ngầm Ý
+### Trực tiếp vs. ngầm ý
 
 | Trực tiếp (nhàm chán) | Ngầm ý (thú vị) |
 |-------------|---------------|
@@ -161,7 +161,7 @@ Mỗi nhân vật phải có cách nói chuyện khác nhau.
 | "Tôi không tin anh." | "Cảm ơn anh đã nói. Tôi sẽ ghi nhớ." |
 | "Tôi muốn rời đi." | "Không khí ở đây không được tốt lắm." |
 
-### Kỹ Thuật Ngầm Ý
+### Kỹ thuật ngầm ý
 
 **1. Lạc đề**
 ```
@@ -189,11 +189,11 @@ Cô tiếp tục đọc tạp chí, lật sang trang khác.
 
 ---
 
-## Kết Hợp Đối Thoại Với Hành Động
+## Kết hợp đối thoại với hành động
 
 Đối thoại kết hợp ngôn ngữ cơ thể sẽ tăng sức biểu đạt.
 
-### Nguyên Tắc Đồng Bộ
+### Nguyên tắc đồng bộ
 
 Hành động nhất quán hay mâu thuẫn với đối thoại đều tạo hiệu ứng kịch tính.
 
@@ -203,7 +203,7 @@ Hành động nhất quán hay mâu thuẫn với đối thoại đều tạo hi
 **Mâu thuẫn (tiết lộ sự thật):**
 > "Tôi hoàn toàn ủng hộ anh." Mắt anh nhìn ra chỗ khác, tay trong túi quần nắm chặt.
 
-### Hành Động Ngắt Lời
+### Hành động ngắt lời
 
 Chèn hành động vào để kiểm soát nhịp điệu.
 
@@ -211,7 +211,7 @@ Chèn hành động vào để kiểm soát nhịp điệu.
 "Lẽ ra tôi phải nói với anh," anh dừng bước, quay lại, "nhưng tôi nghĩ anh đã biết rồi."
 ```
 
-### Hành Động Thay Thế Thẻ
+### Hành động thay thế thẻ
 
 Dùng hành động thay cho "anh nói".
 
@@ -222,9 +222,9 @@ Dùng hành động thay cho "anh nói".
 
 ---
 
-## Các Dạng Cảnh Đối Thoại
+## Các dạng cảnh đối thoại
 
-### Cảnh Cãi Vã
+### Cảnh cãi vã
 
 **Đặc điểm:**
 - Câu ngắn
@@ -239,7 +239,7 @@ Dùng hành động thay cho "anh nói".
 > "Em không hiểu gì đâu!"
 > "Đương nhiên em không hiểu! Anh chẳng bao giờ nói gì cho em biết!"
 
-### Cảnh Thú Nhận
+### Cảnh thú nhận
 
 **Đặc điểm:**
 - Do dự
@@ -253,7 +253,7 @@ Dùng hành động thay cho "anh nói".
 > "Nếu chúng ta thì sao?"
 > "Nếu chúng ta gặp nhau sớm hơn."
 
-### Cảnh Thẩm Vấn
+### Cảnh thẩm vấn
 
 **Đặc điểm:**
 - Câu hỏi kiểm soát cuộc trò chuyện
@@ -270,7 +270,7 @@ Dùng hành động thay cho "anh nói".
 > "Đúng."
 > "Suốt cả tối?"
 
-### Cảnh Tán Tỉnh
+### Cảnh tán tỉnh
 
 **Đặc điểm:**
 - Chơi chữ đôi nghĩa
@@ -287,9 +287,9 @@ Dùng hành động thay cho "anh nói".
 
 ---
 
-## Các Vấn Đề Thường Gặp Trong Đối Thoại
+## Các vấn đề thường gặp trong đối thoại
 
-### Cần Tránh
+### Cần tránh
 
 1. **Đổ thông tin** — nhân vật nói với nhau những điều cả hai đã biết
    > Sai: "Như anh đã biết, công ty chúng ta được thành lập năm 1995..."
@@ -310,7 +310,7 @@ Dùng hành động thay cho "anh nói".
 
 ---
 
-## Tự Kiểm Tra Đối Thoại
+## Tự kiểm tra đối thoại
 
 Sau khi viết xong đối thoại, hãy kiểm tra:
 

@@ -1,4 +1,4 @@
-## Phong Cách Lãng Mạn
+## Phong cách lãng mạn
 
 - **Leo thang cảm xúc**: Tuân theo nhịp tự nhiên tiếp xúc → cảm mến → xung đột → hòa giải → thăng hoa, không thúc ép tiến độ
 - **Sức căng trong mối quan hệ**: Mỗi giai đoạn cần có trở ngại hợp lý, nguồn gốc trở ngại phải đa dạng (tính cách, lập trường, hiểu lầm, áp lực bên ngoài)

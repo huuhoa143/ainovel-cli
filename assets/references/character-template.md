@@ -1,6 +1,6 @@
-# Hồ Sơ Nhân Vật
+# Hồ sơ nhân vật
 
-## Nhân Vật Chính
+## Nhân vật chính
 
 ### [Tên nhân vật thứ nhất]
 - **Biệt danh/Danh hiệu**: (ví dụ: "thiếu niên phế vật", "anh Viêm", "chiến thần bất diệt", v.v. — các cách gọi có thể xuất hiện trong chính văn)
@@ -20,12 +20,12 @@
 
 
 
-## Phản Diện
+## Phản diện
 
 ### [Tên nhân vật]
 - [Cùng định dạng với nhân vật chính]
 
-## Nhân Vật Phụ
+## Nhân vật phụ
 
 ### [Tên nhân vật]
 - [Định dạng rút gọn]

@@ -52,6 +52,12 @@ const DefaultLocale = Vietnamese
 
 // EnvLocale cho phép ép ngôn ngữ mà không cần sửa cấu hình, hữu ích khi đối chiếu
 // hành vi với upstream: AINOVEL_LANG=zh ./ainovel-cli
+//
+// Phạm vi của nó hẹp hơn tên gọi, và nói rõ ở đây vì trước đó chú thích này hứa
+// quá rộng: AINOVEL_LANG=zh chỉ đổi được những chuỗi CÓ nguyên bản tiếng Trung.
+// Lệnh con `serve` là mã mới của fork nên không có nguyên bản nào để rơi về, và
+// chuỗi ở đó là tiếng Việt trực tiếp — chạy `serve` ở locale zh vẫn ra tiếng
+// Việt. Lý lẽ đầy đủ ở chú thích đầu package internal/serve.
 const EnvLocale = "AINOVEL_LANG"
 
 // catalog giữ bản dịch của một ngôn ngữ: msgid (chuỗi nguồn zh) → chuỗi đích.
@@ -239,6 +245,43 @@ func listSeparator() string {
 		return "、"
 	}
 	return ", "
+}
+
+// JoinRecords nối các BẢN GHI thành một dòng, dùng dấu ngắt theo ngôn ngữ.
+//
+// # Vì sao tách khỏi JoinList thay vì dùng chung
+//
+// Hai hàm vì hai VAI của dấu, không vì hai kiểu gọi. JoinList nối các mục ngang
+// hàng ("Lâm Vũ, Trần Nhi"); JoinRecords nối những bản ghi mà bản thân mỗi bản
+// ghi CÓ THỂ chứa dấu phẩy. Điểm gọi thật là ledger nhập truyện:
+//
+//	Lâm Vũ.status=đã rời kinh thành; Trần Nhi.location=bến sông
+//
+// `NewValue` là câu do model trích ra từ truyện, nên nó chứa dấu phẩy bất cứ lúc
+// nào ("đã rời kinh thành, chưa rõ đi đâu"). Gộp hai vai vào một dấu phẩy là làm
+// mất biên bản ghi — và mất một cách không báo lỗi: chuỗi vẫn đọc được, chỉ là
+// LLM không còn phân biệt được đâu là hết một trạng thái.
+//
+// # Vì sao vẫn phải theo ngôn ngữ
+//
+// Chuỗi này đi vào PROMPT. Ở locale vi, mọi nhãn quanh nó đã là tiếng Việt (xem
+// buildLedger trong host/imp/analyze.go), nên để `；` toàn phần ở giữa là đưa dấu
+// câu tiếng Trung vào một prompt tiếng Việt — tức dạy model đúng thói mà
+// stylestat có hẳn một lớp để bắt. Đường zh giữ nguyên `；` để prompt trùng khít
+// upstream.
+func JoinRecords(items []string) string {
+	if len(items) == 0 {
+		return ""
+	}
+	return strings.Join(items, recordSeparator())
+}
+
+// recordSeparator trả dấu ngắt bản ghi của ngôn ngữ đang hoạt động.
+func recordSeparator() string {
+	if Active() == Chinese {
+		return "；"
+	}
+	return "; "
 }
 
 // Has cho biết msgid đã có bản dịch chưa. Dùng trong test bao phủ và lệnh chẩn

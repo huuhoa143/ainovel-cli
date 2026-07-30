@@ -30,7 +30,18 @@ const (
 	msgidTieuDeTap            = "           第 %d 卷  %s\n"
 	msgidTieuDeChuongCoTen    = "第 %d 章  %s\n\n"
 	msgidTieuDeChuongKhongTen = "第 %d 章\n\n"
+	// Dòng tên sách ở đầu bản xuất. Trước đây viết cứng "《"+name+"》" nên nó không
+	// đi qua catalog và tiếng Việt in ra 《Tên sách》.
+	msgidTieuDeSach = "《%s》\n\n"
 )
+
+// dauToanPhanCJK là dấu câu toàn phần — KHÁC chữ Hán, và đó là điểm mù đã để lỗi
+// lọt: 《》 là U+300A/U+300B thuộc khối CJK Symbols and Punctuation, nên
+// unicode.Is(unicode.Han, r) trả false. Bài kiểm "không còn dấu vết tiếng Trung"
+// bên dưới vì thế từng xanh trong khi dòng đầu bản xuất vẫn là 《Tên sách》.
+//
+// Không gồm … và · : hai dấu đó dùng hợp lệ trong chữ Việt.
+const dauToanPhanCJK = "，。、：；（）！？【】「」『』《》"
 
 func datLocaleXuat(t *testing.T, loc i18n.Locale) {
 	t.Helper()
@@ -122,6 +133,17 @@ func TestBanXuatTiengVietKhongConDauVetTiengTrung(t *testing.T) {
 	if coChuHan(got) {
 		t.Errorf("bản xuất tiếng Việt còn chữ Hán:\n%s", got)
 	}
+	// Dấu câu toàn phần cũng là dấu vết tiếng Trung, và phép kiểm chữ Hán ở trên
+	// KHÔNG thấy chúng. Bỏ nhánh này thì dòng tên sách 《…》 lại lọt như trước.
+	for _, r := range dauToanPhanCJK {
+		if strings.ContainsRune(got, r) {
+			t.Errorf("bản xuất tiếng Việt còn dấu toàn phần %q:\n%s", string(r), got)
+		}
+	}
+	// Tên sách phải có mặt, và ở dạng của tiếng Việt.
+	if !strings.Contains(got, strings.TrimRight(fmt.Sprintf(i18n.F(msgidTieuDeSach), "Vệt sáng"), "\n")) {
+		t.Errorf("bản xuất thiếu dòng tên sách:\n%s", got)
+	}
 	// Không vacuous: cả ba dòng tiêu đề phải thực sự có mặt trong bản xuất, nếu
 	// không thì "sạch chữ Hán" chỉ vì chẳng kết xuất được gì.
 	for _, phai := range []string{
@@ -140,7 +162,7 @@ func TestBanXuatTiengVietKhongConDauVetTiengTrung(t *testing.T) {
 // đúng cách lỗi cũ đã lọt qua cả một vòng việt hóa.
 func TestMsgidTieuDeXuatBanConTrongCatalog(t *testing.T) {
 	datLocaleXuat(t, i18n.Vietnamese)
-	for _, msgid := range []string{msgidTieuDeTap, msgidTieuDeChuongCoTen, msgidTieuDeChuongKhongTen} {
+	for _, msgid := range []string{msgidTieuDeTap, msgidTieuDeChuongCoTen, msgidTieuDeChuongKhongTen, msgidTieuDeSach} {
 		if got := i18n.F(msgid); got == msgid {
 			t.Errorf("catalog vi chưa dịch %q — dòng tiêu đề bản xuất vẫn là tiếng Trung", msgid)
 		}

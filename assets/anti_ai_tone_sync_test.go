@@ -17,8 +17,14 @@ import (
 // sửa, đúng kiểu lỗi không phát ra tiếng. Test này chặn chiều đó — thêm lớp vào
 // viPatternDefs mà quên viết mục trong tài liệu là đỏ ngay.
 //
-// Ghép theo NHÃN (phần trước 『) chứ không theo cả tên: phần trong 『』 là ví dụ
+// Ghép theo NHÃN (phần trước dấu mở ví dụ) chứ không theo cả tên: phần ví dụ là
 // minh họa cho người đọc báo cáo, sửa ví dụ không nên làm test đỏ.
+//
+// Nhận CẢ HAI dấu mở ví dụ vì hai ngôn ngữ dùng hai dấu khác nhau: nhãn zh giữ
+// 『』 đúng nguyên văn upstream, còn nhãn vi dùng ( ) vì 『』 là dấu tiếng
+// Nhật/Trung, lạc trong chữ Việt. Nếu chỉ nhận một dấu thì bộ cắt trả về cả phần
+// ví dụ, và phép Contains bên dưới gần như luôn trượt — test đỏ oan hàng loạt và
+// khế ước này mất tác dụng.
 func TestAntiAIToneCoversEveryCountedPattern(t *testing.T) {
 	prev := i18n.Active()
 	if err := i18n.SetLocale(i18n.Vietnamese); err != nil {
@@ -33,13 +39,46 @@ func TestAntiAIToneCoversEveryCountedPattern(t *testing.T) {
 
 	doc := mustRead(referencesFS, "references/anti-ai-tone.md")
 	for _, name := range names {
-		label := name
-		if i := strings.Index(label, "『"); i >= 0 {
-			label = strings.TrimSpace(label[:i])
-		}
+		label := nhanCua(name)
 		if !strings.Contains(doc, label) {
 			t.Errorf("anti-ai-tone.md thiếu mục cho lớp đếm %q (nhãn %q): "+
 				"stylestat đếm tật này mà tài liệu không dạy tránh", name, label)
+		}
+	}
+}
+
+// nhanCua cắt tên lớp mẫu tại dấu mở phần ví dụ, nhận cả dạng zh (『) và dạng vi
+// ( () — xem lý do ở chú thích của TestAntiAIToneCoversEveryCountedPattern.
+//
+// Lấy dấu XUẤT HIỆN SỚM NHẤT thay vì thử lần lượt: nếu phần ví dụ tiếng Việt có
+// chứa 『 (trích mẫu câu tiếng Trung) thì thử 『 trước sẽ cắt sai chỗ.
+func nhanCua(name string) string {
+	cat := -1
+	for _, dau := range []string{"『", " ("} {
+		if i := strings.Index(name, dau); i >= 0 && (cat < 0 || i < cat) {
+			cat = i
+		}
+	}
+	if cat < 0 {
+		return strings.TrimSpace(name)
+	}
+	return strings.TrimSpace(name[:cat])
+}
+
+// TestNhanCuaCatDungCaHaiDangDau chống chính lớp lỗi mà nhanCua sinh ra để tránh:
+// một bộ cắt chỉ nhận một dấu sẽ trả về cả phần ví dụ, và phép Contains ở test
+// trên gần như luôn trượt.
+func TestNhanCuaCatDungCaHaiDangDau(t *testing.T) {
+	for _, c := range []struct{ vao, ra string }{
+		{"Câu chỉnh nghĩa (không phải… mà là…)", "Câu chỉnh nghĩa"},
+		{"矫正句『不是…(而)是…』", "矫正句"},
+		{"Không có ví dụ", "Không có ví dụ"},
+		// Ví dụ tiếng Việt trích mẫu câu tiếng Trung: phải cắt ở " (" đứng trước,
+		// không phải ở 『 nằm sâu bên trong.
+		{"Nhãn vi (trích 『原文』 minh họa)", "Nhãn vi"},
+	} {
+		if got := nhanCua(c.vao); got != c.ra {
+			t.Errorf("nhanCua(%q) = %q, muốn %q", c.vao, got, c.ra)
 		}
 	}
 }

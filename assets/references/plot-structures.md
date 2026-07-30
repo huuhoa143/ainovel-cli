@@ -1,12 +1,12 @@
-# Mẫu Cấu Trúc Cốt Truyện
+# Mẫu cấu trúc cốt truyện
 
 Các mẫu cấu trúc cốt truyện phổ biến, dùng để lên kế hoạch cho các chương tiểu thuyết.
 
-## Cấu Trúc Ba Hồi (Three-Act Structure)
+## Cấu trúc ba hồi (Three-Act Structure)
 
 Cấu trúc cốt truyện kinh điển nhất, phù hợp với hầu hết các truyện ngắn.
 
-### Hồi 1: Thiết Lập (Act 1 - Setup) — khoảng 25%
+### Hồi 1: Thiết lập (Act 1 - Setup) — khoảng 25%
 
 | Chương | Nội dung |
 |--------|----------|
@@ -18,7 +18,7 @@ Cấu trúc cốt truyện kinh điển nhất, phù hợp với hầu hết cá
 - "Cánh cửa mở ra, người bước vào là kẻ đã chết ba năm trước."
 - "Cô nhận được lá thư, người ký tên chính là bản thân cô."
 
-### Hồi 2: Đối Đầu (Act 2 - Confrontation) — khoảng 50%
+### Hồi 2: Đối đầu (Act 2 - Confrontation) — khoảng 50%
 
 | Chương | Nội dung |
 |--------|----------|
@@ -30,7 +30,7 @@ Cấu trúc cốt truyện kinh điển nhất, phù hợp với hầu hết cá
 - "Người thầy hướng dẫn hóa ra là kẻ chủ mưu đứng sau tất cả."
 - "Đồng minh duy nhất đã mất tích."
 
-### Hồi 3: Kết Thúc (Act 3 - Resolution) — khoảng 25%
+### Hồi 3: Kết thúc (Act 3 - Resolution) — khoảng 25%
 
 | Chương | Nội dung |
 |--------|----------|
@@ -40,11 +40,11 @@ Cấu trúc cốt truyện kinh điển nhất, phù hợp với hầu hết cá
 
 ---
 
-## Hành Trình Anh Hùng (Hero's Journey)
+## Hành trình anh hùng (Hero's Journey)
 
 Cấu trúc kinh điển của nhà thần thoại học Joseph Campbell, phù hợp với thể loại phiêu lưu / kỳ ảo.
 
-### Phân Tích Các Giai Đoạn
+### Phân tích các giai đoạn
 
 | Giai đoạn | Chương | Nội dung |
 |-----------|--------|----------|
@@ -63,11 +63,11 @@ Cấu trúc kinh điển của nhà thần thoại học Joseph Campbell, phù h
 
 ---
 
-## Cấu Trúc Truyện Trinh Thám
+## Cấu trúc truyện trinh thám
 
 Phù hợp với thể loại trinh thám / suy luận / kinh dị.
 
-### Hồi 1: Bí Ẩn Xuất Hiện
+### Hồi 1: Bí ẩn xuất hiện
 
 | Chương | Nội dung | Điểm móc |
 |--------|----------|-----------|
@@ -75,7 +75,7 @@ Phù hợp với thể loại trinh thám / suy luận / kinh dị.
 | Chương 2 | Thám tử tiếp nhận vụ án | Tại sao vụ án này đặc biệt? |
 | Chương 3 | Điều tra ban đầu, phát hiện manh mối | Manh mối chỉ về ai? |
 
-### Hồi 2: Điều Tra Đi Sâu
+### Hồi 2: Điều tra đi sâu
 
 | Chương | Nội dung | Điểm móc |
 |--------|----------|-----------|
@@ -84,7 +84,7 @@ Phù hợp với thể loại trinh thám / suy luận / kinh dị.
 | Chương 6 | Sự kiện thứ hai xảy ra, lộ ra quy luật | Đây là vụ án liên hoàn? |
 | Chương 7 | Thám tử rơi vào nguy hiểm | Thám tử có trở thành mục tiêu tiếp theo không? |
 
-### Hồi 3: Sự Thật Được Tiết Lộ
+### Hồi 3: Sự thật được tiết lộ
 
 | Chương | Nội dung | Điểm móc |
 |--------|----------|-----------|
@@ -94,11 +94,11 @@ Phù hợp với thể loại trinh thám / suy luận / kinh dị.
 
 ---
 
-## Cấu Trúc Truyện Ngôn Tình
+## Cấu trúc truyện ngôn tình
 
 Phù hợp với thể loại tình cảm lãng mạn.
 
-### Hồi 1: Gặp Gỡ
+### Hồi 1: Gặp gỡ
 
 | Chương | Nội dung | Điểm cảm xúc |
 |--------|----------|--------------|
@@ -106,7 +106,7 @@ Phù hợp với thể loại tình cảm lãng mạn.
 | Chương 2 | Giới thiệu nhân vật chính B, hiện trạng / vấn đề | Người đọc đồng cảm với B |
 | Chương 3 | A và B gặp nhau (ấn tượng đầu tiên không tốt) | Hai người sinh ra để bên nhau, nhưng hiện tại có xung đột |
 
-### Hồi 2: Phát Triển
+### Hồi 2: Phát triển
 
 | Chương | Nội dung | Điểm cảm xúc |
 |--------|----------|--------------|
@@ -115,7 +115,7 @@ Phù hợp với thể loại tình cảm lãng mạn.
 | Chương 7–8 | Hiểu lầm / bí mật / rào cản xuất hiện | Đẩy xa nhau ra |
 | Chương 9 | Khủng hoảng, mối quan hệ tan vỡ | Trông có vẻ vô vọng |
 
-### Hồi 3: Hòa Giải
+### Hồi 3: Hòa giải
 
 | Chương | Nội dung | Điểm cảm xúc |
 |--------|----------|--------------|
@@ -124,11 +124,11 @@ Phù hợp với thể loại tình cảm lãng mạn.
 
 ---
 
-## Cấu Trúc Kinh Dị / Hành Động
+## Cấu trúc kinh dị / hành động
 
 Phù hợp với thể loại nhịp độ nhanh, căng thẳng và kịch tính.
 
-### Cấu Trúc Truyện Ngắn (5–6 chương)
+### Cấu trúc truyện ngắn (5–6 chương)
 
 ```text
 Chương 1: Khủng hoảng xuất hiện → điểm móc: nhân vật chính bị truy sát / đe dọa
@@ -139,7 +139,7 @@ Chương 5: Đối đầu cuối cùng → điểm móc: ranh giới sống ch�
 Chương 6: Kết cục → khắc họa hậu quả
 ```
 
-### Đặc Điểm
+### Đặc điểm
 
 - Nhịp độ nhanh, mỗi chương đều có hành động
 - Mật độ sự kiện cao
@@ -148,11 +148,11 @@ Chương 6: Kết cục → khắc họa hậu quả
 
 ---
 
-## Cấu Trúc Đảo Ngược (Twist-Based)
+## Cấu trúc đảo ngược (Twist-Based)
 
 Phù hợp với thể loại kinh dị tâm lý / trinh thám.
 
-### Phân Bố Chương
+### Phân bố chương
 
 ```text
 Chương 1–2: Xây dựng tình huống "thực tế"
@@ -162,7 +162,7 @@ Chương 7–8: Lần đảo ngược thứ hai (lật ngược lần nữa)
 Chương 9–10: Đảo ngược cuối cùng (lật đổ tất cả)
 ```
 
-### Chìa Khóa
+### Chìa khóa
 
 - Gieo manh mối tưởng như vô hại từ sớm
 - Mỗi lần đảo ngược đều có logic (nhìn lại thấy có dấu hiệu)
@@ -170,11 +170,11 @@ Chương 9–10: Đảo ngược cuối cùng (lật đổ tất cả)
 
 ---
 
-## Cấu Trúc Đa Tuyến
+## Cấu trúc đa tuyến
 
 Phù hợp với cốt truyện phức tạp, nhiều nhân vật chính.
 
-### Mô Thức Cắt Xen Kẽ
+### Mô thức cắt xen kẽ
 
 ```text
 Chương 1: Câu chuyện nhân vật chính A
@@ -185,7 +185,7 @@ Chương 5: Các tuyến truyện giao nhau
 ...
 ```
 
-### Mô Thức Dòng Thời Gian
+### Mô thức dòng thời gian
 
 ```text
 Chương 1: Hiện tại (thời điểm A)
@@ -195,7 +195,7 @@ Chương 4: Quá khứ (thời điểm A - 5 năm + 1 tháng)
 ...
 ```
 
-### Nguyên Tắc Hội Tụ
+### Nguyên tắc hội tụ
 
 - Các tuyến truyện cuối cùng phải gặp nhau
 - Những sự kiện tưởng như không liên quan ở đầu truyện sẽ có kết nối về sau
@@ -203,9 +203,9 @@ Chương 4: Quá khứ (thời điểm A - 5 năm + 1 tháng)
 
 ---
 
-## Cấu Trúc Nhanh Cho Truyện Ngắn
+## Cấu trúc nhanh cho truyện ngắn
 
-### Cấu Trúc Thu Nhỏ 3 Chương
+### Cấu trúc thu nhỏ 3 chương
 
 ```text
 Chương 1: Sự kiện kích hoạt + quyết định hành động
@@ -213,7 +213,7 @@ Chương 2: Thử nghiệm + thất bại + leo thang căng thẳng
 Chương 3: Nỗ lực cuối cùng + thành công / thất bại + kết cục
 ```
 
-### Cấu Trúc Chuẩn 5 Chương
+### Cấu trúc chuẩn 5 chương
 
 ```text
 Chương 1: Hiện trạng + sự kiện kích hoạt
@@ -225,9 +225,9 @@ Chương 5: Cao trào + kết cục
 
 ---
 
-## Mẫu Cốt Truyện Từng Chương
+## Mẫu cốt truyện từng chương
 
-### Cấu Trúc Nội Tại Của Một Chương
+### Cấu trúc nội tại của một chương
 
 ```text
 Mở đầu (10%): điểm móc + kết nối ngữ cảnh từ chương trước
@@ -236,7 +236,7 @@ Cao trào (20%): đỉnh điểm của chương
 Kết thúc (10%): điểm móc căng thẳng + dẫn dắt vào chương kế
 ```
 
-### Cấu Trúc Chương Kém Hiệu Quả
+### Cấu trúc chương kém hiệu quả
 
 ```text
 Mở đầu: dẫn dắt dài dòng / giải thích bối cảnh lan man
@@ -246,7 +246,7 @@ Kết thúc: kết thúc nhạt nhẽo / không có điểm căng thẳng
 
 ---
 
-## Hướng Dẫn Chọn Cấu Trúc
+## Hướng dẫn chọn cấu trúc
 
 | Thể loại | Cấu trúc đề xuất | Số chương |
 |----------|-----------------|-----------|

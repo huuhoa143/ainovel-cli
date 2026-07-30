@@ -205,5 +205,8 @@ func withAdvanceReason(msg, reason string) string {
 	if reason == "" {
 		return msg
 	}
-	return msg + i18n.F("（诉求：") + reason + "）"
+	// Một msgid cho cả cặp ngoặc, không tách mở/đóng: bản cũ bọc i18n phần mở mà
+	// để dấu đóng trần, nên tiếng Việt in ra " (yêu cầu: ...）" — lệch một nửa.
+	// Dấu đóng đứng lẻ cũng không thể là msgid có nghĩa cho người dịch.
+	return msg + fmt.Sprintf(i18n.F("（诉求：%s）"), reason)
 }

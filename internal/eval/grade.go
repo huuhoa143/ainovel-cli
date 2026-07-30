@@ -409,7 +409,7 @@ func phaseOf(col Collected) string {
 
 func findingDetail(f diag.Finding) string {
 	if f.Evidence != "" {
-		return f.Title + "（" + f.Evidence + "）"
+		return f.Title + fmt.Sprintf(i18n.F("（%s）"), f.Evidence)
 	}
 	return f.Title
 }

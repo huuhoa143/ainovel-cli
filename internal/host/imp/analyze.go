@@ -192,12 +192,12 @@ func buildLedger(prior []ImportedChapterFacts) string {
 	if len(active) > 0 {
 		b.WriteString(i18n.F("活跃伏笔（复用 ID，勿新造）：\n"))
 		for _, id := range slices.Sorted(maps.Keys(active)) {
-			fmt.Fprintf(&b, "- %s：%s\n", id, active[id])
+			fmt.Fprintf(&b, "- %s: %s\n", id, active[id])
 		}
 	}
 	if len(recent) > 0 {
 		b.WriteString(i18n.F("最近状态："))
-		b.WriteString(strings.Join(recent, "；"))
+		b.WriteString(i18n.JoinRecords(recent))
 		b.WriteString("\n")
 	}
 	return b.String()

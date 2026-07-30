@@ -1,4 +1,4 @@
-## Phong Cách Kỳ Huyễn Phiêu Lưu
+## Phong cách kỳ huyễn phiêu lưu
 
 - **Triển khai thế giới quan**: Không nhồi nhét thiết lập tập trung, mà tự nhiên thể hiện luật thế giới qua tương tác và hành động của nhân vật
 - **Hệ thống ma pháp / năng lực**: Có cái giá và giới hạn rõ ràng, tránh năng lực toàn năng, bộc lộ ranh giới hệ thống qua xung đột

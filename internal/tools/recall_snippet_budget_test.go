@@ -8,13 +8,14 @@ import (
 	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
-// Các dòng recall伏笔 cắt mô tả bằng truncateRunes(desc, 30) — 30 theo đơn vị chữ
-// Hán là một mệnh đề đọc được. Với tiếng Việt, 30 rune chỉ còn ~6 chữ, tức dòng
-// nhắc伏笔 gửi cho writer bị chặt thành mảnh vô nghĩa ("Thanh kiếm mà cha nàn…").
+// Các dòng recall phục bút cắt mô tả bằng truncateRunes(desc, 30) — 30 theo đơn
+// vị chữ Hán là một mệnh đề đọc được. Với tiếng Việt, 30 rune chỉ còn ~6 chữ, tức
+// dòng nhắc phục bút gửi cho writer bị chặt thành mảnh vô nghĩa ("Thanh kiếm mà
+// cha nàn…").
 // Writer vẫn nhận đủ số dòng nhắc nên không có gì trông như lỗi — chỉ là mấy dòng
 // đó không còn nói lên điều gì.
 func TestRecallSnippetGiuDuMoTa(t *testing.T) {
-	// Mô tả伏笔 dài, tiếng Việt thật.
+	// Mô tả phục bút dài, tiếng Việt thật.
 	const desc = "Thanh kiếm mà cha nàng để lại vốn là vật của Thanh Vân môn, " +
 		"trên vỏ có khắc dấu hiệu chỉ trưởng môn mới được mang."
 
@@ -37,7 +38,7 @@ func TestRecallSnippetGiuDuMoTa(t *testing.T) {
 			}
 			t.Cleanup(func() { _ = i18n.SetLocale(prev) })
 
-			// Đủ số伏笔 để vượt ngưỡng bật recall, và mô tả khớp focus term.
+			// Đủ số phục bút để vượt ngưỡng bật recall, và mô tả khớp focus term.
 			foreshadow := make([]domain.ForeshadowEntry, 0, storyThreadRecallThreshold)
 			for i := 0; i < storyThreadRecallThreshold; i++ {
 				foreshadow = append(foreshadow, domain.ForeshadowEntry{

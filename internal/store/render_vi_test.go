@@ -54,9 +54,12 @@ func TestRenderViKhongConTiengTrung(t *testing.T) {
 		if !strings.HasPrefix(md, "# Dòng thời gian\n\n") {
 			t.Errorf("tiêu đề chưa dịch: %q", md)
 		}
-		// Dấu nối phải là ", " và ngoặc phải là ASCII.
-		if !strings.Contains(md, "(Lâm Vũ, Trần Nhi)") {
-			t.Errorf("danh sách nhân vật sai dấu nối/ngoặc: %q", md)
+		// Dấu nối phải là ", ", ngoặc phải ASCII, và phải có khoảng trắng trước
+		// ngoặc mở: tiếng Trung viết 事件（A、B） không cần space vì （ là dấu toàn
+		// phần, tiếng Việt thì cần. Khoảng trắng đó nằm trong bản dịch của msgid
+		// "（%s）" nên chỉ chốt được bằng cách đọc chuỗi kết xuất ở locale vi.
+		if !strings.Contains(md, "Lửa cháy bến sông (Lâm Vũ, Trần Nhi)") {
+			t.Errorf("danh sách nhân vật sai dấu nối/ngoặc/khoảng trắng: %q", md)
 		}
 		assertNoCJKPunct(t, "renderTimeline", md)
 	})

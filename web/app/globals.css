@@ -777,6 +777,19 @@ button {
 .bangwrap {
   overflow-x: auto;
   max-width: 100%;
+  /* Thanh cuộn mảnh nhưng THẤY ĐƯỢC, cùng lý do đã ghi ở rail và transport: cuộn
+     được mà không có dấu hiệu nào thì người dùng kết luận bảng chỉ có mấy cột
+     đầu. ĐO ĐƯỢC ở 400px trên khu Tổ sản xuất — cột Model nằm ngoài mép phải và
+     không có gì trên bề mặt nói rằng nó tồn tại. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.bangwrap::-webkit-scrollbar {
+  height: 4px;
+}
+.bangwrap::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 2px;
 }
 .bang {
   width: 100%;
@@ -1201,14 +1214,23 @@ td.who {
 .ibody {
   padding: 13px 14px 22px;
 }
-.ibody h3 {
+/* Ba khối cùng chứa component BanDuyet, nên chúng phải tạo cùng một môi trường
+   cho nó. Component vẽ <h3>/<dl>/.qcrow và KHÔNG biết mình đang rộng bao nhiêu;
+   nếu chỉ .ibody có luật h3 thì khu Kiểm định nhận h3 mặc định của trình duyệt —
+   32px đậm đen giữa một bề mặt 11px, và không có lỗi nào để bắt vì HTML vẫn
+   đúng. Thêm bề mặt mới mà quên thêm vào đây là gặp lại đúng lỗi đó. */
+.ibody h3,
+.duyetthan h3,
+.hangthan h3 {
   font: 500 11px/1.4 var(--ui);
   color: var(--ink-3);
   margin: 0 0 9px;
 }
 /* h3 nào không phải cái đầu tiên cũng cần khoảng thở, không chỉ h3 liền h3:
    ở đây h3 đi sau <dl> nên bộ chọn h3+h3 không với tới. */
-.ibody h3:not(:first-child) {
+.ibody h3:not(:first-child),
+.duyetthan h3:not(:first-child),
+.hangthan h3:not(:first-child) {
   margin-top: 20px;
 }
 .ibody .trong {
@@ -1265,12 +1287,28 @@ td.who {
 }
 
 /* kiểm định: hàng mảnh có kết luận, không phải thẻ điểm */
+
+/* Vạch phân cách thuộc CẢ CHIỀU (hàng + lời bình), không thuộc riêng cái hàng.
+   ĐO ĐƯỢC ở 1440px trên khu Kiểm định, và chỉ ảnh mới bắt được vì HTML đã đúng
+   thứ tự từ đầu: khi vạch nằm dưới `.qcrow`, lời bình rơi xuống PHÍA SAU vạch và
+   đọc ra như thể nó thuộc chiều kế tiếp — "Ba điều không làm khớp với hành vi
+   chương 1" đứng ngay trên hàng "nhân vật" nên trông như lời bình của nhân vật,
+   trong khi nó là của "nhất quán". Bảy chiều liền nhau thì mọi lời bình đều bị
+   gán sai một bậc.
+
+   `:has(> .qcrow)` chứ không thêm class: cùng cấu trúc này còn nằm ở khu lề của
+   bề mặt đọc (DocTruyen dựng lại nó bằng chính các lớp đó), nên sửa bằng bộ chọn
+   cấu trúc thì cả hai chỗ hết lỗi cùng lúc — thêm class chỉ chữa được chỗ nào
+   mình sửa tay. */
+div:has(> .qcrow) {
+  border-bottom: 1px solid var(--line-2);
+  padding-bottom: 6px;
+}
 .qcrow {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--line-2);
+  padding: 6px 0 0;
   font-size: 12.5px;
   align-items: baseline;
 }
@@ -2434,6 +2472,248 @@ td.who {
   }
   .rail .chuadung .tag {
     margin-left: 3px;
+  }
+}
+
+/* ══ bề mặt Kiểm định ═════════════════════════════════════════════════ */
+
+/* Hai cột: chọn chương · bản duyệt. Dùng lại .dsChuong của bề mặt đọc — cùng
+   một việc (chọn một chương trong một danh sách dài) thì cùng một hình, và
+   người vận hành không phải học hai bộ quy ước cho một hành vi. */
+.khukiem .head,
+.khuhang .head,
+.khuto .head {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: var(--bg);
+}
+
+.kiemlayout {
+  display: grid;
+  grid-template-columns: 214px minmax(0, 1fr);
+  align-items: start;
+  min-width: 0;
+}
+
+.duyetwrap {
+  padding: 16px 30px 26px;
+  min-width: 0;
+}
+
+/* Khổ đọc của bản duyệt: 74ch, cùng ngưỡng .trongSect đã dùng.
+   Dẫn chứng và đề xuất của Editor là CÂU VĂN, không phải ô bảng, nên chúng chịu
+   cùng ràng buộc như mọi khối chữ khác. Không chặn thì ở 1440px một đề xuất dài
+   thành một dòng ~150 ký tự và mắt mất dòng khi nhảy về đầu dòng sau — đúng lý
+   do khổ đọc của bề mặt đọc truyện bị chốt ở 70ch. */
+.duyetthan {
+  max-width: 74ch;
+}
+
+/* Câu nói về giới hạn của nguồn: thẳng hàng với cột bản duyệt, không với rail.
+   Thụt vào bằng MARGIN, không bằng padding. `.steerhint` mang `max-width: 74ch`
+   và `box-sizing: border-box`, nên padding nằm TRONG max-width: 214px padding ăn
+   mất 214px của 74ch và câu này co xuống ~260px, ngắt thành năm dòng cụt giữa
+   một khoảng trống 970px. Lỗi chỉ thấy bằng ảnh — không có chữ nào tràn, không
+   có gì tràn khung, chỉ là một cột chữ hẹp vô lý. */
+.kiemnguon {
+  margin: 0 30px 10px 244px;
+}
+
+/* ══ bề mặt Hàng chờ viết lại ═════════════════════════════════════════ */
+
+.dsHangCho {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.dsHangCho li + li {
+  border-top: 1px solid var(--line-2);
+}
+.dsHangCho li.mo {
+  background: color-mix(in oklch, var(--panel) 55%, var(--bg));
+}
+
+/* Hàng là một NÚT mở, nên nó phải trông bấm được: con trỏ, hover, focus rõ.
+   Bố cục `auto auto 1fr auto auto` chứ không cột cố định — nhãn trạng thái tiếng
+   Việt dài nhất ở đây là "đang soạn bản thảo" (17 ký tự) và một cột cố định đủ
+   cho "chờ viết lại" sẽ cắt nó. Để nội dung tự quyết bề rộng thì không có con số
+   nào để đoán sai. */
+.dsHangCho .hangdau {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  background: none;
+  border: 0;
+  text-align: left;
+  padding: 9px 12px;
+  cursor: pointer;
+  color: var(--ink);
+  font: 400 12.5px var(--ui);
+  transition: background 0.14s var(--ease);
+}
+.dsHangCho .hangdau:hover {
+  background: var(--panel-2);
+}
+.dsHangCho .hangdau:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+}
+.dsHangCho .ch {
+  font: 500 12px var(--mono);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.dsHangCho .ten {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dsHangCho .ten .draft {
+  color: var(--ink-3);
+  font-style: italic;
+}
+.dsHangCho .tu {
+  font: 400 11.5px var(--mono);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+/* Dấu mở/đóng dùng ký tự − và + chứ không mũi tên: chúng có trong Inter nên
+   không rơi sang font hệ thống rồi lệch đường chân chữ so với nhãn bên cạnh. */
+.dsHangCho .mocua {
+  font: 400 13px var(--mono);
+  color: var(--ink-3);
+  line-height: 1;
+}
+.dsHangCho .hangthan {
+  padding: 4px 12px 16px;
+  max-width: 74ch;
+}
+
+/* ══ bề mặt Tổ sản xuất ═══════════════════════════════════════════════ */
+
+/* Bảng này KHÔNG giãn full width. `.bang` mặc định `width: 100%` vì bảng chương
+   có cột tiêu đề cần mọi khoảng trống nó lấy được; ở đây năm cột đều là nhãn
+   ngắn và số ngắn, nên 100% biến bảng thành năm con số cách nhau 200px và mắt
+   phải lần theo cả bề rộng canvas để ghép "Writer" với "2". Để bảng tự co về
+   nội dung là cách duy nhất không phải đoán một bề rộng cột nào. */
+/* `max-content`, KHÔNG phải `auto` + `max-width: 100%`.
+   ĐO ĐƯỢC ở 400px: với `max-width: 100%` bảng bị ép co vào khung thay vì để
+   `.bangwrap` cuộn ngang, và cột hẹp nhất gánh phần co đó — "gemini-2.5-pro" bị
+   xé thành "gemi / 2.5-" giữa token. `.bangwrap` đã mang `overflow-x: auto`, nên
+   để bảng giữ bề rộng tự nhiên là đủ: hẹp thì cuộn, đúng như bảng chương. */
+.bangto {
+  width: max-content;
+}
+
+/* Hàng ở đây không bấm được — không có chương nào để chọn, không có panel nào để
+   mở. `.bang tbody tr` mang `cursor: pointer` cho bảng chương, và để nguyên nó ở
+   đây là hứa một hành vi không tồn tại. */
+.bangto tbody tr {
+  cursor: default;
+}
+.bangto tbody tr:hover {
+  background: none;
+}
+
+/* Cửa sổ của con số nằm TRONG đầu cột, trên dòng riêng.
+   Hai cột ở đây có hai phạm vi khác nhau (mọi chương / 20 phán quyết gần nhất),
+   và nhét phạm vi vào `title` thì phần lớn người đọc sẽ không bao giờ thấy —
+   trên máy cảm ứng thì không có hover nào để thấy. Nên nó là chữ thật, nhỏ hơn,
+   và vì thế đầu cột cao hai dòng: đó là cái giá của việc nói đủ. */
+.bangto thead th {
+  vertical-align: bottom;
+}
+.bangto thead th em {
+  display: block;
+  margin-top: 3px;
+  font: 400 10.5px/1.35 var(--ui);
+  font-style: normal;
+  color: var(--ink-3);
+  text-transform: none;
+  letter-spacing: 0;
+  /* Nhãn phụ dài hơn nhãn cột nên nó là thứ quyết định bề rộng cột. 26ch giữ nó
+     xuống hai dòng thay vì kéo cột ngang ra chiếm cả bảng.
+     26 chứ không 22: ở 22ch nhãn "trong 20 phán quyết gần nhất" (28 ký tự) rơi
+     xuống dòng ba với một chữ "nhất" đứng lẻ. Con số này tính từ nhãn THẬT dài
+     nhất trong bảng, không chọn theo cảm giác. */
+  max-width: 26ch;
+  white-space: normal;
+}
+/* `margin-left: auto` chứ không trông vào `text-align: right` của ô.
+   ĐO ĐƯỢC ở 1440px: `em` là khối, và khối KHÔNG bị `text-align` của ô kéo sang
+   phải — chỉ chữ BÊN TRONG nó bị. Nên hộp `em` nằm ở mép TRÁI ô còn chữ trong
+   hộp dạt phải, và nhãn phụ hiện ra dưới cột bên cạnh: "trong 1 phán quyết gần
+   nhất" đứng dưới cột Chương tham gia, tức gán cửa sổ của cột này cho cột khác —
+   đúng loại lỗi mà cả việc ghi cửa sổ ra tồn tại để tránh. */
+.bangto thead th.num em {
+  margin-left: auto;
+}
+.bangto td.vai {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.bangto td.num .loi {
+  color: var(--red);
+}
+.bangto td.model {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+/* Tên model không bao giờ được ngắt giữa token: "gemini-2.5-pro" xé thành
+   "gemini-2.5-" / "pro" đọc ra như hai model khác nhau, và dấu gạch trong tên là
+   chỗ trình duyệt tự cho phép ngắt. */
+.bangto td.model .ma {
+  font: 400 11.5px var(--mono);
+  color: var(--violet);
+  white-space: nowrap;
+}
+
+/* Dưới 860px rail thành dải ngang và canvas được cả bề rộng, nhưng hai bề mặt có
+   cột chọn chương vẫn phải bỏ cột đó — cùng lý do và cùng mốc như bề mặt đọc. */
+@media (max-width: 1000px) {
+  .kiemlayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .duyetwrap {
+    padding: 16px 14px 24px;
+  }
+  .kiemnguon {
+    margin: 0 14px 10px;
+  }
+  .khukiem .head {
+    position: static;
+  }
+}
+
+@media (max-width: 700px) {
+  /* Ba mảnh phụ của một hàng hàng-chờ (số từ, dấu mở) không đáng một cột riêng
+     ở màn hình hẹp; tiêu đề chương thì đáng. Cho tiêu đề xuống dòng riêng và
+     tràn hết bề rộng thay vì bị ellipsis ở 40px cuối. */
+  .dsHangCho .hangdau {
+    grid-template-columns: auto auto 1fr;
+    gap: 6px 10px;
+  }
+  .dsHangCho .ten {
+    grid-column: 1 / -1;
+    white-space: normal;
+  }
+  .dsHangCho .tu {
+    grid-column: 1 / -1;
+  }
+  .dsHangCho .mocua {
+    grid-row: 1;
+    grid-column: 3;
+    justify-self: end;
   }
 }
 

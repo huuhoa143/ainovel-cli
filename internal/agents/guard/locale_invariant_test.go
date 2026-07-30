@@ -12,7 +12,7 @@ import (
 // nhiệm vụ do flow.Route sinh ra. Route sinh text đó qua i18n, nên mỗi bản dịch
 // đều có thể làm lệch phân loại — và hậu quả không hề nhẹ: rơi về nhánh default
 // (lỏng) thì editor chỉ cần save_review là được kết thúc, tóm tắt cung không bao
-// giờ落盘, gây đúng cái livelock mà comment của NewEditorStopGuard cảnh báo.
+// giờ ghi đĩa, gây đúng cái livelock mà comment của NewEditorStopGuard cảnh báo.
 //
 // Hiện tại việc phân loại chỉ còn đúng nhờ bản dịch tình cờ giữ lại tên tool
 // trong ngoặc. Đó là quy ước, không phải bất biến. Test này biến nó thành bất
@@ -47,7 +47,7 @@ func TestTextNhiemVuEditorLuonChuaTenToolOMoiNgonNgu(t *testing.T) {
 			task := fmt.Sprintf(i18n.F(c.msgid), c.args...)
 
 			if !strings.Contains(task, c.tool) {
-				t.Errorf("[%s] text nhiệm vụ mất tên tool %q — NewEditorStopGuard sẽ rơi về nhánh lỏng và tóm tắt không bao giờ落盘\n  text: %s",
+				t.Errorf("[%s] text nhiệm vụ mất tên tool %q — NewEditorStopGuard sẽ rơi về nhánh lỏng và tóm tắt không bao giờ ghi đĩa\n  text: %s",
 					loc, c.tool, task)
 			}
 			// fmt để lại dấu vết rõ ràng khi số tham số lệch; chặn luôn ở đây để

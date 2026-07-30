@@ -179,7 +179,7 @@ func renderDetailContent(snap host.UISnapshot, contentW int) string {
 			if snap.CompassDirection != "" {
 				direction := fmt.Sprintf(i18n.F("  → 终局：%s"), snap.CompassDirection)
 				if snap.CompassScale != "" {
-					direction += "（" + snap.CompassScale + "）"
+					direction += fmt.Sprintf(i18n.F("（%s）"), snap.CompassScale)
 				}
 				b.WriteString(compassStyle.Render(truncate(direction, contentW)))
 				b.WriteString("\n")

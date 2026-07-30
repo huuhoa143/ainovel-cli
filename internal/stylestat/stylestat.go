@@ -111,17 +111,17 @@ var zhPatternDefs = []patternDef{
 // "giống như" hay "trong lòng" đứng một mình. Chúng xuất hiện dày trong cả văn
 // hay lẫn văn dở, nên đếm chúng chỉ tạo nhiễu nền lớn, dìm mất phần tín hiệu.
 var viPatternDefs = []patternDef{
-	{"Câu chỉnh nghĩa『không phải… mà là…』", regexp.MustCompile(`(?i)(?:không|chẳng) phải[^.!?…\n]{1,40}?,?\s*mà (?:là|vì|do|bởi)`)},
-	{"Lượng từ thời gian『trong nháy mắt/tích tắc』", regexp.MustCompile(`(?i)(?:trong|sau) (?:nháy mắt|tích tắc|thoáng chốc|chớp mắt|khoảnh khắc)|(?:vài|một) (?:hơi thở|nhịp tim)`)},
-	{"So sánh sáo『tựa như/chẳng khác nào/hệt như』", regexp.MustCompile(`(?i)tựa như|chẳng khác nào|hệt như|y hệt|như thể|như một (?:vệt|làn|tiếng|cái|con)`)},
-	{"Nhịp im lặng『im lặng/không đáp/không nói gì』", regexp.MustCompile(`(?i)im lặng|lặng đi|không (?:nói (?:gì|lời nào)|đáp|quay đầu lại)|chẳng nói chẳng rằng`)},
-	{"Mẫu thần thái『khóe miệng/ánh mắt lóe lên』", regexp.MustCompile(`(?i)khóe (?:miệng|môi)|(?:ánh mắt|đáy mắt)[^.!?…\n]{0,12}(?:lóe|loé|vụt|thoáng)|(?:nhíu|nhướn|nhướng) (?:mày|mắt)|con ngươi co|không thể tin được`)},
-	{"Phản ứng cơ thể『tim thắt lại/người khẽ run』", regexp.MustCompile(`(?i)tim[^.!?…\n]{0,6}(?:thắt|nhói|chùng|đập dồn)|(?:người|thân) (?:khẽ )?(?:run|rung|cứng lại)|hít (?:vào|sâu) một (?:hơi|ngụm)|sống lưng[^.!?…\n]{0,12}lạnh|toàn thân[^.!?…\n]{0,10}(?:cứng|run|lạnh)`)},
-	{"Đánh dấu suy nghĩ『cảm thấy/nhận ra/nghĩ rằng』", regexp.MustCompile(`(?i)cảm thấy|nhận ra|nghĩ (?:rằng|thầm)|thấy rằng|hiểu ra|tự nhủ`)},
-	{"Sáo trừu tượng『cảm giác khó tả/ý nghĩa nằm ở』", regexp.MustCompile(`(?i)cảm giác[^.!?…\n]{0,14}(?:khó tả|không (?:thể )?(?:diễn tả|gọi tên))|không (?:thể )?diễn tả (?:được|nổi)|ý nghĩa[^.!?…\n]{0,10}(?:nằm ở|là ở)`)},
-	{"Trạng ngữ dịch máy『một cách + tính từ』", regexp.MustCompile(`(?i)một cách \p{L}+`)},
-	{"Sở hữu dịch máy『của + đại từ』", regexp.MustCompile(`(?i)của (?:hắn|nàng|y|gã|chàng|ta|tôi|cô ấy|anh ấy)\b`)},
-	{"Liên từ nghị luận mở câu『Tuy nhiên,/Bên cạnh đó,』", regexp.MustCompile(`(?im)^\s*(?:#{0,3}\s*)?(?:Tuy nhiên|Đồng thời|Bên cạnh đó|Chính vì vậy|Không chỉ vậy|Hơn thế nữa|Mặt khác|Nói cách khác)\s*,`)},
+	{"Câu chỉnh nghĩa (không phải… mà là…)", regexp.MustCompile(`(?i)(?:không|chẳng) phải[^.!?…\n]{1,40}?,?\s*mà (?:là|vì|do|bởi)`)},
+	{"Lượng từ thời gian (trong nháy mắt/tích tắc)", regexp.MustCompile(`(?i)(?:trong|sau) (?:nháy mắt|tích tắc|thoáng chốc|chớp mắt|khoảnh khắc)|(?:vài|một) (?:hơi thở|nhịp tim)`)},
+	{"So sánh sáo (tựa như/chẳng khác nào/hệt như)", regexp.MustCompile(`(?i)tựa như|chẳng khác nào|hệt như|y hệt|như thể|như một (?:vệt|làn|tiếng|cái|con)`)},
+	{"Nhịp im lặng (im lặng/không đáp/không nói gì)", regexp.MustCompile(`(?i)im lặng|lặng đi|không (?:nói (?:gì|lời nào)|đáp|quay đầu lại)|chẳng nói chẳng rằng`)},
+	{"Mẫu thần thái (khóe miệng/ánh mắt lóe lên)", regexp.MustCompile(`(?i)khóe (?:miệng|môi)|(?:ánh mắt|đáy mắt)[^.!?…\n]{0,12}(?:lóe|loé|vụt|thoáng)|(?:nhíu|nhướn|nhướng) (?:mày|mắt)|con ngươi co|không thể tin được`)},
+	{"Phản ứng cơ thể (tim thắt lại/người khẽ run)", regexp.MustCompile(`(?i)tim[^.!?…\n]{0,6}(?:thắt|nhói|chùng|đập dồn)|(?:người|thân) (?:khẽ )?(?:run|rung|cứng lại)|hít (?:vào|sâu) một (?:hơi|ngụm)|sống lưng[^.!?…\n]{0,12}lạnh|toàn thân[^.!?…\n]{0,10}(?:cứng|run|lạnh)`)},
+	{"Đánh dấu suy nghĩ (cảm thấy/nhận ra/nghĩ rằng)", regexp.MustCompile(`(?i)cảm thấy|nhận ra|nghĩ (?:rằng|thầm)|thấy rằng|hiểu ra|tự nhủ`)},
+	{"Sáo trừu tượng (cảm giác khó tả/ý nghĩa nằm ở)", regexp.MustCompile(`(?i)cảm giác[^.!?…\n]{0,14}(?:khó tả|không (?:thể )?(?:diễn tả|gọi tên))|không (?:thể )?diễn tả (?:được|nổi)|ý nghĩa[^.!?…\n]{0,10}(?:nằm ở|là ở)`)},
+	{"Trạng ngữ dịch máy (một cách + tính từ)", regexp.MustCompile(`(?i)một cách \p{L}+`)},
+	{"Sở hữu dịch máy (của + đại từ)", regexp.MustCompile(`(?i)của (?:hắn|nàng|y|gã|chàng|ta|tôi|cô ấy|anh ấy)\b`)},
+	{"Liên từ nghị luận mở câu (Tuy nhiên,/Bên cạnh đó,)", regexp.MustCompile(`(?im)^\s*(?:#{0,3}\s*)?(?:Tuy nhiên|Đồng thời|Bên cạnh đó|Chính vì vậy|Không chỉ vậy|Hơn thế nữa|Mặt khác|Nói cách khác)\s*,`)},
 }
 
 // langProfile gom mọi tham số phụ thuộc ngôn ngữ vào một chỗ.
