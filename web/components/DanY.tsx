@@ -36,11 +36,7 @@ export function DanY({
         <>
           <section className="sect">
             <h2>{CHU.tienDe}</h2>
-            {tai.du!.premise.trim() ? (
-              <p className="tiende">{tai.du!.premise.trim()}</p>
-            ) : (
-              <p className="trongSect">{GIAI_THICH.chuaCoTienDe}</p>
-            )}
+            <TienDe raw={tai.du!.premise} />
           </section>
 
           <section className="sect">
@@ -71,6 +67,33 @@ export function DanY({
         </>
       )}
     </HoSoKhung>
+  );
+}
+
+/**
+ * Tiền đề — `premise.md` là markdown thô, nên xuống dòng phải xử lý như markdown.
+ *
+ * Bản trước dùng `white-space: pre-line` và giữ nguyên mọi ký tự xuống dòng của
+ * tệp. ĐO ĐƯỢC ở 400px: dòng nguồn được ngắt ở cột 80 rồi lại bị ngắt tiếp theo
+ * bề rộng màn hình, ra một đoạn văn răng cưa — "…ba lần một năm: một / lần gọi
+ * người sống, một lần / tiễn người chết…". Xuống dòng đơn trong markdown là định
+ * dạng của TỆP, không phải của văn; chỉ dòng trống mới là ranh giới đoạn.
+ */
+function TienDe({ raw }: { raw: string }) {
+  const doan = raw
+    .split(/\n{2,}/)
+    .map((d) => d.replace(/\s*\n\s*/g, ' ').trim())
+    .filter(Boolean);
+
+  if (doan.length === 0) return <p className="trongSect">{GIAI_THICH.chuaCoTienDe}</p>;
+  return (
+    <>
+      {doan.map((d, i) => (
+        <p className="tiende" key={i}>
+          {d}
+        </p>
+      ))}
+    </>
   );
 }
 

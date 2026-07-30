@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
+
 import type { Khu } from '@/lib/khu';
 import { CHU, GIAI_THICH } from '@/lib/nhan';
 import type { Profile, Snapshot } from '@/lib/types';
@@ -34,6 +36,30 @@ export function Rail({
   khu: Khu;
   onChonKhu: (k: Khu) => void;
 }) {
+  const oRail = useRef<HTMLElement>(null);
+  /** Neo cần cuộn tới sau khi khu đích đã render. */
+  const neoCho = useRef<string>(undefined);
+
+  useEffect(() => {
+    // Dưới 860px rail là một DẢI NGANG cuộn được, và khu đang mở có thể nằm ngoài
+    // mép phải: người vận hành đổi khu bằng URL hoặc tải lại trang rồi không thấy
+    // mục nào sáng lên, tức không biết mình đang ở đâu.
+    // `block: 'nearest'` để ở màn hình rộng (rail là cột) nó không kéo trang dọc.
+    oRail.current
+      ?.querySelector('[aria-current="page"]')
+      ?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+
+    // Cuộn tới neo Ở ĐÂY, trong effect, chứ không trong lúc bấm.
+    // Bản trước dùng `requestAnimationFrame` ngay trong onClick và nó KHÔNG chạy:
+    // ĐO ĐƯỢC — bấm "Nhật ký phán quyết" từ bề mặt đọc thì ở nhịp vẽ đó khu Dòng
+    // sản xuất chưa mount, `getElementById` trả null, và bề mặt mở ra ở đầu trang.
+    // Effect thì chạy SAU khi React commit cả cây, nên lúc này neo đã có trong DOM.
+    if (neoCho.current) {
+      document.getElementById(neoCho.current)?.scrollIntoView({ block: 'start' });
+      neoCho.current = undefined;
+    }
+  }, [khu]);
+
   const marks = snapshot?.timeline.chapters ?? [];
   const rows = snapshot?.chapters ?? [];
 
@@ -48,7 +74,7 @@ export function Rail({
   const dangSoan = rows.filter((r) => r.stage === 'drafting').length;
 
   return (
-    <nav className="rail" aria-label="Khu vực sản xuất">
+    <nav className="rail" aria-label="Khu vực sản xuất" ref={oRail}>
       <div className="grp">{CHU.nhomSanXuat}</div>
       <MucDi
         nhan={CHU.dongSanXuat}

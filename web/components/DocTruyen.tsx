@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { layChuong } from '@/lib/api';
 import { soTu } from '@/lib/dinhdang';
@@ -144,8 +144,20 @@ function DanhSachChuong({
   chuongChon: number | undefined;
   onChon: (n: number) => void;
 }) {
+  const oDs = useRef<HTMLElement>(null);
+
+  // Danh sách này cuộn riêng và có thể dài bằng số chương đã sản xuất.
+  // ĐO ĐƯỢC với tác phẩm 280/300: mở thẳng chương 270 bằng URL thì danh sách vẫn
+  // đứng ở chương 1–23 và chương đang đọc không có trong tầm nhìn — người vận
+  // hành không thấy mình đang ở đâu trong danh sách.
+  // `block: 'nearest'` để nó cuộn khung danh sách, không kéo cả canvas.
+  useEffect(() => {
+    const el = oDs.current?.querySelector('[aria-current="true"]');
+    el?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [chuongChon]);
+
   return (
-    <nav className="dsChuong" aria-label={CHU.chonChuongDeDoc}>
+    <nav className="dsChuong" aria-label={CHU.chonChuongDeDoc} ref={oDs}>
       <h2>{CHU.chonChuongDeDoc}</h2>
       {hang.length === 0 ? (
         <p className="trong">{GIAI_THICH.chuaCoChuong}</p>

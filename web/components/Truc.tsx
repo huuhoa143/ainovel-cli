@@ -66,7 +66,11 @@ export function Truc({
           </>
         ) : null}
 
-        <div className="lane-lbl">{CHU.chuong}</div>
+        {/* Nhãn lane chương neo lên ĐẦU ô lưới, không căn giữa như hai lane trên.
+            Ô này cao hơn nhiều (vạch + thước + dòng nói về cửa sổ), nên căn giữa
+            đẩy chữ "Chương" xuống ngang với dòng chú thích và nó trông như nhãn
+            của dòng chú thích chứ không phải của lane. */}
+        <div className="lane-lbl neo-dau">{CHU.chuong}</div>
         <LaneChuong marks={marks} chuongChon={chuongChon} onChonChuong={onChonChuong} />
       </div>
 

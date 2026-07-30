@@ -130,40 +130,9 @@ button {
     grid-template-columns: 1fr;
     grid-template-areas: 'bar' 'rail' 'canvas' 'trans';
   }
-  .rail {
-    display: flex;
-    align-items: stretch;
-    gap: 2px;
-    padding: 4px 8px;
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-    overflow-x: auto;
-    overflow-y: hidden;
-    /* Thấy được là còn mục bên phải, nếu không người dùng tưởng rail chỉ có
-       mấy mục đầu — cùng lý do transport hiện thanh cuộn dưới điểm ngắt. */
-    scrollbar-width: thin;
-    scrollbar-color: var(--line) transparent;
-  }
-  .rail::-webkit-scrollbar {
-    height: 4px;
-  }
-  .rail::-webkit-scrollbar-thumb {
-    background: var(--line);
-    border-radius: 2px;
-  }
-  /* Nhãn nhóm ("Sản xuất", "Hồ sơ tác phẩm") mất nghĩa khi các mục xếp ngang:
-     nó không còn đứng TRÊN nhóm nào nữa. */
-  .rail .grp {
-    display: none;
-  }
-  .rail .mucdi,
-  .rail .muc {
-    flex: none;
-    white-space: nowrap;
-  }
-  .rail .nhan {
-    overflow: visible;
-  }
+  /* Phần biến rail thành dải ngang nằm ở CUỐI tệp, không ở đây — xem khối
+     "@media (max-width: 860px) — rail dạng dải ngang" ở dưới và lý do vì sao
+     thứ tự trong tệp quyết định. */
 }
 
 /* Màn hình rất hẹp: giữ HÌNH DẠNG trục thay vì giữ chữ trong khối. */
@@ -652,6 +621,14 @@ button {
   font: 400 11.5px/1.5 var(--ui);
   color: var(--ink-3);
   text-align: right;
+}
+/* Ô lane chương cao hơn hai ô trên (vạch 20px + thước + dòng nói về cửa sổ), nên
+   nhãn neo lên đầu ô rồi bù 1px để căn giữa so với DẢI VẠCH, không so với cả ô.
+   ĐO ĐƯỢC ở 400px: căn giữa cả ô đẩy chữ "Chương" xuống 57px so với dải vạch,
+   ngang hàng với dòng chú thích — nó đọc thành nhãn của dòng chú thích. */
+.lane-lbl.neo-dau {
+  align-self: start;
+  padding-top: 1px;
 }
 .lane {
   display: flex;
@@ -1932,11 +1909,24 @@ td.who {
   line-height: 1.72;
 }
 
-/* Điểm ngắt riêng của bề mặt đọc, KHÔNG phải điểm ngắt của khung.
-   1180px: khu lề xuống dưới văn thay vì bị nén còn 180px — bản duyệt có dẫn
-   chứng nguyên văn, và một cột 180px làm mỗi dẫn chứng thành sáu dòng.
-   780px: cột chọn chương thành dải ngang cuộn được. */
-@media (max-width: 1180px) {
+/* Điểm ngắt riêng của bề mặt đọc, KHÔNG phải điểm ngắt của khung — và hai con số
+   này TÍNH RA từ khổ đọc, không chọn theo cảm giác.
+
+   Ràng buộc: khổ đọc phải giữ trong khoảng 65–75ch. ĐO ĐƯỢC: 70ch của Noto Serif
+   14.5px là 574px, và khoảng đệm hai bên cột văn là 60px.
+
+   1320px — dưới mức này khu lề xuống dưới văn.
+     Ba cột cần: 214 (chọn chương) + 60 + 574 (văn) + 296 (khu lề) = 1144px canvas.
+     Canvas = viewport − 194 (rail), nên viewport phải ≥ 1338px.
+     ĐO ĐƯỢC ở 1240px khi còn ba cột: cột văn chỉ còn 476px = 58ch, TỤT RA NGOÀI
+     khoảng 65–75ch. Đây là lỗi không nhìn ảnh thì không thấy: không có chữ nào
+     tràn, không có nhãn nào ngắt xấu, chỉ là khổ đọc âm thầm hẹp lại.
+
+   1000px — dưới mức này cột chọn chương thành dải ngang.
+     Hai cột cần: 214 + 60 + 574 = 848px canvas → viewport ≥ 1042px. Lấy 1000px
+     làm mốc vì dưới 1042px phần hụt còn nhỏ, còn dưới 1000px thì cột chọn chương
+     đã ăn quá nhiều so với chỗ nó mang lại. */
+@media (max-width: 1320px) {
   .doclayout {
     grid-template-columns: 214px minmax(0, 1fr);
   }
@@ -1952,7 +1942,7 @@ td.who {
   }
 }
 
-@media (max-width: 780px) {
+@media (max-width: 1000px) {
   .doclayout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -2005,13 +1995,18 @@ td.who {
   align-items: baseline;
   gap: 6px;
 }
+/* Không `white-space: pre-line`: xuống dòng đơn trong premise.md là định dạng
+   của tệp, không phải của văn — giữ nó lại làm đoạn văn răng cưa ở màn hình hẹp.
+   Phía JS tách đoạn theo dòng trống và nối các dòng đơn lại. */
 .khuhoso .tiende {
-  margin: 0;
+  margin: 0 0 0.9em;
   max-width: 74ch;
   font: 400 14px/1.8 var(--serif);
   color: var(--ink-2);
   text-wrap: pretty;
-  white-space: pre-line;
+}
+.khuhoso .tiende:last-child {
+  margin-bottom: 0;
 }
 
 /* ── dàn ý: ba mức thụt lồng nhau ── */
@@ -2287,20 +2282,28 @@ td.who {
   color: var(--ink-3);
   font-size: 12px;
 }
+/* Cùng lý do với `.nhanhdau .dem`: căn phải ở đây tạo một khoảng trống ~500px
+   giữa tên cặp nhân vật và số chương của nó. Ba hàng thì không thành cột đếm,
+   nên số đứng ngay sau cặp tên. */
+/* `nowrap`: ĐO ĐƯỢC ở 400px, "ch. 1" bị xé thành "ch." / "1" khi nó rơi xuống
+   dòng riêng trong `.cap` — một nhãn năm ký tự thành hai dòng. */
 .dsQuanHe .ch {
-  margin-left: auto;
   font: 400 11px var(--mono);
   color: var(--ink-3);
+  white-space: nowrap;
 }
 
 /* ── phục bút ── */
+/* 74ch, cùng bề rộng với `.dsPhucBut .tavan` bên dưới: mã phục bút căn phải nên
+   nó phải dừng ở đúng mép phải của khối chữ, không trôi ra xa hơn rồi để lại
+   một khoảng trống giữa mô tả và mã của chính nó. */
 .dsPhucBut {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
   gap: 0;
-  max-width: 86ch;
+  max-width: 74ch;
 }
 .dsPhucBut li {
   padding: 12px 0;
@@ -2318,9 +2321,11 @@ td.who {
   gap: 10px;
   flex-wrap: wrap;
 }
+/* Mỗi mốc là một đơn vị không xé được; chỗ ngắt dòng nằm giữa hai mốc. */
 .pbdau .moc {
   font: 400 11px var(--mono);
   color: var(--ink-3);
+  white-space: nowrap;
 }
 .pbdau .ma {
   margin-left: auto;
@@ -2361,6 +2366,75 @@ td.who {
 }
 .tabs button:disabled:hover {
   color: var(--ink-3);
+}
+
+/* ══ @media (max-width: 860px) — rail dạng dải ngang ══════════════════ */
+
+/* Khối này PHẢI nằm sau `.rail .mucdi { width: 100% }` ở mục rail phía trên.
+   Cùng độ đặc hiệu (0,2,0) thì thứ tự trong tệp quyết định, và khi khối này còn
+   đứng cạnh các điểm ngắt ở đầu tệp thì `width: 100%` bên dưới ghi đè lại: mỗi
+   mục rộng đúng 860px và dải ngang hiện được một mục duy nhất.
+   ĐO ĐƯỢC ở 860px: chỉ thấy "Bản thảo", mười hai mục còn lại nằm ngoài mép phải
+   mà không có dấu hiệu nào — ở màn hình hẹp cả năm bề mặt kia thành thứ không
+   tìm thấy được, đúng cái mà dải ngang ra đời để tránh.
+   Đây là lần thứ hai tệp này gặp cùng cái bẫy; lần đầu là `.slate` ở thanh trên.
+
+   Vì sao rail thôi làm cột chứ không biến mất: DESIGN.md viết "860px bỏ rail", và
+   điều đó đúng khi rail chỉ là danh sách trang trí của một bề mặt duy nhất. Giờ
+   rail là đường điều hướng DUY NHẤT giữa sáu khu, nên bỏ nó là khóa người dùng
+   trong khu đang mở. Tinh thần của điều khoản là "rail không ăn bề rộng của
+   canvas ở màn hình hẹp"; một dải cao 38px giữ đúng tinh thần đó. */
+@media (max-width: 860px) {
+  .rail {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    padding: 4px 8px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+    overflow-y: hidden;
+    /* Thấy được là còn mục bên phải, nếu không người dùng tưởng rail chỉ có mấy
+       mục đầu — cùng lý do transport hiện thanh cuộn dưới điểm ngắt. */
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+  }
+  .rail::-webkit-scrollbar {
+    height: 4px;
+  }
+  .rail::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 2px;
+  }
+  /* Nhãn nhóm ("Sản xuất", "Hồ sơ tác phẩm") mất nghĩa khi các mục xếp ngang: nó
+     không còn đứng TRÊN nhóm nào nữa. */
+  .rail .grp {
+    display: none;
+  }
+  .rail .mucdi,
+  .rail .muc {
+    width: auto;
+    flex: none;
+    white-space: nowrap;
+  }
+  .rail .nhan {
+    overflow: visible;
+  }
+  /* Ô số thôi bị đẩy về mép phải: trong một mục rộng vừa đủ nội dung, `auto` chỉ
+     tạo khoảng trống giữa tên khu và số của nó. */
+  .rail .n {
+    margin-left: 0;
+  }
+  /* Mục chưa dựng về một hàng. Xếp hai dòng ở đây làm cả dải cao gấp đôi để chứa
+     một chú thích, mà ở dải ngang không còn cột nào để cắt nhãn nên xếp một hàng
+     không gây lại lỗi cắt chữ. */
+  .rail .chuadung {
+    display: flex;
+    align-items: center;
+  }
+  .rail .chuadung .tag {
+    margin-left: 3px;
+  }
 }
 
 /* ══ chuyển động ══════════════════════════════════════════════════════ */

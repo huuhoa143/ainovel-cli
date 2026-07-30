@@ -1,8 +1,8 @@
-# Đường ống nhập tiểu thuyết ngoài bằng biên dịch ngữ nghĩa
+# Đường ống nhập truyện ngoài bằng biên dịch ngữ nghĩa
 
 > Trạng thái: đã hiện thực (v1, `internal/host/imp`; phần vớt tiền tố khi bị cắt gồm giai đoạn ba·bù)
 > Ngày: 2026-07-15
-> Mục tiêu: để việc nhập tiểu thuyết ngoài vừa liên tục hưởng được lợi ích từ việc nâng cấp năng lực model, vừa có bảo đảm kỹ thuật là không mất chữ nào của toàn văn, thất bại thì chẩn đoán được, sập thì khôi phục được và việc phát hành thì kiểm chứng được.
+> Mục tiêu: để việc nhập truyện ngoài vừa liên tục hưởng được lợi ích từ việc nâng cấp năng lực model, vừa có bảo đảm kỹ thuật là không mất chữ nào của toàn văn, thất bại thì chẩn đoán được, sập thì khôi phục được và việc phát hành thì kiểm chứng được.
 > Bản sửa: thứ tự SourceUnit theo thứ tự số của `(Line, Part)` (§7.3/§8.3); việc vớt tiền tố khi bị cắt hạ xuống thành tối ưu hiệu năng có thể để lại sau và bắt buộc phải quan sát được (§9.5/§13.3/§19); bậc model của các hàm ngữ nghĩa mở thành núm điều chỉnh (§13.1/§17).
 > Bản sửa 2026-07-16: núm bậc model đáp đất thành cấu hình roles `import_segment/import_analyze/import_synthesize` (§13.1); việc chia lại bằng ngôn ngữ tự nhiên đáp đất thành `--guide` và `guidance.txt` trong khu làm việc làm đầu vào ngữ nghĩa (§18.3); thất bại ngữ nghĩa thì lưu thống nhất phản hồi thô vào failures/ (§14.2); việc xác nhận cách chia hỗ trợ bấm `y` trong panel để mở đường một lần (§8.4); phần nhập chưa xong thì chủ động nhắc lúc khởi động (§18.2). Chế độ JSON Schema (§13.2 cấp 1) tạm chưa hiện thực, gắn cờ TODO chờ cải tạo thống nhất cùng các điểm gọi model khác trong cả repo.
 
@@ -41,7 +41,7 @@ Nó có bốn vấn đề mang tính cấu trúc.
 
 ### 2.1 Việc cắt chương đang liệt kê ngữ nghĩa mở
 
-Tiêu đề chương không có cú pháp đóng. Cứ thêm regex kiểu "第 N 章", "卷 N", "Chapter N" thì chỉ bao phủ được những định dạng đã gặp, không bao phủ được tiêu đề tự định nghĩa của tác giả, cách trình bày lai, phân cấp tập-chương và các định dạng tương lai.
+Tiêu đề chương không có cú pháp đóng. Cứ thêm regex kiểu "Chương N", "Tập N", "Chapter N" thì chỉ bao phủ được những định dạng đã gặp, không bao phủ được tiêu đề tự định nghĩa của tác giả, cách trình bày lai, phân cấp tập-chương và các định dạng tương lai.
 
 Nghiêm trọng hơn, cách chia hiện tại sẽ làm những biên không trúng biến mất luôn khỏi kết quả, và có thể âm thầm bỏ mất phần văn bản trước tiêu đề đầu tiên, các chương rỗng và những nội dung bị phán là tiếng ồn ở đuôi. Code không chứng minh nổi rằng những nội dung đó đáng bị bỏ.
 

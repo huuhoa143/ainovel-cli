@@ -180,10 +180,15 @@ function MotPhucBut({ f }: { f: ForeshadowEntry }) {
           </span>
           {tt.nhan}
         </span>
-        <span className="moc">
-          {CHU.gieoOChuong(f.planted_at)}
-          {f.resolved_at ? ` · ${CHU.thuOChuong(f.resolved_at)}` : ''}
-        </span>
+        {/* Hai mốc là HAI span riêng, không phải một chuỗi ghép.
+            ĐO ĐƯỢC ở 400px: chuỗi "gieo ở chương 1 · thu ở chương 2" ngắt ở giữa
+            một mốc ("gieo ở chương 1 · thu ở" / "chương 2") — đọc ra như thể
+            "thu ở" thuộc mốc trước. Tách span thì chỗ ngắt luôn nằm GIỮA hai
+            mốc, còn mỗi mốc thì không bao giờ bị xé. */}
+        <span className="moc">{CHU.gieoOChuong(f.planted_at)}</span>
+        {f.resolved_at ? (
+          <span className="moc">{CHU.thuOChuong(f.resolved_at)}</span>
+        ) : null}
         <span className="ma">{f.id}</span>
       </div>
       <p className="tavan">{f.description}</p>

@@ -174,7 +174,13 @@ export function cuaSoTruc(tong: number, bien: number, beRongLane: number): CuaSo
   let from = Math.round(bien - span * 0.7);
   if (from < 1) from = 1;
   let to = from + span - 1;
-  if (to > tong) {
+
+  // Bám vào vạch đích khi nó đã trong tầm.
+  // ĐO ĐƯỢC ở 1440px với 280/300: biên là chương 281, span 51, nên cửa sổ ra
+  // 245–295 và năm chương cuối (296–300) nằm ngoài. Người vận hành ở 280/300
+  // đang nhìn vào chỗ kết thúc của cả bộ, và một trục không cho thấy vạch đích
+  // ngay khi đích còn cách có năm chương là bỏ mất đúng tin họ cần.
+  if (to > tong || tong - to <= span * 0.25) {
     to = tong;
     from = Math.max(1, to - span + 1);
   }
