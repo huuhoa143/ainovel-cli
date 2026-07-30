@@ -8,7 +8,9 @@ import (
 	"sync"
 	"unicode/utf8"
 
+	"errors"
 	"github.com/voocel/agentcore/schema"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // AskUserResponse 用户回答结果。
@@ -87,7 +89,7 @@ func (t *AskUserTool) Execute(ctx context.Context, args json.RawMessage) (json.R
 		return nil, fmt.Errorf("invalid args: %w", err)
 	}
 	if err := validateQuestions(a.Questions); err != nil {
-		return json.Marshal(fmt.Sprintf("参数校验失败: %s", err))
+		return json.Marshal(fmt.Sprintf(i18n.F("参数校验失败: %s"), err))
 	}
 
 	t.mu.RLock()
@@ -100,7 +102,7 @@ func (t *AskUserTool) Execute(ctx context.Context, args json.RawMessage) (json.R
 
 	resp, err := h(ctx, a.Questions)
 	if err != nil {
-		return json.Marshal(fmt.Sprintf("用户交互失败: %s。请根据你的判断自行决策并继续。", err))
+		return json.Marshal(fmt.Sprintf(i18n.F("用户交互失败: %s。请根据你的判断自行决策并继续。"), err))
 	}
 
 	return json.Marshal(formatAnswers(a.Questions, resp))
@@ -108,30 +110,30 @@ func (t *AskUserTool) Execute(ctx context.Context, args json.RawMessage) (json.R
 
 func validateQuestions(questions []Question) error {
 	if len(questions) == 0 {
-		return fmt.Errorf("至少需要一个问题")
+		return errors.New(i18n.F("至少需要一个问题"))
 	}
 	if len(questions) > 4 {
-		return fmt.Errorf("最多4个问题，当前 %d 个", len(questions))
+		return fmt.Errorf(i18n.F("最多4个问题，当前 %d 个"), len(questions))
 	}
 	for i, q := range questions {
 		if q.Question == "" {
-			return fmt.Errorf("问题 %d: 问题文本不能为空", i+1)
+			return fmt.Errorf(i18n.F("问题 %d: 问题文本不能为空"), i+1)
 		}
 		if q.Header == "" {
-			return fmt.Errorf("问题 %d: header 不能为空", i+1)
+			return fmt.Errorf(i18n.F("问题 %d: header 不能为空"), i+1)
 		}
 		if utf8.RuneCountInString(q.Header) > 12 {
-			return fmt.Errorf("问题 %d: header %q 超过12字符", i+1, q.Header)
+			return fmt.Errorf(i18n.F("问题 %d: header %q 超过12字符"), i+1, q.Header)
 		}
 		if len(q.Options) < 2 || len(q.Options) > 4 {
-			return fmt.Errorf("问题 %d: 需要2-4个选项，当前 %d 个", i+1, len(q.Options))
+			return fmt.Errorf(i18n.F("问题 %d: 需要2-4个选项，当前 %d 个"), i+1, len(q.Options))
 		}
 		for j, opt := range q.Options {
 			if opt.Label == "" {
-				return fmt.Errorf("问题 %d 选项 %d: label 不能为空", i+1, j+1)
+				return fmt.Errorf(i18n.F("问题 %d 选项 %d: label 不能为空"), i+1, j+1)
 			}
 			if opt.Description == "" {
-				return fmt.Errorf("问题 %d 选项 %d: description 不能为空", i+1, j+1)
+				return fmt.Errorf(i18n.F("问题 %d 选项 %d: description 不能为空"), i+1, j+1)
 			}
 		}
 	}
@@ -154,5 +156,5 @@ func formatAnswers(questions []Question, resp *AskUserResponse) string {
 		}
 		parts = append(parts, entry)
 	}
-	return fmt.Sprintf("用户回答：%s", strings.Join(parts, "；"))
+	return fmt.Sprintf(i18n.F("用户回答：%s"), strings.Join(parts, "；"))
 }

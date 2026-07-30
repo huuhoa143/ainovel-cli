@@ -15,6 +15,7 @@ import (
 
 	"github.com/voocel/agentcore"
 	"github.com/voocel/agentcore/llm"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // Contract 是一次直接结构化返回的静态契约,紧邻各边界 DTO 定义。
@@ -195,7 +196,7 @@ func validateStrictReady(s map[string]any, path string) error {
 		required, _ := s["required"].([]string)
 		for name, sub := range props {
 			if !slices.Contains(required, name) {
-				return fmt.Errorf("%s.%s 未列入 required(strict 要求全属性 required)", path, name)
+				return fmt.Errorf(i18n.F("%s.%s 未列入 required(strict 要求全属性 required)"), path, name)
 			}
 			if subMap, ok := sub.(map[string]any); ok {
 				if err := validateStrictReady(subMap, path+"."+name); err != nil {

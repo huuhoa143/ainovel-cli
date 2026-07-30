@@ -12,6 +12,7 @@ import (
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/entry/startup"
 	"github.com/voocel/ainovel-cli/internal/host"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/logger"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
@@ -47,7 +48,7 @@ func Run(cfg bootstrap.Config, bundle assets.Bundle, opts Options) error {
 	eng.AskUser().SetHandler(newTerminalAskUser(stdin, stderr).handle)
 	cleanup, err := logger.SetupFile(eng.Dir(), "headless.log", false)
 	if err != nil {
-		fmt.Fprintf(stderr, "警告：文件日志不可用，继续使用终端日志：%v\n", err)
+		fmt.Fprintf(stderr, i18n.F("警告：文件日志不可用，继续使用终端日志：%v\n"), err)
 		cleanup = func() {}
 	}
 	defer cleanup()
@@ -56,7 +57,7 @@ func Run(cfg bootstrap.Config, bundle assets.Bundle, opts Options) error {
 	// （外部 kill 的挂死不走 defer，仍需在 TUI 里手动 /diag。）
 	defer func() {
 		if _, err := diag.Export(store.NewStore(eng.Dir())); err != nil {
-			fmt.Fprintf(stderr, "警告：诊断报告导出失败：%v\n", err)
+			fmt.Fprintf(stderr, i18n.F("警告：诊断报告导出失败：%v\n"), err)
 		}
 	}()
 
@@ -71,7 +72,7 @@ func Run(cfg bootstrap.Config, bundle assets.Bundle, opts Options) error {
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(stderr, "headless 启动: %s\n", eng.Dir())
+		fmt.Fprintf(stderr, i18n.F("headless 启动: %s\n"), eng.Dir())
 		// 启动侧确定性生成本书用户规则快照（用原始 prompt 归一化），须在 StartPrepared 前。
 		if err := eng.PrepareUserRules(plan.RawPrompt); err != nil {
 			return err
@@ -93,9 +94,9 @@ func Run(cfg bootstrap.Config, bundle assets.Bundle, opts Options) error {
 			return err
 		}
 		if label == "" {
-			return fmt.Errorf("headless 模式需要 --prompt，或输出目录 %q 下已有可恢复会话", eng.Dir())
+			return fmt.Errorf(i18n.F("headless 模式需要 --prompt，或输出目录 %q 下已有可恢复会话"), eng.Dir())
 		}
-		fmt.Fprintf(stderr, "headless 恢复: %s (%s)\n", eng.Dir(), label)
+		fmt.Fprintf(stderr, i18n.F("headless 恢复: %s (%s)\n"), eng.Dir(), label)
 		return consume(eng, stdout, stderr, roundHasContent)
 	}
 

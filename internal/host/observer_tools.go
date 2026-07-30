@@ -7,6 +7,7 @@ import (
 
 	"encoding/json"
 	"github.com/voocel/agentcore"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // handleToolUpdate 处理 Worker 的进度中继(ProgressPayload):TOOL 行、流式正文、
@@ -135,8 +136,8 @@ func (o *observer) handleToolUpdate(ev agentcore.Event) {
 			Time:     time.Now(),
 			Category: "ERROR",
 			Agent:    ev.Progress.Agent,
-			Summary:  fmt.Sprintf("%s 错误: %s", ev.Progress.Tool, truncate(msg, 100)),
-			Detail:   fmt.Sprintf("%s 错误: %s", ev.Progress.Tool, msg),
+			Summary:  fmt.Sprintf(i18n.F("%s 错误: %s"), ev.Progress.Tool, truncate(msg, 100)),
+			Detail:   fmt.Sprintf(i18n.F("%s 错误: %s"), ev.Progress.Tool, msg),
 			Kind:     errorKind(nil, msg),
 			Level:    "error",
 			Depth:    1,
@@ -324,7 +325,7 @@ func displayToolName(tool string, args json.RawMessage) string {
 			Chapter int `json:"chapter"`
 		}
 		if json.Unmarshal(args, &p) == nil && p.Chapter > 0 {
-			return fmt.Sprintf("%s(第%d章)", tool, p.Chapter)
+			return fmt.Sprintf(i18n.F("%s(第%d章)"), tool, p.Chapter)
 		}
 	case "save_review":
 		var p struct {
@@ -341,7 +342,7 @@ func displayToolName(tool string, args json.RawMessage) string {
 				label = "全局"
 			default:
 				if p.Chapter > 0 {
-					label = fmt.Sprintf("第%d章", p.Chapter)
+					label = fmt.Sprintf(i18n.F("第%d章"), p.Chapter)
 				}
 			}
 			if label == "" {
@@ -357,7 +358,7 @@ func displayToolName(tool string, args json.RawMessage) string {
 			Chapter int `json:"chapter"`
 		}
 		if json.Unmarshal(args, &p) == nil && p.Chapter > 0 {
-			return fmt.Sprintf("%s(第%d章)", tool, p.Chapter)
+			return fmt.Sprintf(i18n.F("%s(第%d章)"), tool, p.Chapter)
 		}
 	case "read_chapter":
 		var p struct {
@@ -372,7 +373,7 @@ func displayToolName(tool string, args json.RawMessage) string {
 			} else if p.Source == "draft" {
 				suffix = "·草稿"
 			}
-			return fmt.Sprintf("%s(第%d章%s)", tool, p.Chapter, suffix)
+			return fmt.Sprintf(i18n.F("%s(第%d章%s)"), tool, p.Chapter, suffix)
 		}
 	}
 	return tool

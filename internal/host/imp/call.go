@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/voocel/agentcore"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/llmcontract"
 	"github.com/voocel/ainovel-cli/internal/llmretry"
 	"github.com/voocel/litellm"
@@ -193,7 +194,7 @@ func callStructured[T any](ctx context.Context, m callModel, contract llmcontrac
 		}
 	case llmcontract.FailureRequest:
 		if detail := modelErrDetail(failure); detail != "" {
-			return out, fmt.Errorf("imp: 模型调用失败（%s）：%w", detail, failure)
+			return out, fmt.Errorf(i18n.F("imp: 模型调用失败（%s）：%w"), detail, failure)
 		}
 	}
 	return out, fmt.Errorf("imp: %w", failure)

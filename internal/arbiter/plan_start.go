@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"errors"
 	"github.com/voocel/agentcore"
 	"github.com/voocel/agentcore/schema"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/llmcontract"
 )
 
@@ -19,13 +21,13 @@ type PlanStartDecision struct {
 
 func (d *PlanStartDecision) Validate() error {
 	if d.Planner != "architect_long" && d.Planner != "architect_short" {
-		return fmt.Errorf("planner 非法: %q（可选 architect_long / architect_short）", d.Planner)
+		return fmt.Errorf(i18n.F("planner 非法: %q（可选 architect_long / architect_short）"), d.Planner)
 	}
 	if strings.TrimSpace(d.Task) == "" {
-		return fmt.Errorf("task 不能为空")
+		return errors.New(i18n.F("task 不能为空"))
 	}
 	if strings.TrimSpace(d.Reason) == "" {
-		return fmt.Errorf("reason 不能为空")
+		return errors.New(i18n.F("reason 不能为空"))
 	}
 	return nil
 }

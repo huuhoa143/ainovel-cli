@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/tools"
 )
 
@@ -205,7 +206,7 @@ func WithSimulationGuidance(prompt, role string) string {
 func (b *Bundle) OverridePrompt(file, raw string) error {
 	role, ok := promptRole[file]
 	if !ok {
-		return fmt.Errorf("不支持覆盖的 prompt 文件: %s（仅核心提示词可覆盖）", file)
+		return fmt.Errorf(i18n.F("不支持覆盖的 prompt 文件: %s（仅核心提示词可覆盖）"), file)
 	}
 	wrapped := WithSimulationGuidance(raw, role)
 	switch file {

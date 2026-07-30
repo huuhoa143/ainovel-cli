@@ -14,6 +14,7 @@ import (
 	"github.com/voocel/agentcore/schema"
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/errs"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/llmcontract"
 	"github.com/voocel/ainovel-cli/internal/rules"
 	"github.com/voocel/ainovel-cli/internal/store"
@@ -126,27 +127,27 @@ func (t *CommitChapterTool) Execute(_ context.Context, args json.RawMessage) (js
 		return nil, fmt.Errorf("load pending commit: %w: %w", errs.ErrStoreRead, err)
 	}
 	if existingPending != nil && existingPending.Chapter != requested.Chapter {
-		return nil, fmt.Errorf("存在未恢复的章节提交：第 %d 章（阶段 %s），请先恢复或重新提交该章: %w", existingPending.Chapter, existingPending.Stage, errs.ErrToolConflict)
+		return nil, fmt.Errorf(i18n.F("存在未恢复的章节提交：第 %d 章（阶段 %s），请先恢复或重新提交该章: %w"), existingPending.Chapter, existingPending.Stage, errs.ErrToolConflict)
 	}
 	if existingPending != nil {
 		switch existingPending.Stage {
 		case domain.CommitStageStarted, domain.CommitStageStateApplied, domain.CommitStageProgressMarked, domain.CommitStageSignalSaved:
 		default:
-			return nil, fmt.Errorf("pending commit 阶段非法: %q: %w", existingPending.Stage, errs.ErrToolConflict)
+			return nil, fmt.Errorf(i18n.F("pending commit 阶段非法: %q: %w"), existingPending.Stage, errs.ErrToolConflict)
 		}
 	}
 
 	a := requested
 	if existingPending != nil && existingPending.Stage != domain.CommitStageProgressMarked && existingPending.Stage != domain.CommitStageSignalSaved {
 		if len(existingPending.Payload) == 0 {
-			return nil, fmt.Errorf("第 %d 章存在旧版未完成提交，但缺少可重放 payload；拒绝使用新生成参数覆盖，请从最近 checkpoint 恢复或人工核对 meta/pending_commit.json: %w",
+			return nil, fmt.Errorf(i18n.F("第 %d 章存在旧版未完成提交，但缺少可重放 payload；拒绝使用新生成参数覆盖，请从最近 checkpoint 恢复或人工核对 meta/pending_commit.json: %w"),
 				existingPending.Chapter, errs.ErrToolConflict)
 		}
 		if err := json.Unmarshal(existingPending.Payload, &a); err != nil {
 			return nil, fmt.Errorf("decode pending commit payload: %w: %w", errs.ErrStoreRead, err)
 		}
 		if a.Chapter != existingPending.Chapter {
-			return nil, fmt.Errorf("pending commit payload 章节不一致：记录=%d payload=%d: %w", existingPending.Chapter, a.Chapter, errs.ErrToolConflict)
+			return nil, fmt.Errorf(i18n.F("pending commit payload 章节不一致：记录=%d payload=%d: %w"), existingPending.Chapter, a.Chapter, errs.ErrToolConflict)
 		}
 	}
 
@@ -155,12 +156,12 @@ func (t *CommitChapterTool) Execute(_ context.Context, args json.RawMessage) (js
 		return nil, fmt.Errorf("load progress: %w: %w", errs.ErrStoreRead, err)
 	}
 	if progress == nil {
-		return nil, fmt.Errorf("progress 未初始化: %w", errs.ErrToolPrecondition)
+		return nil, fmt.Errorf(i18n.F("progress 未初始化: %w"), errs.ErrToolPrecondition)
 	}
 	completed := slices.Contains(progress.CompletedChapters, a.Chapter)
 	if existingPending != nil && (existingPending.Stage == domain.CommitStageProgressMarked || existingPending.Stage == domain.CommitStageSignalSaved) {
 		if !completed {
-			return nil, fmt.Errorf("pending commit 已到 %s，但 progress 未标记第 %d 章完成: %w", existingPending.Stage, a.Chapter, errs.ErrToolConflict)
+			return nil, fmt.Errorf(i18n.F("pending commit 已到 %s，但 progress 未标记第 %d 章完成: %w"), existingPending.Stage, a.Chapter, errs.ErrToolConflict)
 		}
 		return t.finishPendingCommit(*existingPending, progress)
 	}
@@ -172,7 +173,7 @@ func (t *CommitChapterTool) Execute(_ context.Context, args json.RawMessage) (js
 
 	if existingPending != nil && existingPending.Rewrite {
 		if !completed {
-			return nil, fmt.Errorf("返工提交要求第 %d 章已存在终稿: %w", a.Chapter, errs.ErrToolConflict)
+			return nil, fmt.Errorf(i18n.F("返工提交要求第 %d 章已存在终稿: %w"), a.Chapter, errs.ErrToolConflict)
 		}
 		return t.executeRewriteCommit(a, progress, *existingPending, true)
 	}
@@ -211,7 +212,7 @@ func (t *CommitChapterTool) Execute(_ context.Context, args json.RawMessage) (js
 			if errors.Is(err, errs.ErrToolConflict) {
 				return nil, err
 			}
-			return nil, fmt.Errorf("章节当前不允许提交: %w: %w", errs.ErrToolPrecondition, err)
+			return nil, fmt.Errorf(i18n.F("章节当前不允许提交: %w: %w"), errs.ErrToolPrecondition, err)
 		}
 	}
 
@@ -221,11 +222,11 @@ func (t *CommitChapterTool) Execute(_ context.Context, args json.RawMessage) (js
 	if progress.Layered {
 		b, bErr := t.store.Outline.CheckArcBoundary(a.Chapter)
 		if bErr != nil {
-			return nil, fmt.Errorf("弧边界检测失败 chapter=%d: %w: %w", a.Chapter, errs.ErrStoreRead, bErr)
+			return nil, fmt.Errorf(i18n.F("弧边界检测失败 chapter=%d: %w: %w"), a.Chapter, errs.ErrStoreRead, bErr)
 		}
 		if b == nil {
 			return nil, fmt.Errorf(
-				"第 %d 章不在分层大纲范围内：写作必须先 expand_arc 扩展弧或 append_volume 追加卷；若全书已完结请调 save_foundation type=complete_book: %w",
+				i18n.F("第 %d 章不在分层大纲范围内：写作必须先 expand_arc 扩展弧或 append_volume 追加卷；若全书已完结请调 save_foundation type=complete_book: %w"),
 				a.Chapter, errs.ErrToolPrecondition)
 		}
 		boundary = b
@@ -237,7 +238,7 @@ func (t *CommitChapterTool) Execute(_ context.Context, args json.RawMessage) (js
 	if existingPending != nil {
 		content = existingPending.DraftContent
 		if content == "" {
-			return nil, fmt.Errorf("第 %d 章未完成提交缺少 draft_content，无法证明恢复正文与原提交一致: %w",
+			return nil, fmt.Errorf(i18n.F("第 %d 章未完成提交缺少 draft_content，无法证明恢复正文与原提交一致: %w"),
 				a.Chapter, errs.ErrToolConflict)
 		}
 	} else {
@@ -520,7 +521,7 @@ func (t *CommitChapterTool) validateRewriteDraft(chapter int, title string, prog
 	if progress != nil && progress.Flow == domain.FlowPolishing {
 		mode = "打磨"
 	}
-	return "", fmt.Errorf("第 %d 章正文和标题均未发生变化，未检测到%s改动: %w",
+	return "", fmt.Errorf(i18n.F("第 %d 章正文和标题均未发生变化，未检测到%s改动: %w"),
 		chapter, mode, errs.ErrToolPrecondition)
 }
 
@@ -567,7 +568,7 @@ func (t *CommitChapterTool) executeRewriteCommit(a commitArgs, progress *domain.
 	// 1. 只使用首次提交时冻结的返工正文，崩溃恢复不得采用随后被覆盖的 draft。
 	content := pending.DraftContent
 	if content == "" {
-		return nil, fmt.Errorf("第 %d 章返工提交缺少 draft_content，无法安全恢复: %w", chapter, errs.ErrToolConflict)
+		return nil, fmt.Errorf(i18n.F("第 %d 章返工提交缺少 draft_content，无法安全恢复: %w"), chapter, errs.ErrToolConflict)
 	}
 	wordCount := utf8.RuneCountInString(content)
 
@@ -582,7 +583,7 @@ func (t *CommitChapterTool) executeRewriteCommit(a commitArgs, progress *domain.
 			if progress != nil && progress.Flow == domain.FlowPolishing {
 				mode = "打磨"
 			}
-			return nil, fmt.Errorf("第 %d 章正文和标题均未发生变化，未检测到%s改动: %w",
+			return nil, fmt.Errorf(i18n.F("第 %d 章正文和标题均未发生变化，未检测到%s改动: %w"),
 				chapter, mode, errs.ErrToolPrecondition)
 		}
 	}

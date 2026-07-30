@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/voocel/ainovel-cli/internal/diag"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/stylestat"
 )
 
@@ -169,35 +170,35 @@ func GradeDelta(c Case, baseline, variant Result) Delta {
 		hardFail("variant", "variant 自身门禁失败")
 	}
 	if d.Metrics.CriticalFindings > 0 {
-		hardFail("delta:critical_findings", fmt.Sprintf("critical findings 增加 %d", d.Metrics.CriticalFindings))
+		hardFail("delta:critical_findings", fmt.Sprintf(i18n.F("critical findings 增加 %d"), d.Metrics.CriticalFindings))
 	}
 	if variant.Metrics.CompletedChapters < baseline.Metrics.CompletedChapters {
-		hardFail("delta:completed_chapters", fmt.Sprintf("完成章节减少：baseline=%d variant=%d",
+		hardFail("delta:completed_chapters", fmt.Sprintf(i18n.F("完成章节减少：baseline=%d variant=%d"),
 			baseline.Metrics.CompletedChapters, variant.Metrics.CompletedChapters))
 	}
 	if d.Metrics.WarningFindings > 0 {
-		warn("delta:warning_findings", fmt.Sprintf("warning findings 增加 %d", d.Metrics.WarningFindings))
+		warn("delta:warning_findings", fmt.Sprintf(i18n.F("warning findings 增加 %d"), d.Metrics.WarningFindings))
 	}
 	if baseline.Metrics.TotalWords > 0 {
 		ratio := d.Metrics.TotalWordsRatio
 		if ratio > 0 && (ratio < 0.6 || ratio > 1.8) {
-			warn("delta:total_words", fmt.Sprintf("总字数比例 %.2f 超出 0.6~1.8", ratio))
+			warn("delta:total_words", fmt.Sprintf(i18n.F("总字数比例 %.2f 超出 0.6~1.8"), ratio))
 		}
 	}
 	if deltaGateEnabled(c.Gate.MaxToolCallDeltaRatio) && d.Metrics.ToolCallDeltaRatio > *c.Gate.MaxToolCallDeltaRatio {
-		warn("delta:tool_calls", fmt.Sprintf("tool calls 增幅 %.1f%% 超过阈值 %.1f%%",
+		warn("delta:tool_calls", fmt.Sprintf(i18n.F("tool calls 增幅 %.1f%% 超过阈值 %.1f%%"),
 			d.Metrics.ToolCallDeltaRatio*100, *c.Gate.MaxToolCallDeltaRatio*100))
 	}
 	if deltaGateEnabled(c.Gate.MaxCostDeltaRatio) && d.Metrics.CostDeltaRatio > *c.Gate.MaxCostDeltaRatio {
-		warn("delta:cost", fmt.Sprintf("成本增幅 %.1f%% 超过阈值 %.1f%%",
+		warn("delta:cost", fmt.Sprintf(i18n.F("成本增幅 %.1f%% 超过阈值 %.1f%%"),
 			d.Metrics.CostDeltaRatio*100, *c.Gate.MaxCostDeltaRatio*100))
 	}
 	if deltaGateEnabled(c.Gate.MaxCostDeltaRatio) && d.Metrics.InputTokenDeltaRatio > *c.Gate.MaxCostDeltaRatio {
-		warn("delta:input_tokens", fmt.Sprintf("输入 token 增幅 %.1f%% 超过阈值 %.1f%%",
+		warn("delta:input_tokens", fmt.Sprintf(i18n.F("输入 token 增幅 %.1f%% 超过阈值 %.1f%%"),
 			d.Metrics.InputTokenDeltaRatio*100, *c.Gate.MaxCostDeltaRatio*100))
 	}
 	if deltaGateEnabled(c.Gate.MaxCostDeltaRatio) && d.Metrics.OutputTokenDeltaRatio > *c.Gate.MaxCostDeltaRatio {
-		warn("delta:output_tokens", fmt.Sprintf("输出 token 增幅 %.1f%% 超过阈值 %.1f%%",
+		warn("delta:output_tokens", fmt.Sprintf(i18n.F("输出 token 增幅 %.1f%% 超过阈值 %.1f%%"),
 			d.Metrics.OutputTokenDeltaRatio*100, *c.Gate.MaxCostDeltaRatio*100))
 	}
 	if sd := d.Metrics.Stylestat; sd != nil {
@@ -207,7 +208,7 @@ func GradeDelta(c Case, baseline, variant Result) Delta {
 			issue := Issue{
 				Kind:   "warning",
 				Source: "delta:stylestat",
-				Detail: fmt.Sprintf("文体指标回归：pattern_top %+0.1f，ending_short %+0.2f，repeated %+d，title_mixed %+d",
+				Detail: fmt.Sprintf(i18n.F("文体指标回归：pattern_top %+0.1f，ending_short %+0.2f，repeated %+d，title_mixed %+d"),
 					sd.PatternTopPerChapter, sd.EndingShortRatio, sd.RepeatedSentences, sd.TitleMixedDelta),
 			}
 			if c.Gate.StylestatRegression == "block" {
@@ -334,7 +335,7 @@ func gradeContracts(c Case, col Collected, r *Result) {
 	if e.Phase != "" {
 		got := phaseOf(col)
 		if got != e.Phase {
-			hardFail("phase", fmt.Sprintf("期望 phase=%s，实际 %s", e.Phase, got))
+			hardFail("phase", fmt.Sprintf(i18n.F("期望 phase=%s，实际 %s"), e.Phase, got))
 		} else {
 			pass("phase", "phase="+got)
 		}
@@ -343,9 +344,9 @@ func gradeContracts(c Case, col Collected, r *Result) {
 	if e.MinCompletedChapters > 0 {
 		got := r.Metrics.CompletedChapters
 		if got < e.MinCompletedChapters {
-			hardFail("min_completed_chapters", fmt.Sprintf("期望 ≥%d 章，实际 %d 章", e.MinCompletedChapters, got))
+			hardFail("min_completed_chapters", fmt.Sprintf(i18n.F("期望 ≥%d 章，实际 %d 章"), e.MinCompletedChapters, got))
 		} else {
-			pass("min_completed_chapters", fmt.Sprintf("完成 %d 章", got))
+			pass("min_completed_chapters", fmt.Sprintf(i18n.F("完成 %d 章"), got))
 		}
 	}
 

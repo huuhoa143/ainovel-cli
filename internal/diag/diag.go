@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -62,7 +63,7 @@ func Analyze(s *store.Store) Report {
 			Confidence: ConfHigh,
 			AutoLevel:  AutoNone,
 			Target:     "runtime.flow",
-			Title:      fmt.Sprintf("工件加载失败: %s", e),
+			Title:      fmt.Sprintf(i18n.F("工件加载失败: %s"), e),
 			Suggestion: "文件可能损坏或权限不足，相关诊断规则的结果可能不完整。",
 		})
 	}

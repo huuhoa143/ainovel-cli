@@ -17,6 +17,7 @@ import (
 	"github.com/voocel/ainovel-cli/internal/agents/ctxpack"
 	"github.com/voocel/ainovel-cli/internal/agents/guard"
 	"github.com/voocel/ainovel-cli/internal/bootstrap"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 	"github.com/voocel/ainovel-cli/internal/tools"
 )
@@ -66,7 +67,7 @@ func ParseThinkingLevel(s string) (agentcore.ThinkingLevel, error) {
 		agentcore.ThinkingHigh, agentcore.ThinkingXHigh, agentcore.ThinkingMax:
 		return lv, nil
 	default:
-		return "", fmt.Errorf("无效推理强度 %q（可选：off/low/medium/high/xhigh/max）", s)
+		return "", fmt.Errorf(i18n.F("无效推理强度 %q（可选：off/low/medium/high/xhigh/max）"), s)
 	}
 }
 

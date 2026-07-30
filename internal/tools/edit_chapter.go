@@ -10,6 +10,7 @@ import (
 	agentcoretools "github.com/voocel/agentcore/tools"
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/errs"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -80,10 +81,10 @@ func (t *EditChapterTool) Execute(ctx context.Context, args json.RawMessage) (js
 		return nil, fmt.Errorf("chapter must be > 0: %w", errs.ErrToolArgs)
 	}
 	if a.OldString == "" {
-		return nil, fmt.Errorf("old_string 不能为空: %w", errs.ErrToolArgs)
+		return nil, fmt.Errorf(i18n.F("old_string 不能为空: %w"), errs.ErrToolArgs)
 	}
 	if a.OldString == a.NewString {
-		return nil, fmt.Errorf("old_string 与 new_string 相同，无需修改: %w", errs.ErrToolArgs)
+		return nil, fmt.Errorf(i18n.F("old_string 与 new_string 相同，无需修改: %w"), errs.ErrToolArgs)
 	}
 	if err := t.store.Progress.ValidateChapterWork(a.Chapter); err != nil {
 		return nil, err
@@ -103,7 +104,7 @@ func (t *EditChapterTool) Execute(ctx context.Context, args json.RawMessage) (js
 			return nil, fmt.Errorf("load progress: %w: %w", errs.ErrStoreRead, err)
 		}
 		if progress == nil || !slices.Contains(progress.PendingRewrites, a.Chapter) {
-			return nil, fmt.Errorf("第 %d 章已完成且不在 PendingRewrites 队列中，不能编辑；需修改请先由 editor 评审触发重写/打磨: %w", a.Chapter, errs.ErrToolPrecondition)
+			return nil, fmt.Errorf(i18n.F("第 %d 章已完成且不在 PendingRewrites 队列中，不能编辑；需修改请先由 editor 评审触发重写/打磨: %w"), a.Chapter, errs.ErrToolPrecondition)
 		}
 	}
 
@@ -161,7 +162,7 @@ func (t *EditChapterTool) ensureDraft(chapter int) error {
 		return fmt.Errorf("load chapter: %w: %w", errs.ErrStoreRead, err)
 	}
 	if text == "" {
-		return fmt.Errorf("第 %d 章无草稿也无终稿，请先调 draft_chapter(mode=write, chapter=%d) 创建初稿: %w", chapter, chapter, errs.ErrToolPrecondition)
+		return fmt.Errorf(i18n.F("第 %d 章无草稿也无终稿，请先调 draft_chapter(mode=write, chapter=%d) 创建初稿: %w"), chapter, chapter, errs.ErrToolPrecondition)
 	}
 	if err := t.store.Drafts.SaveDraft(chapter, text); err != nil {
 		return fmt.Errorf("seed draft from chapter: %w: %w", errs.ErrStoreWrite, err)

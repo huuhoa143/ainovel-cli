@@ -10,6 +10,7 @@ import (
 
 	"github.com/voocel/ainovel-cli/internal/host"
 	"github.com/voocel/ainovel-cli/internal/host/exp"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // exportDoneMsg 是 /export 命令的最终结果。
@@ -49,25 +50,25 @@ func parseExportArgs(args []string) (exp.Options, error) {
 			case "from":
 				n, err := strconv.Atoi(v)
 				if err != nil || n < 0 {
-					return exp.Options{}, fmt.Errorf("from 需为非负整数：%q", v)
+					return exp.Options{}, fmt.Errorf(i18n.F("from 需为非负整数：%q"), v)
 				}
 				opts.From = n
 			case "to":
 				n, err := strconv.Atoi(v)
 				if err != nil || n < 0 {
-					return exp.Options{}, fmt.Errorf("to 需为非负整数：%q", v)
+					return exp.Options{}, fmt.Errorf(i18n.F("to 需为非负整数：%q"), v)
 				}
 				opts.To = n
 			default:
-				return exp.Options{}, fmt.Errorf("未知参数 %q（支持：from / to）", k)
+				return exp.Options{}, fmt.Errorf(i18n.F("未知参数 %q（支持：from / to）"), k)
 			}
 			continue
 		}
 		if strings.HasPrefix(a, "-") {
-			return exp.Options{}, fmt.Errorf("未知 flag %q", a)
+			return exp.Options{}, fmt.Errorf(i18n.F("未知 flag %q"), a)
 		}
 		if opts.OutPath != "" {
-			return exp.Options{}, fmt.Errorf("仅支持一个路径参数：%q", a)
+			return exp.Options{}, fmt.Errorf(i18n.F("仅支持一个路径参数：%q"), a)
 		}
 		opts.OutPath = a
 	}
@@ -77,9 +78,9 @@ func parseExportArgs(args []string) (exp.Options, error) {
 // formatExportSuccess 把 Result 渲染成事件 Summary。
 func formatExportSuccess(res *exp.Result) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "✓ 已导出 %d 章 / %s 到 %s", res.Chapters, humanBytes(res.Bytes), res.Path)
+	fmt.Fprintf(&b, i18n.F("✓ 已导出 %d 章 / %s 到 %s"), res.Chapters, humanBytes(res.Bytes), res.Path)
 	if n := len(res.Skipped); n > 0 {
-		fmt.Fprintf(&b, "（跳过 %d 章未完成：%s）", n, briefIntList(res.Skipped, 5))
+		fmt.Fprintf(&b, i18n.F("（跳过 %d 章未完成：%s）"), n, briefIntList(res.Skipped, 5))
 	}
 	return b.String()
 }

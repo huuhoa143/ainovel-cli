@@ -8,6 +8,7 @@ import (
 
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/errs"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // ProgressStore 管理创作进度状态。
@@ -117,10 +118,10 @@ func (s *ProgressStore) StartChapter(chapter int) error {
 			return err
 		}
 		if p == nil {
-			return fmt.Errorf("progress 未初始化: %w", errs.ErrToolPrecondition)
+			return fmt.Errorf(i18n.F("progress 未初始化: %w"), errs.ErrToolPrecondition)
 		}
 		if p.Phase != domain.PhaseWriting {
-			return fmt.Errorf("章节写作仅允许在 writing 阶段（当前 phase=%s）: %w", p.Phase, errs.ErrToolPrecondition)
+			return fmt.Errorf(i18n.F("章节写作仅允许在 writing 阶段（当前 phase=%s）: %w"), p.Phase, errs.ErrToolPrecondition)
 		}
 		if p.Flow != domain.FlowRewriting && p.Flow != domain.FlowPolishing {
 			p.Flow = domain.FlowWriting
@@ -233,10 +234,10 @@ func (s *ProgressStore) Reopen(chapters []int, reason string) error {
 			return err
 		}
 		if p == nil {
-			return fmt.Errorf("progress 未初始化: %w", errs.ErrToolPrecondition)
+			return fmt.Errorf(i18n.F("progress 未初始化: %w"), errs.ErrToolPrecondition)
 		}
 		if p.Phase != domain.PhaseComplete {
-			return fmt.Errorf("reopen 仅适用于已完结的书（当前 phase=%s）: %w", p.Phase, errs.ErrToolPrecondition)
+			return fmt.Errorf(i18n.F("reopen 仅适用于已完结的书（当前 phase=%s）: %w"), p.Phase, errs.ErrToolPrecondition)
 		}
 		normalized, err := normalizePendingRewrites(chapters, p.CompletedChapters)
 		if err != nil {
@@ -262,10 +263,10 @@ func (s *ProgressStore) ReopenContinue() error {
 			return err
 		}
 		if p == nil {
-			return fmt.Errorf("progress 未初始化: %w", errs.ErrToolPrecondition)
+			return fmt.Errorf(i18n.F("progress 未初始化: %w"), errs.ErrToolPrecondition)
 		}
 		if p.Phase != domain.PhaseComplete {
-			return fmt.Errorf("重开仅适用于已完结的书（当前 phase=%s）: %w", p.Phase, errs.ErrToolPrecondition)
+			return fmt.Errorf(i18n.F("重开仅适用于已完结的书（当前 phase=%s）: %w"), p.Phase, errs.ErrToolPrecondition)
 		}
 		p.Phase = domain.PhaseWriting
 		p.ReopenCount++ // 审计 + 保证再完结的 progress digest 与上次不同（见字段注释）
@@ -369,11 +370,11 @@ func (s *ProgressStore) ApplyReviewOutcome(flow domain.FlowState, chapters []int
 			return err
 		}
 		if p == nil {
-			return fmt.Errorf("progress 未初始化: %w", errs.ErrToolPrecondition)
+			return fmt.Errorf(i18n.F("progress 未初始化: %w"), errs.ErrToolPrecondition)
 		}
 		if len(chapters) > 0 {
 			if flow == domain.FlowWriting {
-				return fmt.Errorf("返工章节非空时 flow 不能为 writing: %w", errs.ErrToolConflict)
+				return fmt.Errorf(i18n.F("返工章节非空时 flow 不能为 writing: %w"), errs.ErrToolConflict)
 			}
 			if err := domain.ValidateFlowTransition(p.Flow, flow); err != nil {
 				return err
@@ -474,10 +475,10 @@ func (s *ProgressStore) ValidateChapterWork(chapter int) error {
 		return err
 	}
 	if p == nil {
-		return fmt.Errorf("progress 未初始化: %w", errs.ErrToolPrecondition)
+		return fmt.Errorf(i18n.F("progress 未初始化: %w"), errs.ErrToolPrecondition)
 	}
 	if p.Phase != domain.PhaseWriting {
-		return fmt.Errorf("章节写作仅允许在 writing 阶段（当前 phase=%s）: %w", p.Phase, errs.ErrToolPrecondition)
+		return fmt.Errorf(i18n.F("章节写作仅允许在 writing 阶段（当前 phase=%s）: %w"), p.Phase, errs.ErrToolPrecondition)
 	}
 	if p.Flow != domain.FlowRewriting && p.Flow != domain.FlowPolishing {
 		return nil
@@ -493,7 +494,7 @@ func (s *ProgressStore) ValidateChapterWork(chapter int) error {
 	if p.Flow == domain.FlowPolishing {
 		verb = "打磨"
 	}
-	return fmt.Errorf("第 %d 章不在待%s队列中，当前队列：%v。请先处理队列内章节，再动新章节: %w", chapter, verb, p.PendingRewrites, errs.ErrToolConflict)
+	return fmt.Errorf(i18n.F("第 %d 章不在待%s队列中，当前队列：%v。请先处理队列内章节，再动新章节: %w"), chapter, verb, p.PendingRewrites, errs.ErrToolConflict)
 }
 
 func normalizePendingRewrites(chapters, completed []int) ([]int, error) {
@@ -524,7 +525,7 @@ func normalizePendingRewrites(chapters, completed []int) ([]int, error) {
 		normalized = append(normalized, ch)
 	}
 	if len(invalid) > 0 {
-		return nil, fmt.Errorf("pending_rewrites 只能包含已完成章节，非法章节：%v，completed_chapters=%v: %w", invalid, completed, errs.ErrToolPrecondition)
+		return nil, fmt.Errorf(i18n.F("pending_rewrites 只能包含已完成章节，非法章节：%v，completed_chapters=%v: %w"), invalid, completed, errs.ErrToolPrecondition)
 	}
 	return normalized, nil
 }

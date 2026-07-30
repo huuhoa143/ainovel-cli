@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/voocel/ainovel-cli/internal/host"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/tools"
 	"github.com/voocel/ainovel-cli/internal/utils"
 )
@@ -506,7 +507,7 @@ func (m *Model) inputLimitHint() string {
 	if used < limit*4/5 {
 		return ""
 	}
-	return fmt.Sprintf(" · 输入 %d/%d", used, limit)
+	return fmt.Sprintf(i18n.F(" · 输入 %d/%d"), used, limit)
 }
 
 func (m *Model) eventFlowWidth() int {

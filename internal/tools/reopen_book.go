@@ -9,6 +9,7 @@ import (
 	"github.com/voocel/agentcore/schema"
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/errs"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -58,7 +59,7 @@ func (t *ReopenBookTool) Execute(_ context.Context, args json.RawMessage) (json.
 		return nil, fmt.Errorf("invalid args: %w: %w", errs.ErrToolArgs, err)
 	}
 	if len(a.Chapters) == 0 {
-		return nil, fmt.Errorf("chapters 不能为空，需指明要返工的章节: %w", errs.ErrToolArgs)
+		return nil, fmt.Errorf(i18n.F("chapters 不能为空，需指明要返工的章节: %w"), errs.ErrToolArgs)
 	}
 
 	progress, err := t.store.Progress.Load()
@@ -66,7 +67,7 @@ func (t *ReopenBookTool) Execute(_ context.Context, args json.RawMessage) (json.
 		return nil, fmt.Errorf("load progress: %w: %w", errs.ErrStoreRead, err)
 	}
 	if progress == nil {
-		return nil, fmt.Errorf("progress 未初始化: %w", errs.ErrToolPrecondition)
+		return nil, fmt.Errorf(i18n.F("progress 未初始化: %w"), errs.ErrToolPrecondition)
 	}
 	// 只能返工已写章；不在已完成集合的章号属续写/越界，明确拒绝引导用户走篇幅调整。
 	var invalid []int
@@ -76,7 +77,7 @@ func (t *ReopenBookTool) Execute(_ context.Context, args json.RawMessage) (json.
 		}
 	}
 	if len(invalid) > 0 {
-		return nil, fmt.Errorf("第 %v 章尚未写完，reopen 只能返工已完成章节（新增/扩展剧情请走篇幅调整）: %w", invalid, errs.ErrToolPrecondition)
+		return nil, fmt.Errorf(i18n.F("第 %v 章尚未写完，reopen 只能返工已完成章节（新增/扩展剧情请走篇幅调整）: %w"), invalid, errs.ErrToolPrecondition)
 	}
 
 	// phase 前置校验在 store.Reopen 内兜底（仅 complete 可调）。

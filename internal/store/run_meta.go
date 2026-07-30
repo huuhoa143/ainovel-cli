@@ -6,7 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"errors"
 	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // RunMetaStore 管理运行元信息（模型、干预历史、规划级别等）。
@@ -82,17 +84,17 @@ func validateAdvanceControl(meta domain.RunMeta) error {
 		return &domain.UnsupportedAdvanceModeError{Mode: meta.AdvanceMode}
 	}
 	if meta.AdvancePermitChapter < 0 {
-		return fmt.Errorf("章节许可不能为负数: %d", meta.AdvancePermitChapter)
+		return fmt.Errorf(i18n.F("章节许可不能为负数: %d"), meta.AdvancePermitChapter)
 	}
 	if meta.AdvanceMode == domain.ChapterAdvanceAuto && meta.AdvancePermitChapter != 0 {
-		return fmt.Errorf("auto 模式不能保留章节许可: %d", meta.AdvancePermitChapter)
+		return fmt.Errorf(i18n.F("auto 模式不能保留章节许可: %d"), meta.AdvancePermitChapter)
 	}
 	if meta.AdvanceHold != nil {
 		if !meta.AdvanceHold.After.Valid() {
-			return fmt.Errorf("不支持的一次性暂停条件 %q", meta.AdvanceHold.After)
+			return fmt.Errorf(i18n.F("不支持的一次性暂停条件 %q"), meta.AdvanceHold.After)
 		}
 		if strings.TrimSpace(meta.AdvanceHold.Reason) == "" {
-			return fmt.Errorf("一次性暂停原因不能为空")
+			return errors.New(i18n.F("一次性暂停原因不能为空"))
 		}
 	}
 	return nil
@@ -156,7 +158,7 @@ func (s *RunMetaStore) SetAdvanceMode(mode domain.ChapterAdvanceMode) error {
 			return err
 		}
 		if meta == nil {
-			return fmt.Errorf("run meta 未初始化")
+			return errors.New(i18n.F("run meta 未初始化"))
 		}
 		meta.AdvanceMode = mode
 		if mode == domain.ChapterAdvanceAuto {
@@ -169,7 +171,7 @@ func (s *RunMetaStore) SetAdvanceMode(mode domain.ChapterAdvanceMode) error {
 // GrantAdvancePermit 为 review 模式持久化一个精确章节许可。
 func (s *RunMetaStore) GrantAdvancePermit(chapter int) error {
 	if chapter <= 0 {
-		return fmt.Errorf("章节许可必须大于 0: %d", chapter)
+		return fmt.Errorf(i18n.F("章节许可必须大于 0: %d"), chapter)
 	}
 	return s.io.WithWriteLock(func() error {
 		meta, err := s.loadUnlocked()
@@ -177,16 +179,16 @@ func (s *RunMetaStore) GrantAdvancePermit(chapter int) error {
 			return err
 		}
 		if meta == nil {
-			return fmt.Errorf("run meta 未初始化")
+			return errors.New(i18n.F("run meta 未初始化"))
 		}
 		if meta.AdvanceMode != domain.ChapterAdvanceReview {
-			return fmt.Errorf("仅逐章验收模式可授权下一章（当前 %s）", meta.AdvanceMode)
+			return fmt.Errorf(i18n.F("仅逐章验收模式可授权下一章（当前 %s）"), meta.AdvanceMode)
 		}
 		if meta.AdvancePermitChapter == chapter {
 			return nil
 		}
 		if meta.AdvancePermitChapter != 0 {
-			return fmt.Errorf("已有第 %d 章许可，拒绝覆盖为第 %d 章", meta.AdvancePermitChapter, chapter)
+			return fmt.Errorf(i18n.F("已有第 %d 章许可，拒绝覆盖为第 %d 章"), meta.AdvancePermitChapter, chapter)
 		}
 		meta.AdvancePermitChapter = chapter
 		return s.saveUnlocked(*meta)
@@ -204,7 +206,7 @@ func (s *RunMetaStore) ClearAdvancePermit(chapter int) error {
 			return nil
 		}
 		if meta.AdvancePermitChapter != chapter {
-			return fmt.Errorf("章节许可已变化：期望第 %d 章，实际第 %d 章", chapter, meta.AdvancePermitChapter)
+			return fmt.Errorf(i18n.F("章节许可已变化：期望第 %d 章，实际第 %d 章"), chapter, meta.AdvancePermitChapter)
 		}
 		meta.AdvancePermitChapter = 0
 		return s.saveUnlocked(*meta)
@@ -214,10 +216,10 @@ func (s *RunMetaStore) ClearAdvancePermit(chapter int) error {
 // SetAdvanceHold 登记一次性暂停意图；在途意图不允许被另一条静默覆盖。
 func (s *RunMetaStore) SetAdvanceHold(hold domain.AdvanceHold) error {
 	if !hold.After.Valid() {
-		return fmt.Errorf("不支持的一次性暂停条件 %q", hold.After)
+		return fmt.Errorf(i18n.F("不支持的一次性暂停条件 %q"), hold.After)
 	}
 	if strings.TrimSpace(hold.Reason) == "" {
-		return fmt.Errorf("一次性暂停原因不能为空")
+		return errors.New(i18n.F("一次性暂停原因不能为空"))
 	}
 	return s.io.WithWriteLock(func() error {
 		meta, err := s.loadUnlocked()
@@ -225,13 +227,13 @@ func (s *RunMetaStore) SetAdvanceHold(hold domain.AdvanceHold) error {
 			return err
 		}
 		if meta == nil {
-			return fmt.Errorf("run meta 未初始化")
+			return errors.New(i18n.F("run meta 未初始化"))
 		}
 		if meta.AdvanceHold != nil {
 			if *meta.AdvanceHold == hold {
 				return nil
 			}
-			return fmt.Errorf("已有一次性暂停意图（%s：%s），拒绝覆盖", meta.AdvanceHold.After, meta.AdvanceHold.Reason)
+			return fmt.Errorf(i18n.F("已有一次性暂停意图（%s：%s），拒绝覆盖"), meta.AdvanceHold.After, meta.AdvanceHold.Reason)
 		}
 		meta.AdvanceHold = &hold
 		return s.saveUnlocked(*meta)
@@ -249,7 +251,7 @@ func (s *RunMetaStore) ClearAdvanceHold(expected domain.AdvanceHold) error {
 			return nil
 		}
 		if *meta.AdvanceHold != expected {
-			return fmt.Errorf("一次性暂停意图已变化，拒绝误清")
+			return errors.New(i18n.F("一次性暂停意图已变化，拒绝误清"))
 		}
 		meta.AdvanceHold = nil
 		return s.saveUnlocked(*meta)

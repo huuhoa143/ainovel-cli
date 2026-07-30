@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // chapterTitleIndex 给定章号查标题，缺失返回空串。
@@ -114,16 +115,16 @@ func renderTXT(
 		if useLayered {
 			if loc, ok := locations[ch]; ok && loc.IsFirstOfVolume {
 				b.WriteString("\n═══════════════════════════════════════════\n")
-				fmt.Fprintf(&b, "           第 %d 卷  %s\n", loc.VolumeIdx, strings.TrimSpace(loc.VolumeTitle))
+				fmt.Fprintf(&b, i18n.F("           第 %d 卷  %s\n"), loc.VolumeIdx, strings.TrimSpace(loc.VolumeTitle))
 				b.WriteString("═══════════════════════════════════════════\n\n")
 			}
 		}
 
 		title := strings.TrimSpace(titleIdx[ch])
 		if title != "" {
-			fmt.Fprintf(&b, "第 %d 章  %s\n\n", ch, title)
+			fmt.Fprintf(&b, i18n.F("第 %d 章  %s\n\n"), ch, title)
 		} else {
-			fmt.Fprintf(&b, "第 %d 章\n\n", ch)
+			fmt.Fprintf(&b, i18n.F("第 %d 章\n\n"), ch)
 		}
 
 		body := stripChapterTitleHeader(strings.TrimSpace(bodies[ch]), title)

@@ -7,11 +7,13 @@ import (
 	"os"
 	"strings"
 
+	"errors"
 	"github.com/voocel/ainovel-cli/assets"
 	"github.com/voocel/ainovel-cli/internal/bootstrap"
 	"github.com/voocel/ainovel-cli/internal/entry/headless"
 	"github.com/voocel/ainovel-cli/internal/entry/tui"
 	"github.com/voocel/ainovel-cli/internal/eval"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/rules"
 	buildversion "github.com/voocel/ainovel-cli/internal/version"
 )
@@ -78,10 +80,10 @@ func die(format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	fmt.Fprintln(os.Stderr, msg)
 	if path := bootstrap.WriteStartupError(msg); path != "" {
-		fmt.Fprintf(os.Stderr, "（详细错误已记录到 %s）\n", path)
+		fmt.Fprintf(os.Stderr, i18n.F("（详细错误已记录到 %s）\n"), path)
 	}
 	if !headlessMode && stdinIsTerminal() {
-		fmt.Fprint(os.Stderr, "\n按回车键退出...")
+		fmt.Fprint(os.Stderr, i18n.F("\n按回车键退出..."))
 		fmt.Fscanln(os.Stdin)
 	}
 	os.Exit(1)
@@ -145,35 +147,35 @@ func parseCLIOptions(argv []string) (cliOptions, []string, error) {
 			opts.Version = true
 		case "version":
 			if i+1 < len(argv) {
-				return opts, nil, fmt.Errorf("version 不接受参数")
+				return opts, nil, errors.New(i18n.F("version 不接受参数"))
 			}
 			opts.Version = true
 		case "update":
 			if opts.Update {
-				return opts, nil, fmt.Errorf("update 只能指定一次")
+				return opts, nil, errors.New(i18n.F("update 只能指定一次"))
 			}
 			opts.Update = true
 			if i+1 < len(argv) {
 				if strings.HasPrefix(argv[i+1], "-") {
-					return opts, nil, fmt.Errorf("update 只接受一个可选版本参数")
+					return opts, nil, errors.New(i18n.F("update 只接受一个可选版本参数"))
 				}
 				opts.UpdateVersion = argv[i+1]
 				i++
 			}
 			if i+1 < len(argv) {
-				return opts, nil, fmt.Errorf("update 只接受一个可选版本参数")
+				return opts, nil, errors.New(i18n.F("update 只接受一个可选版本参数"))
 			}
 		case "--headless":
 			opts.Headless = true
 		case "--prompt":
 			if i+1 >= len(argv) {
-				return opts, nil, fmt.Errorf("--prompt 缺少值")
+				return opts, nil, errors.New(i18n.F("--prompt 缺少值"))
 			}
 			opts.Prompt = argv[i+1]
 			i++
 		case "--prompt-file":
 			if i+1 >= len(argv) {
-				return opts, nil, fmt.Errorf("--prompt-file 缺少值")
+				return opts, nil, errors.New(i18n.F("--prompt-file 缺少值"))
 			}
 			opts.PromptFile = argv[i+1]
 			i++
@@ -182,13 +184,13 @@ func parseCLIOptions(argv []string) (cliOptions, []string, error) {
 		}
 	}
 	if opts.Prompt != "" && opts.PromptFile != "" {
-		return opts, nil, fmt.Errorf("--prompt 和 --prompt-file 不能同时使用")
+		return opts, nil, errors.New(i18n.F("--prompt 和 --prompt-file 不能同时使用"))
 	}
 	if opts.Version && (opts.Update || opts.Headless || opts.Prompt != "" || opts.PromptFile != "" || len(args) > 0) {
-		return opts, nil, fmt.Errorf("version 不能与其他启动参数混用")
+		return opts, nil, errors.New(i18n.F("version 不能与其他启动参数混用"))
 	}
 	if opts.Update && (opts.Headless || opts.Prompt != "" || opts.PromptFile != "" || len(args) > 0) {
-		return opts, nil, fmt.Errorf("update 不能与其他启动参数混用")
+		return opts, nil, errors.New(i18n.F("update 不能与其他启动参数混用"))
 	}
 	return opts, args, nil
 }
@@ -213,11 +215,11 @@ func runSelfUpdate(target string) error {
 		return err
 	}
 	if !result.Updated {
-		fmt.Printf("ainovel-cli 已是最新版本 %s\n", result.Version)
+		fmt.Printf(i18n.F("ainovel-cli 已是最新版本 %s\n"), result.Version)
 		return nil
 	}
-	fmt.Printf("ainovel-cli 已更新到 %s\n", result.Version)
-	fmt.Printf("安装位置：%s\n", result.Path)
+	fmt.Printf(i18n.F("ainovel-cli 已更新到 %s\n"), result.Version)
+	fmt.Printf(i18n.F("安装位置：%s\n"), result.Path)
 	return nil
 }
 
@@ -238,7 +240,7 @@ func loadPromptFrom(opts cliOptions, stdin io.Reader) (string, error) {
 		data, err = os.ReadFile(opts.PromptFile)
 	}
 	if err != nil {
-		return "", fmt.Errorf("读取 prompt 失败: %w", err)
+		return "", fmt.Errorf(i18n.F("读取 prompt 失败: %w"), err)
 	}
 	return strings.TrimSpace(string(data)), nil
 }

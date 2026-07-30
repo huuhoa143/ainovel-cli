@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -71,7 +72,7 @@ func RunImport(ctx context.Context, st *store.Store, path string) (<-chan Event,
 			emit(StageError, "导入仿写画像失败", err)
 			return
 		}
-		emit(StageDone, fmt.Sprintf("仿写画像已导入：新增 %d 篇，跳过重复 %d 篇", result.ImportedSources, result.SkippedSources), nil)
+		emit(StageDone, fmt.Sprintf(i18n.F("仿写画像已导入：新增 %d 篇，跳过重复 %d 篇"), result.ImportedSources, result.SkippedSources), nil)
 	}()
 	return events, nil
 }

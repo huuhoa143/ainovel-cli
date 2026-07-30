@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	"errors"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/voocel/agentcore"
 	"github.com/voocel/ainovel-cli/internal/host"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 type modelRuntime interface {
@@ -249,10 +251,10 @@ func (s *modelSwitchState) syncThinking(rt modelRuntime) {
 
 func (s *modelSwitchState) apply(rt modelRuntime) error {
 	if len(s.providers) == 0 {
-		return fmt.Errorf("当前没有可用 provider")
+		return errors.New(i18n.F("当前没有可用 provider"))
 	}
 	if len(s.models) == 0 {
-		return fmt.Errorf("provider %q 没有已配置模型", s.provider())
+		return fmt.Errorf(i18n.F("provider %q 没有已配置模型"), s.provider())
 	}
 	wantThinking := s.thinkingKey()
 	if err := rt.SwitchModel(s.role(), s.provider(), s.model()); err != nil {

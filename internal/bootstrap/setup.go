@@ -9,6 +9,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/rules"
 	"github.com/voocel/ainovel-cli/internal/utils"
 )
@@ -80,8 +81,8 @@ func RunSetup() (Config, error) {
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("99")).
 		Render("未检测到配置文件，开始初始化设置..."))
-	fmt.Fprintf(os.Stderr, "  配置文件路径：%s\n", lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Render(DefaultConfigPath()))
-	fmt.Fprintf(os.Stderr, "  完成后可随时编辑该文件调整高级设置。\n")
+	fmt.Fprintf(os.Stderr, i18n.F("  配置文件路径：%s\n"), lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Render(DefaultConfigPath()))
+	fmt.Fprint(os.Stderr, i18n.F("  完成后可随时编辑该文件调整高级设置。\n"))
 	fmt.Fprintln(os.Stderr)
 
 	// Step 1: 选择 Provider
@@ -170,12 +171,12 @@ func RunSetup() (Config, error) {
 	rulesDir := rules.DefaultHomeRulesDir()
 
 	fmt.Fprintln(os.Stderr)
-	fmt.Fprintf(os.Stderr, "%s 配置已保存到 %s\n",
+	fmt.Fprintf(os.Stderr, i18n.F("%s 配置已保存到 %s\n"),
 		lipgloss.NewStyle().Foreground(lipgloss.Color("42")).Render("✓"), path)
-	fmt.Fprintf(os.Stderr, "  默认模型：%s\n", modelName)
-	fmt.Fprintln(os.Stderr, "  如需按角色配置不同模型，编辑配置文件即可。")
+	fmt.Fprintf(os.Stderr, i18n.F("  默认模型：%s\n"), modelName)
+	fmt.Fprintln(os.Stderr, i18n.F("  如需按角色配置不同模型，编辑配置文件即可。"))
 	if rulesDir != "" {
-		fmt.Fprintf(os.Stderr, "  全局写作偏好可放 %s 下的 .md 文件（见其中 README.txt）\n", rulesDir)
+		fmt.Fprintf(os.Stderr, i18n.F("  全局写作偏好可放 %s 下的 .md 文件（见其中 README.txt）\n"), rulesDir)
 	}
 	fmt.Fprintln(os.Stderr)
 

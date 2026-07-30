@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"errors"
 	"github.com/voocel/agentcore"
 	"github.com/voocel/agentcore/schema"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/llmcontract"
 )
 
@@ -36,21 +38,21 @@ type FailureDecision struct {
 
 func (d *FailureDecision) ValidateAgainst(f FailureFacts) error {
 	if strings.TrimSpace(d.Reason) == "" {
-		return fmt.Errorf("reason 不能为空")
+		return errors.New(i18n.F("reason 不能为空"))
 	}
 	switch d.Action {
 	case "retry", "abort":
 		return nil
 	case "reroute":
 		if d.Dispatch == nil {
-			return fmt.Errorf("reroute 必须附 dispatch")
+			return errors.New(i18n.F("reroute 必须附 dispatch"))
 		}
 		if err := d.Dispatch.validate(); err != nil {
 			return err
 		}
 		return validateDispatchAgainst(d.Dispatch, f.Phase)
 	default:
-		return fmt.Errorf("action 非法: %q（可选 retry / reroute / abort）", d.Action)
+		return fmt.Errorf(i18n.F("action 非法: %q（可选 retry / reroute / abort）"), d.Action)
 	}
 }
 

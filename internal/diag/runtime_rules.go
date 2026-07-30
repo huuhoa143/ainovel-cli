@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -99,7 +100,7 @@ func stuckStep(rc *RuntimeCapture) []Finding {
 		AutoLevel:  AutoNone,
 		Target:     "runtime.flow",
 		Title:      "checkpoint 停滞在同一 step",
-		Evidence:   fmt.Sprintf("连续停在 `%s` ×%d", rc.StuckStep, rc.StuckCount),
+		Evidence:   fmt.Sprintf(i18n.F("连续停在 `%s` ×%d"), rc.StuckStep, rc.StuckCount),
 		Suggestion: "同一 step 反复写入而不推进；结合上面的重复签名定位是哪个子代理卡住。",
 	}}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/voocel/ainovel-cli/internal/host"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/utils"
 )
 
@@ -172,7 +173,7 @@ func retryCountdown(retryAt, now time.Time) string {
 		return ""
 	}
 	secs := int((remain + time.Second - 1) / time.Second)
-	return fmt.Sprintf("%ds 后重试", secs)
+	return fmt.Sprintf(i18n.F("%ds 后重试"), secs)
 }
 
 // renderDispatchSummary 渲染 DISPATCH 摘要：Agent 名用角色色，任务用淡色。

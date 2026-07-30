@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // InvalidPendingRewrites 检测返工队列里混入未完成章节。
@@ -35,7 +36,7 @@ func InvalidPendingRewrites(snap *Snapshot) []Finding {
 		Confidence: ConfHigh,
 		AutoLevel:  AutoSuggest,
 		Target:     "meta/progress.json",
-		Title:      fmt.Sprintf("返工队列包含未完成章节: [%s]", intsToStr(invalid)),
+		Title:      fmt.Sprintf(i18n.F("返工队列包含未完成章节: [%s]"), intsToStr(invalid)),
 		Evidence:   fmt.Sprintf("pending_rewrites=[%s], completed_chapters=[%s], flow=%s", intsToStr(p.PendingRewrites), intsToStr(completed), p.Flow),
 		Suggestion: "这是状态不变量损坏。请停止运行后编辑 meta/progress.json，移除 pending_rewrites 中未完成章节；若队列为空，将 flow 改为 writing 并清空 rewrite_reason。",
 	}}
@@ -61,7 +62,7 @@ func RewritePendingPressure(snap *Snapshot) []Finding {
 		Confidence: ConfMedium,
 		AutoLevel:  AutoNone,
 		Target:     "runtime.flow",
-		Title:      fmt.Sprintf("待改写章节: [%s]", chapters),
+		Title:      fmt.Sprintf(i18n.F("待改写章节: [%s]"), chapters),
 		Evidence:   fmt.Sprintf("flow=%s, pending_rewrites=[%s]", p.Flow, chapters),
 		Suggestion: "检查 Editor 评审标准是否过严，或 Writer 改写 prompt 是否有效。" +
 			"如需人工打断，请在输入框提交干预指令。",
@@ -108,8 +109,8 @@ func PhaseFlowMismatch(snap *Snapshot) []Finding {
 		Confidence: ConfHigh,
 		AutoLevel:  AutoSafe,
 		Target:     "runtime.flow",
-		Title:      fmt.Sprintf("阶段/流程状态不匹配: phase=%s, flow=%s", p.Phase, p.Flow),
-		Evidence:   fmt.Sprintf("phase=%s 不应出现非初始 flow=%s", p.Phase, p.Flow),
+		Title:      fmt.Sprintf(i18n.F("阶段/流程状态不匹配: phase=%s, flow=%s"), p.Phase, p.Flow),
+		Evidence:   fmt.Sprintf(i18n.F("phase=%s 不应出现非初始 flow=%s"), p.Phase, p.Flow),
 		Suggestion: "状态机可能损坏，需手动检查 meta/progress.json 的 phase 和 flow 字段。",
 	}}
 }
@@ -138,7 +139,7 @@ func ChapterGaps(snap *Snapshot) []Finding {
 		Confidence: ConfHigh,
 		AutoLevel:  AutoNone,
 		Target:     "runtime.flow",
-		Title:      fmt.Sprintf("章节跳号: 缺少 [%s]", intsToStr(gaps)),
+		Title:      fmt.Sprintf(i18n.F("章节跳号: 缺少 [%s]"), intsToStr(gaps)),
 		Evidence:   fmt.Sprintf("completed=[%s]", intsToStr(sorted)),
 		Suggestion: "commit_chapter 可能中途中断。检查 meta/pending_commit.json 是否存在未完成提交。",
 	}}

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"fmt"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"html"
 	"strings"
 	"time"
@@ -121,9 +122,9 @@ p { text-indent: 2em; margin: 0.5em 0; }
 
 func renderChapterXHTML(ch int, title string, loc chapterLocation, hasLoc bool, body string) string {
 	var b strings.Builder
-	displayTitle := fmt.Sprintf("第 %d 章", ch)
+	displayTitle := fmt.Sprintf(i18n.F("第 %d 章"), ch)
 	if title != "" {
-		displayTitle = fmt.Sprintf("第 %d 章 %s", ch, title)
+		displayTitle = fmt.Sprintf(i18n.F("第 %d 章 %s"), ch, title)
 	}
 
 	fmt.Fprintf(&b, `<?xml version="1.0" encoding="utf-8"?>
@@ -137,7 +138,7 @@ func renderChapterXHTML(ch int, title string, loc chapterLocation, hasLoc bool, 
 `, html.EscapeString(displayTitle))
 
 	if hasLoc && loc.IsFirstOfVolume {
-		fmt.Fprintf(&b, "  <div class=\"volume-divider\">第 %d 卷 %s</div>\n",
+		fmt.Fprintf(&b, i18n.F("  <div class=\"volume-divider\">第 %d 卷 %s</div>\n"),
 			loc.VolumeIdx, html.EscapeString(strings.TrimSpace(loc.VolumeTitle)))
 	}
 
@@ -211,9 +212,9 @@ func renderNavXHTML(hasCover bool, chapters []int, titleIdx chapterTitleIndex) s
 	// 而且 EPUB 3 nav 嵌套 ol 在某些阅读器上渲染怪。保持简单。
 	for _, ch := range chapters {
 		title := strings.TrimSpace(titleIdx[ch])
-		display := fmt.Sprintf("第 %d 章", ch)
+		display := fmt.Sprintf(i18n.F("第 %d 章"), ch)
 		if title != "" {
-			display = fmt.Sprintf("第 %d 章 %s", ch, title)
+			display = fmt.Sprintf(i18n.F("第 %d 章 %s"), ch, title)
 		}
 		fmt.Fprintf(&b, "      <li><a href=\"%s\">%s</a></li>\n",
 			chapterFileName(ch), html.EscapeString(display))

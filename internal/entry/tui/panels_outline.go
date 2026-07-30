@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/voocel/ainovel-cli/internal/host"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // outlineGridThreshold 大纲切换多列的章节阈值。
@@ -161,7 +162,7 @@ func renderDetailContent(snap host.UISnapshot, contentW int) string {
 	if len(snap.Outline) > 0 {
 		outlineHeader := ":: 大纲"
 		if snap.Layered {
-			outlineHeader = fmt.Sprintf(":: 大纲（%s · 动态规划大纲）", snap.CurrentVolumeArc)
+			outlineHeader = fmt.Sprintf(i18n.F(":: 大纲（%s · 动态规划大纲）"), snap.CurrentVolumeArc)
 		}
 		b.WriteString(panelTitleStyle.Render(outlineHeader))
 		b.WriteString("\n")
@@ -176,7 +177,7 @@ func renderDetailContent(snap host.UISnapshot, contentW int) string {
 			b.WriteString(compassStyle.Render("  ··· 后续章节随创作推进自动生成"))
 			b.WriteString("\n")
 			if snap.CompassDirection != "" {
-				direction := fmt.Sprintf("  → 终局：%s", snap.CompassDirection)
+				direction := fmt.Sprintf(i18n.F("  → 终局：%s"), snap.CompassDirection)
 				if snap.CompassScale != "" {
 					direction += "（" + snap.CompassScale + "）"
 				}
@@ -201,7 +202,7 @@ func renderDetailContent(snap host.UISnapshot, contentW int) string {
 	if snap.SupportingCount > 0 {
 		b.WriteString(panelTitleStyle.Render(":: 配角生态"))
 		b.WriteString("\n")
-		b.WriteString(cardContentStyle.Render(truncate(fmt.Sprintf("已出场：%d 位", snap.SupportingCount), contentW)))
+		b.WriteString(cardContentStyle.Render(truncate(fmt.Sprintf(i18n.F("已出场：%d 位"), snap.SupportingCount), contentW)))
 		b.WriteString("\n")
 		for _, name := range snap.RecentSupporting {
 			writeBulletWrapped(&b, name, contentW, cardContentStyle)

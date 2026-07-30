@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/tools"
 	"github.com/voocel/ainovel-cli/internal/utils"
 )
@@ -196,7 +197,7 @@ func renderAskUserModal(width, height int, state *askUserState) string {
 	}
 
 	var b strings.Builder
-	title := fmt.Sprintf("需要补充信息 %d/%d", state.index+1, len(state.request.questions))
+	title := fmt.Sprintf(i18n.F("需要补充信息 %d/%d"), state.index+1, len(state.request.questions))
 	b.WriteString(lipgloss.NewStyle().Foreground(colorAccent).Bold(true).Render(title))
 	b.WriteString("\n\n")
 	if q.Header != "" {

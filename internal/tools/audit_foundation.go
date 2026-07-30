@@ -9,6 +9,7 @@ import (
 	"github.com/voocel/agentcore/schema"
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/errs"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/llmcontract"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
@@ -66,7 +67,7 @@ func (t *AuditFoundationTool) Execute(_ context.Context, args json.RawMessage) (
 	}
 	for _, item := range missing {
 		if item != "foundation_audit" {
-			return nil, fmt.Errorf("基础设定尚缺 %s，不能审查: %w", item, errs.ErrToolPrecondition)
+			return nil, fmt.Errorf(i18n.F("基础设定尚缺 %s，不能审查: %w"), item, errs.ErrToolPrecondition)
 		}
 	}
 	current, err := t.store.FoundationFingerprint()
@@ -74,17 +75,17 @@ func (t *AuditFoundationTool) Execute(_ context.Context, args json.RawMessage) (
 		return nil, fmt.Errorf("fingerprint foundation: %w: %w", errs.ErrStoreRead, err)
 	}
 	if audit.Fingerprint != current {
-		return nil, fmt.Errorf("基础设定已发生变化；请重新调用 novel_context 获取最新 fingerprint 后再审查: %w", errs.ErrToolConflict)
+		return nil, fmt.Errorf(i18n.F("基础设定已发生变化；请重新调用 novel_context 获取最新 fingerprint 后再审查: %w"), errs.ErrToolConflict)
 	}
 	if audit.Ready && len(audit.Issues) > 0 {
-		return nil, fmt.Errorf("ready=true 时 issues 必须为空: %w", errs.ErrToolArgs)
+		return nil, fmt.Errorf(i18n.F("ready=true 时 issues 必须为空: %w"), errs.ErrToolArgs)
 	}
 	if !audit.Ready && len(audit.Issues) == 0 {
-		return nil, fmt.Errorf("ready=false 时必须给出具体 issues: %w", errs.ErrToolArgs)
+		return nil, fmt.Errorf(i18n.F("ready=false 时必须给出具体 issues: %w"), errs.ErrToolArgs)
 	}
 	for i, issue := range audit.Issues {
 		if strings.TrimSpace(issue.Artifact) == "" || strings.TrimSpace(issue.Description) == "" || strings.TrimSpace(issue.Evidence) == "" {
-			return nil, fmt.Errorf("issues[%d] 必须包含 artifact、description 和 evidence: %w", i, errs.ErrToolArgs)
+			return nil, fmt.Errorf(i18n.F("issues[%d] 必须包含 artifact、description 和 evidence: %w"), i, errs.ErrToolArgs)
 		}
 	}
 

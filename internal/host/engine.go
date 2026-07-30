@@ -17,6 +17,7 @@ import (
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/errs"
 	"github.com/voocel/ainovel-cli/internal/flow"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/notify"
 	storepkg "github.com/voocel/ainovel-cli/internal/store"
 	"github.com/voocel/ainovel-cli/internal/tools"
@@ -342,7 +343,7 @@ func (e *engine) retryPlanStart(ctx context.Context, prompt string) *flow.Instru
 		return nil
 	}
 	e.emitEvent(Event{Time: time.Now(), Category: "SYSTEM", Level: "info",
-		Summary: fmt.Sprintf("启动裁定已补齐(规划师: %s——%s)", decision.Planner, decision.Reason)})
+		Summary: fmt.Sprintf(i18n.F("启动裁定已补齐(规划师: %s——%s)"), decision.Planner, decision.Reason)})
 	return &flow.Instruction{Agent: decision.Planner, Task: decision.Task, Reason: decision.Reason}
 }
 
@@ -363,7 +364,7 @@ func (e *engine) precheck(inst *flow.Instruction) (*flow.Instruction, error) {
 			if progress != nil {
 				phase = string(progress.Phase)
 			}
-			return nil, fmt.Errorf("writer 仅能在 writing 阶段派发（当前 phase=%s）: %w", phase, errInvalidWriteTarget)
+			return nil, fmt.Errorf(i18n.F("writer 仅能在 writing 阶段派发（当前 phase=%s）: %w"), phase, errInvalidWriteTarget)
 		}
 		ch, err := writerTargetChapter(e.store)
 		if err != nil {
@@ -378,7 +379,7 @@ func (e *engine) precheck(inst *flow.Instruction) (*flow.Instruction, error) {
 				// 是说给 LLM 的;Engine 直接做正确的事)。
 				return &flow.Instruction{
 					Agent:  "architect_long",
-					Task:   fmt.Sprintf("下一弧为骨架(%s)。调用 save_foundation(type=expand_arc) 展开下一弧;若当前卷已写完,改用 type=append_volume 追加并展开下一卷。", err),
+					Task:   fmt.Sprintf(i18n.F("下一弧为骨架(%s)。调用 save_foundation(type=expand_arc) 展开下一弧;若当前卷已写完,改用 type=append_volume 追加并展开下一卷。"), err),
 					Reason: "写作目标章未展开,先展开再续写",
 				}, nil
 			}
@@ -395,7 +396,7 @@ func writerTargetChapter(st *storepkg.Store) (int, error) {
 		return 0, fmt.Errorf("load progress: %w", err)
 	}
 	if progress == nil {
-		return 0, fmt.Errorf("progress 未初始化")
+		return 0, errors.New(i18n.F("progress 未初始化"))
 	}
 	if len(progress.PendingRewrites) > 0 {
 		return progress.PendingRewrites[0], nil
@@ -424,7 +425,7 @@ func (e *engine) trackDeadlock(ctx context.Context, inst **flow.Instruction) (st
 		return false
 	}
 	if e.repeats >= deadlockAbortAt {
-		e.pauseWithNotify(notify.KindDeadlock, fmt.Sprintf("僵局熔断: 指令连续 %d 次无进展(%s),已暂停等待人工介入", e.repeats, in.Agent))
+		e.pauseWithNotify(notify.KindDeadlock, fmt.Sprintf(i18n.F("僵局熔断: 指令连续 %d 次无进展(%s),已暂停等待人工介入"), e.repeats, in.Agent))
 		return true
 	}
 	// Arbiter 僵局咨询(repeats ∈ [consultAt, abortAt))。裁定 retry 不清零计数。
@@ -461,7 +462,7 @@ func (e *engine) runWorker(ctx context.Context, inst *flow.Instruction) error {
 		}
 		if err := e.store.Progress.StartChapter(inst.Chapter); err != nil {
 			e.observer.dispatchFinish(inst.Agent, true)
-			return fmt.Errorf("%w: 预标第 %d 章进行中失败: %w", errInvalidWriteTarget, inst.Chapter, err)
+			return fmt.Errorf(i18n.F("%w: 预标第 %d 章进行中失败: %w"), errInvalidWriteTarget, inst.Chapter, err)
 		}
 	}
 
@@ -484,7 +485,7 @@ func (e *engine) runWorker(ctx context.Context, inst *flow.Instruction) error {
 func (e *engine) handleWorkerError(ctx context.Context, inst *flow.Instruction, werr error) (stop bool) {
 	msg := werr.Error()
 	e.emitEvent(Event{Time: time.Now(), Category: "ERROR", Agent: inst.Agent,
-		Summary: truncate(fmt.Sprintf("%s 失败: %s", inst.Agent, msg), 120), Detail: msg, Level: "error"})
+		Summary: truncate(fmt.Sprintf(i18n.F("%s 失败: %s"), inst.Agent, msg), 120), Detail: msg, Level: "error"})
 
 	key := inst.Agent + "\x00" + inst.Task
 	if e.failedKey != key {
@@ -530,7 +531,7 @@ func contentFilterAdvice(werr error) string {
 
 // errInvalidWriteTarget 标记 runWorker 前置校验拦下的非法写作目标，供错误链和
 // Arbiter 事实保留稳定语义；是否重试或改派仍由统一失败流程决定。
-var errInvalidWriteTarget = errors.New("非法写作目标")
+var errInvalidWriteTarget = errors.New(i18n.F("非法写作目标"))
 
 func (e *engine) failureFacts(kind string, inst *flow.Instruction, workerErr error) arbiter.FailureFacts {
 	f := arbiter.FailureFacts{Kind: kind, Agent: inst.Agent, Task: inst.Task, Repeats: e.repeats}
@@ -624,7 +625,7 @@ func (e *engine) applyControlOp(ctx context.Context, op controlOp) error {
 		// 会残留，并与按新事实重新裁定出的 hold 冲突，最终只暂停却漏做修改。
 		fresh, err := arbiter.CollectInterventionFacts(e.store)
 		if err != nil {
-			return fmt.Errorf("刷新干预事实: %w", err)
+			return fmt.Errorf(i18n.F("刷新干预事实: %w"), err)
 		}
 		if fresh.Phase != op.facts.Phase || fresh.Flow != op.facts.Flow ||
 			fresh.QueueHead() != op.facts.QueueHead() {
@@ -669,7 +670,7 @@ func (e *engine) applyControlOp(ctx context.Context, op controlOp) error {
 			fail(err)
 		} else {
 			e.emitEvent(Event{Time: time.Now(), Category: "SYSTEM",
-				Summary: fmt.Sprintf("已重开全书返工: 第 %v 章入队", op.reopen.Chapters), Level: "info"})
+				Summary: fmt.Sprintf(i18n.F("已重开全书返工: 第 %v 章入队"), op.reopen.Chapters), Level: "info"})
 		}
 	}
 	if op.dispatch != nil {
@@ -729,6 +730,6 @@ func completionSummary(st *storepkg.Store) string {
 	if name == "" {
 		name = "本书"
 	}
-	fmt.Fprintf(&b, "《%s》创作完成: 共 %d 章 %d 字", name, len(progress.CompletedChapters), progress.TotalWordCount)
+	fmt.Fprintf(&b, i18n.F("《%s》创作完成: 共 %d 章 %d 字"), name, len(progress.CompletedChapters), progress.TotalWordCount)
 	return b.String()
 }

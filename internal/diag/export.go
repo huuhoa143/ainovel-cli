@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -40,18 +41,18 @@ func RenderExport(rep Report, rc RuntimeCapture) []byte {
 	st := rep.Stats
 
 	b.WriteString("# diag-export\n\n")
-	fmt.Fprintf(&b, "> 生成时间 %s · %s/%s\n", time.Now().Format("2006-01-02 15:04:05"), rc.GoOS, rc.GoArch)
+	fmt.Fprintf(&b, i18n.F("> 生成时间 %s · %s/%s\n"), time.Now().Format("2006-01-02 15:04:05"), rc.GoOS, rc.GoArch)
 	b.WriteString("> ⚠️ 已脱敏：小说正文 / prompt / 思考已移除，仅保留行为骨架。可直接贴到 issue。\n\n")
 
 	// 1. 环境
 	b.WriteString("## 1. 环境\n\n")
-	fmt.Fprintf(&b, "- 阶段 `%s`", orDash(st.Phase))
+	fmt.Fprintf(&b, i18n.F("- 阶段 `%s`"), orDash(st.Phase))
 	if st.Flow != "" {
 		fmt.Fprintf(&b, " / flow `%s`", st.Flow)
 	}
-	fmt.Fprintf(&b, " · 章节 %d/%d · 字数 %d\n", st.CompletedChapters, st.TotalChapters, st.TotalWords)
+	fmt.Fprintf(&b, i18n.F(" · 章节 %d/%d · 字数 %d\n"), st.CompletedChapters, st.TotalChapters, st.TotalWords)
 	if st.PlanningTier != "" {
-		fmt.Fprintf(&b, "- 规划 `%s`\n", st.PlanningTier)
+		fmt.Fprintf(&b, i18n.F("- 规划 `%s`\n"), st.PlanningTier)
 	}
 	for _, m := range rc.Models {
 		fmt.Fprintf(&b, "- %s → `%s` / `%s`\n", m.Agent, orDash(m.Provider), orDash(m.Model))
@@ -67,7 +68,7 @@ func RenderExport(rep Report, rc RuntimeCapture) []byte {
 		for _, f := range rf {
 			fmt.Fprintf(&b, "- [%s] %s\n", f.Severity, f.Title)
 			if f.Evidence != "" {
-				fmt.Fprintf(&b, "  - 证据：%s\n", f.Evidence)
+				fmt.Fprintf(&b, i18n.F("  - 证据：%s\n"), f.Evidence)
 			}
 			if f.Suggestion != "" {
 				fmt.Fprintf(&b, "  - → %s\n", f.Suggestion)
@@ -79,11 +80,11 @@ func RenderExport(rep Report, rc RuntimeCapture) []byte {
 	b.WriteString("\n## 3. 运行时信号\n\n")
 	wrote := false
 	if rc.CurrentStep != "" {
-		fmt.Fprintf(&b, "- 当前 step `%s`\n", rc.CurrentStep)
+		fmt.Fprintf(&b, i18n.F("- 当前 step `%s`\n"), rc.CurrentStep)
 		wrote = true
 	}
 	if rc.StuckStep != "" {
-		fmt.Fprintf(&b, "- ⚠️ 卡住：连续停在 `%s` ×%d\n", rc.StuckStep, rc.StuckCount)
+		fmt.Fprintf(&b, i18n.F("- ⚠️ 卡住：连续停在 `%s` ×%d\n"), rc.StuckStep, rc.StuckCount)
 		wrote = true
 	}
 	if len(rc.Repeats) > 0 {
@@ -107,11 +108,11 @@ func RenderExport(rep Report, rc RuntimeCapture) []byte {
 		wrote = true
 	}
 	if rc.LogErrors > 0 || rc.LogWarns > 0 {
-		fmt.Fprintf(&b, "- 日志 error ×%d · warn ×%d\n", rc.LogErrors, rc.LogWarns)
+		fmt.Fprintf(&b, i18n.F("- 日志 error ×%d · warn ×%d\n"), rc.LogErrors, rc.LogWarns)
 		wrote = true
 	}
 	if rc.StopGuard > 0 {
-		fmt.Fprintf(&b, "- StopGuard 拦截 ×%d\n", rc.StopGuard)
+		fmt.Fprintf(&b, i18n.F("- StopGuard 拦截 ×%d\n"), rc.StopGuard)
 		wrote = true
 	}
 	if !wrote {
@@ -119,7 +120,7 @@ func RenderExport(rep Report, rc RuntimeCapture) []byte {
 	}
 
 	// 4. 行为骨架尾巴
-	fmt.Fprintf(&b, "\n## 4. 行为骨架尾巴（末 %d 条）\n\n", len(rc.Tail))
+	fmt.Fprintf(&b, i18n.F("\n## 4. 行为骨架尾巴（末 %d 条）\n\n"), len(rc.Tail))
 	if len(rc.Tail) == 0 {
 		b.WriteString("（无会话记录）\n")
 	} else {
@@ -133,9 +134,9 @@ func RenderExport(rep Report, rc RuntimeCapture) []byte {
 
 	// 5. 脱敏自检
 	b.WriteString("\n## 5. 脱敏自检\n\n")
-	fmt.Fprintf(&b, "- 打码文本块 %d 处 · 正文出包 0 处\n", rc.RedactedTexts)
+	fmt.Fprintf(&b, i18n.F("- 打码文本块 %d 处 · 正文出包 0 处\n"), rc.RedactedTexts)
 	if len(rc.Sources) > 0 {
-		fmt.Fprintf(&b, "- 数据源：%s\n", strings.Join(rc.Sources, " · "))
+		fmt.Fprintf(&b, i18n.F("- 数据源：%s\n"), strings.Join(rc.Sources, " · "))
 	}
 
 	return []byte(b.String())

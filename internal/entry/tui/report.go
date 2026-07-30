@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/voocel/ainovel-cli/internal/diag"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 type reportState struct {
@@ -123,10 +124,10 @@ func renderReportText(report diag.Report, width int, exportPath string, exportEr
 
 	// 第二行：评审 + 改写 + 均分
 	b.WriteString(mutedStyle.Render("评审 "))
-	b.WriteString(fmt.Sprintf("%d次", st.ReviewCount))
+	b.WriteString(fmt.Sprintf(i18n.F("%d次"), st.ReviewCount))
 	if st.RewriteCount > 0 {
 		b.WriteString(mutedStyle.Render("  改写 "))
-		b.WriteString(fmt.Sprintf("%d次", st.RewriteCount))
+		b.WriteString(fmt.Sprintf(i18n.F("%d次"), st.RewriteCount))
 	}
 	if st.AvgReviewScore > 0 {
 		b.WriteString(mutedStyle.Render("  均分 "))
@@ -137,9 +138,9 @@ func renderReportText(report diag.Report, width int, exportPath string, exportEr
 	// 第三行：伏笔 + 规划
 	if st.ForeshadowOpen > 0 || st.ForeshadowStale > 0 {
 		b.WriteString(mutedStyle.Render("伏笔 "))
-		b.WriteString(fmt.Sprintf("打开%d", st.ForeshadowOpen))
+		b.WriteString(fmt.Sprintf(i18n.F("打开%d"), st.ForeshadowOpen))
 		if st.ForeshadowStale > 0 {
-			b.WriteString(lipgloss.NewStyle().Foreground(colorReview).Render(fmt.Sprintf(" 停滞%d", st.ForeshadowStale)))
+			b.WriteString(lipgloss.NewStyle().Foreground(colorReview).Render(fmt.Sprintf(i18n.F(" 停滞%d"), st.ForeshadowStale)))
 		}
 		b.WriteString("\n")
 	}

@@ -8,7 +8,8 @@ package notify
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -178,7 +179,7 @@ func findPowerShell() (string, error) {
 			return path, nil
 		}
 	}
-	return "", fmt.Errorf("Windows 通知需要 PowerShell，但系统未找到 powershell.exe 或 pwsh.exe")
+	return "", errors.New(i18n.F("Windows 通知需要 PowerShell，但系统未找到 powershell.exe 或 pwsh.exe"))
 }
 
 const windowsNotificationScript = `$ErrorActionPreference = 'Stop'

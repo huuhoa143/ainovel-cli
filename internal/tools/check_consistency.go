@@ -8,6 +8,7 @@ import (
 	"github.com/voocel/agentcore/schema"
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/errs"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -52,7 +53,7 @@ func (t *CheckConsistencyTool) Execute(_ context.Context, args json.RawMessage) 
 	var warnings []string
 	warn := func(scope string, err error) {
 		if err != nil {
-			warnings = append(warnings, fmt.Sprintf("%s 读取失败: %v", scope, err))
+			warnings = append(warnings, fmt.Sprintf(i18n.F("%s 读取失败: %v"), scope, err))
 		}
 	}
 

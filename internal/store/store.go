@@ -10,6 +10,7 @@ import (
 
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/errs"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // Store 是状态管理的组合根，持有所有子存储。
@@ -73,7 +74,7 @@ func (s *Store) CheckConsistency() []string {
 	var warnings []string
 	progress, err := s.Progress.Load()
 	if err != nil {
-		return append(warnings, fmt.Sprintf("progress 读取失败: %v", err))
+		return append(warnings, fmt.Sprintf(i18n.F("progress 读取失败: %v"), err))
 	}
 	if progress == nil {
 		return warnings
@@ -81,15 +82,15 @@ func (s *Store) CheckConsistency() []string {
 	if n := len(progress.CompletedChapters); n > 0 {
 		lastCh := progress.CompletedChapters[n-1]
 		if text, err := s.Drafts.LoadChapterText(lastCh); err != nil {
-			warnings = append(warnings, fmt.Sprintf("第 %d 章终稿读取失败: %v", lastCh, err))
+			warnings = append(warnings, fmt.Sprintf(i18n.F("第 %d 章终稿读取失败: %v"), lastCh, err))
 		} else if text == "" {
-			warnings = append(warnings, fmt.Sprintf("progress 标记第 %d 章已完成，但 chapters/%02d.md 不存在或为空", lastCh, lastCh))
+			warnings = append(warnings, fmt.Sprintf(i18n.F("progress 标记第 %d 章已完成，但 chapters/%02d.md 不存在或为空"), lastCh, lastCh))
 		}
 	}
 	if progress.Layered && progress.CurrentVolume > 0 && progress.CurrentArc > 0 {
 		volumes, err := s.Outline.LoadLayeredOutline()
 		if err != nil {
-			warnings = append(warnings, fmt.Sprintf("分层大纲读取失败: %v", err))
+			warnings = append(warnings, fmt.Sprintf(i18n.F("分层大纲读取失败: %v"), err))
 		} else if len(volumes) > 0 {
 			found := false
 			for _, v := range volumes {
@@ -105,7 +106,7 @@ func (s *Store) CheckConsistency() []string {
 				break
 			}
 			if !found {
-				warnings = append(warnings, fmt.Sprintf("progress 当前 V%d A%d 在分层大纲中找不到对应条目", progress.CurrentVolume, progress.CurrentArc))
+				warnings = append(warnings, fmt.Sprintf(i18n.F("progress 当前 V%d A%d 在分层大纲中找不到对应条目"), progress.CurrentVolume, progress.CurrentArc))
 			}
 		}
 	}
@@ -287,17 +288,17 @@ func (s *Store) ReviseOutline(fromChapter int, replacement []domain.OutlineEntry
 		return 0, fmt.Errorf("load progress: %w: %w", errs.ErrStoreRead, err)
 	}
 	if p == nil {
-		return 0, fmt.Errorf("progress 未初始化: %w", errs.ErrToolPrecondition)
+		return 0, fmt.Errorf(i18n.F("progress 未初始化: %w"), errs.ErrToolPrecondition)
 	}
 	if p.Phase == domain.PhaseComplete {
-		return 0, fmt.Errorf("全书已完结，不允许修改大纲: %w", errs.ErrToolPrecondition)
+		return 0, fmt.Errorf(i18n.F("全书已完结，不允许修改大纲: %w"), errs.ErrToolPrecondition)
 	}
 	protected := p.InProgressChapter
 	if latest := p.LatestCompleted(); latest > protected {
 		protected = latest
 	}
 	if fromChapter <= protected {
-		return 0, fmt.Errorf("第 %d 章已完成或正在写作；大纲修订必须从第 %d 章之后开始: %w",
+		return 0, fmt.Errorf(i18n.F("第 %d 章已完成或正在写作；大纲修订必须从第 %d 章之后开始: %w"),
 			fromChapter, protected, errs.ErrToolPrecondition)
 	}
 

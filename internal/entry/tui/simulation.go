@@ -10,8 +10,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"errors"
 	"github.com/voocel/ainovel-cli/internal/host"
 	"github.com/voocel/ainovel-cli/internal/host/sim"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 type simulationState struct {
@@ -118,7 +120,7 @@ func (s *simulationState) refresh(contentW int) {
 
 	b.WriteString(titleStyle.Render("流程日志"))
 	b.WriteString(" ")
-	b.WriteString(dimStyle.Render(fmt.Sprintf("(%d 条)", len(s.history))))
+	b.WriteString(dimStyle.Render(fmt.Sprintf(i18n.F("(%d 条)"), len(s.history))))
 	b.WriteString("\n")
 	for _, ln := range s.history {
 		b.WriteString("\n")
@@ -200,7 +202,7 @@ func (m Model) handleSimulationKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func startSimulate(rt *host.Host, reqID int, args []string, width, height int) (*simulationState, tea.Cmd, error) {
 	if len(args) > 0 {
-		return nil, nil, fmt.Errorf("用法：/simulate")
+		return nil, nil, errors.New(i18n.F("用法：/simulate"))
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	ch, err := rt.Simulate(ctx)
@@ -214,7 +216,7 @@ func startSimulate(rt *host.Host, reqID int, args []string, width, height int) (
 
 func startImportSimulation(rt *host.Host, reqID int, args []string, width, height int) (*simulationState, tea.Cmd, error) {
 	if len(args) != 1 {
-		return nil, nil, fmt.Errorf("用法：/importsim <profile.json>")
+		return nil, nil, errors.New(i18n.F("用法：/importsim <profile.json>"))
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	ch, err := rt.ImportSimulationProfile(ctx, args[0])

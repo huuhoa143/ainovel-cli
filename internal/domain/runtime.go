@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"strings"
 )
 
@@ -244,7 +245,7 @@ type UnsupportedAdvanceModeError struct {
 }
 
 func (e *UnsupportedAdvanceModeError) Error() string {
-	return fmt.Sprintf("不支持的章节推进模式 %q，请使用创建该项目的新版 ainovel", e.Mode)
+	return fmt.Sprintf(i18n.F("不支持的章节推进模式 %q，请使用创建该项目的新版 ainovel"), e.Mode)
 }
 
 // AdvanceHoldAfter 是一次性暂停的确定性触发条件。

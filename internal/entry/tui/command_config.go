@@ -8,11 +8,13 @@ import (
 	"strconv"
 	"strings"
 
+	"errors"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/voocel/ainovel-cli/internal/bootstrap"
 	"github.com/voocel/ainovel-cli/internal/host"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 type configStep int
@@ -232,7 +234,7 @@ func (s *modelConfigState) hubFields() []hubField {
 		base = "默认地址"
 	}
 	fields = append(fields, hubField{"baseurl", "Base URL", base})
-	fields = append(fields, hubField{"models", "模型", fmt.Sprintf("%d 个", len(s.models))})
+	fields = append(fields, hubField{"models", "模型", fmt.Sprintf(i18n.F("%d 个"), len(s.models))})
 	testModel := s.testModelName()
 	if testModel == "" {
 		testModel = "请先添加模型"
@@ -505,7 +507,7 @@ func (s *modelConfigState) deleteModel(idx int) bool {
 		if ref == "default" {
 			continue // 顶层引用已由 currentModel 拦截，避免重复提示
 		}
-		s.message = fmt.Sprintf("模型仍被 %s 引用，请先在 /model 切换后再删除", ref)
+		s.message = fmt.Sprintf(i18n.F("模型仍被 %s 引用，请先在 /model 切换后再删除"), ref)
 		return false
 	}
 	s.models = append(s.models[:idx], s.models[idx+1:]...)
@@ -663,7 +665,7 @@ func (m Model) handleModelConfigKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 					break
 				}
 				state.testing = true
-				state.message = fmt.Sprintf("正在测试连接：%s/%s...", state.provider, model)
+				state.message = fmt.Sprintf(i18n.F("正在测试连接：%s/%s..."), state.provider, model)
 				ctx, cancel := context.WithCancel(context.Background())
 				state.testCancel = cancel
 				return m, testModelConnection(ctx, m.runtime, state.draft(), model)
@@ -780,11 +782,11 @@ func parseContextWindowInput(input string) (int, error) {
 	}
 	number, err := strconv.ParseFloat(value, 64)
 	if err != nil || number <= 0 {
-		return 0, fmt.Errorf("上下文窗口请输入正整数、128K、1M，或留空使用自动值")
+		return 0, errors.New(i18n.F("上下文窗口请输入正整数、128K、1M，或留空使用自动值"))
 	}
 	result := number * multiplier
 	if result > float64(math.MaxInt) || math.Trunc(result) != result {
-		return 0, fmt.Errorf("上下文窗口超出有效整数范围")
+		return 0, errors.New(i18n.F("上下文窗口超出有效整数范围"))
 	}
 	return int(result), nil
 }

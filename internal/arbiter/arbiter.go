@@ -19,8 +19,10 @@ import (
 	"slices"
 	"strings"
 
+	"errors"
 	"github.com/voocel/agentcore"
 	"github.com/voocel/agentcore/schema"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/llmcontract"
 )
 
@@ -71,10 +73,10 @@ func (d *DispatchOp) validate() error {
 		return nil
 	}
 	if !slices.Contains(workerNames, d.Agent) {
-		return fmt.Errorf("dispatch.agent 非法: %q", d.Agent)
+		return fmt.Errorf(i18n.F("dispatch.agent 非法: %q"), d.Agent)
 	}
 	if strings.TrimSpace(d.Task) == "" {
-		return fmt.Errorf("dispatch.task 不能为空")
+		return errors.New(i18n.F("dispatch.task 不能为空"))
 	}
 	return nil
 }
@@ -93,7 +95,7 @@ func dispatchSchema(desc string) map[string]any {
 func marshalPayload(v any) (string, error) {
 	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
-		return "", fmt.Errorf("arbiter: 事实包序列化失败: %w", err)
+		return "", fmt.Errorf(i18n.F("arbiter: 事实包序列化失败: %w"), err)
 	}
 	return string(data), nil
 }

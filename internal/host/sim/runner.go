@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/llmcontract"
 )
 
@@ -63,7 +64,7 @@ func Run(ctx context.Context, deps Deps, opts Options) (<-chan Event, error) {
 				emit(StageError, i, len(pending), "用户取消画像分析", err)
 				return
 			}
-			emit(StageAnalyze, i+1, len(pending), fmt.Sprintf("分析仿写语料 %d/%d：%s", i+1, len(pending), source.RelativePath), nil)
+			emit(StageAnalyze, i+1, len(pending), fmt.Sprintf(i18n.F("分析仿写语料 %d/%d：%s"), i+1, len(pending), source.RelativePath), nil)
 			report, err := AnalyzeSource(ctx, deps.LLM, deps.Prompts.Source, source)
 			if err != nil {
 				emit(StageError, i+1, len(pending), "语料分析失败", err)
@@ -84,7 +85,7 @@ func Run(ctx context.Context, deps Deps, opts Options) (<-chan Event, error) {
 			emit(StageError, len(pending), len(pending), "保存仿写画像失败", err)
 			return
 		}
-		emit(StageDone, len(pending), len(pending), fmt.Sprintf("仿写画像已更新：新增/变更 %d 篇，累计 %d 篇", len(pending), len(profile.Corpus.Sources)), nil)
+		emit(StageDone, len(pending), len(pending), fmt.Sprintf(i18n.F("仿写画像已更新：新增/变更 %d 篇，累计 %d 篇"), len(pending), len(profile.Corpus.Sources)), nil)
 	}()
 	return events, nil
 }

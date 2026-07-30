@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // CharacterStore 管理角色档案和状态快照。
@@ -90,10 +91,10 @@ func renderCharacters(chars []domain.Character) string {
 		fmt.Fprintf(&b, "## %s（%s）\n\n", c.Name, c.Role)
 		fmt.Fprintf(&b, "%s\n\n", c.Description)
 		if c.Arc != "" {
-			fmt.Fprintf(&b, "**角色弧线**：%s\n\n", c.Arc)
+			fmt.Fprintf(&b, i18n.F("**角色弧线**：%s\n\n"), c.Arc)
 		}
 		if len(c.Traits) > 0 {
-			fmt.Fprintf(&b, "**特征**：%s\n\n", strings.Join(c.Traits, "、"))
+			fmt.Fprintf(&b, i18n.F("**特征**：%s\n\n"), strings.Join(c.Traits, "、"))
 		}
 	}
 	return b.String()

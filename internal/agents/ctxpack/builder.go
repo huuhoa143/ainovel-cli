@@ -9,6 +9,7 @@ import (
 	"github.com/voocel/agentcore"
 	corecontext "github.com/voocel/agentcore/context"
 	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -32,7 +33,7 @@ type writerStoreSummaryState struct {
 
 func (s *writerStoreSummaryState) warn(scope string, err error) {
 	if s != nil && err != nil {
-		s.warnings = append(s.warnings, fmt.Sprintf("%s 读取失败: %v", scope, err))
+		s.warnings = append(s.warnings, fmt.Sprintf(i18n.F("%s 读取失败: %v"), scope, err))
 	}
 }
 
@@ -416,7 +417,7 @@ func appendJSONSection(parts *[]string, heading string, data any, remaining *int
 			return true
 		}
 		text = truncateJSONToTokens(b, *remaining-20)
-		*parts = append(*parts, fmt.Sprintf("## %s\n%s [已截断]", heading, text))
+		*parts = append(*parts, fmt.Sprintf(i18n.F("## %s\n%s [已截断]"), heading, text))
 		*remaining = 0
 		return true
 	}

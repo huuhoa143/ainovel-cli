@@ -8,6 +8,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/voocel/ainovel-cli/internal/host"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // renderStateContent 生成状态侧栏的纯内容(不含边框/外框)，供 stateVP.SetContent 使用。
@@ -29,31 +30,31 @@ func renderStateContent(snap host.UISnapshot, contentW int) string {
 	if snap.AdvanceMode == "review" {
 		advance := "逐章验收"
 		if snap.AdvancePermitChapter > 0 {
-			advance = fmt.Sprintf("已放行第 %d 章", snap.AdvancePermitChapter)
+			advance = fmt.Sprintf(i18n.F("已放行第 %d 章"), snap.AdvancePermitChapter)
 		}
 		overview.WriteString(renderField("推进", advance))
 	} else if snap.AdvanceMode == "auto" {
 		overview.WriteString(renderField("推进", "自动"))
 	}
 	if snap.Layered {
-		overview.WriteString(renderField("已完成", fmt.Sprintf("%d 章", snap.CompletedCount)))
+		overview.WriteString(renderField("已完成", fmt.Sprintf(i18n.F("%d 章"), snap.CompletedCount)))
 		// 分层动态规划：右栏只展示当前弧已展开的章节，"已规划"也用同一个口径，
 		// 否则会把骨架弧 EstimatedChapters 的粗估算（如 92）混进来，与可见大纲对不上。
 		// progress.TotalChapters 那个值仅用于内部 ContextProfile 决策，不要泄漏到 UI。
 		if planned := len(snap.Outline); planned > 0 {
-			overview.WriteString(renderField("已规划", fmt.Sprintf("%d 章", planned)))
+			overview.WriteString(renderField("已规划", fmt.Sprintf(i18n.F("%d 章"), planned)))
 		}
 	} else {
 		switch {
 		case snap.TotalChapters > 0:
-			overview.WriteString(renderField("进度", fmt.Sprintf("%d / %d 章", snap.CompletedCount, snap.TotalChapters)))
+			overview.WriteString(renderField("进度", fmt.Sprintf(i18n.F("%d / %d 章"), snap.CompletedCount, snap.TotalChapters)))
 		default:
-			overview.WriteString(renderField("已完成", fmt.Sprintf("%d 章", snap.CompletedCount)))
+			overview.WriteString(renderField("已完成", fmt.Sprintf(i18n.F("%d 章"), snap.CompletedCount)))
 		}
 	}
 	overview.WriteString(renderField("字数", formatNumber(snap.TotalWordCount)))
 	if label, ch := inProgressDisplay(snap); label != "" {
-		overview.WriteString(renderField(label, fmt.Sprintf("第 %d 章", ch)))
+		overview.WriteString(renderField(label, fmt.Sprintf(i18n.F("第 %d 章"), ch)))
 	}
 	if headline := snapshotHeadline(snap); headline != "" {
 		label := "当前"
@@ -401,7 +402,7 @@ func renderCacheSidebar(snap host.UISnapshot, width int) string {
 	// 否则用户会一直以为左栏写了缓存代码却显示不出来。优先级最高。
 	if snap.MissingAssistantUsage > 0 && snap.TotalInputTokens <= 0 {
 		warn := lipgloss.NewStyle().Foreground(colorError).Bold(true).
-			Render(fmt.Sprintf("⚠ 上游未返 usage（%d 次）", snap.MissingAssistantUsage))
+			Render(fmt.Sprintf(i18n.F("⚠ 上游未返 usage（%d 次）"), snap.MissingAssistantUsage))
 		hint := lipgloss.NewStyle().Foreground(colorDim).Italic(true).
 			Render(truncate("检查 provider stream_options.include_usage", max(8, width-2)))
 		return warn + "\n" + hint + "\n"
@@ -425,7 +426,7 @@ func renderCacheSidebar(snap host.UISnapshot, width int) string {
 	b.WriteString(renderField("累计命中", colorPercent(overallHit)))
 	if snap.OverallRecentSamples > 0 && snap.OverallRecentInput > 0 {
 		recent := cacheHitRate(snap.OverallRecentCacheRead, snap.OverallRecentInput)
-		b.WriteString(renderField(fmt.Sprintf("近%d命中", snap.OverallRecentSamples), colorPercent(recent)))
+		b.WriteString(renderField(fmt.Sprintf(i18n.F("近%d命中"), snap.OverallRecentSamples), colorPercent(recent)))
 	}
 
 	if savedStr := formatCostUSD(snap.TotalSavedUSD); savedStr != "" {
@@ -448,7 +449,7 @@ func renderCacheSidebar(snap host.UISnapshot, width int) string {
 	// 断裂 = 前缀未缩短而命中骤降（合法下降如换章/压缩已豁免）。次数多通常
 	// 指向服务端逐出或中转轮询上游，详情看 tui.log 的"缓存链断裂"warn。
 	if snap.TotalCacheBreaks > 0 {
-		v := lipgloss.NewStyle().Foreground(colorReview).Render(fmt.Sprintf("%d 次", snap.TotalCacheBreaks))
+		v := lipgloss.NewStyle().Foreground(colorReview).Render(fmt.Sprintf(i18n.F("%d 次"), snap.TotalCacheBreaks))
 		b.WriteString(renderField("链路断裂", v))
 	}
 
@@ -580,7 +581,7 @@ func renderContextSidebar(snap host.UISnapshot, width int) string {
 		b.WriteString(renderField("当前视图", scope))
 	}
 	if snap.ContextSummaryCount > 0 {
-		b.WriteString(renderField("摘要", fmt.Sprintf("%d 条", snap.ContextSummaryCount)))
+		b.WriteString(renderField("摘要", fmt.Sprintf(i18n.F("%d 条"), snap.ContextSummaryCount)))
 	}
 	if snap.ContextActiveMessages > 0 {
 		b.WriteString(renderField("消息数", fmt.Sprintf("%d", snap.ContextActiveMessages)))

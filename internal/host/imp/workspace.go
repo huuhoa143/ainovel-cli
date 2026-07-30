@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"os"
 	"path/filepath"
 )
@@ -155,7 +156,7 @@ func (w *Workspace) LoadManifest() (*Manifest, error) {
 		return nil, err
 	}
 	if m.Version != workspaceSchemaVersion {
-		return nil, fmt.Errorf("manifest schema 版本 %d != %d，请用匹配版本继续或重新导入", m.Version, workspaceSchemaVersion)
+		return nil, fmt.Errorf(i18n.F("manifest schema 版本 %d != %d，请用匹配版本继续或重新导入"), m.Version, workspaceSchemaVersion)
 	}
 	return &m, nil
 }
@@ -209,7 +210,7 @@ func readArtifact[T any](w *Workspace, rel string) (*Artifact[T], error) {
 		return nil, err
 	}
 	if a.SchemaVersion != workspaceSchemaVersion {
-		return nil, fmt.Errorf("%s schema 版本 %d != %d，请用匹配版本继续或重新导入", rel, a.SchemaVersion, workspaceSchemaVersion)
+		return nil, fmt.Errorf(i18n.F("%s schema 版本 %d != %d，请用匹配版本继续或重新导入"), rel, a.SchemaVersion, workspaceSchemaVersion)
 	}
 	return &a, nil
 }
@@ -241,7 +242,7 @@ func createWorkspace(bookDir string, m Manifest, in Intent, normalized []byte) (
 	base := filepath.Join(bookDir, "meta")
 	final := filepath.Join(base, "import")
 	if fi, err := os.Stat(final); err == nil && fi.IsDir() {
-		return nil, fmt.Errorf("导入工作区已存在：%s（无参数 /import 可从中恢复）", final)
+		return nil, fmt.Errorf(i18n.F("导入工作区已存在：%s（无参数 /import 可从中恢复）"), final)
 	}
 	if err := os.MkdirAll(base, 0o755); err != nil {
 		return nil, err
@@ -270,17 +271,17 @@ func createWorkspace(bookDir string, m Manifest, in Intent, normalized []byte) (
 	// 发布前校验三件套可读且源快照与 manifest 一致，杜绝半写工作区。
 	got, err := tw.LoadManifest()
 	if err != nil {
-		return nil, fmt.Errorf("校验初始 manifest：%w", err)
+		return nil, fmt.Errorf(i18n.F("校验初始 manifest：%w"), err)
 	}
 	src, err := tw.LoadSource()
 	if err != nil {
-		return nil, fmt.Errorf("校验初始源快照：%w", err)
+		return nil, fmt.Errorf(i18n.F("校验初始源快照：%w"), err)
 	}
 	if d := Digest(src); d != got.NormalizedSHA256 {
-		return nil, fmt.Errorf("初始源快照摘要不一致：%s != %s", d, got.NormalizedSHA256)
+		return nil, fmt.Errorf(i18n.F("初始源快照摘要不一致：%s != %s"), d, got.NormalizedSHA256)
 	}
 	if _, err := tw.LoadIntent(); err != nil {
-		return nil, fmt.Errorf("校验初始 intent：%w", err)
+		return nil, fmt.Errorf(i18n.F("校验初始 intent：%w"), err)
 	}
 
 	if err := os.Rename(tmp, final); err != nil {

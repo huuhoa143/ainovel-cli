@@ -7,6 +7,7 @@ import (
 
 	"github.com/voocel/agentcore"
 	corecontext "github.com/voocel/agentcore/context"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -155,7 +156,7 @@ func (p *WriterRestorePack) setWarning(scope string, err error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.chapter = 0
-	p.text = fmt.Sprintf("<post-compact-context>\n## 数据告警\n%s：%v\n</post-compact-context>", scope, err)
+	p.text = fmt.Sprintf(i18n.F("<post-compact-context>\n## 数据告警\n%s：%v\n</post-compact-context>"), scope, err)
 }
 
 // Clear drops cached data (e.g., when switching chapters).

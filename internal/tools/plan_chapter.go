@@ -8,6 +8,7 @@ import (
 	"github.com/voocel/agentcore/schema"
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/errs"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -66,7 +67,7 @@ func (t *PlanChapterTool) Execute(_ context.Context, args json.RawMessage) (json
 			"chapter":   plan.Chapter,
 			"skipped":   true,
 			"completed": true,
-			"reason":    fmt.Sprintf("第 %d 章已提交完成，不能重新规划", plan.Chapter),
+			"reason":    fmt.Sprintf(i18n.F("第 %d 章已提交完成，不能重新规划"), plan.Chapter),
 		})
 	}
 	if err := t.store.Progress.ValidateChapterWork(plan.Chapter); err != nil {

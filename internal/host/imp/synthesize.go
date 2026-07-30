@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"strings"
 
+	"errors"
 	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // 故事状态闭集（RFC §10.4）。
@@ -152,10 +154,10 @@ func Synthesize(ctx context.Context, m callModel, bookPrompt, rangePrompt string
 			return validateRangeDigest(d, startCh, endCh, "range digest")
 		})
 		if err != nil {
-			return nil, fmt.Errorf("range %d-%d 综合：%w", startCh, endCh, err)
+			return nil, fmt.Errorf(i18n.F("range %d-%d 综合：%w"), startCh, endCh, err)
 		}
 		if err := writeArtifact(w, rel, want, rd); err != nil {
-			return nil, fmt.Errorf("落盘 range digest：%w", err)
+			return nil, fmt.Errorf(i18n.F("落盘 range digest：%w"), err)
 		}
 		digests = append(digests, rd)
 	}
@@ -196,7 +198,7 @@ func reduceToFit(ctx context.Context, m callModel, rangePrompt string, digests [
 				return validateRangeDigest(d, startCh, endCh, "合并区间")
 			})
 			if err != nil {
-				return nil, fmt.Errorf("合并区间 %d-%d：%w", startCh, endCh, err)
+				return nil, fmt.Errorf(i18n.F("合并区间 %d-%d：%w"), startCh, endCh, err)
 			}
 			merged = append(merged, rd)
 		}
@@ -207,10 +209,10 @@ func reduceToFit(ctx context.Context, m callModel, rangePrompt string, digests [
 
 func validateRangeDigest(d *RangeDigest, startChapter, endChapter int, label string) error {
 	if strings.TrimSpace(d.Plot) == "" {
-		return fmt.Errorf("%s plot 为空", label)
+		return fmt.Errorf(i18n.F("%s plot 为空"), label)
 	}
 	if d.StartChapter != startChapter || d.EndChapter != endChapter {
-		return fmt.Errorf("%s 章范围 %d-%d 与请求 %d-%d 不符", label, d.StartChapter, d.EndChapter, startChapter, endChapter)
+		return fmt.Errorf(i18n.F("%s 章范围 %d-%d 与请求 %d-%d 不符"), label, d.StartChapter, d.EndChapter, startChapter, endChapter)
 	}
 	return nil
 }
@@ -238,7 +240,7 @@ func groupDigestsByBudget(digests []RangeDigest, budgetBytes int) [][]RangeDiges
 // buildDigestReducePayload 组装"把若干下层区间摘要合并为一个 RangeDigest"的输入。
 func buildDigestReducePayload(digests []RangeDigest) string {
 	data, _ := json.Marshal(digests)
-	return fmt.Sprintf("请把第 %d-%d 章的多个下层区间摘要合并为一个 RangeDigest（连续区间摘要）。下层摘要：\n%s",
+	return fmt.Sprintf(i18n.F("请把第 %d-%d 章的多个下层区间摘要合并为一个 RangeDigest（连续区间摘要）。下层摘要：\n%s"),
 		digests[0].StartChapter, digests[len(digests)-1].EndChapter, string(data))
 }
 
@@ -266,32 +268,32 @@ func synthesizeBook(ctx context.Context, m callModel, systemPrompt, payload stri
 }
 
 func buildRangePayload(facts []ImportedChapterFacts) string {
-	return fmt.Sprintf("请为第 %d-%d 章生成一个 RangeDigest（连续区间摘要）。逐章事实：\n%s",
+	return fmt.Sprintf(i18n.F("请为第 %d-%d 章生成一个 RangeDigest（连续区间摘要）。逐章事实：\n%s"),
 		facts[0].Chapter, facts[len(facts)-1].Chapter, compactFacts(facts))
 }
 
 func buildBookPayload(inner string, n int) string {
-	return fmt.Sprintf("以下是全书 %d 章的紧凑事实/区间摘要。请生成 BookSynthesis：premise、characters、world_rules、卷弧范围 structure、compass、planning_tier、story_status。\n\n%s", n, inner)
+	return fmt.Sprintf(i18n.F("以下是全书 %d 章的紧凑事实/区间摘要。请生成 BookSynthesis：premise、characters、world_rules、卷弧范围 structure、compass、planning_tier、story_status。\n\n%s"), n, inner)
 }
 
 // validateSynthesis 校验综合结果的结构约束（值域/闭集/范围），不复判文学质量。
 func validateSynthesis(s *BookSynthesis, n int) error {
 	if strings.TrimSpace(s.Premise) == "" {
-		return fmt.Errorf("premise 为空")
+		return errors.New(i18n.F("premise 为空"))
 	}
 	if len(s.Characters) == 0 {
-		return fmt.Errorf("characters 为空")
+		return errors.New(i18n.F("characters 为空"))
 	}
 	if !validPlanningTiers[s.PlanningTier] {
-		return fmt.Errorf("planning_tier 非法：%q", s.PlanningTier)
+		return fmt.Errorf(i18n.F("planning_tier 非法：%q"), s.PlanningTier)
 	}
 	switch s.StoryStatus {
 	case storyOpen, storyClosed, storyUncertain:
 	default:
-		return fmt.Errorf("story_status 非法：%q", s.StoryStatus)
+		return fmt.Errorf(i18n.F("story_status 非法：%q"), s.StoryStatus)
 	}
 	if strings.TrimSpace(s.Compass.EndingDirection) == "" {
-		return fmt.Errorf("compass.ending_direction 为空")
+		return errors.New(i18n.F("compass.ending_direction 为空"))
 	}
 	return validateStructure(s.Structure, n)
 }
@@ -299,25 +301,25 @@ func validateSynthesis(s *BookSynthesis, n int) error {
 // validateStructure 校验卷弧范围连续、无重叠、完整覆盖 1..N（RFC §11 / 不变量 5）。
 func validateStructure(structure []ImportedVolumeRange, n int) error {
 	if len(structure) == 0 {
-		return fmt.Errorf("structure 为空")
+		return errors.New(i18n.F("structure 为空"))
 	}
 	next := 1
 	for vi, v := range structure {
 		if len(v.Arcs) == 0 {
-			return fmt.Errorf("卷[%d] %q 无弧", vi, v.Title)
+			return fmt.Errorf(i18n.F("卷[%d] %q 无弧"), vi, v.Title)
 		}
 		for ai, a := range v.Arcs {
 			if a.StartChapter != next {
-				return fmt.Errorf("卷[%d]弧[%d] 起点 %d 应为 %d（须连续无缺口）", vi, ai, a.StartChapter, next)
+				return fmt.Errorf(i18n.F("卷[%d]弧[%d] 起点 %d 应为 %d（须连续无缺口）"), vi, ai, a.StartChapter, next)
 			}
 			if a.EndChapter < a.StartChapter {
-				return fmt.Errorf("卷[%d]弧[%d] 范围倒置 %d..%d", vi, ai, a.StartChapter, a.EndChapter)
+				return fmt.Errorf(i18n.F("卷[%d]弧[%d] 范围倒置 %d..%d"), vi, ai, a.StartChapter, a.EndChapter)
 			}
 			next = a.EndChapter + 1
 		}
 	}
 	if next-1 != n {
-		return fmt.Errorf("卷弧范围覆盖 %d 章，应为 %d 章", next-1, n)
+		return fmt.Errorf(i18n.F("卷弧范围覆盖 %d 章，应为 %d 章"), next-1, n)
 	}
 	return nil
 }
@@ -367,7 +369,7 @@ func AssembleFoundation(s *BookSynthesis, facts []ImportedChapterFacts, closed b
 			for ch := a.StartChapter; ch <= a.EndChapter; ch++ {
 				f, ok := byChapter[ch]
 				if !ok {
-					return nil, fmt.Errorf("弧范围引用不存在的章 %d", ch)
+					return nil, fmt.Errorf(i18n.F("弧范围引用不存在的章 %d"), ch)
 				}
 				arc.Chapters = append(arc.Chapters, domain.OutlineEntry{
 					Chapter: ch, Title: f.Title, CoreEvent: f.CoreEvent, Hook: f.Hook, Scenes: f.Scenes,
@@ -384,11 +386,11 @@ func AssembleFoundation(s *BookSynthesis, facts []ImportedChapterFacts, closed b
 	// FlattenOutline 后章数为 N，且标题与逐章事实一致（RFC §11.5）。
 	flat := domain.FlattenOutline(volumes)
 	if len(flat) != n {
-		return nil, fmt.Errorf("FlattenOutline 章数 %d != %d", len(flat), n)
+		return nil, fmt.Errorf(i18n.F("FlattenOutline 章数 %d != %d"), len(flat), n)
 	}
 	for _, e := range flat {
 		if e.Title != byChapter[e.Chapter].Title {
-			return nil, fmt.Errorf("章 %d 标题与逐章事实不一致", e.Chapter)
+			return nil, fmt.Errorf(i18n.F("章 %d 标题与逐章事实不一致"), e.Chapter)
 		}
 	}
 
@@ -414,5 +416,5 @@ func ensurePremiseTitle(premise, fallbackName string) string {
 	if name == "" {
 		name = "未命名导入"
 	}
-	return fmt.Sprintf("# %s（书名据文件名推断）\n\n%s", name, premise)
+	return fmt.Sprintf(i18n.F("# %s（书名据文件名推断）\n\n%s"), name, premise)
 }

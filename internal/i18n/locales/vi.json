@@ -626,7 +626,7 @@
  "状态机异常：": "Máy trạng thái bất thường: ",
  "生成仿写画像": "Tạo hồ sơ mô phỏng",
  "生成第 %d 卷卷摘要（save_volume_summary）": "Tạo tóm tắt tập %d (save_volume_summary)",
- "生成第 %d 卷第 %d 弧摘要（save_arc_summary）": "Tạo tóm tắt cung %d tập %d (save_arc_summary)",
+ "生成第 %d 卷第 %d 弧摘要（save_arc_summary）": "Tạo tóm tắt tập %d cung %d (save_arc_summary)",
  "用户交互失败: %s。请根据你的判断自行决策并继续。": "Tương tác người dùng thất bại: %s. Hãy tự quyết định và tiếp tục theo phán đoán của bạn.",
  "用户取消": "Người dùng hủy",
  "用户取消画像分析": "Người dùng hủy phân tích hồ sơ",

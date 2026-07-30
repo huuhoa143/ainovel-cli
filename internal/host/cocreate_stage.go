@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -19,21 +20,21 @@ func buildStoryStateSummary(s *store.Store) string {
 	var warnings []string
 	warn := func(scope string, err error) {
 		if err != nil {
-			warnings = append(warnings, fmt.Sprintf("%s 读取失败: %v", scope, err))
+			warnings = append(warnings, fmt.Sprintf(i18n.F("%s 读取失败: %v"), scope, err))
 		}
 	}
 
 	if progress, err := s.Progress.Load(); progress != nil {
 		if name := strings.TrimSpace(progress.NovelName); name != "" {
-			fmt.Fprintf(&b, "- 书名：《%s》\n", name)
+			fmt.Fprintf(&b, i18n.F("- 书名：《%s》\n"), name)
 		}
-		fmt.Fprintf(&b, "- 进度：已完成 %d 章", len(progress.CompletedChapters))
+		fmt.Fprintf(&b, i18n.F("- 进度：已完成 %d 章"), len(progress.CompletedChapters))
 		if progress.TotalChapters > 0 {
-			fmt.Fprintf(&b, " / 规划 %d 章", progress.TotalChapters)
+			fmt.Fprintf(&b, i18n.F(" / 规划 %d 章"), progress.TotalChapters)
 		}
-		fmt.Fprintf(&b, "，约 %d 字，下一章为第 %d 章\n", progress.TotalWordCount, progress.NextChapter())
+		fmt.Fprintf(&b, i18n.F("，约 %d 字，下一章为第 %d 章\n"), progress.TotalWordCount, progress.NextChapter())
 		if progress.Layered && progress.CurrentVolume > 0 {
-			fmt.Fprintf(&b, "- 当前位置：第 %d 卷 第 %d 弧\n", progress.CurrentVolume, progress.CurrentArc)
+			fmt.Fprintf(&b, i18n.F("- 当前位置：第 %d 卷 第 %d 弧\n"), progress.CurrentVolume, progress.CurrentArc)
 		}
 	} else {
 		warn("progress", err)
@@ -41,13 +42,13 @@ func buildStoryStateSummary(s *store.Store) string {
 
 	if compass, err := s.Outline.LoadCompass(); compass != nil {
 		if dir := strings.TrimSpace(compass.EndingDirection); dir != "" {
-			fmt.Fprintf(&b, "- 终局方向：%s\n", dir)
+			fmt.Fprintf(&b, i18n.F("- 终局方向：%s\n"), dir)
 		}
 		if compass.EstimatedScale != "" {
-			fmt.Fprintf(&b, "- 预估规模：%s\n", compass.EstimatedScale)
+			fmt.Fprintf(&b, i18n.F("- 预估规模：%s\n"), compass.EstimatedScale)
 		}
 		if len(compass.OpenThreads) > 0 {
-			fmt.Fprintf(&b, "- 活跃长线：%s\n", strings.Join(compass.OpenThreads, "；"))
+			fmt.Fprintf(&b, i18n.F("- 活跃长线：%s\n"), strings.Join(compass.OpenThreads, "；"))
 		}
 	} else {
 		warn("story_compass", err)
@@ -56,7 +57,7 @@ func buildStoryStateSummary(s *store.Store) string {
 	// 最近一卷摘要，让助手知道故事刚走到哪
 	if vols, err := s.Summaries.LoadAllVolumeSummaries(); len(vols) > 0 {
 		last := vols[len(vols)-1]
-		fmt.Fprintf(&b, "- 最近《%s》：%s\n", last.Title, truncate(last.Summary, 200))
+		fmt.Fprintf(&b, i18n.F("- 最近《%s》：%s\n"), last.Title, truncate(last.Summary, 200))
 	} else {
 		warn("volume_summaries", err)
 	}
@@ -78,7 +79,7 @@ func buildStoryStateSummary(s *store.Store) string {
 			}
 		}
 		if len(names) > 0 {
-			fmt.Fprintf(&b, "- 主要人物：%s\n", strings.Join(names, "、"))
+			fmt.Fprintf(&b, i18n.F("- 主要人物：%s\n"), strings.Join(names, "、"))
 		}
 	} else {
 		warn("characters", err)
@@ -93,13 +94,13 @@ func buildStoryStateSummary(s *store.Store) string {
 				break
 			}
 		}
-		fmt.Fprintf(&b, "- 未收伏笔：%s\n", strings.Join(items, "；"))
+		fmt.Fprintf(&b, i18n.F("- 未收伏笔：%s\n"), strings.Join(items, "；"))
 	} else {
 		warn("foreshadow", err)
 	}
 
 	if len(warnings) > 0 {
-		fmt.Fprintf(&b, "- 数据告警：%s\n", strings.Join(warnings, "；"))
+		fmt.Fprintf(&b, i18n.F("- 数据告警：%s\n"), strings.Join(warnings, "；"))
 	}
 
 	return strings.TrimSpace(b.String())

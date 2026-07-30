@@ -10,6 +10,7 @@ import (
 	"github.com/voocel/agentcore/schema"
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/errs"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -88,7 +89,7 @@ func (t *DraftChapterTool) Execute(_ context.Context, args json.RawMessage) (jso
 				"chapter":   a.Chapter,
 				"skipped":   true,
 				"completed": true,
-				"reason":    fmt.Sprintf("第 %d 章已提交完成，不能覆盖", a.Chapter),
+				"reason":    fmt.Sprintf(i18n.F("第 %d 章已提交完成，不能覆盖"), a.Chapter),
 			})
 		}
 	}

@@ -14,8 +14,10 @@ import (
 	"log/slog"
 	"strings"
 
+	"errors"
 	"github.com/voocel/agentcore"
 	"github.com/voocel/agentcore/schema"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/llmcontract"
 	"github.com/voocel/ainovel-cli/internal/rules"
 )
@@ -69,7 +71,7 @@ func (n *Normalizer) Normalize(ctx context.Context, source, text string) (rules.
 		return rules.Candidate{Source: source}, nil
 	}
 	if n == nil || n.model == nil {
-		return rules.Candidate{}, fmt.Errorf("归一化模型未配置")
+		return rules.Candidate{}, errors.New(i18n.F("归一化模型未配置"))
 	}
 
 	out, err := llmcontract.Execute(ctx, n.model, llmcontract.Request[normalizerOutput]{
@@ -96,7 +98,7 @@ func (n *Normalizer) Normalize(ctx context.Context, source, text string) (rules.
 		},
 	})
 	if err != nil {
-		return rules.Candidate{}, fmt.Errorf("归一化失败: %w", err)
+		return rules.Candidate{}, fmt.Errorf(i18n.F("归一化失败: %w"), err)
 	}
 	return out.toCandidate(source)
 }
@@ -139,10 +141,10 @@ func (o normalizerOutput) toCandidate(source string) (rules.Candidate, error) {
 	for _, e := range o.Structured.FatigueWords {
 		word := strings.TrimSpace(e.Word)
 		if word == "" {
-			return rules.Candidate{}, fmt.Errorf("fatigue_words 含空词条目")
+			return rules.Candidate{}, errors.New(i18n.F("fatigue_words 含空词条目"))
 		}
 		if e.MaxPerChapter < 1 {
-			return rules.Candidate{}, fmt.Errorf("fatigue_words[%q].max_per_chapter 必须是正整数, got %d", word, e.MaxPerChapter)
+			return rules.Candidate{}, fmt.Errorf(i18n.F("fatigue_words[%q].max_per_chapter 必须是正整数, got %d"), word, e.MaxPerChapter)
 		}
 		if fatigue == nil {
 			fatigue = make(map[string]int, len(o.Structured.FatigueWords))

@@ -8,11 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"errors"
 	"github.com/voocel/ainovel-cli/assets"
 	"github.com/voocel/ainovel-cli/internal/bootstrap"
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/entry/startup"
 	"github.com/voocel/ainovel-cli/internal/host"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/logger"
 )
 
@@ -31,13 +33,13 @@ type RunOptions struct {
 // foundation 等工件，复用旧目录会让残留产物污染 diag 与 novel_context。故运行前清空，保证隔离。
 func RunCase(cfg bootstrap.Config, bundle assets.Bundle, c Case, opts RunOptions) error {
 	if strings.TrimSpace(opts.OutputDir) == "" {
-		return fmt.Errorf("RunCase: 缺少 OutputDir")
+		return errors.New(i18n.F("RunCase: 缺少 OutputDir"))
 	}
 	if err := os.RemoveAll(opts.OutputDir); err != nil {
-		return fmt.Errorf("清理输出目录: %w", err)
+		return fmt.Errorf(i18n.F("清理输出目录: %w"), err)
 	}
 	if err := os.MkdirAll(opts.OutputDir, 0o755); err != nil {
-		return fmt.Errorf("创建输出目录: %w", err)
+		return fmt.Errorf(i18n.F("创建输出目录: %w"), err)
 	}
 	cfg.OutputDir = opts.OutputDir
 	if c.Style != "" {
@@ -46,7 +48,7 @@ func RunCase(cfg bootstrap.Config, bundle assets.Bundle, c Case, opts RunOptions
 
 	eng, err := host.New(cfg, bundle)
 	if err != nil {
-		return fmt.Errorf("装配 host: %w", err)
+		return fmt.Errorf(i18n.F("装配 host: %w"), err)
 	}
 	// 落 logs/headless.log，diag 的运行时规则（stream idle storm 等）从中取证；
 	// 会话 jsonl 由引擎自写，无需额外接线。defer 顺序对齐 headless：Close 先于 cleanup
@@ -68,10 +70,10 @@ func RunCase(cfg bootstrap.Config, bundle assets.Bundle, c Case, opts RunOptions
 		return err
 	}
 	if err := eng.PrepareUserRules(plan.RawPrompt); err != nil {
-		return fmt.Errorf("准备用户规则: %w", err)
+		return fmt.Errorf(i18n.F("准备用户规则: %w"), err)
 	}
 	if err := eng.StartPrepared(plan.RawPrompt); err != nil {
-		return fmt.Errorf("启动: %w", err)
+		return fmt.Errorf(i18n.F("启动: %w"), err)
 	}
 
 	return drive(eng, c.MaxChapters, opts)
@@ -105,7 +107,7 @@ func drive(eng driveEngine, maxChapters int, opts RunOptions) error {
 	// finish 在 drain 到 Done（或通道关闭）后调用：超时则返回 error，否则正常结束。
 	finish := func() error {
 		if timedOut {
-			return fmt.Errorf("运行超时（%s）", opts.Timeout)
+			return fmt.Errorf(i18n.F("运行超时（%s）"), opts.Timeout)
 		}
 		return nil
 	}

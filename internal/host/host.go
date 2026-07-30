@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"errors"
 	"github.com/voocel/agentcore"
 	"github.com/voocel/ainovel-cli/assets"
 	"github.com/voocel/ainovel-cli/internal/agents"
@@ -23,6 +24,7 @@ import (
 	"github.com/voocel/ainovel-cli/internal/host/exp"
 	"github.com/voocel/ainovel-cli/internal/host/imp"
 	"github.com/voocel/ainovel-cli/internal/host/sim"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	modelreg "github.com/voocel/ainovel-cli/internal/models"
 	"github.com/voocel/ainovel-cli/internal/notify"
 	"github.com/voocel/ainovel-cli/internal/rules"
@@ -202,16 +204,16 @@ func New(cfg bootstrap.Config, bundle assets.Bundle) (*Host, error) {
 	onGuardBlock = func(agent, reason string, n int32) {
 		switch reason {
 		case "escalated":
-			body := fmt.Sprintf("%s 连续 %d 次空转未落盘必要产物，本轮任务终止，交回 Engine 处理", agent, n)
+			body := fmt.Sprintf(i18n.F("%s 连续 %d 次空转未落盘必要产物，本轮任务终止，交回 Engine 处理"), agent, n)
 			h.emitEvent(Event{Time: time.Now(), Category: "SYSTEM", Agent: agent, Summary: "StopGuard 升级: " + body, Level: "warn"})
 			h.notifier.Send(notify.Notification{Kind: notify.KindStopGuard, Level: "warn", Title: "ainovel: StopGuard", Body: body})
 		case "hard_stop":
-			body := fmt.Sprintf("%s 遭 provider 拒答（safety/content_filter），本轮任务立即终止", agent)
+			body := fmt.Sprintf(i18n.F("%s 遭 provider 拒答（safety/content_filter），本轮任务立即终止"), agent)
 			h.emitEvent(Event{Time: time.Now(), Category: "SYSTEM", Agent: agent, Summary: "StopGuard 升级: " + body, Level: "warn"})
 			h.notifier.Send(notify.Notification{Kind: notify.KindStopGuard, Level: "warn", Title: "ainovel: StopGuard", Body: body})
 		default: // blocked
 			h.emitEvent(Event{Time: time.Now(), Category: "SYSTEM", Agent: agent,
-				Summary: fmt.Sprintf("StopGuard: %s 未完成必要产物就试图结束，已拦截催促（连续第 %d 次）", agent, n), Level: "info"})
+				Summary: fmt.Sprintf(i18n.F("StopGuard: %s 未完成必要产物就试图结束，已拦截催促（连续第 %d 次）"), agent, n), Level: "info"})
 		}
 	}
 	// Engine:确定性执行引擎(docs/engine-rfc.md)。arbiter 用 Default 模型(过渡限制,
@@ -256,7 +258,7 @@ func (h *Host) PrepareUserRules(rawPrompt string) error {
 	svc := userrules.NewService(h.store, h.models.Default, rules.DefaultOptions())
 	snap, err := svc.Build(context.Background(), rawPrompt)
 	if err != nil {
-		return fmt.Errorf("用户规则快照落盘失败，无法继续: %w", err)
+		return fmt.Errorf(i18n.F("用户规则快照落盘失败，无法继续: %w"), err)
 	}
 	logUserRulesSnapshot(snap)
 	return nil
@@ -305,7 +307,7 @@ func (h *Host) StartPrepared(rawRequirement string) error {
 	}
 	if h.cocreating {
 		h.mu.Unlock()
-		return fmt.Errorf("阶段共创进行中，请先结束共创")
+		return errors.New(i18n.F("阶段共创进行中，请先结束共创"))
 	}
 	h.mu.Unlock()
 
@@ -328,7 +330,7 @@ func (h *Host) StartPrepared(rawRequirement string) error {
 	// 输入事实先于裁定落盘:裁定失败(模型故障等)后 StartPrompt 仍在,
 	// 恢复/继续时引擎据此补裁(planStartFallback),启动失败不再是死局。
 	if err := h.store.RunMeta.SetStartPrompt(rawRequirement); err != nil {
-		return fmt.Errorf("记录创作需求: %w", err)
+		return fmt.Errorf(i18n.F("记录创作需求: %w"), err)
 	}
 
 	// 启动裁定:失败显式报错中止(启动期用户在场,报错优于猜测)。
@@ -351,19 +353,19 @@ func (h *Host) StartPrepared(rawRequirement string) error {
 		slog.Warn("启动裁定审计落盘失败", "module", "host", "err", recErr)
 	}
 	if derr != nil {
-		return fmt.Errorf("启动裁定失败: %w", derr)
+		return fmt.Errorf(i18n.F("启动裁定失败: %w"), derr)
 	}
 	if err := h.store.RunMeta.SetPlanStart(domain.PlanStartRecord{
 		RawPrompt: rawRequirement, Planner: decision.Planner, PlannerTask: decision.Task, DecisionID: rec.ID,
 	}); err != nil {
-		return fmt.Errorf("记录启动裁定: %w", err)
+		return fmt.Errorf(i18n.F("记录启动裁定: %w"), err)
 	}
 
 	slog.Info("开始创作", "module", "host", "planner", decision.Planner)
 	h.emitEvent(Event{Time: time.Now(), Category: "SYSTEM",
-		Summary: fmt.Sprintf("开始创作（规划师: %s——%s）", decision.Planner, decision.Reason), Level: "info"})
+		Summary: fmt.Sprintf(i18n.F("开始创作（规划师: %s——%s）"), decision.Planner, decision.Reason), Level: "info"})
 	if !h.startEngine(&flow.Instruction{Agent: decision.Planner, Task: decision.Task, Reason: decision.Reason}) {
-		return fmt.Errorf("Engine 已在运行或正在停止，无法启动新书")
+		return errors.New(i18n.F("Engine 已在运行或正在停止，无法启动新书"))
 	}
 	return nil
 }
@@ -384,7 +386,7 @@ func (h *Host) refuseNewBookOverExisting() error {
 	if name == "" {
 		name = "未定书名"
 	}
-	return fmt.Errorf("输出目录已有《%s》的 %d 章创作进度，新建会重置其进度与检查点：续写请走恢复入口（重启应用自动恢复），新书请更换输出目录",
+	return fmt.Errorf(i18n.F("输出目录已有《%s》的 %d 章创作进度，新建会重置其进度与检查点：续写请走恢复入口（重启应用自动恢复），新书请更换输出目录"),
 		name, len(progress.CompletedChapters))
 }
 
@@ -439,14 +441,14 @@ func (h *Host) Reopen(direction string) error {
 	switch {
 	case h.lifecycle == lifecycleRunning:
 		h.mu.Unlock()
-		return fmt.Errorf("创作引擎运行中，无需重开")
+		return errors.New(i18n.F("创作引擎运行中，无需重开"))
 	case h.cocreating:
 		h.mu.Unlock()
-		return fmt.Errorf("阶段共创进行中，请先结束共创")
+		return errors.New(i18n.F("阶段共创进行中，请先结束共创"))
 	case h.exclusive != "":
 		ex := h.exclusive
 		h.mu.Unlock()
-		return fmt.Errorf("%s进行中，请先完成后再重开", ex)
+		return fmt.Errorf(i18n.F("%s进行中，请先完成后再重开"), ex)
 	}
 	h.mu.Unlock()
 
@@ -457,7 +459,7 @@ func (h *Host) Reopen(direction string) error {
 	h.emitEvent(Event{Time: time.Now(), Category: "SYSTEM", Summary: "已重开本书为创作状态（用户撤销完结裁定）", Level: "info"})
 	if d := strings.TrimSpace(direction); d != "" {
 		if err := h.store.RunMeta.SetPendingSteer(d); err != nil {
-			return fmt.Errorf("已重开，但续写方向登记失败：%v，请直接在输入框重新输入方向", err)
+			return fmt.Errorf(i18n.F("已重开，但续写方向登记失败：%v，请直接在输入框重新输入方向"), err)
 		}
 	}
 	return nil
@@ -472,12 +474,12 @@ func (h *Host) Resume() (string, error) {
 	}
 	if h.cocreating {
 		h.mu.Unlock()
-		return "", fmt.Errorf("阶段共创进行中，请先结束共创")
+		return "", errors.New(i18n.F("阶段共创进行中，请先结束共创"))
 	}
 	if h.exclusive != "" {
 		ex := h.exclusive
 		h.mu.Unlock()
-		return "", fmt.Errorf("%s进行中，请先完成后再恢复创作", ex)
+		return "", fmt.Errorf(i18n.F("%s进行中，请先完成后再恢复创作"), ex)
 	}
 	h.mu.Unlock()
 
@@ -507,7 +509,7 @@ func (h *Host) Resume() (string, error) {
 	// restart=true 拉起引擎。无待处理干预 → 直接续跑。
 	meta, err := h.store.RunMeta.Load()
 	if err != nil {
-		return label, fmt.Errorf("读取待处理干预: %w", err)
+		return label, fmt.Errorf(i18n.F("读取待处理干预: %w"), err)
 	}
 	if meta != nil && meta.PendingSteer != "" {
 		if err := h.doIntervention(meta.PendingSteer, true); err != nil {
@@ -516,7 +518,7 @@ func (h *Host) Resume() (string, error) {
 	} else {
 		// 只恢复事实,不恢复会话(RFC §6):Engine 从 store 重算路由续跑。
 		if !h.startEngine(nil) {
-			return label, fmt.Errorf("Engine 正在完成上一轮停止，请稍后重试恢复")
+			return label, errors.New(i18n.F("Engine 正在完成上一轮停止，请稍后重试恢复"))
 		}
 	}
 	// lifecycle 由 startEngine / runEnded 管理,此处不再覆写——
@@ -540,21 +542,21 @@ func (h *Host) doIntervention(text string, restart bool) error {
 	// 崩溃保护:裁定前先持久化(PendingSteer),成功应用或已当面回显失败后原子清除
 	// (ClearHandledSteer 同时复位 FlowSteering)。裁定期间崩溃 → 下次 Resume 重放。
 	if err := h.store.RunMeta.SetPendingSteer(text); err != nil {
-		wrapped := fmt.Errorf("干预持久化失败，已停止裁定: %w", err)
+		wrapped := fmt.Errorf(i18n.F("干预持久化失败，已停止裁定: %w"), err)
 		h.emitEvent(Event{Time: time.Now(), Category: "ERROR", Agent: "arbiter",
 			Summary: wrapped.Error(), Detail: wrapped.Error(), Level: "error"})
 		return wrapped
 	}
 	clearPending := func() error {
 		if err := h.store.ClearHandledSteer(); err != nil {
-			return fmt.Errorf("清除已处理干预失败: %w", err)
+			return fmt.Errorf(i18n.F("清除已处理干预失败: %w"), err)
 		}
 		return nil
 	}
 
 	facts, err := arbiter.CollectInterventionFacts(h.store)
 	if err != nil {
-		wrapped := fmt.Errorf("收集干预事实失败，未调用 Arbiter: %w", err)
+		wrapped := fmt.Errorf(i18n.F("收集干预事实失败，未调用 Arbiter: %w"), err)
 		h.emitEvent(Event{Time: time.Now(), Category: "ERROR", Agent: "arbiter",
 			Summary: wrapped.Error(), Detail: wrapped.Error(), Level: "error"})
 		return wrapped
@@ -583,7 +585,7 @@ func (h *Host) doIntervention(text string, restart bool) error {
 		rec.Error = derr.Error()
 	}
 	if _, err := h.store.Decisions.Append(rec); err != nil {
-		wrapped := fmt.Errorf("干预裁定审计落盘失败，拒绝执行动作: %w", err)
+		wrapped := fmt.Errorf(i18n.F("干预裁定审计落盘失败，拒绝执行动作: %w"), err)
 		h.emitEvent(Event{Time: time.Now(), Category: "ERROR", Agent: "arbiter",
 			Summary: wrapped.Error(), Detail: wrapped.Error(), Level: "error"})
 		return wrapped
@@ -654,7 +656,7 @@ func (h *Host) doIntervention(text string, restart bool) error {
 			// 此时干预动作已生效并清除 PendingSteer，只是引擎未能立即拉起——不能谎称"已保存"。
 			h.emitEvent(Event{Time: time.Now(), Category: "SYSTEM", Level: "warn",
 				Summary: "干预已生效，但 Engine 未能立即续跑；请稍后在输入框继续或重启应用恢复"})
-			return fmt.Errorf("干预已生效，但 Engine 未能立即续跑")
+			return errors.New(i18n.F("干预已生效，但 Engine 未能立即续跑"))
 		}
 	}
 	return nil
@@ -687,13 +689,13 @@ func (h *Host) Continue(text string) error {
 	h.mu.Lock()
 	if h.cocreating {
 		h.mu.Unlock()
-		return fmt.Errorf("阶段共创进行中，请先结束共创")
+		return errors.New(i18n.F("阶段共创进行中，请先结束共创"))
 	}
 	if h.exclusive != "" {
 		ex := h.exclusive
 		h.mu.Unlock()
 		// 独占作业期间必须在裁定前挡住：否则 Arbiter 已改 PendingSteer/规则/控制态，引擎才被门禁拦下。
-		return fmt.Errorf("%s进行中，请先完成后再继续创作", ex)
+		return fmt.Errorf(i18n.F("%s进行中，请先完成后再继续创作"), ex)
 	}
 	h.mu.Unlock()
 	if err := h.budget.Refuse(); err != nil {
@@ -705,7 +707,7 @@ func (h *Host) Continue(text string) error {
 		return h.doIntervention(text, true)
 	})
 	if !launched {
-		return fmt.Errorf("Host 正在关闭，不能继续创作")
+		return errors.New(i18n.F("Host 正在关闭，不能继续创作"))
 	}
 	return err
 }
@@ -742,26 +744,26 @@ func (h *Host) AdvanceOneChapter() error {
 	running, cocreating, ex := h.lifecycle == lifecycleRunning, h.cocreating, h.exclusive
 	h.mu.Unlock()
 	if running || h.engine.isRunning() {
-		return fmt.Errorf("创作仍在运行或正在完成暂停，请稍后再执行 /next")
+		return errors.New(i18n.F("创作仍在运行或正在完成暂停，请稍后再执行 /next"))
 	}
 	if cocreating {
-		return fmt.Errorf("阶段共创进行中，请先结束共创")
+		return errors.New(i18n.F("阶段共创进行中，请先结束共创"))
 	}
 	if ex != "" {
-		return fmt.Errorf("%s进行中，请先完成后再执行 /next", ex)
+		return fmt.Errorf(i18n.F("%s进行中，请先完成后再执行 /next"), ex)
 	}
 	meta, err := h.store.RunMeta.Load()
 	if err != nil {
 		return err
 	}
 	if meta == nil {
-		return fmt.Errorf("RunMeta 未初始化")
+		return errors.New(i18n.F("RunMeta 未初始化"))
 	}
 	if meta.AdvanceMode != domain.ChapterAdvanceReview {
-		return fmt.Errorf("/next 仅用于逐章验收模式，请先执行 /review on")
+		return errors.New(i18n.F("/next 仅用于逐章验收模式，请先执行 /review on"))
 	}
 	if meta.AdvanceHold != nil {
-		return fmt.Errorf("仍有一次性暂停意图待处理（%s），请先恢复或完成当前干预", meta.AdvanceHold.Reason)
+		return fmt.Errorf(i18n.F("仍有一次性暂停意图待处理（%s），请先恢复或完成当前干预"), meta.AdvanceHold.Reason)
 	}
 	if err := h.budget.Refuse(); err != nil {
 		return err
@@ -775,21 +777,21 @@ func (h *Host) AdvanceOneChapter() error {
 		if progress != nil {
 			phase = string(progress.Phase)
 		}
-		return fmt.Errorf("当前阶段不能授权新章（phase=%s）", phase)
+		return fmt.Errorf(i18n.F("当前阶段不能授权新章（phase=%s）"), phase)
 	}
 	target := progress.NextChapter()
 	if target <= 0 {
-		return fmt.Errorf("无法从当前进度推导下一章")
+		return errors.New(i18n.F("无法从当前进度推导下一章"))
 	}
 	if err := h.store.RunMeta.GrantAdvancePermit(target); err != nil {
 		return err
 	}
 	h.emitEvent(Event{Time: time.Now(), Category: "SYSTEM",
-		Summary: fmt.Sprintf("已放行第 %d 章；该章提交后会先完成必要的评审与弧/卷结构维护，再次等待放行", target), Level: "info"})
+		Summary: fmt.Sprintf(i18n.F("已放行第 %d 章；该章提交后会先完成必要的评审与弧/卷结构维护，再次等待放行"), target), Level: "info"})
 	h.refreshWriterRestore()
 	if !h.startEngine(nil) {
 		// 许可按章节号持久化且同目标幂等，调用方稍后重试不会重复授权。
-		return fmt.Errorf("章节许可已保存，但 Engine 仍在完成上一轮停止；请稍后重试 /next")
+		return errors.New(i18n.F("章节许可已保存，但 Engine 仍在完成上一轮停止；请稍后重试 /next"))
 	}
 	return nil
 }
@@ -802,7 +804,7 @@ func (h *Host) Steer(text string) error {
 		return h.doIntervention(text, false)
 	})
 	if !launched {
-		return fmt.Errorf("Host 正在关闭，不能提交干预")
+		return errors.New(i18n.F("Host 正在关闭，不能提交干预"))
 	}
 	return err
 }
@@ -922,7 +924,7 @@ func (h *Host) runEnded() {
 		}
 		h.mu.Unlock()
 		if wasRunning {
-			summary := fmt.Sprintf("引擎停止 (已完成 %d 章)", completed)
+			summary := fmt.Sprintf(i18n.F("引擎停止 (已完成 %d 章)"), completed)
 			slog.Warn(summary, "module", "host")
 			h.emitEvent(Event{Time: time.Now(), Category: "SYSTEM", Summary: summary, Level: "warn"})
 			h.notifier.Send(notify.Notification{
@@ -945,7 +947,7 @@ func (h *Host) runEndBody(novelName, summary string) string {
 	}
 	cost, _, _, _, _ := h.usage.Totals()
 	if cost > 0 {
-		summary += fmt.Sprintf(" · 花费 $%.2f", cost)
+		summary += fmt.Sprintf(i18n.F(" · 花费 $%.2f"), cost)
 	}
 	return summary
 }
@@ -1114,7 +1116,7 @@ func (h *Host) Snapshot() UISnapshot {
 		snap.RewriteReason = progress.RewriteReason
 		snap.Layered = progress.Layered
 		if progress.CurrentVolume > 0 {
-			snap.CurrentVolumeArc = fmt.Sprintf("第%d卷·第%d弧", progress.CurrentVolume, progress.CurrentArc)
+			snap.CurrentVolumeArc = fmt.Sprintf(i18n.F("第%d卷·第%d弧"), progress.CurrentVolume, progress.CurrentArc)
 		}
 	}
 	if snap.NovelName == "" {
@@ -1218,16 +1220,16 @@ func (h *Host) fillDetails(snap *UISnapshot, progress *domain.Progress) {
 	if progress != nil && len(progress.CompletedChapters) > 0 {
 		lastCh := progress.CompletedChapters[len(progress.CompletedChapters)-1]
 		wc := progress.ChapterWordCounts[lastCh]
-		snap.LastCommitSummary = fmt.Sprintf("第%d章 %d字", lastCh, wc)
+		snap.LastCommitSummary = fmt.Sprintf(i18n.F("第%d章 %d字"), lastCh, wc)
 	}
 	currentCh := 1
 	if progress != nil && len(progress.CompletedChapters) > 0 {
 		currentCh = progress.CompletedChapters[len(progress.CompletedChapters)-1]
 	}
 	if review, err := h.store.World.LoadLastReview(currentCh); err == nil && review != nil {
-		snap.LastReviewSummary = fmt.Sprintf("verdict=%s %d个问题", review.Verdict, len(review.Issues))
+		snap.LastReviewSummary = fmt.Sprintf(i18n.F("verdict=%s %d个问题"), review.Verdict, len(review.Issues))
 		if len(review.AffectedChapters) > 0 {
-			snap.LastReviewSummary += fmt.Sprintf(" 影响%v", review.AffectedChapters)
+			snap.LastReviewSummary += fmt.Sprintf(i18n.F(" 影响%v"), review.AffectedChapters)
 		}
 	}
 	if cp := h.store.Checkpoints.LatestGlobal(); cp != nil {
@@ -1238,7 +1240,7 @@ func (h *Host) fillDetails(snap *UISnapshot, progress *domain.Progress) {
 			ch := progress.CompletedChapters[i]
 			if summary, err := h.store.Summaries.LoadSummary(ch); err == nil && summary != nil {
 				snap.RecentSummaries = append(snap.RecentSummaries,
-					fmt.Sprintf("第%d章: %s", ch, truncate(summary.Summary, 50)))
+					fmt.Sprintf(i18n.F("第%d章: %s"), ch, truncate(summary.Summary, 50)))
 			}
 		}
 	}
@@ -1324,7 +1326,7 @@ func (h *Host) SwitchModel(role, provider, model string) error {
 	h.emitEvent(Event{
 		Time:     time.Now(),
 		Category: "SYSTEM",
-		Summary:  fmt.Sprintf("模型已切换：%s → %s/%s", role, provider, model),
+		Summary:  fmt.Sprintf(i18n.F("模型已切换：%s → %s/%s"), role, provider, model),
 		Level:    "info",
 	})
 	return nil
@@ -1415,7 +1417,7 @@ func (h *Host) SetRoleThinking(role, level string) error {
 	h.emitEvent(Event{
 		Time:     time.Now(),
 		Category: "SYSTEM",
-		Summary:  fmt.Sprintf("推理强度已切换：%s → %s", logRole, shown),
+		Summary:  fmt.Sprintf(i18n.F("推理强度已切换：%s → %s"), logRole, shown),
 		Level:    "info",
 	})
 	return nil
@@ -1674,15 +1676,15 @@ func (h *Host) acquireExclusive(action string) error {
 	defer h.mu.Unlock()
 	switch {
 	case h.closing:
-		return fmt.Errorf("Host 正在关闭，不能%s", action)
+		return fmt.Errorf(i18n.F("Host 正在关闭，不能%s"), action)
 	// engine.isRunning() 必查：Abort 先置 lifecycle=paused 再异步等 goroutine 退出，
 	// 该窗口内 lifecycle 已非 running 但引擎仍可能在写 store（与启动门禁同一纪律）。
 	case h.lifecycle == lifecycleRunning || h.engine.isRunning():
-		return fmt.Errorf("创作引擎运行中或正在停止，请稍候再%s", action)
+		return fmt.Errorf(i18n.F("创作引擎运行中或正在停止，请稍候再%s"), action)
 	case h.cocreating:
-		return fmt.Errorf("阶段共创进行中，请先结束共创后再%s", action)
+		return fmt.Errorf(i18n.F("阶段共创进行中，请先结束共创后再%s"), action)
 	case h.exclusive != "":
-		return fmt.Errorf("%s进行中，请先完成后再%s", h.exclusive, action)
+		return fmt.Errorf(i18n.F("%s进行中，请先完成后再%s"), h.exclusive, action)
 	}
 	h.exclusive = action
 	return nil

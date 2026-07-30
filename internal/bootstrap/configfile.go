@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -87,7 +88,7 @@ func LoadConfig() (Config, error) {
 	//    "配了不生效"无从排查（issue #37）。
 	project, found, err := loadOptionalJSON(projectConfigPath())
 	if err != nil {
-		return cfg, fmt.Errorf("项目级配置 ./.ainovel/config.json 解析失败（请检查 JSON 语法）: %w", err)
+		return cfg, fmt.Errorf(i18n.F("项目级配置 ./.ainovel/config.json 解析失败（请检查 JSON 语法）: %w"), err)
 	}
 	if found {
 		cfg = mergeConfig(cfg, project)

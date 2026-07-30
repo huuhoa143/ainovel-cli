@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"errors"
 	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -97,7 +99,7 @@ func publishFoundation(st *store.Store, f *Foundation) error {
 		return fmt.Errorf("load progress：%w", err)
 	}
 	if p == nil {
-		return fmt.Errorf("load progress：progress 未初始化")
+		return errors.New(i18n.F("load progress：progress 未初始化"))
 	}
 	if p.Phase != domain.PhaseWriting && p.Phase != domain.PhaseComplete {
 		if err := st.Progress.UpdatePhase(domain.PhaseWriting); err != nil {
@@ -115,31 +117,31 @@ func publishFoundation(st *store.Store, f *Foundation) error {
 func checkFoundationConflicts(st *store.Store, f *Foundation) error {
 	cur, err := st.Outline.LoadPremise()
 	if err != nil {
-		return fmt.Errorf("读取正式 premise：%w", err)
+		return fmt.Errorf(i18n.F("读取正式 premise：%w"), err)
 	}
 	if cur != "" && cur != f.Premise {
-		return fmt.Errorf("正式 premise 与导入综合冲突（已存在不同版本），拒绝覆盖")
+		return errors.New(i18n.F("正式 premise 与导入综合冲突（已存在不同版本），拒绝覆盖"))
 	}
 	chars, err := st.Characters.Load()
 	if err != nil {
-		return fmt.Errorf("读取正式 characters：%w", err)
+		return fmt.Errorf(i18n.F("读取正式 characters：%w"), err)
 	}
 	if len(chars) > 0 && !jsonEqual(chars, f.Characters) {
-		return fmt.Errorf("正式 characters 与导入综合冲突（已存在不同版本），拒绝覆盖")
+		return errors.New(i18n.F("正式 characters 与导入综合冲突（已存在不同版本），拒绝覆盖"))
 	}
 	rules, err := st.World.LoadWorldRules()
 	if err != nil {
-		return fmt.Errorf("读取正式 world_rules：%w", err)
+		return fmt.Errorf(i18n.F("读取正式 world_rules：%w"), err)
 	}
 	if len(rules) > 0 && !jsonEqual(rules, f.WorldRules) {
-		return fmt.Errorf("正式 world_rules 与导入综合冲突（已存在不同版本），拒绝覆盖")
+		return errors.New(i18n.F("正式 world_rules 与导入综合冲突（已存在不同版本），拒绝覆盖"))
 	}
 	layered, err := st.Outline.LoadLayeredOutline()
 	if err != nil {
-		return fmt.Errorf("读取正式 layered_outline：%w", err)
+		return fmt.Errorf(i18n.F("读取正式 layered_outline：%w"), err)
 	}
 	if len(layered) > 0 && !jsonEqual(layered, f.Volumes) {
-		return fmt.Errorf("正式 layered_outline 与导入综合冲突（已存在不同版本），拒绝覆盖")
+		return errors.New(i18n.F("正式 layered_outline 与导入综合冲突（已存在不同版本），拒绝覆盖"))
 	}
 	return nil
 }
@@ -233,21 +235,21 @@ func isPublished(st *store.Store, expected int) (bool, error) {
 	}
 	p, err := st.Outline.LoadPremise()
 	if err != nil {
-		return false, fmt.Errorf("读取正式 premise: %w", err)
+		return false, fmt.Errorf(i18n.F("读取正式 premise: %w"), err)
 	}
 	if p == "" {
 		return false, nil
 	}
 	o, err := st.Outline.LoadOutline()
 	if err != nil {
-		return false, fmt.Errorf("读取正式 outline: %w", err)
+		return false, fmt.Errorf(i18n.F("读取正式 outline: %w"), err)
 	}
 	if len(o) < expected {
 		return false, nil
 	}
 	prog, err := st.Progress.Load()
 	if err != nil {
-		return false, fmt.Errorf("读取正式 progress: %w", err)
+		return false, fmt.Errorf(i18n.F("读取正式 progress: %w"), err)
 	}
 	return prog != nil && len(prog.CompletedChapters) >= expected, nil
 }

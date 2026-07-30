@@ -10,8 +10,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"errors"
 	"github.com/voocel/ainovel-cli/internal/host"
 	"github.com/voocel/ainovel-cli/internal/host/imp"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // importState 是 /import 命令运行期间的模态状态。
@@ -139,9 +141,9 @@ func (s *importState) refresh(contentW int) {
 	b.WriteString(titleStyle.Render("流程日志"))
 	b.WriteString(" ")
 	if s.totalLines > len(s.history) {
-		b.WriteString(dimStyle.Render(fmt.Sprintf("(%d 条，仅显示最近 %d，全量见 logs/import.log)", s.totalLines, len(s.history))))
+		b.WriteString(dimStyle.Render(fmt.Sprintf(i18n.F("(%d 条，仅显示最近 %d，全量见 logs/import.log)"), s.totalLines, len(s.history))))
 	} else {
-		b.WriteString(dimStyle.Render(fmt.Sprintf("(%d 条)", s.totalLines)))
+		b.WriteString(dimStyle.Render(fmt.Sprintf(i18n.F("(%d 条)"), s.totalLines)))
 	}
 	b.WriteString("\n")
 	now := time.Now()
@@ -325,7 +327,7 @@ func renderImportModal(width, height int, s *importState, frame int) string {
 		star := lipgloss.NewStyle().Foreground(colorAccent).Bold(true).
 			Render(streamCursorFrames[frame%len(streamCursorFrames)])
 		status := lipgloss.NewStyle().Foreground(colorMuted).
-			Render(fmt.Sprintf(" 进行中 · 已用时 %s", formatElapsed(time.Since(s.startedAt))))
+			Render(fmt.Sprintf(i18n.F(" 进行中 · 已用时 %s"), formatElapsed(time.Since(s.startedAt))))
 		body = append([]string{star + status, ""}, body...)
 	}
 	modal := renderPaddedModalFrame(boxW, boxH, "外部小说导入", hint, body)
@@ -467,22 +469,22 @@ func parseImportArgs(args []string) (imp.Options, error) {
 		case strings.HasPrefix(a, "--story="):
 			v := strings.TrimPrefix(a, "--story=")
 			if v != "open" && v != "closed" {
-				return imp.Options{}, fmt.Errorf("--story 只能是 open 或 closed：%q", v)
+				return imp.Options{}, fmt.Errorf(i18n.F("--story 只能是 open 或 closed：%q"), v)
 			}
 			opts.StoryResolution = v
 		case strings.HasPrefix(a, "--guide="):
 			parts := append([]string{strings.TrimPrefix(a, "--guide=")}, args[i+1:]...)
 			g := strings.TrimSpace(strings.Join(parts, " "))
 			if g == "" {
-				return imp.Options{}, fmt.Errorf("--guide 需要自然语言切分指导，例如 --guide=幕间·X 也是独立章节")
+				return imp.Options{}, errors.New(i18n.F("--guide 需要自然语言切分指导，例如 --guide=幕间·X 也是独立章节"))
 			}
 			opts.Guidance = g
 			return opts, nil
 		case strings.HasPrefix(a, "--"):
-			return imp.Options{}, fmt.Errorf("未知选项 %q（支持：--yes / --story=open|closed / --continue / --guide=<切分指导>）", a)
+			return imp.Options{}, fmt.Errorf(i18n.F("未知选项 %q（支持：--yes / --story=open|closed / --continue / --guide=<切分指导>）"), a)
 		default:
 			if opts.SourcePath != "" {
-				return imp.Options{}, fmt.Errorf("只接受一个源文件路径：多了 %q", a)
+				return imp.Options{}, fmt.Errorf(i18n.F("只接受一个源文件路径：多了 %q"), a)
 			}
 			opts.SourcePath = a
 		}
