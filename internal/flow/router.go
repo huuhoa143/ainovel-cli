@@ -12,7 +12,6 @@ package flow
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/i18n"
@@ -97,7 +96,7 @@ func Route(s State) *Instruction {
 	//    尚未落盘任何设定（选型是语义判断），由 Engine 的 planStartFallback 补裁。
 	if p.Phase != domain.PhaseWriting {
 		if len(s.FoundationMissing) > 0 && s.PlanningTier != "" {
-			task := fmt.Sprintf(i18n.F("补齐基础设定缺项：%s（用 save_foundation 落盘对应 type）"), strings.Join(s.FoundationMissing, "、"))
+			task := fmt.Sprintf(i18n.F("补齐基础设定缺项：%s（用 save_foundation 落盘对应 type）"), i18n.JoinList(s.FoundationMissing))
 			if len(s.FoundationMissing) == 1 && s.FoundationMissing[0] == "foundation_audit" {
 				task = i18n.F("基础设定已齐全：重新调用 novel_context 读取全部已落盘工件与 foundation_status.fingerprint，审查跨文件语义一致性后调用 audit_foundation；有问题先修正并重新审查")
 			}

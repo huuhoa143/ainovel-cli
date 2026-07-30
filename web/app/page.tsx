@@ -5,7 +5,9 @@ import { useState } from 'react';
 import { BangChuong, GhiChuChiPhi } from '@/components/BangChuong';
 import { DanY } from '@/components/DanY';
 import { DocTruyen } from '@/components/DocTruyen';
+import { HangChoVietLai } from '@/components/HangChoVietLai';
 import { Inspector } from '@/components/Inspector';
+import { KiemDinh } from '@/components/KiemDinh';
 import { MucXem } from '@/components/MucXem';
 import { NhanVat } from '@/components/NhanVat';
 import { DongSuKien, NhatKy } from '@/components/NhatKy';
@@ -13,6 +15,7 @@ import { OCanThiep } from '@/components/OCanThiep';
 import { Rail } from '@/components/Rail';
 import { LuatTheGioi, PhucBut } from '@/components/TheGioi';
 import { ThanhTren } from '@/components/ThanhTren';
+import { ToSanXuat } from '@/components/ToSanXuat';
 import { Transport } from '@/components/Transport';
 import { DangTai, KhongTaiDuoc, XuongTrong } from '@/components/XuongTrong';
 import { Truc } from '@/components/Truc';
@@ -126,6 +129,24 @@ function Khu({
           onChonChuong={onChonChuong}
         />
       );
+    case 'kiem-dinh':
+      return (
+        <KiemDinh
+          snapshot={snapshot}
+          chuongChon={chuongChon}
+          onChonChuong={onChonChuong}
+        />
+      );
+    case 'hang-cho-viet-lai':
+      return (
+        <HangChoVietLai
+          snapshot={snapshot}
+          chuongChon={chuongChon}
+          onChonChuong={onChonChuong}
+        />
+      );
+    case 'to-san-xuat':
+      return <ToSanXuat snapshot={snapshot} />;
     case 'dan-y':
       return <DanY snapshot={snapshot} tacPham={tacPham} />;
     case 'nhan-vat':

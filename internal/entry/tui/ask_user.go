@@ -143,7 +143,7 @@ func (s *askUserState) finishCurrentAnswer() bool {
 		if len(values) == 0 {
 			return false
 		}
-		s.answers[q.Question] = strings.Join(values, "、")
+		s.answers[q.Question] = i18n.JoinList(values)
 		return s.advance()
 	}
 

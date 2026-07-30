@@ -3,20 +3,11 @@
 import { useEffect, useState } from 'react';
 
 import { layChuong } from '@/lib/api';
-import { so, soTu } from '@/lib/dinhdang';
-import type { Tone } from '@/lib/nhan';
-import {
-  CHU,
-  GIAI_THICH,
-  TRANG_THAI_CHUONG,
-  nhanChieu,
-  nhanHopDong,
-  nhanKetLuan,
-  nhanMuc,
-  nhanPhamViDuyet,
-} from '@/lib/nhan';
+import { soTu } from '@/lib/dinhdang';
+import { CHU, GIAI_THICH, TRANG_THAI_CHUONG } from '@/lib/nhan';
 import type { ChapterDetail, Contract, Review, Selection, Snapshot } from '@/lib/types';
 
+import { BanDuyet } from './BanDuyet';
 import { TrangThai } from './TrangThai';
 
 type Tab = 'hopdong' | 'kiemdinh' | 'banthao';
@@ -229,6 +220,9 @@ function SoTuDaViet({ words }: { words: number }) {
  * Kiểm định là hàng mảnh có kết luận kèm dẫn chứng, KHÔNG phải thẻ điểm.
  * Điểm số đứng sau kết luận và ở cỡ nhỏ hơn: kết luận là thứ người vận hành
  * cần, con số chỉ để so sánh giữa các lần chạy.
+ *
+ * Thân bản duyệt nằm ở `BanDuyet` vì khu Kiểm định vẽ cùng một thứ ở bề rộng
+ * khác. Ở đây chỉ còn ca "chưa có bản duyệt" và cái vỏ `.ibody`.
  */
 function TabKiemDinh({ review }: { review: Review | undefined }) {
   if (!review) {
@@ -239,143 +233,11 @@ function TabKiemDinh({ review }: { review: Review | undefined }) {
     );
   }
 
-  const kl = nhanKetLuan(review.verdict);
-  const hopDong = nhanHopDong(review.contract_status);
-
   return (
     <div className="ibody">
-      <h3>{CHU.ketLuanDuyet}</h3>
-      <dl className="kv">
-        <dt>kết luận</dt>
-        <dd>
-          {kl ? (
-            <span className={`st ${kl.mau}`}>
-              <span className="ky" aria-hidden="true">
-                {kyTheoTone(kl.mau)}
-              </span>
-              {kl.nhan}
-            </span>
-          ) : (
-            <span className="trong">{CHU.khongCo}</span>
-          )}
-        </dd>
-        <dt>phạm vi</dt>
-        <dd>{nhanPhamViDuyet(review.scope)}</dd>
-        {hopDong ? (
-          <>
-            <dt>hợp đồng</dt>
-            <dd>
-              <span className={`st ${hopDong.mau}`}>
-                <span className="ky" aria-hidden="true">
-                  {kyTheoTone(hopDong.mau)}
-                </span>
-                {hopDong.nhan}
-              </span>
-            </dd>
-          </>
-        ) : null}
-      </dl>
-
-      {review.summary ? <p className="qcnote">{review.summary}</p> : null}
-
-      {review.dimensions && review.dimensions.length > 0 ? (
-        <>
-          <h3>
-            {CHU.cacChieu} · {review.dimensions.length} chiều
-          </h3>
-          {review.dimensions.map((d, i) => {
-            const v = nhanKetLuan(d.verdict);
-            return (
-              <div key={`${d.name}-${i}`}>
-                <div className="qcrow">
-                  <span className="ten">{nhanChieu(d.name)}</span>
-                  <span className={`v ${v?.mau ?? 'muted'}`}>
-                    {v ? (
-                      <>
-                        <span className="ky" aria-hidden="true">
-                          {kyTheoTone(v.mau)}
-                        </span>
-                        {v.nhan}
-                      </>
-                    ) : (
-                      <span className="trong">{CHU.khongCo}</span>
-                    )}
-                    {d.score ? <span className="diem">{so(d.score)}</span> : null}
-                  </span>
-                </div>
-                {d.comment ? <p className="qcnote">{d.comment}</p> : null}
-              </div>
-            );
-          })}
-        </>
-      ) : null}
-
-      {review.contract_misses && review.contract_misses.length > 0 ? (
-        <>
-          <h3>{CHU.hopDongThieu}</h3>
-          <ul className="canh">
-            {review.contract_misses.map((m, i) => (
-              <li key={i}>{m}</li>
-            ))}
-          </ul>
-        </>
-      ) : null}
-
-      {review.issues && review.issues.length > 0 ? (
-        <>
-          <h3>
-            {CHU.vanDeNeuRa} · {review.issues.length}
-          </h3>
-          {review.issues.map((v, i) => {
-            const m = nhanMuc(v.severity);
-            return (
-              <div className="vande" key={i}>
-                <div className="dau">
-                  <span className="loai">{v.type}</span>
-                  {m ? <span className={`muc ${m.mau}`}>{m.nhan}</span> : null}
-                  {v.chapters && v.chapters.length > 0 ? (
-                    <span className="ch">ch. {v.chapters.join(', ')}</span>
-                  ) : null}
-                </div>
-                <p>{v.description}</p>
-                {v.evidence ? (
-                  <p>
-                    <span className="dx">{CHU.danChung}: </span>
-                    <q className="dc">{v.evidence}</q>
-                  </p>
-                ) : null}
-                {v.suggestion ? (
-                  <p className="dx">
-                    {CHU.deXuat}: {v.suggestion}
-                  </p>
-                ) : null}
-              </div>
-            );
-          })}
-        </>
-      ) : null}
+      <BanDuyet review={review} />
     </div>
   );
-}
-
-/**
- * Ký hiệu đi kèm một kết luận, suy từ tông màu.
- *
- * Kết luận của Editor là chuỗi tự do nên không có bảng ký hiệu cố định cho từng
- * giá trị; tông màu là thứ duy nhất đã chuẩn hóa. Ba hình khác nhau đủ để phân
- * biệt đạt / cần chú ý / không đạt khi mất màu.
- */
-function kyTheoTone(mau: Tone): string {
-  switch (mau) {
-    case 'teal':
-      return '●';
-    case 'red':
-      return '◆';
-    case 'muted':
-      return '○';
-    default:
-      return '■';
-  }
 }
 
 /* ── tab Bản thảo ─────────────────────────────────────────────────────── */

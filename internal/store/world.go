@@ -446,11 +446,11 @@ func stateChangeKey(c domain.StateChange) string {
 
 func renderTimeline(events []domain.TimelineEvent) string {
 	var b strings.Builder
-	b.WriteString("# 时间线\n\n")
+	b.WriteString(i18n.F("# 时间线\n\n"))
 	for _, e := range events {
 		chars := ""
 		if len(e.Characters) > 0 {
-			chars = "（" + strings.Join(e.Characters, "、") + "）"
+			chars = "(" + i18n.JoinList(e.Characters) + ")"
 		}
 		fmt.Fprintf(&b, i18n.F("- **第 %d 章 [%s]**：%s%s\n"), e.Chapter, e.Time, e.Event, chars)
 	}
@@ -459,7 +459,7 @@ func renderTimeline(events []domain.TimelineEvent) string {
 
 func renderForeshadow(entries []domain.ForeshadowEntry) string {
 	var b strings.Builder
-	b.WriteString("# 伏笔账本\n\n")
+	b.WriteString(i18n.F("# 伏笔账本\n\n"))
 	for _, e := range entries {
 		status := e.Status
 		if e.ResolvedAt > 0 {
@@ -473,7 +473,7 @@ func renderForeshadow(entries []domain.ForeshadowEntry) string {
 
 func renderRelationships(entries []domain.RelationshipEntry) string {
 	var b strings.Builder
-	b.WriteString("# 人物关系\n\n")
+	b.WriteString(i18n.F("# 人物关系\n\n"))
 	for _, e := range entries {
 		fmt.Fprintf(&b, i18n.F("- **%s ↔ %s**：%s（第 %d 章）\n"),
 			e.CharacterA, e.CharacterB, e.Relation, e.Chapter)
@@ -496,7 +496,7 @@ func renderWorldRules(rules []domain.WorldRule) string {
 	}
 
 	var b strings.Builder
-	b.WriteString("# 世界观规则\n\n")
+	b.WriteString(i18n.F("# 世界观规则\n\n"))
 	for _, cat := range order {
 		fmt.Fprintf(&b, "## %s\n\n", cat)
 		for _, r := range grouped[cat] {

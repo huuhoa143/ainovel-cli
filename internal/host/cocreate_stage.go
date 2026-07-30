@@ -79,7 +79,7 @@ func buildStoryStateSummary(s *store.Store) string {
 			}
 		}
 		if len(names) > 0 {
-			fmt.Fprintf(&b, i18n.F("- 主要人物：%s\n"), strings.Join(names, "、"))
+			fmt.Fprintf(&b, i18n.F("- 主要人物：%s\n"), i18n.JoinList(names))
 		}
 	} else {
 		warn("characters", err)

@@ -186,7 +186,7 @@ func buildLedger(prior []ImportedChapterFacts) string {
 	var b strings.Builder
 	if len(names) > 0 {
 		b.WriteString(i18n.F("已知人物："))
-		b.WriteString(strings.Join(slices.Sorted(maps.Keys(names)), "、"))
+		b.WriteString(i18n.JoinList(slices.Sorted(maps.Keys(names))))
 		b.WriteString("\n")
 	}
 	if len(active) > 0 {

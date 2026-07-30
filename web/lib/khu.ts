@@ -14,18 +14,24 @@
 export type Khu =
   | 'dong-san-xuat'
   | 'ban-thao'
+  | 'kiem-dinh'
+  | 'hang-cho-viet-lai'
   | 'dan-y'
   | 'nhan-vat'
   | 'luat-the-gioi'
-  | 'phuc-but';
+  | 'phuc-but'
+  | 'to-san-xuat';
 
 export const KHU: readonly Khu[] = [
   'dong-san-xuat',
   'ban-thao',
+  'kiem-dinh',
+  'hang-cho-viet-lai',
   'dan-y',
   'nhan-vat',
   'luat-the-gioi',
   'phuc-but',
+  'to-san-xuat',
 ] as const;
 
 export const KHU_MAC_DINH: Khu = 'dong-san-xuat';

@@ -112,10 +112,10 @@ func (b *Bundle) OverrideVoice(raw string) {
 func resolveAppendable(builtin, name string, opts LoadOptions) string {
 	out := builtin
 	if s := readOverride(opts.HomeStyleDir, name); s != "" {
-		out += "\n\n## 用户全局文风覆盖（以下要求优先于项目默认）\n\n" + s
+		out += i18n.F("\n\n## 用户全局文风覆盖（以下要求优先于项目默认）\n\n") + s
 	}
 	if s := readOverride(opts.BookStyleDir, name); s != "" {
-		out += "\n\n## 本书文风覆盖（以下要求优先于以上全部）\n\n" + s
+		out += i18n.F("\n\n## 本书文风覆盖（以下要求优先于以上全部）\n\n") + s
 	}
 	return out
 }
@@ -276,7 +276,7 @@ func overlayStyles(styles map[string]string, dir string) {
 		}
 		name := strings.TrimSuffix(e.Name(), ".md")
 		if !styleNameRe.MatchString(name) {
-			slog.Warn("忽略非法风格文件名", "module", "assets", "dir", dir, "file", e.Name())
+			slog.Warn(i18n.F("忽略非法风格文件名"), "module", "assets", "dir", dir, "file", e.Name())
 			continue
 		}
 		data, err := os.ReadFile(filepath.Join(dir, "styles", e.Name()))

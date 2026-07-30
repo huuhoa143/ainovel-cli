@@ -36,6 +36,30 @@ export interface NhanTrangThai {
   mau: Tone;
 }
 
+/**
+ * Ký hiệu đi kèm một kết luận, suy từ tông màu.
+ *
+ * Kết luận của Editor là chuỗi tự do nên không có bảng ký hiệu cố định cho từng
+ * giá trị; tông màu là thứ duy nhất đã chuẩn hóa. Ba hình khác nhau đủ để phân
+ * biệt đạt / cần chú ý / không đạt khi mất màu.
+ *
+ * Ở đây chứ không ở component vì hai bề mặt cùng vẽ bản duyệt (tab Kiểm định
+ * trong inspector và khu Kiểm định), và một bảng ký hiệu chép hai lần sẽ lệch
+ * nhau ngay lần đổi đầu tiên.
+ */
+export function kyTheoTone(mau: Tone): string {
+  switch (mau) {
+    case 'teal':
+      return '●';
+    case 'red':
+      return '◆';
+    case 'muted':
+      return '○';
+    default:
+      return '■';
+  }
+}
+
 /* ── công đoạn của một chương (bảng chương, inspector) ─────────────────── */
 
 export const TRANG_THAI_CHUONG: Record<Stage, NhanTrangThai> = {
@@ -514,6 +538,35 @@ export const CHU = {
   thuOChuong: (n: number) => `thu ở chương ${n}`,
   luoiQuanHe: 'Lưới quan hệ',
 
+  // kiểm định (bề mặt riêng, rộng hơn tab cùng tên trong inspector)
+  chonChuongDeDuyet: 'Chọn chương để xem bản duyệt',
+  chuongCoDauVet: 'Chương có dấu vết sản xuất',
+  banDuyet: 'Bản duyệt',
+  ketLuan: 'Kết luận',
+  phamVi: 'Phạm vi',
+  hopDong: 'Hợp đồng',
+  // Thang điểm là 0–100, do save_review.go:271 chặn (`score < 0 || score > 100`).
+  // In kèm mẫu số vì một con số trơ ("68") không nói được nó trên thang nào, và
+  // người vận hành sẽ đọc 68 như 68% hoặc như 6,8/10 tùy phản xạ.
+  diemTren100: (n: number) => `${n}/100`,
+  demChieu: (n: number) => `${n} chiều`,
+
+  // hàng chờ viết lại
+  daCoSoTu: 'Đã viết',
+  colTinhTrangDuyet: 'Bản duyệt',
+  moBanDuyet: 'Xem bản duyệt',
+  demHangCho: (n: number) => `${n} chương chờ viết lại`,
+
+  // tổ sản xuất
+  colVai: 'Vai',
+  colChuongThamGia: 'Chương tham gia',
+  colPhanQuyetDaGhi: 'Phán quyết',
+  colModelDaDung: 'Model',
+  colThatBai: 'Thất bại',
+  vaiDangChay: 'đang chạy',
+  chuaChayLuotNao: 'chưa có lượt nào',
+  demPhanQuyetDaTai: (n: number) => `${n} phán quyết đã tải`,
+
   // transport
   congDoan: 'công đoạn',
   congDoanVuaXong: 'vừa xong',
@@ -643,8 +696,74 @@ export const GIAI_THICH = {
   banDuyetChuaCo:
     'Chương này chưa có bản duyệt. Editor duyệt sau khi bản thảo được chốt.',
 
-  /** Mục rail chưa dựng bề mặt riêng */
-  chuaDungBeMat:
-    'Chưa dựng bề mặt cho khu này. Bấm vào cũng không đi đâu, nên nó không phải liên kết.',
+  /* ── bề mặt Kiểm định ───────────────────────────────────────────────── */
+
+  /**
+   * Vì sao Kiểm định đọc MỘT chương một lúc.
+   *
+   * API trả bản duyệt trong `selected.review`, tức của đúng chương đang chọn
+   * (`?chapter=`). Không có endpoint nào trả danh sách kết luận duyệt cho cả
+   * sách, nên bề mặt này KHÔNG thể xếp hạng chương theo chất lượng, và cột trong
+   * danh sách bên trái là CÔNG ĐOẠN của chương chứ không phải kết luận duyệt.
+   * Vẽ một cột "kết luận" rồi điền công đoạn vào là đổi tên một sự thật khác.
+   */
+  kiemDinhMotChuong:
+    'Store ghi bản duyệt theo từng chương, và API trả bản duyệt của đúng chương đang chọn. Chưa có danh sách kết luận duyệt cho cả sách, nên danh sách bên trái hiện công đoạn của chương — không phải kết luận duyệt của nó.',
+  chuaChonChuongDuyet:
+    'Chọn một chương trong danh sách để xem kết luận, các chiều đã chấm và dẫn chứng Editor nêu.',
+  diemThang100: 'điểm trên thang 0–100 do Editor chấm',
+
+  /* ── bề mặt Hàng chờ viết lại ───────────────────────────────────────── */
+
+  /**
+   * Hàng chờ là danh sách ĐẦY ĐỦ, không phải phần lọc.
+   *
+   * `buildChapterRows` đưa mọi chương trong `progress.PendingRewrites` vào bảng
+   * (snapshot.go:277), và `rowStage` xét `rewrite` TRƯỚC `done` — nên một chương
+   * đã nghiệm thu rồi bị trả về vẫn mang công đoạn `rewrite` và vẫn có số từ của
+   * bản thảo cũ. Bề mặt này đọc từ đó, nên nó không bỏ sót chương nào.
+   */
+  hangChoNguon:
+    'Hàng chờ lấy từ danh sách chờ viết lại của store, không phải phần lọc của bảng chương — nên đây là danh sách đầy đủ.',
+  hangChoRong:
+    'Không có chương nào trong hàng chờ viết lại. Editor trả chương về khi bản duyệt có vấn đề buộc phải sửa.',
+  vietLaiConSoTu:
+    'Số từ là của bản thảo cũ — chương đã viết rồi mới bị trả về, và bản thảo đó vẫn nằm trong store cho tới lượt viết lại.',
+
+  /* ── bề mặt Tổ sản xuất ─────────────────────────────────────────────── */
+
+  /**
+   * Hai con số ở đây có HAI cửa sổ khác nhau, và nói gộp là nói dối.
+   *
+   * `snapshot.chapters[].owner` phủ mọi chương có dấu vết sản xuất, còn
+   * `snapshot.decisions` chỉ là 20 phán quyết gần nhất (snapshot.go:393). Gọi cả
+   * hai là "tổng" thì cột phán quyết sẽ đứng yên ở 20 khi tác phẩm chạy tới
+   * chương thứ ba trăm, và người vận hành kết luận Arbiter đã ngừng làm việc.
+   */
+  toCuaSoPhanQuyet: (n: number) => `trong ${n} phán quyết gần nhất`,
+  toCuaSoChuong: 'theo chu kỳ gần nhất của mỗi chương có dấu vết sản xuất',
+  toKhongDoDuocVai:
+    'Không suy được vai nào đã tham gia: vai được đọc từ bước checkpoint, và store chưa ghi checkpoint nào cho các chương này.',
+  toKhongCoChiPhiTheoVai:
+    'Store CÓ cộng chi phí theo tác tử và theo model, nhưng API chưa trả phần đó — nên không có cột chi phí ở đây. Tổng chi phí và giá thành mỗi chương ở thanh dưới có nguồn thật.',
+  toChuaCoVaiNao:
+    'Chưa có vai nào để lượt: store chưa ghi checkpoint và chưa ghi phán quyết nào cho tác phẩm này.',
+
   namTrongDongSanXuat: 'Khu này nằm trong bề mặt Dòng sản xuất.',
+
+  /**
+   * Ba mục còn lại chưa dựng vì THIẾU NGUỒN, không vì chưa kịp làm — và lý do
+   * cụ thể phải nói ra ở chú giải của từng mục.
+   *
+   * Một chú giải chung ("chưa dựng bề mặt") để người vận hành tưởng đây là việc
+   * còn tồn của giao diện. Thực tế cả ba đều chờ một endpoint ở tầng Go: dữ liệu
+   * nằm trong store nhưng không có đường ra. Nói đúng chỗ tắc thì người đọc biết
+   * phải sửa ở đâu.
+   */
+  chuaDungVanPhong:
+    'Chưa dựng vì thiếu nguồn: store giữ văn phong ở meta/style_rules.json (lối kể, giọng từng nhân vật, danh sách cấm) nhưng API chưa có endpoint trả nó.',
+  chuaDungChiPhi:
+    'Chưa dựng vì thiếu nguồn: API chỉ trả tổng chi phí và giá thành trung bình mỗi chương, cả hai đã có ở thanh dưới. Phân tích theo tác tử và theo model nằm trong meta/usage.json, chưa có endpoint trả.',
+  chuaDungCaiDat:
+    'Chưa dựng vì thiếu nguồn: API chưa trả cấu hình phiên chạy. Và studio chỉ đọc store, nên cài đặt sẽ là bề mặt chỉ-đọc cho tới khi engine hợp tác nhận lệnh ghi.',
 } as const;

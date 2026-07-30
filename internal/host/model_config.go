@@ -247,7 +247,7 @@ func (h *Host) ConfigureModels(draft ModelConfigurationDraft) error {
 			continue
 		}
 		if refs := h.modelReferencesLocked(draft.Provider, old.Name); len(refs) > 0 {
-			return fmt.Errorf(i18n.F("模型 %q 仍被 %s 引用，请先在 /model 切换后再删除"), old.Name, strings.Join(refs, "、"))
+			return fmt.Errorf(i18n.F("模型 %q 仍被 %s 引用，请先在 /model 切换后再删除"), old.Name, i18n.JoinList(refs))
 		}
 	}
 

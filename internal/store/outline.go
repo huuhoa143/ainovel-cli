@@ -483,7 +483,7 @@ func (s *OutlineStore) LoadFoundationAudit() (*domain.FoundationAudit, error) {
 
 func renderLayeredOutline(volumes []domain.VolumeOutline) string {
 	var b strings.Builder
-	b.WriteString("# 分层大纲\n\n")
+	b.WriteString(i18n.F("# 分层大纲\n\n"))
 	ch := 1
 	for _, v := range volumes {
 		fmt.Fprintf(&b, i18n.F("## 第 %d 卷：%s\n\n"), v.Index, v.Title)
@@ -510,7 +510,7 @@ func renderLayeredOutline(volumes []domain.VolumeOutline) string {
 
 func renderOutline(entries []domain.OutlineEntry) string {
 	var b strings.Builder
-	b.WriteString("# 大纲\n\n")
+	b.WriteString(i18n.F("# 大纲\n\n"))
 	for _, e := range entries {
 		fmt.Fprintf(&b, i18n.F("## 第 %d 章：%s\n\n"), e.Chapter, e.Title)
 		fmt.Fprintf(&b, i18n.F("**核心事件**：%s\n\n"), e.CoreEvent)
@@ -518,7 +518,7 @@ func renderOutline(entries []domain.OutlineEntry) string {
 			fmt.Fprintf(&b, i18n.F("**钩子**：%s\n\n"), e.Hook)
 		}
 		if len(e.Scenes) > 0 {
-			b.WriteString("**场景**：\n")
+			b.WriteString(i18n.F("**场景**：\n"))
 			for i, sc := range e.Scenes {
 				fmt.Fprintf(&b, "%d. %s\n", i+1, sc)
 			}

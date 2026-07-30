@@ -24,6 +24,19 @@ import type { Profile, Snapshot } from '@/lib/types';
  * là một lời hứa hụt; tệ hơn là bấm vào rồi ra một bề mặt trống trơn, vì lúc đó
  * người vận hành kết luận tác phẩm không có dữ liệu chứ không phải studio chưa
  * dựng bề mặt.
+ *
+ * Ba mục còn ở loại 3 — Văn phong, Chi phí, Cài đặt — không ở đó vì giao diện
+ * chưa kịp làm. Cả ba đều có dữ liệu trong store mà API chưa trả ra:
+ *
+ *   Văn phong → meta/style_rules.json, không có endpoint
+ *   Chi phí   → meta/usage.json có PerAgent/PerModel; Transport chỉ mang
+ *               Overall.Cost, tức đúng hai con số đã hiện ở thanh dưới
+ *   Cài đặt   → RunMeta không được trả; và serve là chỉ-đọc theo thiết kế
+ *               (xem đầu internal/serve/serve.go), nên đây sẽ là bề mặt chỉ-đọc
+ *
+ * Vì thế mỗi mục mang lý do RIÊNG ở chú giải, không dùng một câu chung. Dựng một
+ * bề mặt Chi phí chỉ để in lại hai con số của thanh transport là thêm một khu
+ * không trả lời câu hỏi nào — trái Design Principle 3.
  */
 export function Rail({
   snapshot,
@@ -65,9 +78,13 @@ export function Rail({
 
   // Bản thảo = số chương đã có bản thảo chốt. Lấy từ book, là số store ghi.
   const banThao = snapshot?.book.completed_chapters;
-  // Kiểm định = số cửa kiểm định trên trục; hàng chờ viết lại = số chương rewrite.
+  // Kiểm định = số cửa kiểm định trên trục.
   const cuaKiemDinh = marks.filter((m) => m.state === 'gate').length;
-  const vietLai = marks.filter((m) => m.state === 'rewrite').length;
+  // Hàng chờ viết lại đếm từ BẢNG CHƯƠNG, không từ vạch trên trục — vì bề mặt
+  // hàng chờ cũng đọc từ đó. Lane chương chỉ trải từ 1 tới `total_chapters` nên
+  // một chương chờ viết lại ngoài khoảng đó không có vạch: rail sẽ báo 2 rồi bề
+  // mặt liệt kê 3, và con số nhỏ hơn là con số người vận hành tin.
+  const vietLai = rows.filter((r) => r.stage === 'rewrite').length;
   const phanQuyet = snapshot?.decisions?.length;
 
   // Chương đang chạy: hiện ở khu bản thảo để thấy dây chuyền còn động.
@@ -96,10 +113,21 @@ export function Rail({
             : undefined
         }
       />
-      <MucChuaDung nhan={CHU.kiemDinh} ky="◆" dem={cuaKiemDinh} canhBao={cuaKiemDinh > 0} />
-      <MucChuaDung
+      <MucDi
+        nhan={CHU.kiemDinh}
+        ky="◆"
+        di="kiem-dinh"
+        khu={khu}
+        onChonKhu={onChonKhu}
+        dem={cuaKiemDinh}
+        canhBao={cuaKiemDinh > 0}
+      />
+      <MucDi
         nhan={CHU.hangChoVietLai}
         ky="■"
+        di="hang-cho-viet-lai"
+        khu={khu}
+        onChonKhu={onChonKhu}
         dem={vietLai}
         canhBao={vietLai > 0}
       />
@@ -140,7 +168,7 @@ export function Rail({
       />
       {/* Văn phong không có số đếm: store giữ nó là một bản mô tả, không phải
           danh sách đếm được. Không có nguồn thì không hiện ô số. */}
-      <MucChuaDung nhan={CHU.vanPhong} ky="✒" />
+      <MucChuaDung nhan={CHU.vanPhong} ky="✒" viSao={GIAI_THICH.chuaDungVanPhong} />
 
       <div className="grp">{CHU.nhomXuong}</div>
       {/* Nhật ký phán quyết CÓ bề mặt — nó là một mục trong Dòng sản xuất. Nên
@@ -156,9 +184,15 @@ export function Rail({
         neo="nhat-ky-phan-quyet"
         phu
       />
-      <MucChuaDung nhan={CHU.chiPhi} ky="$" />
-      <MucChuaDung nhan={CHU.toSanXuat} ky="☗" />
-      <MucChuaDung nhan={CHU.caiDat} ky="⚙" />
+      <MucChuaDung nhan={CHU.chiPhi} ky="$" viSao={GIAI_THICH.chuaDungChiPhi} />
+      <MucDi
+        nhan={CHU.toSanXuat}
+        ky="☗"
+        di="to-san-xuat"
+        khu={khu}
+        onChonKhu={onChonKhu}
+      />
+      <MucChuaDung nhan={CHU.caiDat} ky="⚙" viSao={GIAI_THICH.chuaDungCaiDat} />
     </nav>
   );
 }
@@ -231,20 +265,28 @@ function MucDi({
  * Vẫn hiện số đếm khi có nguồn — con số là tin vận hành và nó đúng dù bề mặt
  * chưa dựng. Nhưng mục này không phải nút và mang nhãn "chưa dựng", để không ai
  * bấm rồi chờ.
+ *
+ * `viSao` là lý do CỤ THỂ của từng mục, và nó bắt buộc phải có. Ba mục còn lại
+ * đều chưa dựng vì cùng một loại nguyên nhân — dữ liệu nằm trong store nhưng
+ * chưa có endpoint trả ra — chứ không vì giao diện chưa kịp làm. Một chú giải
+ * chung ("chưa dựng bề mặt") để người đọc tưởng đây là việc tồn của tầng web và
+ * đi chờ sai chỗ.
  */
 function MucChuaDung({
   nhan,
   ky,
   dem,
   canhBao,
+  viSao,
 }: {
   nhan: string;
   ky: string;
   dem?: number;
   canhBao?: boolean;
+  viSao: string;
 }) {
   return (
-    <div className="muc chuadung" title={GIAI_THICH.chuaDungBeMat} aria-disabled="true">
+    <div className="muc chuadung" title={viSao} aria-disabled="true">
       <span className="g" aria-hidden="true">
         {ky}
       </span>

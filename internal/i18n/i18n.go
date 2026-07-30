@@ -211,6 +211,36 @@ func T(msgid string, args ...any) string {
 	return fmt.Sprintf(f, args...)
 }
 
+// JoinList nối một danh sách thành chuỗi đọc được, dùng dấu nối theo ngôn ngữ.
+//
+// Tồn tại vì một lớp lỗi cả bộ đo lẫn bộ kiểm đều bỏ sót: dấu nối danh sách được
+// viết cứng ở 10 chỗ dưới dạng strings.Join(x, "、"). Dấu 、 là dấu phẩy liệt kê
+// của tiếng Trung — trong câu tiếng Việt nó sai chính tả, và nó chiếm 2 cột hiển
+// thị thay vì 1 nên làm lệch canh cột TUI.
+//
+// Vì sao mọi phép đo trước đó không thấy: dấu nối KHÔNG phải msgid, nên nó không
+// nằm trong catalog. Mọi thống kê "bao nhiêu phần trăm đã dịch" đều tính trên
+// catalog, và lớp này vô hình với chúng. Bộ đối chiếu format verb cũng không thấy
+// vì nó chỉ so verb. Chỉ khi chạy test ở locale vi thật và ĐỌC output mới lộ ra
+// "characters、world_rules" nằm giữa một câu tiếng Việt.
+//
+// Đặt ở đây thay vì để mỗi chỗ tự chọn dấu: dấu nối là thuộc tính của ngôn ngữ,
+// giống dấu câu, nên nó thuộc lớp i18n. Mười chỗ tự chọn là mười chỗ trôi lệch.
+func JoinList(items []string) string {
+	if len(items) == 0 {
+		return ""
+	}
+	return strings.Join(items, listSeparator())
+}
+
+// listSeparator trả dấu nối liệt kê của ngôn ngữ đang hoạt động.
+func listSeparator() string {
+	if Active() == Chinese {
+		return "、"
+	}
+	return ", "
+}
+
 // Has cho biết msgid đã có bản dịch chưa. Dùng trong test bao phủ và lệnh chẩn
 // đoán, không dùng trong luồng hiển thị.
 func Has(msgid string) bool {

@@ -490,9 +490,9 @@ func (s *ProgressStore) ValidateChapterWork(chapter int) error {
 		return nil
 	}
 
-	verb := "重写"
+	verb := i18n.F("重写")
 	if p.Flow == domain.FlowPolishing {
-		verb = "打磨"
+		verb = i18n.F("打磨")
 	}
 	return fmt.Errorf(i18n.F("第 %d 章不在待%s队列中，当前队列：%v。请先处理队列内章节，再动新章节: %w"), chapter, verb, p.PendingRewrites, errs.ErrToolConflict)
 }

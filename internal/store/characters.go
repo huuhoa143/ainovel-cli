@@ -86,15 +86,15 @@ func (s *CharacterStore) LoadLatestSnapshots() ([]domain.CharacterSnapshot, erro
 
 func renderCharacters(chars []domain.Character) string {
 	var b strings.Builder
-	b.WriteString("# 角色档案\n\n")
+	b.WriteString(i18n.F("# 角色档案\n\n"))
 	for _, c := range chars {
-		fmt.Fprintf(&b, "## %s（%s）\n\n", c.Name, c.Role)
+		fmt.Fprintf(&b, "## %s (%s)\n\n", c.Name, c.Role)
 		fmt.Fprintf(&b, "%s\n\n", c.Description)
 		if c.Arc != "" {
 			fmt.Fprintf(&b, i18n.F("**角色弧线**：%s\n\n"), c.Arc)
 		}
 		if len(c.Traits) > 0 {
-			fmt.Fprintf(&b, i18n.F("**特征**：%s\n\n"), strings.Join(c.Traits, "、"))
+			fmt.Fprintf(&b, i18n.F("**特征**：%s\n\n"), i18n.JoinList(c.Traits))
 		}
 	}
 	return b.String()

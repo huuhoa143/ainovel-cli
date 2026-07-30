@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // TestBuildWriterPrompt_ByteIdenticalToPreSplit 是文风层验收标准 ①:
@@ -117,8 +119,11 @@ func TestLoad_ThreeTierAppendAndReplace(t *testing.T) {
 	if !strings.HasPrefix(b.Voice, builtinVoice) {
 		t.Fatal("追加语义必须保留内置原文为前缀")
 	}
-	giIdx := strings.Index(b.Voice, "## 用户全局文风覆盖")
-	bkIdx := strings.Index(b.Voice, "## 本书文风覆盖")
+	// Tìm theo chuỗi ĐÃ DỊCH, không theo nguyên văn tiếng Trung: hai dấu phân
+	// đoạn này là chữ hiển thị đi vào prompt nên đã bọc i18n, mà locale mặc định
+	// của repo là vi. So bằng cùng msgid thì test đúng ở cả hai ngôn ngữ.
+	giIdx := strings.Index(b.Voice, i18n.F("\n\n## 用户全局文风覆盖（以下要求优先于项目默认）\n\n"))
+	bkIdx := strings.Index(b.Voice, i18n.F("\n\n## 本书文风覆盖（以下要求优先于以上全部）\n\n"))
 	if giIdx < 0 || bkIdx < 0 || giIdx > bkIdx {
 		t.Fatalf("追加段顺序错误:global=%d book=%d", giIdx, bkIdx)
 	}

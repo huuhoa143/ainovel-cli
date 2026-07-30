@@ -3,6 +3,8 @@ package rules
 import (
 	"regexp"
 	"strings"
+
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // Lint 内置产品底线检查：扫描正文中的机制残留，与用户规则无关，commit 时始终执行。
@@ -74,7 +76,7 @@ func appendNonCJKFragments(vs []Violation, text string) []Violation {
 	}
 	return append(vs, Violation{
 		Rule:     "non_cjk_fragments",
-		Target:   strings.Join(examples, "、"),
+		Target:   i18n.JoinList(examples),
 		Actual:   len(matches),
 		Severity: SeverityWarning,
 	})

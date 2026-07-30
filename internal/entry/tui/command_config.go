@@ -492,7 +492,7 @@ func (s *modelConfigState) finishModelEdit() (tea.Cmd, bool) {
 		origin := s.modelOrigins[idx]
 		if origin != "" && origin != name {
 			if refs := s.snapshot.ReferencesFor(s.provider, origin); len(refs) > 0 {
-				s.setNotice(i18n.F("保存时将同步更新引用：") + strings.Join(refs, "、"))
+				s.setNotice(i18n.F("保存时将同步更新引用：") + i18n.JoinList(refs))
 			}
 		}
 		return nil, true
@@ -996,7 +996,7 @@ func renderModelConfigRows(state *modelConfigState, contentW int) []string {
 			if identity == "" {
 				identity = model.Name
 			}
-			refs := strings.Join(state.snapshot.ReferencesFor(state.provider, identity), "、")
+			refs := i18n.JoinList(state.snapshot.ReferencesFor(state.provider, identity))
 			line += "  " + lipgloss.NewStyle().Foreground(colorDim).Render(padConfigCell(refs, refsW))
 		}
 		lines = append(lines, truncateStyledWidth(line, contentW))

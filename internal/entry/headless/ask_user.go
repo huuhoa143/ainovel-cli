@@ -95,7 +95,7 @@ func (h *terminalAskUser) askOne(ctx context.Context, q tools.Question) (string,
 			fmt.Fprintf(h.out, i18n.F("%v，请重试。\n"), err)
 			continue
 		}
-		return strings.Join(labels, "、"), "", nil
+		return i18n.JoinList(labels), "", nil
 	}
 }
 
