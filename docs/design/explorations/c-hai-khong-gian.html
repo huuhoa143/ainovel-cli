@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ainovel — Hướng C: Hai không gian</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:opsz,wght@8..144,400;8..144,600&family=Be+Vietnam+Pro:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── Hướng C: HAI KHÔNG GIAN, MỘT HỆ ────────────────────────────────────
+   Cỗ máy và thành quả là hai loại chú ý khác nhau, nên cho chúng hai không
+   gian khác nhau thay vì nhét chung một mật độ:
+
+     dải trái (tối)  = cỗ máy. Mật độ cao, chữ nhỏ, số đơn cách, nhịp đập sống.
+     khổ phải (sáng) = văn bản. Thưa, serif, khổ hẹp, đọc lâu không mỏi.
+
+   Đây cũng là câu trả lời cho "dark hay light": không chọn một cái cho cả app.
+   Cỗ máy chạy trong bóng nên tối; chữ để đọc lâu nên sáng. Cùng một bản sắc
+   vàng #b8860b/#e5b449 kế thừa từ TUI nối hai bên lại thành một hệ.
+
+   Nền sáng dùng chroma 0, tránh dải kem/cát warm-neutral (tông AI mặc định).
+   Thân bài line-height 1.78 vì dấu tiếng Việt xếp hai tầng.
+   -------------------------------------------------------------------- */
+:root {
+  /* không gian tối — cỗ máy */
+  --m-bg:      oklch(0.165 0.012 74);
+  --m-surface: oklch(0.215 0.014 74);
+  --m-line:    oklch(0.295 0.014 74);
+  --m-ink:     oklch(0.93 0.016 82);
+  --m-ink-2:   oklch(0.75 0.018 82);
+  --m-ink-3:   oklch(0.615 0.016 82);
+
+  /* không gian sáng — văn bản */
+  --p-bg:      oklch(0.977 0 0);
+  --p-line:    oklch(0.89 0 0);
+  --p-line-soft: oklch(0.935 0 0);
+  --p-ink:     oklch(0.255 0.008 74);
+  --p-ink-2:   oklch(0.44 0.008 74);
+  --p-ink-3:   oklch(0.55 0.008 74);
+
+  /* bản sắc chung, nối hai không gian */
+  --gold-d:    oklch(0.80 0.132 80);
+  --gold-l:    oklch(0.52 0.115 76);
+  --teal-d:    oklch(0.76 0.088 176);
+  --teal-l:    oklch(0.48 0.075 176);
+  --amber-d:   oklch(0.78 0.13 62);
+  --violet-d:  oklch(0.74 0.10 300);
+
+  --serif: "Noto Serif", ui-serif, Georgia, serif;
+  --sans:  "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  --mono:  "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; display: grid; grid-template-columns: 306px minmax(0, 1fr);
+  font: 400 14px/1.55 var(--sans); background: var(--p-bg); color: var(--p-ink);
+  -webkit-font-smoothing: antialiased;
+}
+@media (max-width: 940px) { body { grid-template-columns: 1fr } .machine { position: static } }
+
+/* ══ KHÔNG GIAN 1 — CỖ MÁY ══════════════════════════════════════════ */
+.machine {
+  background: var(--m-bg); color: var(--m-ink);
+  padding: 20px 20px 30px; min-height: 100vh;
+  position: sticky; top: 0; align-self: start; overflow-y: auto; max-height: 100vh;
+}
+.machine h1 { font: 600 14px/1 var(--sans); margin: 0 0 3px; letter-spacing: -0.01em; }
+.machine h1 span { color: var(--m-ink-3); font-weight: 400; }
+.pulse { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--gold-d); margin: 0 0 20px; }
+.pulse i { width: 5px; height: 5px; border-radius: 50%; background: var(--gold-d); animation: beat 2.4s var(--ease) infinite; }
+@keyframes beat { 0%,100% { opacity: 1 } 50% { opacity: 0.3 } }
+
+.mh { font: 500 11px/1 var(--sans); color: var(--m-ink-3); margin: 0 0 9px; }
+.sect { padding: 15px 0; border-top: 1px solid var(--m-line); }
+
+/* số liệu: hai cột chật, không phải card */
+.nums { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; margin: 0; }
+.nums dt { font-size: 11px; color: var(--m-ink-3); margin-bottom: 2px; }
+.nums dd { margin: 0; font: 500 16px/1.1 var(--mono); letter-spacing: -0.01em; }
+/* margin tường minh thay vì trông chờ khoảng trắng trong HTML — nguồn bị format
+   lại là mất, thành "62%79k/128k". */
+.nums dd small { font-family: var(--sans); font-size: 11px; color: var(--m-ink-3); font-weight: 400; margin-left: 5px; }
+
+/* vạch chương */
+.bar { display: flex; gap: 1.5px; height: 20px; margin-bottom: 7px; }
+.bar i { flex: 1; border-radius: 1px; background: oklch(0.255 0.015 74); }
+.bar i.done { background: color-mix(in oklch, var(--teal-d) 60%, var(--m-surface)); }
+.bar i.now  { background: var(--gold-d); }
+.bar i.rev  { background: color-mix(in oklch, var(--amber-d) 68%, var(--m-surface)); }
+.barnote { font-size: 11.5px; color: var(--m-ink-3); margin: 0; }
+
+/* tiếp sức */
+.hop { display: grid; grid-template-columns: 16px 1fr auto; gap: 9px; padding: 8px 0; align-items: start; }
+.hop + .hop { border-top: 1px solid oklch(0.245 0.012 74); }
+.rail { position: relative; display: flex; justify-content: center; height: 100% }
+.rail::before { content:""; position:absolute; top:14px; bottom:-10px; width:1px; background: var(--m-line) }
+.hop:last-child .rail::before { display: none }
+.dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 4px; background: oklch(0.26 0.015 74); border: 1px solid var(--m-line); z-index: 1 }
+.dot.on { background: var(--gold-d); border-color: var(--gold-d) }
+.dot.ok { background: var(--teal-d); border-color: var(--teal-d) }
+.who { font-size: 12.5px; font-weight: 500 }
+.what { font-size: 12px; color: var(--m-ink-2) }
+.what code { font: 400 11.5px var(--mono); color: var(--violet-d) }
+.dur { font: 400 11px var(--mono); color: var(--m-ink-3); white-space: nowrap; padding-top: 3px }
+
+/* can thiệp */
+.steer input {
+  width: 100%; background: var(--m-surface); border: 1px solid var(--m-line); border-radius: 6px;
+  padding: 9px 11px; color: var(--m-ink); font: 400 13px var(--sans); margin-bottom: 8px;
+}
+.steer input::placeholder { color: var(--m-ink-3) }
+.steer input:focus-visible { outline: 2px solid var(--gold-d); outline-offset: 1px; border-color: transparent }
+.steer button {
+  width: 100%; background: var(--gold-d); color: oklch(0.19 0.03 74); border: 0; border-radius: 6px;
+  padding: 9px; font: 500 13px var(--sans); cursor: pointer; transition: filter .18s var(--ease);
+}
+.steer button:hover { filter: brightness(1.08) }
+
+/* ══ KHÔNG GIAN 2 — VĂN BẢN ═════════════════════════════════════════ */
+.paper { padding: 0 0 90px }
+.paperbar {
+  display: flex; align-items: center; gap: 12px; padding: 13px 40px;
+  border-bottom: 1px solid var(--p-line); font-size: 12.5px; color: var(--p-ink-2);
+  position: sticky; top: 0; background: color-mix(in oklch, var(--p-bg) 92%, transparent);
+  backdrop-filter: blur(6px); z-index: 10;
+}
+.paperbar .sep { color: var(--p-line) }
+.paperbar nav { margin-left: auto; display: flex; gap: 4px }
+.paperbar nav a {
+  padding: 5px 11px; border-radius: 6px; color: var(--p-ink-2); text-decoration: none;
+  font-size: 12.5px; transition: background .18s var(--ease);
+}
+.paperbar nav a:hover { background: oklch(0.945 0 0) }
+.paperbar nav a[aria-current] { background: oklch(0.925 0 0); color: var(--p-ink); font-weight: 500 }
+.paperbar nav a:focus-visible { outline: 2px solid var(--gold-l); outline-offset: 1px }
+
+.reading { display: grid; grid-template-columns: minmax(0, 66ch) 208px; gap: 46px; padding: 48px 40px 0; max-width: 1000px }
+@media (max-width: 1180px) { .reading { grid-template-columns: minmax(0,66ch); } .marginalia { display: none } }
+
+.ch-no { font: 400 12px/1 var(--sans); letter-spacing: 0.06em; color: var(--p-ink-3) }
+article h2 {
+  font: 600 clamp(1.7rem, 1.25rem + 1.7vw, 2.35rem)/1.24 var(--serif);
+  letter-spacing: -0.018em; margin: 11px 0 13px; text-wrap: balance;
+}
+.byline { margin: 0 0 34px; font: 400 12.5px/1 var(--sans); color: var(--p-ink-3) }
+article p { margin: 0 0 1.3em; font: 400 1.05rem/1.78 var(--serif); text-wrap: pretty }
+/* Class tường minh, không :first-of-type — nó khớp cả <p class="byline"> nên
+   "2.980 từ" bị bóc thành chữ "2." cỡ lớn. line-height 0.94 để chữ hoa có dấu
+   (Ế, Ộ, Ữ) không bị cắt ngọn; "Đêm" không lộ lỗi vì Đ không có dấu trên. */
+.lede::first-letter {
+  float: left; font-size: 2.95em; line-height: 0.94; padding: 0.02em 0.09em 0 0;
+  color: var(--gold-l); font-weight: 600;
+}
+.break { margin: 2em 0; text-align: center; color: var(--p-ink-3); letter-spacing: 0.55em }
+
+.marginalia { font-size: 12.5px; line-height: 1.62 }
+.marginalia h3 { font: 500 11px/1 var(--sans); color: var(--p-ink-3); margin: 4px 0 13px }
+.note { padding-bottom: 13px; margin-bottom: 13px; border-bottom: 1px solid var(--p-line-soft) }
+.note:last-child { border-bottom: 0 }
+.note .dim { display: block; font-weight: 500; margin-bottom: 2px }
+.note .verdict { color: var(--teal-l) }
+.note .verdict.warn { color: oklch(0.55 0.12 62) }
+.note p { margin: 3px 0 0; color: var(--p-ink-2); font-family: var(--sans); font-size: 12.5px; line-height: 1.62 }
+.note q { font-family: var(--serif); font-style: italic; color: var(--p-ink) }
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse i { animation: none }
+  * { transition-duration: 0.01ms !important }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ cỗ máy ══ -->
+<aside class="machine">
+  <h1>ainovel <span>/ cỗ máy</span></h1>
+  <p class="pulse"><i></i> Writer đang soạn chương 47</p>
+
+  <div class="sect" style="border-top:0;padding-top:0">
+    <p class="mh">Tiến độ</p>
+    <div class="bar" role="img" aria-label="47 trong 300 chương đã xong">
+      <i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i>
+      <i class="done"></i><i class="rev"></i><i class="done"></i><i class="done"></i><i class="now"></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+    <p class="barnote">47 / 300 chương · 1 chương chờ viết lại</p>
+  </div>
+
+  <div class="sect">
+    <dl class="nums">
+      <div><dt>Số từ</dt><dd>128.400</dd></div>
+      <div><dt>Chi phí</dt><dd>$2,14</dd></div>
+      <div><dt>Ngữ cảnh</dt><dd style="color:var(--amber-d)">62%<small> 79k/128k</small></dd></div>
+      <div><dt>Đã chạy</dt><dd>6g12p</dd></div>
+    </dl>
+  </div>
+
+  <div class="sect">
+    <p class="mh">Vòng hiện tại</p>
+    <div class="hop">
+      <div class="rail"><span class="dot ok"></span></div>
+      <div><div class="who">Engine</div><div class="what">Route chọn Writer — 0 lượt gọi mô hình</div></div>
+      <div class="dur">0,00s</div>
+    </div>
+    <div class="hop">
+      <div class="rail"><span class="dot ok"></span></div>
+      <div><div class="who">Writer</div><div class="what"><code>plan_chapter</code> xong</div></div>
+      <div class="dur">11,4s</div>
+    </div>
+    <div class="hop">
+      <div class="rail"><span class="dot on"></span></div>
+      <div><div class="who">Writer</div><div class="what"><code>draft_chapter</code> đang viết</div></div>
+      <div class="dur">4,2s</div>
+    </div>
+    <div class="hop">
+      <div class="rail"><span class="dot"></span></div>
+      <div><div class="who">Editor</div><div class="what">duyệt cung 2 — còn 3 chương</div></div>
+      <div class="dur">chờ</div>
+    </div>
+  </div>
+
+  <div class="sect steer">
+    <p class="mh">Can thiệp</p>
+    <input placeholder="Lâm Thanh nên do dự lâu hơn…" aria-label="Ý kiến can thiệp">
+    <button>Gửi cho Arbiter</button>
+  </div>
+</aside>
+
+<!-- ══ văn bản ══ -->
+<main class="paper">
+  <div class="paperbar">
+    <span style="font-weight:500;color:var(--p-ink)">Trấn Yêu Ký</span>
+    <span class="sep">·</span><span>tập 3 · cung 2</span>
+    <nav>
+      <a href="#" aria-current="page">Đọc</a>
+      <a href="#">Dàn ý</a>
+      <a href="#">Nhân vật</a>
+      <a href="#">Thế giới</a>
+    </nav>
+  </div>
+
+  <div class="reading">
+    <article>
+      <div class="ch-no">CHƯƠNG 47</div>
+      <h2>Tiếng chuông thứ ba</h2>
+      <p class="byline">2.980 từ · bản thảo đang viết · cập nhật 4 giây trước</p>
+
+      <p class="lede">Đêm ấy mưa không dừng. Lâm Thanh ngồi dựa cột đá ở chân bậc thứ hai trăm, nghe tiếng chuông từ Hàn Sơn vọng xuống qua màn nước — một tiếng, rồi hai tiếng, đều đặn như nhịp thở của người đã ngủ rất sâu.</p>
+
+      <p>Chàng đếm. Suốt mười hai năm ở đây chàng vẫn đếm, và suốt mười hai năm chuông chỉ đổ hai lần rồi tắt. Người trong trấn bảo tiếng thứ ba dành cho ngày núi mở. Lâm Thanh không tin chuyện núi mở, nhưng chàng vẫn đếm.</p>
+
+      <div class="break">◇</div>
+
+      <p>Mưa ngớt vào canh tư. Trong khoảng lặng đó chàng nghe rõ một thứ khác: tiếng bước chân, rất nhẹ, đi từ phía cổng lên. Không phải bước của người quen đường — người quen đường sẽ tránh bậc thứ chín, chỗ đá đã nứt.</p>
+
+      <p>Bước chân ấy đạp thẳng lên bậc thứ chín. Đá kêu một tiếng khô khốc.</p>
+
+      <p>Lâm Thanh không đứng lên. Chàng chỉ đưa tay lên vai, nơi bao kiếm vẫn còn ướt, và giữ nguyên tay ở đó — không rút, cũng không rời.</p>
+    </article>
+
+    <aside class="marginalia">
+      <h3>Editor duyệt cung 1</h3>
+      <div class="note">
+        <span class="dim">Nhất quán thiết lập</span><span class="verdict">đạt</span>
+        <p>Số bậc đá khớp chương 12 và 31.</p>
+      </div>
+      <div class="note">
+        <span class="dim">Phục bút</span><span class="verdict warn">cần thu</span>
+        <p><q>Ấn ngọc Hàn Sơn</q> đặt ở chương 38, đã qua 9 chương chưa nhắc.</p>
+      </div>
+      <div class="note">
+        <span class="dim">Nhịp</span><span class="verdict warn">hơi chậm</span>
+        <p>Ba chương liền mở bằng cảnh đêm.</p>
+      </div>
+    </aside>
+  </div>
+</main>
+
+</body>
+</html>
