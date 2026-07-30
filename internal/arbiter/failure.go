@@ -60,11 +60,11 @@ func (d *FailureDecision) ValidateAgainst(f FailureFacts) error {
 // (仅 reroute 时非 null);跨字段组合仍由 ValidateAgainst 按事实校验。
 var failureContract = llmcontract.Contract{
 	Name:        "arbiter_failure",
-	Description: "失败/僵局裁定:给出出路",
+	Description: i18n.F("失败/僵局裁定:给出出路"),
 	Schema: schema.Object(
-		schema.Property("action", schema.Enum("出路", "retry", "reroute", "abort")).Required(),
-		schema.Property("dispatch", dispatchSchema("派单目标(仅 reroute 时给出,否则为 null)")).Required(),
-		schema.Property("reason", schema.String("裁定理由")).Required(),
+		schema.Property("action", schema.Enum(i18n.F("出路"), "retry", "reroute", "abort")).Required(),
+		schema.Property("dispatch", dispatchSchema(i18n.F("派单目标(仅 reroute 时给出,否则为 null)"))).Required(),
+		schema.Property("reason", schema.String(i18n.F("裁定理由"))).Required(),
 	),
 }
 

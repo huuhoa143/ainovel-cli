@@ -139,10 +139,10 @@ func TestBudgetSentinelZeroCostBlindWarning(t *testing.T) {
 		s.OnCost(0)
 	}
 	if len(r.reports) != 1 || !strings.Contains(r.reports[0], "预算盲区") {
-		t.Fatalf("expected exactly one blind warning, got %v", r.reports)
+		t.Fatalf("expected exactly one blind() warning, got %v", r.reports)
 	}
 	if len(r.aborts) != 0 {
-		t.Fatal("blind warning must not abort")
+		t.Fatal("blind() warning must not abort")
 	}
 
 	// 正常计价模型不应误报：每笔记账总额递增
@@ -153,7 +153,7 @@ func TestBudgetSentinelZeroCostBlindWarning(t *testing.T) {
 	}
 	for _, rep := range r2.reports {
 		if strings.Contains(rep, "盲区") {
-			t.Fatalf("priced model should not trigger blind warning: %v", r2.reports)
+			t.Fatalf("priced model should not trigger blind() warning: %v", r2.reports)
 		}
 	}
 }
@@ -170,6 +170,6 @@ func TestBudgetSentinelBlindWarningAfterModelSwitch(t *testing.T) {
 		s.OnCost(5.0) // 切到无价模型：总额钉死
 	}
 	if len(r.reports) != 1 || !strings.Contains(r.reports[0], "盲区") {
-		t.Fatalf("expected blind warning after switch to unpriced model, got %v", r.reports)
+		t.Fatalf("expected blind() warning after switch to unpriced model, got %v", r.reports)
 	}
 }

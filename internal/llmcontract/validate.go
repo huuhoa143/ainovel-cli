@@ -222,7 +222,7 @@ func valueType(value any) string {
 
 func joinTypes(types []string) string {
 	if len(types) == 0 {
-		return "有效 JSON 值"
+		return i18n.F("有效 JSON 值")
 	}
 	return fmt.Sprint(types)
 }

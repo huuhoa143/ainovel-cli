@@ -50,11 +50,11 @@ func NewContextTool(store *store.Store, refs References, style string) *ContextT
 
 func (t *ContextTool) Name() string { return "novel_context" }
 func (t *ContextTool) Description() string {
-	return "获取小说当前状态和创作上下文。" +
-		"不传 chapter：返回 progress_status（phase/flow/next_chapter/pending_rewrites 等进度字段）+ 基础设定，用于判断下一步该做什么。" +
-		"传 chapter=N：额外返回该章的前情摘要、伏笔、角色状态、风格规则等写作上下文"
+	return i18n.F("获取小说当前状态和创作上下文。") +
+		i18n.F("不传 chapter：返回 progress_status（phase/flow/next_chapter/pending_rewrites 等进度字段）+ 基础设定，用于判断下一步该做什么。") +
+		i18n.F("传 chapter=N：额外返回该章的前情摘要、伏笔、角色状态、风格规则等写作上下文")
 }
-func (t *ContextTool) Label() string { return "加载上下文" }
+func (t *ContextTool) Label() string { return i18n.F("加载上下文") }
 
 // 纯读工具，可被并发调度。
 func (t *ContextTool) ReadOnly(_ json.RawMessage) bool        { return true }
@@ -62,7 +62,7 @@ func (t *ContextTool) ConcurrencySafe(_ json.RawMessage) bool { return true }
 
 func (t *ContextTool) Schema() map[string]any {
 	return schema.Object(
-		schema.Property("chapter", schema.Int("章节号。不传则返回进度状态和基础设定（Architect 用）；传入则额外返回该章的写作上下文（Writer/Editor 用）")),
+		schema.Property("chapter", schema.Int(i18n.F("章节号。不传则返回进度状态和基础设定（Architect 用）；传入则额外返回该章的写作上下文（Writer/Editor 用）"))),
 	)
 }
 
@@ -104,7 +104,7 @@ func (t *ContextTool) Execute(_ context.Context, args json.RawMessage) (json.Raw
 		// 数据语义标注（治复读交代）：episodic 是已写入正文的备忘，不是待写素材。
 		// 只挂容器内，不进顶层镜像。
 		if epi, ok := result["episodic_memory"].(map[string]any); ok && len(epi) > 0 {
-			epi["_usage"] = "本容器为已写入正文的事实备忘（供一致性与衔接对照）；在新章正文中原样复述这些内容属于重复缺陷"
+			epi["_usage"] = i18n.F("本容器为已写入正文的事实备忘（供一致性与衔接对照）；在新章正文中原样复述这些内容属于重复缺陷")
 		}
 	} else {
 		// Architect 路径：只返回状态 + 结构化数据，不加载全量原文
@@ -218,10 +218,10 @@ func buildLoadingSummary(result map[string]any, chapter int) string {
 		items = append(items, fmt.Sprintf(i18n.F("状态变化:%d"), n))
 	}
 	if _, ok := result["previous_tail"]; ok {
-		items = append(items, "前章尾部:ok")
+		items = append(items, i18n.F("前章尾部:ok"))
 	}
 	if _, ok := result["style_rules"]; ok {
-		items = append(items, "风格规则:ok")
+		items = append(items, i18n.F("风格规则:ok"))
 	}
 	if n := sliceLen(result["related_chapters"]); n > 0 {
 		items = append(items, fmt.Sprintf(i18n.F("相关章:%d"), n))
@@ -243,10 +243,10 @@ func buildLoadingSummary(result map[string]any, chapter int) string {
 		items = append(items, fmt.Sprintf(i18n.F("参考包:%d"), len(pack)))
 	}
 	if _, ok := result["memory_policy"]; ok {
-		items = append(items, "记忆策略:ok")
+		items = append(items, i18n.F("记忆策略:ok"))
 	}
 	if _, ok := result["simulation_profile"]; ok {
-		items = append(items, "仿写画像:ok")
+		items = append(items, i18n.F("仿写画像:ok"))
 	}
 	if warnings, ok := result["_warnings"].([]string); ok && len(warnings) > 0 {
 		items = append(items, fmt.Sprintf(i18n.F("告警:%d"), len(warnings)))
@@ -589,7 +589,7 @@ func (t *ContextTool) buildRelatedChapters(
 	// 1. 伏笔反查：活跃伏笔的描述是否与当前章大纲相关
 	for _, f := range foreshadow {
 		if strings.Contains(outlineText, f.ID) || containsAny(outlineText, strings.Fields(f.Description)) {
-			add(f.PlantedAt, fmt.Sprintf(i18n.F("伏笔%s(%s)埋设章"), f.ID, truncateRunes(f.Description, 15)))
+			add(f.PlantedAt, fmt.Sprintf(i18n.F("伏笔%s(%s)埋设章"), f.ID, truncateRunes(f.Description, domain.RuneBudgetForWords(15))))
 		}
 		if len(results) >= maxResults {
 			break
@@ -714,8 +714,8 @@ func (t *ContextTool) selectStoryThreads(state contextBuildState) []domain.Recal
 			Kind:    "story_thread",
 			Key:     entry.ID,
 			Chapter: entry.PlantedAt,
-			Reason:  "当前章可能需要承接既有伏笔",
-			Summary: fmt.Sprintf(i18n.F("伏笔“%s”埋于第%d章：%s"), entry.ID, entry.PlantedAt, truncateRunes(entry.Description, 30)),
+			Reason:  i18n.F("当前章可能需要承接既有伏笔"),
+			Summary: fmt.Sprintf(i18n.F("伏笔“%s”埋于第%d章：%s"), entry.ID, entry.PlantedAt, truncateRunes(entry.Description, domain.RuneBudgetForWords(30))),
 		})
 		if len(items) >= maxThreads {
 			return items
@@ -729,8 +729,8 @@ func (t *ContextTool) selectStoryThreads(state contextBuildState) []domain.Recal
 			Kind:    "story_thread",
 			Key:     entry.ID,
 			Chapter: entry.PlantedAt,
-			Reason:  "伏笔久挂未回收，注意适时推进或回收",
-			Summary: fmt.Sprintf(i18n.F("伏笔“%s”埋于第%d章，已 %d 章未回收：%s"), entry.ID, entry.PlantedAt, state.chapter-entry.PlantedAt, truncateRunes(entry.Description, 30)),
+			Reason:  i18n.F("伏笔久挂未回收，注意适时推进或回收"),
+			Summary: fmt.Sprintf(i18n.F("伏笔“%s”埋于第%d章，已 %d 章未回收：%s"), entry.ID, entry.PlantedAt, state.chapter-entry.PlantedAt, truncateRunes(entry.Description, domain.RuneBudgetForWords(30))),
 		})
 		if len(items) >= maxThreads {
 			break
@@ -784,7 +784,7 @@ func (t *ContextTool) selectReviewLessons(chapter int, warn func(string, error))
 				Kind:    "review_lesson",
 				Key:     fmt.Sprintf("review-%d-contract-%d", review.Chapter, i),
 				Chapter: review.Chapter,
-				Reason:  "最近审阅指出 contract 漏项",
+				Reason:  i18n.F("最近审阅指出 contract 漏项"),
 				Summary: fmt.Sprintf(i18n.F("第%d章 contract 漏项：%s"), review.Chapter, miss),
 			})
 			if len(items) >= 3 {
@@ -798,8 +798,8 @@ func (t *ContextTool) selectReviewLessons(chapter int, warn func(string, error))
 					Kind:    "review_lesson",
 					Key:     fmt.Sprintf("review-%d-issue-%d", review.Chapter, i),
 					Chapter: review.Chapter,
-					Reason:  "最近审阅指出需要避免重复问题",
-					Summary: fmt.Sprintf(i18n.F("第%d章审阅提醒：%s"), review.Chapter, truncateRunes(issue.Description, 36)),
+					Reason:  i18n.F("最近审阅指出需要避免重复问题"),
+					Summary: fmt.Sprintf(i18n.F("第%d章审阅提醒：%s"), review.Chapter, truncateRunes(issue.Description, domain.RuneBudgetForWords(36))),
 				})
 			}
 			if len(items) >= 3 {
@@ -926,6 +926,12 @@ func longestCommonSubstringRunes(a, b []rune) int {
 }
 
 // truncateRunes 截断字符串到指定 rune 数。
+//
+// 注意单位：参数是 rune 数，不是"字"数。调用方给的预算若来自 upstream 按汉字选的
+// 数字（15/30/36），必须先过 domain.RuneBudgetForWords 换算——越南语一个字平均
+// 4.75 个 rune，直接传 30 会把伏笔提示切成 6 个字的碎片。碎片仍是合法字符串，
+// writer 照样收到同样条数的提示，所以这里切坏了不会有任何报错，只是那几行不再
+// 说明任何事情。
 func truncateRunes(s string, maxRunes int) string {
 	runes := []rune(s)
 	if len(runes) <= maxRunes {

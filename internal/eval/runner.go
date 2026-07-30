@@ -55,7 +55,7 @@ func RunCase(cfg bootstrap.Config, bundle assets.Bundle, c Case, opts RunOptions
 	// 执行，收尾日志仍被文件捕获。
 	cleanup, err := logger.SetupFile(eng.Dir(), "headless.log", false)
 	if err != nil {
-		slog.Warn("评测文件日志不可用，继续运行", "module", "eval", "err", err)
+		slog.Warn(i18n.F("评测文件日志不可用，继续运行"), "module", "eval", "err", err)
 		cleanup = func() {}
 	}
 	defer cleanup()

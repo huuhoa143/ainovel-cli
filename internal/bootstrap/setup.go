@@ -80,7 +80,7 @@ func ProviderPresets() []ProviderPreset {
 func RunSetup() (Config, error) {
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("99")).
-		Render("未检测到配置文件，开始初始化设置..."))
+		Render(i18n.F("未检测到配置文件，开始初始化设置...")))
 	fmt.Fprintf(os.Stderr, i18n.F("  配置文件路径：%s\n"), lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Render(DefaultConfigPath()))
 	fmt.Fprint(os.Stderr, i18n.F("  完成后可随时编辑该文件调整高级设置。\n"))
 	fmt.Fprintln(os.Stderr)
@@ -97,7 +97,7 @@ func RunSetup() (Config, error) {
 
 	// 自定义代理：额外问名称和 API 协议类型
 	if sp.needType {
-		providerName, err = runTextInput("Provider 名称", "my-proxy")
+		providerName, err = runTextInput(i18n.F("Provider 名称"), "my-proxy")
 		if err != nil {
 			return Config{}, err
 		}
@@ -111,7 +111,7 @@ func RunSetup() (Config, error) {
 	// Step 2: 输入 API Key
 	var apiKey string
 	if sp.apiKeyOptional {
-		apiKey, err = runOptionalTextInput("[2/4] API Key（可留空）", "留空表示不使用 API Key")
+		apiKey, err = runOptionalTextInput(i18n.F("[2/4] API Key（可留空）"), i18n.F("留空表示不使用 API Key"))
 	} else {
 		apiKey, err = runTextInput("[2/4] API Key", "sk-xxx")
 	}
@@ -120,18 +120,18 @@ func RunSetup() (Config, error) {
 	}
 	pc.APIKey = apiKey
 	if apiKey == "" {
-		printStepDone("API Key", "未设置")
+		printStepDone("API Key", i18n.F("未设置"))
 	} else {
 		printStepDone("API Key", maskKey(apiKey))
 	}
 
 	// Step 3: Base URL（直接回车使用官方默认地址）
 	baseDefault := sp.baseURL
-	baseHint := "留空使用官方地址"
+	baseHint := i18n.F("留空使用官方地址")
 	if baseDefault != "" {
 		baseHint = baseDefault
 	}
-	baseURL, err := runTextInputWithDefault("[3/4] Base URL（直接回车使用默认，代理用户填写代理地址）", baseHint, baseDefault)
+	baseURL, err := runTextInputWithDefault(i18n.F("[3/4] Base URL（直接回车使用默认，代理用户填写代理地址）"), baseHint, baseDefault)
 	if err != nil {
 		return Config{}, err
 	}
@@ -139,11 +139,11 @@ func RunSetup() (Config, error) {
 	if baseURL != "" {
 		printStepDone("Base URL", baseURL)
 	} else {
-		printStepDone("Base URL", "默认")
+		printStepDone("Base URL", i18n.F("默认"))
 	}
 
 	// Step 4: 模型名（必填）
-	modelName, err := runTextInput("[4/4] 模型名称", "例如：gpt-4o / claude-sonnet-4 / gemini-2.5-pro")
+	modelName, err := runTextInput(i18n.F("[4/4] 模型名称"), i18n.F("例如：gpt-4o / claude-sonnet-4 / gemini-2.5-pro"))
 	if err != nil {
 		return Config{}, err
 	}
@@ -210,7 +210,7 @@ func maskKey(key string) string {
 
 func runProviderSelect() (setupProvider, error) {
 	m := setupSelectModel{
-		title: "[1/4] 选择 Provider",
+		title: i18n.F("[1/4] 选择 Provider"),
 		items: setupProviders,
 	}
 	p := tea.NewProgram(m, tea.WithOutput(os.Stderr))
@@ -226,14 +226,14 @@ func runProviderSelect() (setupProvider, error) {
 }
 
 var apiTypeOptions = []setupProvider{
-	{name: "openai", label: "OpenAI 兼容"},
-	{name: "anthropic", label: "Anthropic 兼容"},
-	{name: "gemini", label: "Gemini 兼容"},
+	{name: "openai", label: i18n.F("OpenAI 兼容")},
+	{name: "anthropic", label: i18n.F("Anthropic 兼容")},
+	{name: "gemini", label: i18n.F("Gemini 兼容")},
 }
 
 func runTypeSelect() (string, error) {
 	m := setupSelectModel{
-		title: "API 协议类型",
+		title: i18n.F("API 协议类型"),
 		items: apiTypeOptions,
 	}
 	p := tea.NewProgram(m, tea.WithOutput(os.Stderr))
@@ -335,7 +335,7 @@ func (m setupSelectModel) View() string {
 		}
 		b.WriteString(cursor + label + "\n")
 	}
-	b.WriteString(setupDimStyle.Render("\n  ↑↓ 选择  Enter 确认  Esc 取消"))
+	b.WriteString(setupDimStyle.Render(i18n.F("\n  ↑↓ 选择  Enter 确认  Esc 取消")))
 	return b.String()
 }
 
@@ -390,7 +390,7 @@ func (m setupInputModel) View() string {
 		b.WriteString(m.value)
 		b.WriteString(setupCursorStyle.Render("▌"))
 	}
-	b.WriteString(setupDimStyle.Render("  (Enter 确认, Esc 取消)"))
+	b.WriteString(setupDimStyle.Render(i18n.F("  (Enter 确认, Esc 取消)")))
 	b.WriteString("\n")
 	return b.String()
 }

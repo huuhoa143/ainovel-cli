@@ -35,11 +35,11 @@ func (d *PlanStartDecision) Validate() error {
 // planStartContract 紧邻 PlanStartDecision:字段全 required,planner 是封闭枚举。
 var planStartContract = llmcontract.Contract{
 	Name:        "arbiter_plan_start",
-	Description: "启动裁定:选规划师并产出完整任务文本",
+	Description: i18n.F("启动裁定:选规划师并产出完整任务文本"),
 	Schema: schema.Object(
-		schema.Property("planner", schema.Enum("规划师", "architect_long", "architect_short")).Required(),
-		schema.Property("task", schema.String("交给规划师的完整任务(含扩充后的需求)")).Required(),
-		schema.Property("reason", schema.String("选择理由")).Required(),
+		schema.Property("planner", schema.Enum(i18n.F("规划师"), "architect_long", "architect_short")).Required(),
+		schema.Property("task", schema.String(i18n.F("交给规划师的完整任务(含扩充后的需求)"))).Required(),
+		schema.Property("reason", schema.String(i18n.F("选择理由"))).Required(),
 	),
 }
 

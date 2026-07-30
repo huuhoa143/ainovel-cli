@@ -39,14 +39,14 @@ func describeResume(store *storepkg.Store, progress *domain.Progress) (string, e
 			return fmt.Sprintf(i18n.F("恢复：第 %d 章提交中断"), pending.Chapter), nil
 		}
 		if len(progress.PendingRewrites) > 0 {
-			verb := "重写"
+			verb := i18n.F("重写")
 			if progress.Flow == domain.FlowPolishing {
-				verb = "打磨"
+				verb = i18n.F("打磨")
 			}
 			return fmt.Sprintf(i18n.F("%s恢复：%d 章待处理"), verb, len(progress.PendingRewrites)), nil
 		}
 		if progress.Flow == domain.FlowReviewing {
-			return "恢复：审阅中断", nil
+			return i18n.F("恢复：审阅中断"), nil
 		}
 		if progress.InProgressChapter > 0 {
 			return fmt.Sprintf(i18n.F("恢复：第 %d 章进行中"), progress.InProgressChapter), nil
@@ -60,7 +60,7 @@ func describeResume(store *storepkg.Store, progress *domain.Progress) (string, e
 		}
 		return fmt.Sprintf(i18n.F("恢复：从第 %d 章继续"), progress.NextChapter()), nil
 	}
-	return "恢复", nil
+	return i18n.F("恢复"), nil
 }
 
 // describeArcEndLabel 为弧末/卷末的多种中间状态生成贴合 UI 的标签。

@@ -109,9 +109,9 @@ func buildStoryStateSummary(s *store.Store) string {
 // stageSystemPrompt 组装阶段共创的完整系统提示：阶段 prompt + 当前故事状态摘要。
 // 摘要作为数据附录挂在末尾（用分隔线与格式规范隔开），呼应 prompt 里"进度见下方"的指引。
 func stageSystemPrompt(s *store.Store) string {
-	prompt := stageCoCreateSystemPrompt
+	prompt := stageCoCreateSystemPrompt()
 	if summary := buildStoryStateSummary(s); summary != "" {
-		prompt += "\n\n---\n## 当前故事状态\n（以下是已写内容的客观摘要，供你规划后续时参照，不要在 <draft> 里照抄原文）\n" + summary
+		prompt += i18n.F("\n\n---\n## 当前故事状态\n（以下是已写内容的客观摘要，供你规划后续时参照，不要在 <draft> 里照抄原文）\n") + summary
 	}
 	return prompt
 }

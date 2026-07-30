@@ -36,53 +36,53 @@ func Run(ctx context.Context, deps Deps, opts Options) (<-chan Event, error) {
 			}
 		}
 
-		emit(StageScan, 0, 0, "扫描 simulate 语料...", nil)
+		emit(StageScan, 0, 0, i18n.F("扫描 simulate 语料..."), nil)
 		sources, err := scanSources(opts.SourceDir)
 		if err != nil {
-			emit(StageError, 0, 0, "扫描 simulate 目录失败", err)
+			emit(StageError, 0, 0, i18n.F("扫描 simulate 目录失败"), err)
 			return
 		}
 		if len(sources) == 0 {
-			emit(StageError, 0, 0, "simulate 目录中没有可分析的 .txt/.md/.markdown 文件", fmt.Errorf("no simulation sources"))
+			emit(StageError, 0, 0, i18n.F("simulate 目录中没有可分析的 .txt/.md/.markdown 文件"), fmt.Errorf("no simulation sources"))
 			return
 		}
 
 		existing, err := deps.Store.Simulation.Load()
 		if err != nil {
-			emit(StageError, 0, len(sources), "读取既有画像失败", err)
+			emit(StageError, 0, len(sources), i18n.F("读取既有画像失败"), err)
 			return
 		}
 		pending := pendingSources(existing, sources)
 		if len(pending) == 0 {
-			emit(StageDone, 0, len(sources), "画像已是最新，未发现新增或变更文章", nil)
+			emit(StageDone, 0, len(sources), i18n.F("画像已是最新，未发现新增或变更文章"), nil)
 			return
 		}
 
 		reports := make([]domain.SimulationSourceReport, 0, len(pending))
 		for i, source := range pending {
 			if err := ctx.Err(); err != nil {
-				emit(StageError, i, len(pending), "用户取消画像分析", err)
+				emit(StageError, i, len(pending), i18n.F("用户取消画像分析"), err)
 				return
 			}
 			emit(StageAnalyze, i+1, len(pending), fmt.Sprintf(i18n.F("分析仿写语料 %d/%d：%s"), i+1, len(pending), source.RelativePath), nil)
 			report, err := AnalyzeSource(ctx, deps.LLM, deps.Prompts.Source, source)
 			if err != nil {
-				emit(StageError, i+1, len(pending), "语料分析失败", err)
+				emit(StageError, i+1, len(pending), i18n.F("语料分析失败"), err)
 				return
 			}
 			reports = append(reports, *report)
 		}
 
 		allReports := mergeSourceReports(existing, reports)
-		emit(StageMerge, len(pending), len(pending), "合并仿写画像...", nil)
+		emit(StageMerge, len(pending), len(pending), i18n.F("合并仿写画像..."), nil)
 		synthesis, err := MergeSynthesis(ctx, deps.LLM, deps.Prompts.Merge, existing, allReports)
 		if err != nil {
-			emit(StageError, len(pending), len(pending), "画像合并失败", err)
+			emit(StageError, len(pending), len(pending), i18n.F("画像合并失败"), err)
 			return
 		}
 		profile := buildProfile(existing, opts.SourceDir, pending, reports, *synthesis, time.Now())
 		if err := deps.Store.Simulation.Save(profile); err != nil {
-			emit(StageError, len(pending), len(pending), "保存仿写画像失败", err)
+			emit(StageError, len(pending), len(pending), i18n.F("保存仿写画像失败"), err)
 			return
 		}
 		emit(StageDone, len(pending), len(pending), fmt.Sprintf(i18n.F("仿写画像已更新：新增/变更 %d 篇，累计 %d 篇"), len(pending), len(profile.Corpus.Sources)), nil)
@@ -131,13 +131,13 @@ func generateStructured[T any](ctx context.Context, model LLMChat, contract llmc
 		Agent:        "simulation",
 		Hooks: llmcontract.Hooks{
 			Resolved: func(res llmcontract.Resolution) {
-				slog.Debug("仿写画像结构化协议选择", "contract", contract.Name,
+				slog.Debug(i18n.F("仿写画像结构化协议选择"), "contract", contract.Name,
 					"structured_mode", res.Mode, "capability_source", res.Source,
 					"provider", res.Provider, "model", res.Model,
 					"schema_fingerprint", contract.Fingerprint())
 			},
 			Correction: func(ev llmcontract.Correction) {
-				slog.Warn("仿写画像输出自愈", "contract", contract.Name, "attempt", ev.Attempt,
+				slog.Warn(i18n.F("仿写画像输出自愈"), "contract", contract.Name, "attempt", ev.Attempt,
 					"layer", ev.Layer, "structured_mode", ev.Mode, "err", ev.Err)
 			},
 		},

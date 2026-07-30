@@ -185,18 +185,18 @@ func buildLedger(prior []ImportedChapterFacts) string {
 	}
 	var b strings.Builder
 	if len(names) > 0 {
-		b.WriteString("已知人物：")
+		b.WriteString(i18n.F("已知人物："))
 		b.WriteString(strings.Join(slices.Sorted(maps.Keys(names)), "、"))
 		b.WriteString("\n")
 	}
 	if len(active) > 0 {
-		b.WriteString("活跃伏笔（复用 ID，勿新造）：\n")
+		b.WriteString(i18n.F("活跃伏笔（复用 ID，勿新造）：\n"))
 		for _, id := range slices.Sorted(maps.Keys(active)) {
 			fmt.Fprintf(&b, "- %s：%s\n", id, active[id])
 		}
 	}
 	if len(recent) > 0 {
-		b.WriteString("最近状态：")
+		b.WriteString(i18n.F("最近状态："))
 		b.WriteString(strings.Join(recent, "；"))
 		b.WriteString("\n")
 	}
@@ -309,7 +309,7 @@ func AnalyzeNext(ctx context.Context, m callModel, systemPrompt string, w *Works
 					}
 					w.writeFailure(FailureMeta{Stage: "analyze", Detail: fmt.Sprintf(i18n.F("批次 %d-%d 长度截断"), start+1, end),
 						StopReason: "length", PrefixSalvage: fmt.Sprintf("available:%d", len(salvaged))}, tr.Raw)
-					prof.logger().Info("imp 分析截断，打捞连续前缀", "batch_start", start+1, "salvaged", len(salvaged))
+					prof.logger().Info(i18n.F("imp 分析截断，打捞连续前缀"), "batch_start", start+1, "salvaged", len(salvaged))
 					echoChapterFacts(prof, salvaged)
 					return len(salvaged), nil
 				}
@@ -317,11 +317,11 @@ func AnalyzeNext(ctx context.Context, m callModel, systemPrompt string, w *Works
 				w.writeFailure(FailureMeta{Stage: "analyze", Detail: fmt.Sprintf(i18n.F("批次 %d-%d 长度截断，无可打捞前缀"), start+1, end),
 					StopReason: "length", PrefixSalvage: "unavailable"}, tr.Raw)
 				if end-start > 1 {
-					prof.logger().Warn("imp 分析截断，缩小重组批", "batch", fmt.Sprintf("%d-%d", start+1, end), "prefix_salvage", "unavailable")
+					prof.logger().Warn(i18n.F("imp 分析截断，缩小重组批"), "batch", fmt.Sprintf("%d-%d", start+1, end), "prefix_salvage", "unavailable")
 					end = start + (end-start)/2
 					// 无 Key 的进度行：既让用户看见缩批动作，也隔断前后两次独立调用的
 					// 退避行按同 Key 误合并（Key 契约只覆盖同一调用内的瞬态退避）。
-					prof.step(0, 0, "输出被长度截断且无可打捞前缀，缩小批次为第 %d-%d 章重试", start+1, end)
+					prof.step(0, 0, i18n.F("输出被长度截断且无可打捞前缀，缩小批次为第 %d-%d 章重试"), start+1, end)
 					continue
 				}
 				return 0, fmt.Errorf(i18n.F("章 %d 单章批次仍被长度截断，模型可见输出能力不足"), start+1)
@@ -345,7 +345,7 @@ func AnalyzeNext(ctx context.Context, m callModel, systemPrompt string, w *Works
 // 而非只有机械的批次计数（§14.1）。
 func echoChapterFacts(prof callProfile, facts []ImportedChapterFacts) {
 	for _, f := range facts {
-		prof.step(0, 0, "第 %d 章〈%s〉：%s", f.Chapter, snippet(f.Title, 24), snippet(f.CoreEvent, 60))
+		prof.step(0, 0, i18n.F("第 %d 章〈%s〉：%s"), f.Chapter, snippet(f.Title, 24), snippet(f.CoreEvent, 60))
 	}
 }
 
@@ -354,7 +354,7 @@ func buildAnalyzePayload(normalized []byte, seg *Segmentation, ledger string, st
 	var b strings.Builder
 	fmt.Fprintf(&b, i18n.F("请分析第 %d-%d 章，返回 {\"chapters\":[每章一个事实对象]}，数组顺序与章号一致。\n\n"), start+1, end)
 	if ledger != "" {
-		b.WriteString("## 连续性 ledger（参考）\n\n")
+		b.WriteString(i18n.F("## 连续性 ledger（参考）\n\n"))
 		b.WriteString(ledger)
 		b.WriteString("\n")
 	}

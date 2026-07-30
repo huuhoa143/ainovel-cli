@@ -31,19 +31,19 @@ const normalizeMaxTokens = 8192
 // （strict 模式禁止动态 key 的 map），两种模式共用同一 DTO 约定。
 var normalizeContract = llmcontract.Contract{
 	Name:        "userrules_normalize",
-	Description: "把用户自然语言写作规则归一化为结构化字段",
+	Description: i18n.F("把用户自然语言写作规则归一化为结构化字段"),
 	Schema: schema.Object(
 		schema.Property("structured", schema.Object(
-			schema.Property("genre", schema.String("题材;无则空字符串")).Required(),
-			schema.Property("forbidden_chars", schema.Array("禁止出现的字符", schema.String("字符"))).Required(),
-			schema.Property("forbidden_phrases", schema.Array("禁止出现的短语(字面精确匹配)", schema.String("短语"))).Required(),
-			schema.Property("fatigue_words", schema.Array("疲劳词及每章出现上限", schema.Object(
-				schema.Property("word", schema.String("疲劳词")).Required(),
-				schema.Property("max_per_chapter", schema.Int("每章出现次数上限(正整数)")).Required(),
+			schema.Property("genre", schema.String(i18n.F("题材;无则空字符串"))).Required(),
+			schema.Property("forbidden_chars", schema.Array(i18n.F("禁止出现的字符"), schema.String(i18n.F("字符")))).Required(),
+			schema.Property("forbidden_phrases", schema.Array(i18n.F("禁止出现的短语(字面精确匹配)"), schema.String(i18n.F("短语")))).Required(),
+			schema.Property("fatigue_words", schema.Array(i18n.F("疲劳词及每章出现上限"), schema.Object(
+				schema.Property("word", schema.String(i18n.F("疲劳词"))).Required(),
+				schema.Property("max_per_chapter", schema.Int(i18n.F("每章出现次数上限(正整数)"))).Required(),
 			))).Required(),
 		)).Required(),
-		schema.Property("preferences", schema.String("自然语言风格/人物/审美偏好;无则空字符串")).Required(),
-		schema.Property("uncertain", schema.Array("故意未提升到 structured 的项+原因", schema.String("条目"))).Required(),
+		schema.Property("preferences", schema.String(i18n.F("自然语言风格/人物/审美偏好;无则空字符串"))).Required(),
+		schema.Property("uncertain", schema.Array(i18n.F("故意未提升到 structured 的项+原因"), schema.String(i18n.F("条目")))).Required(),
 	),
 }
 
@@ -76,7 +76,7 @@ func (n *Normalizer) Normalize(ctx context.Context, source, text string) (rules.
 
 	out, err := llmcontract.Execute(ctx, n.model, llmcontract.Request[normalizerOutput]{
 		Contract:     normalizeContract,
-		SystemPrompt: normalizerSystemPrompt,
+		SystemPrompt: normalizerSystemPrompt(),
 		Payload:      text,
 		Options:      []agentcore.CallOption{agentcore.WithMaxTokens(normalizeMaxTokens)},
 		Validate: func(out *normalizerOutput) error {
@@ -86,13 +86,13 @@ func (n *Normalizer) Normalize(ctx context.Context, source, text string) (rules.
 		Agent: "rules",
 		Hooks: llmcontract.Hooks{
 			Resolved: func(res llmcontract.Resolution) {
-				slog.Debug("规则归一化协议选择", "module", "rules", "source", source,
+				slog.Debug(i18n.F("规则归一化协议选择"), "module", "rules", "source", source,
 					"contract", normalizeContract.Name, "structured_mode", res.Mode,
 					"capability_source", res.Source, "provider", res.Provider, "model", res.Model,
 					"schema_fingerprint", normalizeContract.Fingerprint())
 			},
 			Correction: func(ev llmcontract.Correction) {
-				slog.Warn("规则归一化输出自愈", "module", "rules", "source", source,
+				slog.Warn(i18n.F("规则归一化输出自愈"), "module", "rules", "source", source,
 					"attempt", ev.Attempt, "layer", ev.Layer, "structured_mode", ev.Mode, "err", ev.Err)
 			},
 		},
@@ -109,7 +109,7 @@ func degraded(source, text string) rules.Candidate {
 	return rules.Candidate{
 		Source:      source,
 		Preferences: text,
-		Uncertain:   []string{source + "：归一化失败，已按原文作为风格偏好处理（未提炼机械规则）"},
+		Uncertain:   []string{source + i18n.F("：归一化失败，已按原文作为风格偏好处理（未提炼机械规则）")},
 		Degraded:    true,
 	}
 }
@@ -174,9 +174,10 @@ func nonEmpty(in []string) []string {
 	return out
 }
 
-// normalizerSystemPrompt 只描述归一化语义，输出结构由 normalizeContract 单点维护。
+// normalizerSystemPrompt() 只描述归一化语义，输出结构由 normalizeContract 单点维护。
 // 已用 10 条真实例子（含阈值发明陷阱）验证保守提升成立（10/10）。
-const normalizerSystemPrompt = `你是 AI 小说写作系统的「规则归一化器」。你读取用户某一个来源的长期写作规则（自然语言），把明确且可机械检查的规则提升到 structured，其余内容归入 preferences 或 uncertain。
+func normalizerSystemPrompt() string {
+	return i18n.F(`你是 AI 小说写作系统的「规则归一化器」。你读取用户某一个来源的长期写作规则（自然语言），把明确且可机械检查的规则提升到 structured，其余内容归入 preferences 或 uncertain。
 
 【保守提升——最重要】
 - 只有用户明确、无歧义时才写入 structured。
@@ -187,4 +188,5 @@ const normalizerSystemPrompt = `你是 AI 小说写作系统的「规则归一�
 - 原则:宁可漏进 structured,也不要错误提升(那会每章误报)。
 
 preferences 用一段可读的自然语言保留风格、人物与审美偏好。
-uncertain 说明你故意没有提升到 structured 的项目及原因。`
+uncertain 说明你故意没有提升到 structured 的项目及原因。`)
+}

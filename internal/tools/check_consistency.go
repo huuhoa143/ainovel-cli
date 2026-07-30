@@ -24,9 +24,9 @@ func NewCheckConsistencyTool(store *store.Store) *CheckConsistencyTool {
 
 func (t *CheckConsistencyTool) Name() string { return "check_consistency" }
 func (t *CheckConsistencyTool) Description() string {
-	return "加载已写草稿和对照数据（世界规则、伏笔、关系、别名、最近摘要），供你检查一致性。必须在 draft_chapter 之后调用"
+	return i18n.F("加载已写草稿和对照数据（世界规则、伏笔、关系、别名、最近摘要），供你检查一致性。必须在 draft_chapter 之后调用")
 }
-func (t *CheckConsistencyTool) Label() string { return "一致性检查" }
+func (t *CheckConsistencyTool) Label() string { return i18n.F("一致性检查") }
 
 // 只读工具（仅追加 checkpoint 事件，不改状态），可被并发调度。
 func (t *CheckConsistencyTool) ReadOnly(_ json.RawMessage) bool        { return true }
@@ -34,7 +34,7 @@ func (t *CheckConsistencyTool) ConcurrencySafe(_ json.RawMessage) bool { return 
 
 func (t *CheckConsistencyTool) Schema() map[string]any {
 	return schema.Object(
-		schema.Property("chapter", schema.Int("要检查的章节号")).Required(),
+		schema.Property("chapter", schema.Int(i18n.F("要检查的章节号"))).Required(),
 	)
 }
 

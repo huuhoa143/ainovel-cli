@@ -23,9 +23,9 @@ func NewPlanChapterTool(store *store.Store) *PlanChapterTool {
 
 func (t *PlanChapterTool) Name() string { return "plan_chapter" }
 func (t *PlanChapterTool) Description() string {
-	return "保存章节写作构思。Agent 自主决定规划粒度，不强制场景拆分"
+	return i18n.F("保存章节写作构思。Agent 自主决定规划粒度，不强制场景拆分")
 }
-func (t *PlanChapterTool) Label() string { return "规划章节" }
+func (t *PlanChapterTool) Label() string { return i18n.F("规划章节") }
 
 // 写工具，禁止并发。
 func (t *PlanChapterTool) ReadOnly(_ json.RawMessage) bool        { return false }
@@ -33,20 +33,20 @@ func (t *PlanChapterTool) ConcurrencySafe(_ json.RawMessage) bool { return false
 
 func (t *PlanChapterTool) Schema() map[string]any {
 	return schema.Object(
-		schema.Property("chapter", schema.Int("章节号")).Required(),
-		schema.Property("title", schema.String("暂定章节标题；写作后可按正文调整")).Required(),
-		schema.Property("goal", schema.String("本章目标")).Required(),
-		schema.Property("conflict", schema.String("核心冲突")).Required(),
-		schema.Property("hook", schema.String("章末钩子")).Required(),
-		schema.Property("emotion_arc", schema.String("情绪曲线")),
-		schema.Property("notes", schema.String("自由备忘（任何你觉得写作时需要记住的东西）")),
-		schema.Property("required_beats", schema.Array("本章必须完成的推进项", schema.String(""))),
-		schema.Property("forbidden_moves", schema.Array("本章明确不能发生的推进", schema.String(""))),
-		schema.Property("continuity_checks", schema.Array("本章需特别核对的连续性点", schema.String(""))),
-		schema.Property("evaluation_focus", schema.Array("Editor 重点检查项", schema.String(""))),
-		schema.Property("emotion_target", schema.String("可选：本章希望读者主要感受到的情绪")),
-		schema.Property("payoff_points", schema.Array("可选：关键章希望回应的情节点或兑现点", schema.String(""))),
-		schema.Property("hook_goal", schema.String("可选：章末希望驱动的追读欲望或悬念目标")),
+		schema.Property("chapter", schema.Int(i18n.F("章节号"))).Required(),
+		schema.Property("title", schema.String(i18n.F("暂定章节标题；写作后可按正文调整"))).Required(),
+		schema.Property("goal", schema.String(i18n.F("本章目标"))).Required(),
+		schema.Property("conflict", schema.String(i18n.F("核心冲突"))).Required(),
+		schema.Property("hook", schema.String(i18n.F("章末钩子"))).Required(),
+		schema.Property("emotion_arc", schema.String(i18n.F("情绪曲线"))),
+		schema.Property("notes", schema.String(i18n.F("自由备忘（任何你觉得写作时需要记住的东西）"))),
+		schema.Property("required_beats", schema.Array(i18n.F("本章必须完成的推进项"), schema.String(""))),
+		schema.Property("forbidden_moves", schema.Array(i18n.F("本章明确不能发生的推进"), schema.String(""))),
+		schema.Property("continuity_checks", schema.Array(i18n.F("本章需特别核对的连续性点"), schema.String(""))),
+		schema.Property("evaluation_focus", schema.Array(i18n.F("Editor 重点检查项"), schema.String(""))),
+		schema.Property("emotion_target", schema.String(i18n.F("可选：本章希望读者主要感受到的情绪"))),
+		schema.Property("payoff_points", schema.Array(i18n.F("可选：关键章希望回应的情节点或兑现点"), schema.String(""))),
+		schema.Property("hook_goal", schema.String(i18n.F("可选：章末希望驱动的追读欲望或悬念目标"))),
 	)
 }
 

@@ -61,6 +61,13 @@ def is_data_context(src, tok):
 
     if "i18n.F(" in line:
         return True  # đã bọc, hoặc dòng có bọc khác — để yên cho an toàn
+
+    # Mẫu "hằng msgid + biến đã dịch": chuỗi nguồn được đặt tên `...Msgid` rồi một
+    # biến khác giữ `i18n.F(tênMsgid)`. Bọc chính hằng đó vừa sai (const cần giá trị
+    # hằng, không biên dịch được) vừa phá thiết kế — msgid phải là chuỗi NGUỒN để
+    # tra được, không phải chuỗi đã dịch.
+    if re.match(r"\s*(?:const|var)\s+\w*[Mm]sgid\b", line):
+        return True
     if CASE_RE.match(line):
         return True
     if MAPKEY_RE.match(stripped):
@@ -74,6 +81,13 @@ def is_data_context(src, tok):
         if re.search(re.escape(fn) + r"\s*\([^()]*$", before):
             return True
     return False
+
+
+# CẢNH BÁO const: chuỗi bọc trong khai báo `const` không biên dịch được (const cần
+# giá trị hằng lúc biên dịch). Script này KHÔNG tự xử lý — nó chỉ bọc, và người chạy
+# phải sửa tay các lỗi "is not constant" còn lại. Const ở cấp gói thì đổi thành func
+# (KHÔNG phải var: var chốt locale lúc init package nên đổi ngôn ngữ lúc chạy sẽ vô
+# hiệu). Const cục bộ trong hàm thì đổi thành biến cục bộ.
 
 
 def process(path, apply):
@@ -123,6 +137,10 @@ def main():
     ap.add_argument("paths", nargs="+")
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
+    # Loại trừ theo đường dẫn con. Cần khi nhiều người/tiến trình cùng sửa repo:
+    # bọc một tệp mà người khác đang ghi sẽ nghiền mất việc của họ.
+    ap.add_argument("--exclude", action="append", default=[],
+                    help="bỏ qua tệp có đoạn đường dẫn này (dùng nhiều lần được)")
     a = ap.parse_args()
     apply = a.apply and not a.dry_run
 
@@ -135,6 +153,9 @@ def main():
                 if not fn.endswith(".go") or fn.endswith("_test.go"):
                     continue
                 p = os.path.join(dirpath, fn)
+                if any(ex in p for ex in a.exclude):
+                    total["bỏ_qua_theo_exclude"] += 1
+                    continue
                 st, changed = process(p, apply)
                 total.update(st)
                 if changed:

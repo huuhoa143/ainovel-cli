@@ -135,21 +135,21 @@ type InterventionDecision struct {
 
 var interventionContract = llmcontract.Contract{
 	Name:        "arbiter_intervention",
-	Description: "用户干预裁定：回答、规则、暂停、重开与派单",
+	Description: i18n.F("用户干预裁定：回答、规则、暂停、重开与派单"),
 	Schema: schema.Object(
-		schema.Property("answer", llmcontract.Nullable(schema.String("回显给用户的文字；无则为 null"))).Required(),
-		schema.Property("rules", llmcontract.Nullable(schema.String("要落盘的长效写作规则原文；无则为 null"))).Required(),
+		schema.Property("answer", llmcontract.Nullable(schema.String(i18n.F("回显给用户的文字；无则为 null")))).Required(),
+		schema.Property("rules", llmcontract.Nullable(schema.String(i18n.F("要落盘的长效写作规则原文；无则为 null")))).Required(),
 		schema.Property("hold", llmcontract.Nullable(schema.Object(
-			schema.Property("cancel", schema.Bool("是否取消既有一次性暂停")).Required(),
-			schema.Property("after", llmcontract.Nullable(schema.Enum("暂停触发点；取消时为 null", string(domain.AdvanceHoldAtBoundary), string(domain.AdvanceHoldAfterRewritesDrained)))).Required(),
-			schema.Property("reason", llmcontract.Nullable(schema.String("用户诉求摘要；取消时可为 null"))).Required(),
+			schema.Property("cancel", schema.Bool(i18n.F("是否取消既有一次性暂停"))).Required(),
+			schema.Property("after", llmcontract.Nullable(schema.Enum(i18n.F("暂停触发点；取消时为 null"), string(domain.AdvanceHoldAtBoundary), string(domain.AdvanceHoldAfterRewritesDrained)))).Required(),
+			schema.Property("reason", llmcontract.Nullable(schema.String(i18n.F("用户诉求摘要；取消时可为 null")))).Required(),
 		))).Required(),
 		schema.Property("reopen", llmcontract.Nullable(schema.Object(
-			schema.Property("chapters", schema.Array("需要重开的章节号", schema.Int("章节号"))).Required(),
-			schema.Property("reason", llmcontract.Nullable(schema.String("重开理由"))).Required(),
+			schema.Property("chapters", schema.Array(i18n.F("需要重开的章节号"), schema.Int(i18n.F("章节号")))).Required(),
+			schema.Property("reason", llmcontract.Nullable(schema.String(i18n.F("重开理由")))).Required(),
 		))).Required(),
-		schema.Property("dispatch", dispatchSchema("派单目标；无需派单时为 null")).Required(),
-		schema.Property("reason", schema.String("一句话裁定理由")).Required(),
+		schema.Property("dispatch", dispatchSchema(i18n.F("派单目标；无需派单时为 null"))).Required(),
+		schema.Property("reason", schema.String(i18n.F("一句话裁定理由"))).Required(),
 	),
 }
 

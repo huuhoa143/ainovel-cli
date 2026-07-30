@@ -337,9 +337,9 @@ func displayToolName(tool string, args json.RawMessage) string {
 			label := ""
 			switch p.Scope {
 			case "arc":
-				label = "本弧"
+				label = i18n.F("本弧")
 			case "global":
-				label = "全局"
+				label = i18n.F("全局")
 			default:
 				if p.Chapter > 0 {
 					label = fmt.Sprintf(i18n.F("第%d章"), p.Chapter)
@@ -369,9 +369,9 @@ func displayToolName(tool string, args json.RawMessage) string {
 		if json.Unmarshal(args, &p) == nil && p.Chapter > 0 {
 			suffix := ""
 			if p.Character != "" {
-				suffix = "·" + p.Character + "对话"
+				suffix = "·" + p.Character + i18n.F("对话")
 			} else if p.Source == "draft" {
-				suffix = "·草稿"
+				suffix = i18n.F("·草稿")
 			}
 			return fmt.Sprintf(i18n.F("%s(第%d章%s)"), tool, p.Chapter, suffix)
 		}

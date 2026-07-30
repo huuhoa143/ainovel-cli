@@ -308,7 +308,7 @@ func TestNormalize_NativeSendsSchemaAndRejectsFences(t *testing.T) {
 	if rf == nil || rf.JSONSchema == nil || rf.JSONSchema.Name != "userrules_normalize" {
 		t.Fatalf("native 模式应发送 schema: %+v", rf)
 	}
-	if got := model.lastMsgs[0].TextContent(); got != normalizerSystemPrompt {
+	if got := model.lastMsgs[0].TextContent(); got != normalizerSystemPrompt() {
 		t.Fatalf("native 模式不应向提示词重复注入 schema:\n%s", got)
 	}
 

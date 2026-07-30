@@ -480,13 +480,13 @@ func LogContextWindowChoice(role, model string, window int, source ContextWindow
 	attrs := []any{"module", "context", "role", role, "model", model, "window", window, "source", source}
 	switch source {
 	case CtxWindowModelConfig:
-		slog.Info("上下文窗口（来自 provider 模型配置）", attrs...)
+		slog.Info(i18n.F("上下文窗口（来自 provider 模型配置）"), attrs...)
 	case CtxWindowDefault:
-		slog.Warn("未识别的模型，使用兜底窗口（可在 providers.<name>.models[].context_window 显式指定）", attrs...)
+		slog.Warn(i18n.F("未识别的模型，使用兜底窗口（可在 providers.<name>.models[].context_window 显式指定）"), attrs...)
 	case CtxWindowConfig:
-		slog.Info("上下文窗口（来自配置文件 context_window）", attrs...)
+		slog.Info(i18n.F("上下文窗口（来自配置文件 context_window）"), attrs...)
 	default:
-		slog.Info("上下文窗口", attrs...)
+		slog.Info(i18n.F("上下文窗口"), attrs...)
 	}
 }
 

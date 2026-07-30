@@ -25,9 +25,9 @@ func NewSaveFoundationTool(store *store.Store) *SaveFoundationTool {
 
 func (t *SaveFoundationTool) Name() string { return "save_foundation" }
 func (t *SaveFoundationTool) Description() string {
-	return "保存小说基础设定（premise/outline/characters/world_rules/compass 等）。**这是唯一持久化入口**：未经此工具调用保存的内容不会进入 store，只在消息里输出 Markdown/JSON 等于丢失。参数固定为 {type, content, scale?, volume?, arc?}。type 可选 premise / outline / layered_outline / characters / world_rules / expand_arc / append_volume / update_compass / complete_book。premise 时 content 必须是 Markdown 字符串；其他类型 content 优先直接传 JSON 数组或对象。expand_arc 校准并展开一个未写骨架弧（需 volume + arc，content 为 {title, goal, chapters}，可依据已完成正文修订原骨架目标）；append_volume 追加新卷（content 为完整 VolumeOutline JSON，含弧结构；顶层带 \"final\": true 即宣告收官卷——全书在该卷收束，所有章节写完后自动完结，无需再调 complete_book）；update_compass 更新终局方向（content 为 StoryCompass JSON）；complete_book 宣告全书完结（content 传空对象 {}，直接推 Phase=Complete；工具会校验：大纲内章节已全部写完、无返工队列、compass 无未收束 open_threads——确认长线已收束须先 update_compass 清空 open_threads 落盘，想提前收束用 append_volume 的 final 收官卷）。append_volume / complete_book 必须带 reason 参数（一句话判定理由，对照完结判定清单，记入裁定审计）。scale 可选，仅允许 short / mid / long。"
+	return i18n.F("保存小说基础设定（premise/outline/characters/world_rules/compass 等）。**这是唯一持久化入口**：未经此工具调用保存的内容不会进入 store，只在消息里输出 Markdown/JSON 等于丢失。参数固定为 {type, content, scale?, volume?, arc?}。type 可选 premise / outline / layered_outline / characters / world_rules / expand_arc / append_volume / update_compass / complete_book。premise 时 content 必须是 Markdown 字符串；其他类型 content 优先直接传 JSON 数组或对象。expand_arc 校准并展开一个未写骨架弧（需 volume + arc，content 为 {title, goal, chapters}，可依据已完成正文修订原骨架目标）；append_volume 追加新卷（content 为完整 VolumeOutline JSON，含弧结构；顶层带 \"final\": true 即宣告收官卷——全书在该卷收束，所有章节写完后自动完结，无需再调 complete_book）；update_compass 更新终局方向（content 为 StoryCompass JSON）；complete_book 宣告全书完结（content 传空对象 {}，直接推 Phase=Complete；工具会校验：大纲内章节已全部写完、无返工队列、compass 无未收束 open_threads——确认长线已收束须先 update_compass 清空 open_threads 落盘，想提前收束用 append_volume 的 final 收官卷）。append_volume / complete_book 必须带 reason 参数（一句话判定理由，对照完结判定清单，记入裁定审计）。scale 可选，仅允许 short / mid / long。")
 }
-func (t *SaveFoundationTool) Label() string { return "保存设定" }
+func (t *SaveFoundationTool) Label() string { return i18n.F("保存设定") }
 
 // 写工具（跨域更新 Outline/Progress/Characters），禁止并发。
 func (t *SaveFoundationTool) ReadOnly(_ json.RawMessage) bool        { return false }
@@ -35,14 +35,14 @@ func (t *SaveFoundationTool) ConcurrencySafe(_ json.RawMessage) bool { return fa
 
 func (t *SaveFoundationTool) Schema() map[string]any {
 	return schema.Object(
-		schema.Property("type", schema.Enum("设定类型", "premise", "outline", "layered_outline", "characters", "world_rules", "expand_arc", "append_volume", "update_compass", "complete_book")).Required(),
+		schema.Property("type", schema.Enum(i18n.F("设定类型"), "premise", "outline", "layered_outline", "characters", "world_rules", "expand_arc", "append_volume", "update_compass", "complete_book")).Required(),
 		schema.Property("content", map[string]any{
 			"description": "内容。premise 传 Markdown 字符串；其他类型直接传 JSON 数组或对象即可，也兼容传 JSON 字符串。expand_arc 时传 {title, goal, chapters}，title/goal 是结合已完成事实校准后的目标弧规划。",
 		}).Required(),
-		schema.Property("scale", schema.Enum("规划级别", "short", "mid", "long")),
-		schema.Property("volume", schema.Int("目标卷序号（仅 expand_arc 时必传）")),
-		schema.Property("arc", schema.Int("目标弧序号（仅 expand_arc 时必传）")),
-		schema.Property("reason", schema.String("卷末判定理由（append_volume / complete_book 时必填）：对照完结判定清单，一句话说明为何续卷、宣告收官或完结")),
+		schema.Property("scale", schema.Enum(i18n.F("规划级别"), "short", "mid", "long")),
+		schema.Property("volume", schema.Int(i18n.F("目标卷序号（仅 expand_arc 时必传）"))),
+		schema.Property("arc", schema.Int(i18n.F("目标弧序号（仅 expand_arc 时必传）"))),
+		schema.Property("reason", schema.String(i18n.F("卷末判定理由（append_volume / complete_book 时必填）：对照完结判定清单，一句话说明为何续卷、宣告收官或完结"))),
 	)
 }
 
@@ -386,7 +386,7 @@ func decodeFoundationJSON(typeName, content string, out any) error {
 	if err == nil {
 		return nil
 	}
-	hint := `常见原因：字符串值中的双引号未转义为 \", 换行未转义为 \n, 或对象字段间漏了逗号。请整段重新生成一次。`
+	hint := i18n.F(`常见原因：字符串值中的双引号未转义为 \", 换行未转义为 \n, 或对象字段间漏了逗号。请整段重新生成一次。`)
 	if se, ok := err.(*json.SyntaxError); ok {
 		line, col := offsetToLineCol(content, int(se.Offset))
 		return fmt.Errorf("parse %s JSON (line %d col %d): %w — %s", typeName, line, col, err, hint)
@@ -450,7 +450,7 @@ func (t *SaveFoundationTool) recordVolumeEndDecision(action, reason string, fact
 	}
 	raw, err := json.Marshal(decision)
 	if err != nil {
-		slog.Error("卷末裁定序列化失败", "module", "tools", "action", action, "err", err)
+		slog.Error(i18n.F("卷末裁定序列化失败"), "module", "tools", "action", action, "err", err)
 		return
 	}
 	if _, err := t.store.Decisions.Append(store.DecisionRecord{
@@ -460,7 +460,7 @@ func (t *SaveFoundationTool) recordVolumeEndDecision(action, reason string, fact
 		Decision: raw,
 		Reason:   reason,
 	}); err != nil {
-		slog.Error("卷末裁定审计落盘失败", "module", "tools", "action", action, "err", err)
+		slog.Error(i18n.F("卷末裁定审计落盘失败"), "module", "tools", "action", action, "err", err)
 	}
 }
 
@@ -468,6 +468,6 @@ func (t *SaveFoundationTool) recordVolumeEndDecision(action, reason string, fact
 // 即视为反馈池已被参考,清空防止陈旧反馈反复影响后续规划。best-effort。
 func (t *SaveFoundationTool) consumeWriterFeedback() {
 	if err := t.store.Outline.ClearOutlineFeedback(); err != nil {
-		slog.Warn("清空 writer 反馈池失败", "module", "tools", "err", err)
+		slog.Warn(i18n.F("清空 writer 反馈池失败"), "module", "tools", "err", err)
 	}
 }

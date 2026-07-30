@@ -147,8 +147,8 @@ func PreparePrompt(base string, c Contract, res Resolution) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("llmcontract: marshal %s prompt schema: %w", c.Name, err)
 	}
-	contract := "## 输出契约\n\n" +
-		"只输出一个符合下列 JSON Schema 的 JSON 对象，不要输出解释、Markdown 围栏或标签本身。\n\n" +
+	contract := i18n.F("## 输出契约\n\n") +
+		i18n.F("只输出一个符合下列 JSON Schema 的 JSON 对象，不要输出解释、Markdown 围栏或标签本身。\n\n") +
 		"<output-json-schema>\n" + string(schemaJSON) + "\n</output-json-schema>"
 	if strings.TrimSpace(base) == "" {
 		return contract, nil

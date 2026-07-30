@@ -25,7 +25,7 @@ type errTruncated struct {
 	Raw string
 }
 
-func (e *errTruncated) Error() string { return "模型输出被长度截断（stop=length）" }
+func (e *errTruncated) Error() string { return i18n.F("模型输出被长度截断（stop=length）") }
 
 // errSemantic 表示无法通过重问修复的输出层失败，携带原始响应，
 // 供 runner 统一落 failures/ 失败工件（§14.2），所有语义函数共用。
@@ -99,18 +99,18 @@ func briefErr(err error) string {
 
 // errTypeLabels 把 litellm 错误分类翻成一眼可读的中文短标签。
 var errTypeLabels = map[litellm.ErrorType]string{
-	litellm.ErrorTypeAuth:            "鉴权失败",
-	litellm.ErrorTypeRateLimit:       "限流",
-	litellm.ErrorTypeNetwork:         "网络错误",
-	litellm.ErrorTypeValidation:      "请求参数非法",
-	litellm.ErrorTypeProvider:        "上游服务错误",
-	litellm.ErrorTypeTimeout:         "超时",
-	litellm.ErrorTypeQuota:           "配额不足",
-	litellm.ErrorTypeModel:           "模型不可用",
-	litellm.ErrorTypeInternal:        "内部错误",
-	litellm.ErrorTypeContextOverflow: "上下文超限",
-	litellm.ErrorTypeOverloaded:      "上游过载",
-	litellm.ErrorTypeContentFilter:   "内容过滤拦截",
+	litellm.ErrorTypeAuth:            i18n.F("鉴权失败"),
+	litellm.ErrorTypeRateLimit:       i18n.F("限流"),
+	litellm.ErrorTypeNetwork:         i18n.F("网络错误"),
+	litellm.ErrorTypeValidation:      i18n.F("请求参数非法"),
+	litellm.ErrorTypeProvider:        i18n.F("上游服务错误"),
+	litellm.ErrorTypeTimeout:         i18n.F("超时"),
+	litellm.ErrorTypeQuota:           i18n.F("配额不足"),
+	litellm.ErrorTypeModel:           i18n.F("模型不可用"),
+	litellm.ErrorTypeInternal:        i18n.F("内部错误"),
+	litellm.ErrorTypeContextOverflow: i18n.F("上下文超限"),
+	litellm.ErrorTypeOverloaded:      i18n.F("上游过载"),
+	litellm.ErrorTypeContentFilter:   i18n.F("内容过滤拦截"),
 }
 
 // modelErrDetail 从错误链提取适配器的结构化事实（错误分类、HTTP 状态、provider、模型）。
@@ -159,18 +159,18 @@ func callStructured[T any](ctx context.Context, m callModel, contract llmcontrac
 		Agent:        "import",
 		Hooks: llmcontract.Hooks{
 			Resolved: func(res llmcontract.Resolution) {
-				prof.logger().Debug("imp 结构化协议选择",
+				prof.logger().Debug(i18n.F("imp 结构化协议选择"),
 					"contract", contract.Name, "structured_mode", res.Mode,
 					"capability_source", res.Source, "provider", res.Provider,
 					"model", res.Model, "schema_fingerprint", contract.Fingerprint())
 			},
 			RequestRetry: func(ev llmretry.Event) {
-				prof.sayRetry(time.Now().Add(ev.Delay), "模型请求失败（%s），进行第 %d 次重试", briefErr(ev.Err), ev.Attempt)
-				prof.logger().Warn("imp 模型请求重试", "attempt", ev.Attempt, "delay", ev.Delay, "err", ev.Err)
+				prof.sayRetry(time.Now().Add(ev.Delay), i18n.F("模型请求失败（%s），进行第 %d 次重试"), briefErr(ev.Err), ev.Attempt)
+				prof.logger().Warn(i18n.F("imp 模型请求重试"), "attempt", ev.Attempt, "delay", ev.Delay, "err", ev.Err)
 			},
 			Correction: func(ev llmcontract.Correction) {
-				prof.say("输出校验未通过（%s），带错误反馈进行第 %d 次重问", briefErr(ev.Err), ev.Attempt+1)
-				prof.logger().Warn("imp 结构化输出自愈", "attempt", ev.Attempt,
+				prof.say(i18n.F("输出校验未通过（%s），带错误反馈进行第 %d 次重问"), briefErr(ev.Err), ev.Attempt+1)
+				prof.logger().Warn(i18n.F("imp 结构化输出自愈"), "attempt", ev.Attempt,
 					"layer", ev.Layer, "structured_mode", ev.Mode, "err", ev.Err)
 			},
 		},

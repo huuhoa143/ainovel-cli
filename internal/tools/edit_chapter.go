@@ -36,7 +36,7 @@ func NewEditChapterTool(s *store.Store) *EditChapterTool {
 }
 
 func (t *EditChapterTool) Name() string  { return "edit_chapter" }
-func (t *EditChapterTool) Label() string { return "编辑章节" }
+func (t *EditChapterTool) Label() string { return i18n.F("编辑章节") }
 
 // ReadOnly 明确声明写工具（配合 ConcurrencySafeTool 防止被并发调度）。
 func (t *EditChapterTool) ReadOnly(_ json.RawMessage) bool { return false }
@@ -46,24 +46,26 @@ func (t *EditChapterTool) ReadOnly(_ json.RawMessage) bool { return false }
 func (t *EditChapterTool) ConcurrencySafe(_ json.RawMessage) bool { return false }
 
 // ActivityDescription 供 UI/日志展示当前工具的活动描述。
-func (t *EditChapterTool) ActivityDescription(_ json.RawMessage) string { return "编辑章节草稿" }
+func (t *EditChapterTool) ActivityDescription(_ json.RawMessage) string {
+	return i18n.F("编辑章节草稿")
+}
 
 func (t *EditChapterTool) Description() string {
-	return "对章节草稿做定点字符串替换（打磨场景首选，比 draft_chapter 整章重写省 token）。" +
-		"找到 old_string 并替换为 new_string，要求精确匹配且唯一（多处匹配需 replace_all=true）。" +
-		"old_string 必须从最近一次 read_chapter(source=\"draft\") 的返回中逐字复制，禁止凭记忆重构原文；" +
-		"注意返回值是 JSON 字符串，\\n 须还原为真实换行。draft_chapter 改写过草稿后必须先重新 read_chapter 再编辑。" +
-		"匹配失败的报错会附上草稿中最接近的候选片段，请从候选逐字复制后重试。" +
-		"写入 drafts/{ch}.draft.md；drafts 不存在时自动从 chapters 播种。" +
-		"章节已完成且不在 PendingRewrites 队列中时拒绝执行。每次调用只改一处，多处修改请多次调用。"
+	return i18n.F("对章节草稿做定点字符串替换（打磨场景首选，比 draft_chapter 整章重写省 token）。") +
+		i18n.F("找到 old_string 并替换为 new_string，要求精确匹配且唯一（多处匹配需 replace_all=true）。") +
+		i18n.F("old_string 必须从最近一次 read_chapter(source=\"draft\") 的返回中逐字复制，禁止凭记忆重构原文；") +
+		i18n.F("注意返回值是 JSON 字符串，\\n 须还原为真实换行。draft_chapter 改写过草稿后必须先重新 read_chapter 再编辑。") +
+		i18n.F("匹配失败的报错会附上草稿中最接近的候选片段，请从候选逐字复制后重试。") +
+		i18n.F("写入 drafts/{ch}.draft.md；drafts 不存在时自动从 chapters 播种。") +
+		i18n.F("章节已完成且不在 PendingRewrites 队列中时拒绝执行。每次调用只改一处，多处修改请多次调用。")
 }
 
 func (t *EditChapterTool) Schema() map[string]any {
 	return schema.Object(
-		schema.Property("chapter", schema.Int("章节号")).Required(),
-		schema.Property("old_string", schema.String("要替换的原文精确片段，多行需包含换行；不加 replace_all 时必须在草稿中唯一出现")).Required(),
-		schema.Property("new_string", schema.String("替换后的新文本")).Required(),
-		schema.Property("replace_all", schema.Bool("替换所有匹配（默认 false）")),
+		schema.Property("chapter", schema.Int(i18n.F("章节号"))).Required(),
+		schema.Property("old_string", schema.String(i18n.F("要替换的原文精确片段，多行需包含换行；不加 replace_all 时必须在草稿中唯一出现"))).Required(),
+		schema.Property("new_string", schema.String(i18n.F("替换后的新文本"))).Required(),
+		schema.Property("replace_all", schema.Bool(i18n.F("替换所有匹配（默认 false）"))),
 	)
 }
 
@@ -141,7 +143,7 @@ func (t *EditChapterTool) Execute(ctx context.Context, args json.RawMessage) (js
 		return result, nil
 	}
 	passthrough["chapter"] = a.Chapter
-	passthrough["next_step"] = "edit 已落盘。仍有硬伤可再次 edit_chapter；否则 check_consistency 后 commit_chapter"
+	passthrough["next_step"] = i18n.F("edit 已落盘。仍有硬伤可再次 edit_chapter；否则 check_consistency 后 commit_chapter")
 	return json.Marshal(passthrough)
 }
 

@@ -329,7 +329,7 @@ func NewModelSet(cfg Config) (*ModelSet, error) {
 			return nil, fmt.Errorf("role %s model: %w", role, err)
 		}
 		ms.models[role] = NewSwappableModel(rc.Provider, rc.Model, m, cfg.ModelJSONSchema(rc.Provider, rc.Model))
-		slog.Info("角色模型分配", "module", "config", "role", role, "provider", rc.Provider, "model", rc.Model)
+		slog.Info(i18n.F("角色模型分配"), "module", "config", "role", role, "provider", rc.Provider, "model", rc.Model)
 		if len(rc.Fallbacks) == 0 {
 			continue
 		}

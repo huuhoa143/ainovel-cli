@@ -75,14 +75,14 @@ func Grade(c Case, col Collected) Result {
 	// 1. 运行时错误：headless 返回 error 直接 hard fail（失败显式暴露）。
 	if col.RuntimeErr != "" {
 		r.HardFails = append(r.HardFails, Issue{
-			Kind: "hard_fail", Source: "runtime", Detail: "运行时错误: " + col.RuntimeErr,
+			Kind: "hard_fail", Source: "runtime", Detail: i18n.F("运行时错误: ") + col.RuntimeErr,
 		})
 	}
 
 	// 1b. 工件读取失败：契约依赖的事实读不到，宁可 hard fail 也不 false pass（fail-loud）。
 	for _, le := range col.LoadErrors {
 		r.HardFails = append(r.HardFails, Issue{
-			Kind: "hard_fail", Source: "load", Detail: "工件读取失败: " + le,
+			Kind: "hard_fail", Source: "load", Detail: i18n.F("工件读取失败: ") + le,
 		})
 	}
 
@@ -164,10 +164,10 @@ func GradeDelta(c Case, baseline, variant Result) Delta {
 	}
 
 	if baseline.Outcome == Fail {
-		note("baseline", "baseline 已失败，本轮 delta 只能作为参考")
+		note("baseline", i18n.F("baseline 已失败，本轮 delta 只能作为参考"))
 	}
 	if variant.Outcome == Fail {
-		hardFail("variant", "variant 自身门禁失败")
+		hardFail("variant", i18n.F("variant 自身门禁失败"))
 	}
 	if d.Metrics.CriticalFindings > 0 {
 		hardFail("delta:critical_findings", fmt.Sprintf(i18n.F("critical findings 增加 %d"), d.Metrics.CriticalFindings))
@@ -203,7 +203,7 @@ func GradeDelta(c Case, baseline, variant Result) Delta {
 	}
 	if sd := d.Metrics.Stylestat; sd != nil {
 		if sd.Status == "insufficient_sample" {
-			note("stylestat", "样本不足，至少 5 章才计算文体回归")
+			note("stylestat", i18n.F("样本不足，至少 5 章才计算文体回归"))
 		} else if styleRegressed(sd) {
 			issue := Issue{
 				Kind:   "warning",
@@ -356,7 +356,7 @@ func gradeContracts(c Case, col Collected, r *Result) {
 		case err != nil:
 			hardFail("checkpoint", err.Error())
 		case !ok:
-			hardFail("checkpoint", "缺少 checkpoint: "+spec)
+			hardFail("checkpoint", i18n.F("缺少 checkpoint: ")+spec)
 		default:
 			pass("checkpoint", spec)
 		}
@@ -364,9 +364,9 @@ func gradeContracts(c Case, col Collected, r *Result) {
 
 	for _, sig := range e.NoPending {
 		if col.Pending[sig] {
-			hardFail("no_pending", "残留信号: "+sig)
+			hardFail("no_pending", i18n.F("残留信号: ")+sig)
 		} else {
-			pass("no_pending", sig+" 已清空")
+			pass("no_pending", sig+i18n.F(" 已清空"))
 		}
 	}
 }

@@ -172,7 +172,7 @@ func splitParagraphs(body string) []string {
 
 func renderCoverXHTML(novelName string) string {
 	var b strings.Builder
-	b.WriteString(`<?xml version="1.0" encoding="utf-8"?>
+	b.WriteString(i18n.F(`<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">
 <head>
@@ -180,7 +180,7 @@ func renderCoverXHTML(novelName string) string {
   <link rel="stylesheet" type="text/css" href="style.css"/>
 </head>
 <body>
-`)
+`))
 	if name := strings.TrimSpace(novelName); name != "" {
 		fmt.Fprintf(&b, "  <h1 class=\"book-title\">%s</h1>\n", html.EscapeString(name))
 	}
@@ -192,7 +192,7 @@ func renderCoverXHTML(novelName string) string {
 
 func renderNavXHTML(hasCover bool, chapters []int, titleIdx chapterTitleIndex) string {
 	var b strings.Builder
-	b.WriteString(`<?xml version="1.0" encoding="utf-8"?>
+	b.WriteString(i18n.F(`<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="zh-CN">
 <head>
@@ -203,9 +203,9 @@ func renderNavXHTML(hasCover bool, chapters []int, titleIdx chapterTitleIndex) s
   <nav epub:type="toc">
     <h1>目录</h1>
     <ol>
-`)
+`))
 	if hasCover {
-		b.WriteString("      <li><a href=\"cover.xhtml\">封面</a></li>\n")
+		b.WriteString(i18n.F("      <li><a href=\"cover.xhtml\">封面</a></li>\n"))
 	}
 
 	// 平铺章节列表。卷/弧分组在阅读器里反而不如单层目录清爽（阅读器自己会折叠），

@@ -78,7 +78,7 @@ func LoadConfig() (Config, error) {
 		global, found, err := loadOptionalJSON(p)
 		switch {
 		case err != nil:
-			slog.Warn("全局配置解析失败，已忽略（可被项目级覆盖）", "module", "config", "path", p, "err", err)
+			slog.Warn(i18n.F("全局配置解析失败，已忽略（可被项目级覆盖）"), "module", "config", "path", p, "err", err)
 		case found:
 			cfg = global
 		}

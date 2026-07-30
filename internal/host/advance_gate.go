@@ -74,15 +74,15 @@ func (g *ChapterAdvanceGate) handleHold(hold domain.AdvanceHold) bool {
 		if err := g.store.RunMeta.ClearAdvanceHold(hold); err != nil {
 			return g.fail(fmt.Errorf(i18n.F("消费一次性暂停: %w"), err))
 		}
-		g.reportEvent("info", withAdvanceReason("全书已完结，一次性暂停意图已解除", hold.Reason))
+		g.reportEvent("info", withAdvanceReason(i18n.F("全书已完结，一次性暂停意图已解除"), hold.Reason))
 		return false
 	case flow.AdvanceHoldConsumeAndStop:
 		if err := g.store.RunMeta.ClearAdvanceHold(hold); err != nil {
 			return g.fail(fmt.Errorf(i18n.F("消费一次性暂停: %w"), err))
 		}
-		msg := "已按用户要求在当前工作边界暂停"
+		msg := i18n.F("已按用户要求在当前工作边界暂停")
 		if hold.After == domain.AdvanceHoldAfterRewritesDrained {
-			msg = "返工队列已排空，已暂停等待验收"
+			msg = i18n.F("返工队列已排空，已暂停等待验收")
 		}
 		g.pauseNow(withAdvanceReason(msg, hold.Reason))
 		return true
@@ -183,7 +183,7 @@ func (g *ChapterAdvanceGate) Allow(inst *flow.Instruction) (bool, error) {
 }
 
 func (g *ChapterAdvanceGate) fail(err error) bool {
-	g.pauseNow("章节推进控制错误，已暂停：" + err.Error())
+	g.pauseNow(i18n.F("章节推进控制错误，已暂停：") + err.Error())
 	return true
 }
 
@@ -205,5 +205,5 @@ func withAdvanceReason(msg, reason string) string {
 	if reason == "" {
 		return msg
 	}
-	return msg + "（诉求：" + reason + "）"
+	return msg + i18n.F("（诉求：") + reason + "）"
 }

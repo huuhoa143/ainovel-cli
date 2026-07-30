@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"maps"
 	"strings"
 )
@@ -182,7 +183,7 @@ func SystemDefaults() Candidate {
 		Source: "system_defaults",
 		Structured: Structured{
 			// 定长固定串的 AI 套句；checker 字面子串匹配，带变量的模式（不是X而是Y）归语义层。
-			ForbiddenPhrases: []string{"某种程度上", "值得注意的是", "不知为何", "五味杂陈"},
+			ForbiddenPhrases: []string{i18n.F("某种程度上"), i18n.F("值得注意的是"), i18n.F("不知为何"), i18n.F("五味杂陈")},
 			FatigueWords: map[string]int{
 				"不禁": 1, "竟然": 1, "仿佛": 2, "此外": 1, "然而": 2,
 				"一丝": 2, "一抹": 2, "一缕": 2, "宛如": 1, "不由得": 1,

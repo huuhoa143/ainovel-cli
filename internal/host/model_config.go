@@ -274,7 +274,7 @@ func (h *Host) ConfigureModels(draft ModelConfigurationDraft) error {
 	h.applyThinkingLocked("default")
 	summary := fmt.Sprintf(i18n.F("Provider 配置已保存：%s → %s"), draft.Provider, h.configPath)
 	if draft.Provider != h.cfg.Provider {
-		summary += "；使用 /model 切换"
+		summary += i18n.F("；使用 /model 切换")
 	}
 	h.emitEvent(Event{
 		Time: time.Now(), Category: "SYSTEM", Level: "info",

@@ -340,7 +340,7 @@ func Segment(ctx context.Context, m callModel, systemPrompt string, normalized [
 			}
 		}
 		// 单块模型调用可达数分钟，逐块回显推进 + 累计边界数，面板才不会整段静默像卡死。
-		prof.step(cur, total, "切分第 %d/%d 块（%s..%s），已识别 %d 个边界...",
+		prof.step(cur, total, i18n.F("切分第 %d/%d 块（%s..%s），已识别 %d 个边界..."),
 			cur, total, lo.ID, hi.ID, len(decisions))
 		// 上下文区字节上限取 chunkBytes/8 但不低于 4096：要拦的是超长行虚拟分片
 		// （单片可达 MaxUnitBytes）吞掉输入预算，普通行的 margin 开销本就无害。
@@ -358,8 +358,8 @@ func Segment(ctx context.Context, m callModel, systemPrompt string, normalized [
 			var tr *errTruncated
 			if errors.As(err, &tr) && owned[1]-owned[0] > 1 {
 				mid := (owned[0] + owned[1]) / 2
-				prof.step(0, 0, "块 %s..%s 边界输出被截断（章节过密），对半缩块重试", lo.ID, hi.ID)
-				prof.logger().Warn("imp 切分输出截断，对半缩块", "chunk", lo.ID+".."+hi.ID)
+				prof.step(0, 0, i18n.F("块 %s..%s 边界输出被截断（章节过密），对半缩块重试"), lo.ID, hi.ID)
+				prof.logger().Warn(i18n.F("imp 切分输出截断，对半缩块"), "chunk", lo.ID+".."+hi.ID)
 				left, lerr := chunk([2]int{owned[0], mid}, cur, total)
 				if lerr != nil {
 					return nil, lerr
@@ -383,11 +383,11 @@ func Segment(ctx context.Context, m callModel, systemPrompt string, normalized [
 		}
 		if n := len(batch.Boundaries) - len(kept); n > 0 {
 			// 例行坐标纪律而非异常，用普通进度回显——警示色会让用户误以为出错。
-			prof.step(0, 0, "已裁掉 %d 个上下文区多报的边界（归相邻块自行报告，非错误）", n)
+			prof.step(0, 0, i18n.F("已裁掉 %d 个上下文区多报的边界（归相邻块自行报告，非错误）"), n)
 		}
 		// 回显模型的语义判断（识别出的标题），让用户看见模型读懂了什么，而非只有机械计数。
 		if len(kept) > 0 {
-			prof.step(0, 0, "模型识别出：%s", previewBoundaries(kept))
+			prof.step(0, 0, i18n.F("模型识别出：%s"), previewBoundaries(kept))
 		}
 		if w != nil {
 			if err := writeArtifact(w, rel, want, boundaryBatch{Boundaries: kept}); err != nil {
@@ -409,7 +409,7 @@ func Segment(ctx context.Context, m callModel, systemPrompt string, normalized [
 		// 确定性复现同一失败。清缓存换取下次重新切分的模型机会；决策快照经 errSemantic
 		// 统一落 failures/ 供事后排查。清除失败必须如实报告——谎称已清除会让用户重跑
 		// 时再次复读坏缓存（Debug-First）。
-		hint := "块缓存已清除，重跑将重新切分"
+		hint := i18n.F("块缓存已清除，重跑将重新切分")
 		if w != nil {
 			if cerr := w.clearDir(dirSegmentChunks); cerr != nil {
 				hint = fmt.Sprintf(i18n.F("块缓存清除失败：%v，重跑前请手动删除 meta/import/segment-chunks/"), cerr)

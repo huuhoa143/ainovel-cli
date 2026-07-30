@@ -74,8 +74,12 @@ type Request[T any] struct {
 	Hooks        Hooks
 }
 
-const promptCorrection = "上面的输出不符合 JSON Schema。请根据错误修正，并只输出完整 JSON 对象，不要解释或 Markdown 围栏。"
-const semanticCorrection = "上面的 JSON 结构合法但字段取值未通过业务校验。请根据错误修正，并重新输出完整 JSON 对象。"
+func promptCorrection() string {
+	return i18n.F("上面的输出不符合 JSON Schema。请根据错误修正，并只输出完整 JSON 对象，不要解释或 Markdown 围栏。")
+}
+func semanticCorrection() string {
+	return i18n.F("上面的 JSON 结构合法但字段取值未通过业务校验。请根据错误修正，并重新输出完整 JSON 对象。")
+}
 
 // Execute 统一完成协议选择、提示词准备、请求重试、停止原因分类、Schema/DTO
 // 解码和业务反馈自愈。prompt 模式的格式/Schema 错误以及两种模式的业务错误会
@@ -173,13 +177,13 @@ func Execute[T any](ctx context.Context, model llmretry.Generator, req Request[T
 		if req.Hooks.Correction != nil {
 			req.Hooks.Correction(correction)
 		}
-		hint := promptCorrection
+		hint := promptCorrection()
 		if layer == "semantic" {
-			hint = semanticCorrection
+			hint = semanticCorrection()
 		}
 		messages = append(messages,
 			agentcore.Message{Role: agentcore.RoleAssistant, Content: []agentcore.ContentBlock{agentcore.TextBlock(raw)}},
-			agentcore.UserMsg(hint+"\n错误："+cause.Error()),
+			agentcore.UserMsg(hint+i18n.F("\n错误：")+cause.Error()),
 		)
 	}
 }

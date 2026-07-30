@@ -215,26 +215,26 @@ func ResumeSummary(st *store.Store) string {
 	}
 	f, err := CollectFacts(st, w)
 	if err != nil {
-		return "发现导入状态读取异常：" + err.Error() + "；请运行 /import 查看并修复"
+		return i18n.F("发现导入状态读取异常：") + err.Error() + i18n.F("；请运行 /import 查看并修复")
 	}
 	var state string
 	switch NextAction(f) {
 	case ActionDone:
 		return ""
 	case ActionIngest, ActionSegment:
-		state = "尚未完成切分"
+		state = i18n.F("尚未完成切分")
 	case ActionAwaitConfirmation:
 		state = fmt.Sprintf(i18n.F("已切分 %d 章，等待核对确认"), f.ExpectedChapters)
 	case ActionAnalyze:
 		state = fmt.Sprintf(i18n.F("已分析 %d/%d 章"), f.AnalyzedChapters, f.ExpectedChapters)
 	case ActionSynthesize:
-		state = "逐章分析完成，待全书综合"
+		state = i18n.F("逐章分析完成，待全书综合")
 	case ActionAwaitStoryResolution:
-		state = "待明确故事状态（--story=open|closed）"
+		state = i18n.F("待明确故事状态（--story=open|closed）")
 	case ActionPublish:
-		state = "综合完成，待发布正式状态"
+		state = i18n.F("综合完成，待发布正式状态")
 	}
-	return "发现未完成的导入（" + state + "），输入 /import 从断点恢复"
+	return i18n.F("发现未完成的导入（") + state + i18n.F("），输入 /import 从断点恢复")
 }
 
 // checkImportPreconditions 校验新导入前置条件（RFC §12.1）：

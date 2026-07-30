@@ -42,10 +42,10 @@ func RenderExport(rep Report, rc RuntimeCapture) []byte {
 
 	b.WriteString("# diag-export\n\n")
 	fmt.Fprintf(&b, i18n.F("> 生成时间 %s · %s/%s\n"), time.Now().Format("2006-01-02 15:04:05"), rc.GoOS, rc.GoArch)
-	b.WriteString("> ⚠️ 已脱敏：小说正文 / prompt / 思考已移除，仅保留行为骨架。可直接贴到 issue。\n\n")
+	b.WriteString(i18n.F("> ⚠️ 已脱敏：小说正文 / prompt / 思考已移除，仅保留行为骨架。可直接贴到 issue。\n\n"))
 
 	// 1. 环境
-	b.WriteString("## 1. 环境\n\n")
+	b.WriteString(i18n.F("## 1. 环境\n\n"))
 	fmt.Fprintf(&b, i18n.F("- 阶段 `%s`"), orDash(st.Phase))
 	if st.Flow != "" {
 		fmt.Fprintf(&b, " / flow `%s`", st.Flow)
@@ -59,11 +59,11 @@ func RenderExport(rep Report, rc RuntimeCapture) []byte {
 	}
 
 	// 2. 诊断发现（仅运行时；创作类诊断含剧情/伏笔，留在 /diag 屏上报告，不进可分享导出）
-	b.WriteString("\n## 2. 诊断发现（运行时）\n\n")
+	b.WriteString(i18n.F("\n## 2. 诊断发现（运行时）\n\n"))
 	rf := runtimeFindings(&rc)
 	sortFindings(rf)
 	if len(rf) == 0 {
-		b.WriteString("未发现运行时异常。\n")
+		b.WriteString(i18n.F("未发现运行时异常。\n"))
 	} else {
 		for _, f := range rf {
 			fmt.Fprintf(&b, "- [%s] %s\n", f.Severity, f.Title)
@@ -77,7 +77,7 @@ func RenderExport(rep Report, rc RuntimeCapture) []byte {
 	}
 
 	// 3. 运行时信号（原始聚合）
-	b.WriteString("\n## 3. 运行时信号\n\n")
+	b.WriteString(i18n.F("\n## 3. 运行时信号\n\n"))
 	wrote := false
 	if rc.CurrentStep != "" {
 		fmt.Fprintf(&b, i18n.F("- 当前 step `%s`\n"), rc.CurrentStep)
@@ -88,21 +88,21 @@ func RenderExport(rep Report, rc RuntimeCapture) []byte {
 		wrote = true
 	}
 	if len(rc.Repeats) > 0 {
-		b.WriteString("- 高频签名（近端窗口 ≥3 次，含正常重复工具，仅供参考）：\n")
+		b.WriteString(i18n.F("- 高频签名（近端窗口 ≥3 次，含正常重复工具，仅供参考）：\n"))
 		for _, r := range rc.Repeats {
 			fmt.Fprintf(&b, "  - `%s` ×%d\n", r.Sig, r.Count)
 		}
 		wrote = true
 	}
 	if len(rc.DupContent) > 0 {
-		b.WriteString("- 反复生成同段文本（同 sha）：\n")
+		b.WriteString(i18n.F("- 反复生成同段文本（同 sha）：\n"))
 		for _, d := range rc.DupContent {
 			fmt.Fprintf(&b, "  - sha=%s ×%d\n", d.Sha, d.Count)
 		}
 		wrote = true
 	}
 	if len(rc.LogKinds) > 0 {
-		b.WriteString("- 日志错误分类：")
+		b.WriteString(i18n.F("- 日志错误分类："))
 		b.WriteString(joinKinds(rc.LogKinds))
 		b.WriteString("\n")
 		wrote = true
@@ -116,13 +116,13 @@ func RenderExport(rep Report, rc RuntimeCapture) []byte {
 		wrote = true
 	}
 	if !wrote {
-		b.WriteString("- 无明显运行时异常信号。\n")
+		b.WriteString(i18n.F("- 无明显运行时异常信号。\n"))
 	}
 
 	// 4. 行为骨架尾巴
 	fmt.Fprintf(&b, i18n.F("\n## 4. 行为骨架尾巴（末 %d 条）\n\n"), len(rc.Tail))
 	if len(rc.Tail) == 0 {
-		b.WriteString("（无会话记录）\n")
+		b.WriteString(i18n.F("（无会话记录）\n"))
 	} else {
 		b.WriteString("```\n")
 		for _, ev := range rc.Tail {
@@ -133,7 +133,7 @@ func RenderExport(rep Report, rc RuntimeCapture) []byte {
 	}
 
 	// 5. 脱敏自检
-	b.WriteString("\n## 5. 脱敏自检\n\n")
+	b.WriteString(i18n.F("\n## 5. 脱敏自检\n\n"))
 	fmt.Fprintf(&b, i18n.F("- 打码文本块 %d 处 · 正文出包 0 处\n"), rc.RedactedTexts)
 	if len(rc.Sources) > 0 {
 		fmt.Fprintf(&b, i18n.F("- 数据源：%s\n"), strings.Join(rc.Sources, " · "))

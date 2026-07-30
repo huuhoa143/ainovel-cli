@@ -58,7 +58,7 @@ func main() {
 	// 首次引导
 	if bootstrap.NeedsSetup() {
 		if opts.Headless {
-			die("error: headless 模式不支持首次引导，请先运行一次 TUI 完成配置")
+			die("%s", i18n.F("error: headless 模式不支持首次引导，请先运行一次 TUI 完成配置"))
 		}
 		setupCfg, err := bootstrap.RunSetup()
 		if err != nil {
@@ -108,7 +108,7 @@ func runWithConfig(cfg bootstrap.Config, opts cliOptions, args []string) {
 	rules.EnsureHomeRulesDir()
 
 	if len(args) > 0 {
-		die("error: 不再支持命令行直接传入小说需求，请启动后在 TUI 输入框中输入")
+		die("%s", i18n.F("error: 不再支持命令行直接传入小说需求，请启动后在 TUI 输入框中输入"))
 	}
 
 	// FillDefaults 必须先于资产加载:OutputDir 是运行时字段,默认值在此归一——
@@ -126,7 +126,7 @@ func runWithConfig(cfg bootstrap.Config, opts cliOptions, args []string) {
 		return
 	}
 	if opts.Prompt != "" || opts.PromptFile != "" {
-		die("error: --prompt/--prompt-file 仅能在 --headless 模式下使用")
+		die("%s", i18n.F("error: --prompt/--prompt-file 仅能在 --headless 模式下使用"))
 	}
 	if err := tui.Run(cfg, bundle, versionInfo().Version); err != nil {
 		die("error: %v", err)

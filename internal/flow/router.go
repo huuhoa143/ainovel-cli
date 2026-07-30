@@ -99,12 +99,12 @@ func Route(s State) *Instruction {
 		if len(s.FoundationMissing) > 0 && s.PlanningTier != "" {
 			task := fmt.Sprintf(i18n.F("补齐基础设定缺项：%s（用 save_foundation 落盘对应 type）"), strings.Join(s.FoundationMissing, "、"))
 			if len(s.FoundationMissing) == 1 && s.FoundationMissing[0] == "foundation_audit" {
-				task = "基础设定已齐全：重新调用 novel_context 读取全部已落盘工件与 foundation_status.fingerprint，审查跨文件语义一致性后调用 audit_foundation；有问题先修正并重新审查"
+				task = i18n.F("基础设定已齐全：重新调用 novel_context 读取全部已落盘工件与 foundation_status.fingerprint，审查跨文件语义一致性后调用 audit_foundation；有问题先修正并重新审查")
 			}
 			return &Instruction{
 				Agent:  plannerForTier(s.PlanningTier),
 				Task:   task,
-				Reason: "基础设定缺项未齐，照缺项续派同一规划师",
+				Reason: i18n.F("基础设定缺项未齐，照缺项续派同一规划师"),
 			}
 		}
 		return nil
@@ -113,9 +113,9 @@ func Route(s State) *Instruction {
 	// 3. 重写/打磨队列优先（事实已在工具层落盘，Router 只照单派发）
 	if len(p.PendingRewrites) > 0 {
 		ch := p.PendingRewrites[0]
-		verb := "重写"
+		verb := i18n.F("重写")
 		if p.Flow == domain.FlowPolishing {
-			verb = "打磨"
+			verb = i18n.F("打磨")
 		}
 		return &Instruction{
 			Agent:   "writer",
@@ -149,31 +149,31 @@ func Route(s State) *Instruction {
 					i18n.F("对第 %d 卷第 %d 弧（第 %d-%d 章）做弧级评审：调用 novel_context(chapter=%d)，save_review 使用 scope=arc、chapter=%d；issues[].chapters 只能落在该区间"),
 					b.Volume, b.Arc, b.StartChapter, b.EndChapter, b.EndChapter, b.EndChapter,
 				),
-				Reason: "弧末评审未完成",
+				Reason: i18n.F("弧末评审未完成"),
 			}
 		case !s.HasArcSummary:
 			return &Instruction{
 				Agent:  "editor",
 				Task:   fmt.Sprintf(i18n.F("生成第 %d 卷第 %d 弧摘要（save_arc_summary）"), b.Volume, b.Arc),
-				Reason: "弧摘要未完成",
+				Reason: i18n.F("弧摘要未完成"),
 			}
 		case b.IsVolumeEnd && !s.HasVolumeSummary:
 			return &Instruction{
 				Agent:  "editor",
 				Task:   fmt.Sprintf(i18n.F("生成第 %d 卷卷摘要（save_volume_summary）"), b.Volume),
-				Reason: "卷摘要未完成",
+				Reason: i18n.F("卷摘要未完成"),
 			}
 		case b.NeedsExpansion && b.NextArc > 0:
 			return &Instruction{
 				Agent:  "architect_long",
 				Task:   fmt.Sprintf(i18n.F("展开第 %d 卷第 %d 弧（save_foundation type=expand_arc）"), b.NextVolume, b.NextArc),
-				Reason: "下一弧骨架待展开",
+				Reason: i18n.F("下一弧骨架待展开"),
 			}
 		case b.NeedsNewVolume:
 			return &Instruction{
 				Agent:  "architect_long",
-				Task:   "创建下一卷：按完结判定清单评估后调用 save_foundation——故事继续 → type=append_volume；故事接近终点 → type=append_volume 且卷 JSON 顶层带 \"final\": true（收官卷，整卷收线，写完自动完结）；全部完结条件当下已满足 → type=complete_book。三选一均须附 reason 参数写明判定理由",
-				Reason: "卷末需决定追加新卷、收官卷或结束全书",
+				Task:   i18n.F("创建下一卷：按完结判定清单评估后调用 save_foundation——故事继续 → type=append_volume；故事接近终点 → type=append_volume 且卷 JSON 顶层带 \"final\": true（收官卷，整卷收线，写完自动完结）；全部完结条件当下已满足 → type=complete_book。三选一均须附 reason 参数写明判定理由"),
+				Reason: i18n.F("卷末需决定追加新卷、收官卷或结束全书"),
 			}
 		}
 	}
@@ -204,7 +204,7 @@ func Route(s State) *Instruction {
 				i18n.F("非分层大纲已写完（已完成 %d 章，共 %d 章）：若故事已收束，调用 save_foundation(type=complete_book)；若仍需继续，用 revise_outline 从第 %d 章续接后续计划"),
 				len(p.CompletedChapters), p.TotalChapters, next,
 			),
-			Reason: "非分层大纲已耗尽，需决定完结或续接",
+			Reason: i18n.F("非分层大纲已耗尽，需决定完结或续接"),
 		}
 	}
 
@@ -212,7 +212,7 @@ func Route(s State) *Instruction {
 	return &Instruction{
 		Agent:   "writer",
 		Task:    fmt.Sprintf(i18n.F("写第 %d 章"), next),
-		Reason:  "续写下一章",
+		Reason:  i18n.F("续写下一章"),
 		Chapter: next,
 	}
 }
