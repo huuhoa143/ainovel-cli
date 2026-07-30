@@ -65,7 +65,7 @@ func buildWriterStoreSummaryText(s *store.Store, budgetTokens int) (string, bool
 	if len(parts) == 0 {
 		return "", false, nil
 	}
-	return "以下内容来自小说持久化 store，用于在压缩后恢复写作上下文。\n\n" + strings.Join(parts, "\n\n"), true, nil
+	return i18n.F("以下内容来自小说持久化 store，用于在压缩后恢复写作上下文。\n\n") + strings.Join(parts, "\n\n"), true, nil
 }
 
 func buildWriterRestoreText(s *store.Store, budgetTokens int) (string, bool, error) {
@@ -251,37 +251,43 @@ func writerStoreProgressSection(state *writerStoreSummaryState) map[string]any {
 	}
 }
 
+// Vì sao các tiêu đề mục phải đi qua i18n: hai hàm dưới đây sinh chính khối văn
+// bản mà LLM đọc sau khi ngữ cảnh bị nén — bản tóm tắt store và gói khôi phục.
+// Chúng phải cùng ngôn ngữ với bốn prompt nén trong restore.go: prompt ra lệnh
+// "dùng ĐÚNG định dạng ## Tiến độ hiện tại…", còn gói khôi phục lại dán nhãn
+// "## 当前进度" thì mô hình nhận hai bộ tiêu đề khác nhau cho cùng một mục và
+// bản tóm tắt lần sau mất khớp — không lỗi, chỉ là ngữ cảnh bị phân mảnh.
 func writerStoreSummarySections(state *writerStoreSummaryState) []writerStoreSection {
 	return []writerStoreSection{
-		{heading: "当前进度", data: writerStoreProgressSection(state)},
-		{heading: "数据告警", data: state.warnings},
-		{heading: "最近章节摘要", data: state.recentSummaries},
-		{heading: "当前章节计划", data: state.chapterPlan},
-		{heading: "当前章节大纲", data: state.currentOutline},
-		{heading: "当前弧摘要", data: state.currentArcSummary},
-		{heading: "当前卷摘要", data: state.currentVolSummary},
-		{heading: "角色快照", data: state.snapshots},
-		{heading: "活跃伏笔", data: state.foreshadow},
-		{heading: "待修审稿问题", data: state.pendingReviews},
-		{heading: "最近时间线", data: state.timeline},
-		{heading: "风格规则", data: state.styleRules},
+		{heading: i18n.F("当前进度"), data: writerStoreProgressSection(state)},
+		{heading: i18n.F("数据告警"), data: state.warnings},
+		{heading: i18n.F("最近章节摘要"), data: state.recentSummaries},
+		{heading: i18n.F("当前章节计划"), data: state.chapterPlan},
+		{heading: i18n.F("当前章节大纲"), data: state.currentOutline},
+		{heading: i18n.F("当前弧摘要"), data: state.currentArcSummary},
+		{heading: i18n.F("当前卷摘要"), data: state.currentVolSummary},
+		{heading: i18n.F("角色快照"), data: state.snapshots},
+		{heading: i18n.F("活跃伏笔"), data: state.foreshadow},
+		{heading: i18n.F("待修审稿问题"), data: state.pendingReviews},
+		{heading: i18n.F("最近时间线"), data: state.timeline},
+		{heading: i18n.F("风格规则"), data: state.styleRules},
 	}
 }
 
 func writerRestoreSections(state *writerStoreSummaryState) []writerStoreSection {
 	return []writerStoreSection{
-		{heading: "当前进度", data: writerStoreProgressSection(state)},
-		{heading: "数据告警", data: state.warnings},
-		{heading: "当前章节计划", data: state.chapterPlan},
-		{heading: "当前章节大纲", data: state.currentOutline},
-		{heading: "待修审稿问题", data: state.pendingReviews},
-		{heading: "角色快照", data: state.snapshots},
-		{heading: "最近章节摘要", data: state.recentSummaries},
-		{heading: "活跃伏笔", data: state.foreshadow},
-		{heading: "当前弧摘要", data: state.currentArcSummary},
-		{heading: "当前卷摘要", data: state.currentVolSummary},
-		{heading: "最近时间线", data: state.timeline},
-		{heading: "风格规则", data: state.styleRules},
+		{heading: i18n.F("当前进度"), data: writerStoreProgressSection(state)},
+		{heading: i18n.F("数据告警"), data: state.warnings},
+		{heading: i18n.F("当前章节计划"), data: state.chapterPlan},
+		{heading: i18n.F("当前章节大纲"), data: state.currentOutline},
+		{heading: i18n.F("待修审稿问题"), data: state.pendingReviews},
+		{heading: i18n.F("角色快照"), data: state.snapshots},
+		{heading: i18n.F("最近章节摘要"), data: state.recentSummaries},
+		{heading: i18n.F("活跃伏笔"), data: state.foreshadow},
+		{heading: i18n.F("当前弧摘要"), data: state.currentArcSummary},
+		{heading: i18n.F("当前卷摘要"), data: state.currentVolSummary},
+		{heading: i18n.F("最近时间线"), data: state.timeline},
+		{heading: i18n.F("风格规则"), data: state.styleRules},
 	}
 }
 

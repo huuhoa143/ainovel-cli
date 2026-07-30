@@ -6,7 +6,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/voocel/ainovel-cli/internal/domain"
 )
@@ -75,7 +74,7 @@ func (s *DraftStore) LoadChapterContent(chapter int) (string, int, error) {
 		return "", 0, err
 	}
 	if draft != "" {
-		return draft, utf8.RuneCountInString(draft), nil
+		return draft, domain.WordCount(draft), nil
 	}
 	return "", 0, nil
 }
@@ -160,7 +159,11 @@ func (s *DraftStore) ExtractDialogue(characterName string, aliases []string, max
 				if len(samples) >= maxSamples {
 					break
 				}
-				if utf8.RuneCountInString(m) > 5 {
+				// Ngưỡng 5 là "câu thoại phải có chút thịt". Đo bằng rune thì với
+				// tiếng Việt 5 rune chỉ hơn một chữ ("- Ừ." lọt), nên mẫu giọng nhân
+				// vật gửi cho writer toàn thán từ. Đếm bằng chữ giữ nguyên ý nghĩa
+				// ngưỡng ở cả hai ngôn ngữ (zh: 1 chữ Hán = 1 rune, không đổi gì).
+				if domain.WordCount(m) > 5 {
 					samples = append(samples, characterName+": "+m)
 				}
 			}
@@ -193,8 +196,12 @@ func (s *DraftStore) ExtractStyleAnchors(maxAnchors, maxCompletedChapter int) ([
 				break
 			}
 			para = strings.TrimSpace(para)
-			runeCount := utf8.RuneCountInString(para)
-			if runeCount < 50 || runeCount > 300 {
+			// Khoảng 50-300 là "đoạn đủ dài để thấy văn phong, chưa dài tới mức
+			// chiếm ngữ cảnh". Đo bằng rune thì với tiếng Việt cửa sổ này tụt còn
+			// ~11-63 chữ: gần như mọi đoạn văn thật đều bị loại vì quá 300 rune,
+			// và phần lọt lưới là các câu vụn — style anchor rỗng mà không ai báo.
+			wordCount := domain.WordCount(para)
+			if wordCount < 50 || wordCount > 300 {
 				continue
 			}
 			if strings.Count(para, "\u201c") > 2 {

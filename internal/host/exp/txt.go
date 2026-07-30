@@ -60,6 +60,28 @@ func buildLocations(volumes []domain.VolumeOutline) map[int]chapterLocation {
 // chapterHeaderRe 匹配带章号的 Markdown 标题首行（# 第N章 / ## 第 12 章 ...）。
 var chapterHeaderRe = regexp.MustCompile(`^#+\s+第.+?章`)
 
+// viNumeralWord là các tiếng cấu tạo số đếm tiếng Việt, đủ để phủ "bốn mươi bảy",
+// "một trăm linh hai". Không nhận số thứ tự ("nhất", "nhì") vì tên chương hay
+// dùng chúng theo nghĩa khác ("Đệ nhất kiếm").
+const viNumeralWord = `(?:không|một|hai|ba|bốn|tư|năm|sáu|bảy|tám|chín|mười|mươi|trăm|nghìn|ngàn|linh|lẻ)`
+
+// chapterHeaderViRe nhận dòng tiêu đề chương tiếng Việt ở đầu thân bài
+// ("# Chương 5", "## CHƯƠNG 12: Bến cũ", "# Chương bốn mươi bảy").
+//
+// Vì sao phải chặt hơn hẳn bản tiếng Trung: hàm gọi nó XÓA dòng khớp. "第…章"
+// gần như không thể trùng câu văn thường, còn "Chương" thì trùng đầy — "Chương
+// trình", "Chương mục", hay tên chương "Chương Ba Đào". Nhận bừa ở đây không
+// báo lỗi gì, chỉ lặng lẽ mất đoạn mở đầu của tác giả trong bản xuất, nên:
+//   - bắt buộc có phần SỐ ngay sau chữ "Chương";
+//   - số viết bằng chữ thì phải kết thúc bằng dấu ngắt hoặc hết dòng, để
+//     "# Chương Ba Đào" không bị đọc thành "chương 3".
+//
+// Bù lại chấp nhận bỏ sót dạng lạ (không dấu "Chuong 5", "Chương thứ 5"): bỏ sót
+// chỉ làm tiêu đề bị lặp một lần trong bản xuất — thấy ngay và sửa được, khác
+// hẳn với mất chữ.
+var chapterHeaderViRe = regexp.MustCompile(
+	`(?i)^#+\s+chương\s*(?:\d+(?:[^\p{L}\p{N}]|$)|` + viNumeralWord + `(?:\s+` + viNumeralWord + `)*\s*(?:[:.…\-–—]|$))`)
+
 // atxTitleRe 提取 ATX 标题（# 标题）的文字部分。
 var atxTitleRe = regexp.MustCompile(`^#{1,6}\s+(.+?)\s*$`)
 
@@ -80,7 +102,7 @@ func stripChapterTitleHeader(content, title string) string {
 }
 
 func isChapterTitleLine(line, title string) bool {
-	if chapterHeaderRe.MatchString(line) {
+	if chapterHeaderRe.MatchString(line) || chapterHeaderViRe.MatchString(line) {
 		return true
 	}
 	if title = strings.TrimSpace(title); title == "" {
