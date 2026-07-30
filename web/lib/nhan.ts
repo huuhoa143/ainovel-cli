@@ -528,6 +528,12 @@ export const CHU = {
   duongDay: 'Đường dây',
   duongDayDay: 'Đường dây nhân vật',
   trangThaiCuoiCung: 'Trạng thái ở cuối cung gần nhất',
+  // "Hiện trạng", không "Trạng thái": nhãn này nằm dưới tiêu đề đã chứa chữ
+  // "Trạng thái ở cuối cung gần nhất", nên lặp lại từ đó làm người đọc tưởng
+  // là hai thứ khác nhau. Và nó viết hoa như mọi nhãn trong cùng <dl> — trước
+  // đây chỗ này viết cứng "hiện trạng" chữ thường, đứng ngay cạnh "Động lực"
+  // và "Năng lực", lệch cách viết ngay trong một nhóm.
+  hienTrang: 'Hiện trạng',
   quanHe: 'Quan hệ',
   dongLuc: 'Động lực',
   nangLuc: 'Năng lực',
@@ -552,12 +558,25 @@ export const CHU = {
   demChieu: (n: number) => `${n} chiều`,
 
   // hàng chờ viết lại
+  /**
+   * Dạng gọn của số chương, dùng khi nó đứng CẠNH tiêu đề chương.
+   *
+   * ĐO ĐƯỢC trên tác phẩm `gan-xong`: dàn ý ở đó đặt tiêu đề chương đúng bằng
+   * "Chương 37", nên "Chương 37" + tiêu đề ra thành "Chương 37  Chương 37" —
+   * đọc như một lỗi lặp của giao diện trong khi cả hai đều là dữ liệu thật. Dạng
+   * "ch. 37" là dạng đã dùng cho số chương nội dòng ở khối vấn đề, và nó không
+   * bao giờ trùng chữ với tiêu đề.
+   */
+  chuongNgan: (n: number) => `ch. ${n}`,
   daCoSoTu: 'Đã viết',
   colTinhTrangDuyet: 'Bản duyệt',
   moBanDuyet: 'Xem bản duyệt',
   demHangCho: (n: number) => `${n} chương chờ viết lại`,
 
   // tổ sản xuất
+  // Tiêu đề section KHÁC nhãn cột, dù cùng nói về vai: đặt cả hai là "Vai" thì
+  // hai dòng "Vai" xếp ngay trên nhau và trông như một lỗi lặp.
+  vaiTrongTo: 'Vai trong tổ',
   colVai: 'Vai',
   colChuongThamGia: 'Chương tham gia',
   colPhanQuyetDaGhi: 'Phán quyết',
@@ -741,7 +760,11 @@ export const GIAI_THICH = {
    * chương thứ ba trăm, và người vận hành kết luận Arbiter đã ngừng làm việc.
    */
   toCuaSoPhanQuyet: (n: number) => `trong ${n} phán quyết gần nhất`,
-  toCuaSoChuong: 'theo chu kỳ gần nhất của mỗi chương có dấu vết sản xuất',
+  // ĐO ĐƯỢC ở 1440px: bản dài ("…của mỗi chương có dấu vết sản xuất") ngắt ba
+  // dòng trong đầu cột và bỏ lại đúng một chữ "xuất" ở dòng cuối. Phần bị cắt
+  // không mất nghĩa — dòng mô tả ngay trên bảng đã nói corpus là chương có dấu
+  // vết sản xuất; phần KHÔNG được cắt là "chu kỳ gần nhất", vì đó mới là cửa sổ.
+  toCuaSoChuong: 'theo chu kỳ gần nhất của mỗi chương',
   toKhongDoDuocVai:
     'Không suy được vai nào đã tham gia: vai được đọc từ bước checkpoint, và store chưa ghi checkpoint nào cho các chương này.',
   toKhongCoChiPhiTheoVai:

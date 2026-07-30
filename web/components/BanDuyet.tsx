@@ -14,26 +14,50 @@ import {
 import type { Issue, Review } from '@/lib/types';
 
 /**
- * Bản duyệt của Editor. MỘT hiện thực, hai bề mặt dùng.
+ * Bản duyệt của Editor. MỘT hiện thực, BỐN bề mặt dùng: tab Kiểm định của
+ * inspector (292px), khu Kiểm định (rộng cả canvas), hàng chờ Viết lại, và khu
+ * lề của bề mặt Đọc (296px).
  *
- * Tab Kiểm định trong inspector (292px) và khu Kiểm định (rộng cả canvas) vẽ
- * cùng một thứ; chép hai lần thì lần đổi thuật ngữ đầu tiên là hai bề mặt nói
- * khác nhau về cùng một chương. Bố cục khác nhau nằm ở CSS của khối cha, không
- * ở đây — component này không biết mình rộng bao nhiêu.
+ * Chép hai lần thì lần đổi thuật ngữ đầu tiên là hai bề mặt nói khác nhau về
+ * cùng một chương — và đó không phải giả thuyết: bản chép ở `DocTruyen` đã trôi
+ * lệch thật, mang ba lỗi mà bản này không có (điểm 0 bị coi là vắng, con số
+ * trần không có thang đo, nhãn `<dt>` viết cứng không qua CHU) đồng thời lại
+ * đúng hơn ở một chỗ (dịch `Issue.Type`). Gộp về một chỗ là lấy phần đúng của
+ * cả hai, không phải xóa một bên.
+ *
+ * # Vì sao hai cờ rời chứ không một cờ "dạng hẹp"
+ *
+ * Cột hẹp và tự vẽ tiêu đề trông như luôn đi cùng nhau, nhưng inspector chứng
+ * minh là không: nó hẹp 292px MÀ vẫn cần tiêu đề riêng (tab không có tiêu đề
+ * nào bên ngoài). Còn khu lề của Đọc thì hẹp mà KHÔNG cần, vì `BenLe` đã vẽ
+ * "Bản duyệt Editor" ngay trên. Nhập hai thứ thành một cờ là ép một trong hai
+ * bề mặt sai.
  *
  * Nguyên tắc trình bày, theo DESIGN.md: kiểm định là **hàng mảnh có kết luận
  * kèm dẫn chứng, không phải thẻ điểm**. Nên kết luận đứng trước, điểm số đứng
  * sau và nhỏ hơn — và không có thanh đo tỉ lệ nào. Điểm để so giữa các lần
  * chạy, không để chấm bài.
  */
-export function BanDuyet({ review }: { review: Review }) {
+export function BanDuyet({
+  review,
+  le = false,
+  tieuDe = true,
+}: {
+  review: Review;
+  /** Dạng cột hẹp (≤296px): nhãn 92px, cỡ chữ 12px. Xem `.kvle` trong CSS. */
+  le?: boolean;
+  /** Tự vẽ tiêu đề. Tắt khi khối cha đã có tiêu đề cho bản duyệt. */
+  tieuDe?: boolean;
+}) {
   const kl = nhanKetLuan(review.verdict);
   const hopDong = nhanHopDong(review.contract_status);
+  const lopKv = le ? 'kv kvle' : 'kv';
+  const lopCanh = le ? 'canh canhle' : 'canh';
 
   return (
     <>
-      <h3>{CHU.ketLuanDuyet}</h3>
-      <dl className="kv">
+      {tieuDe ? <h3>{CHU.ketLuanDuyet}</h3> : null}
+      <dl className={lopKv}>
         <dt>{CHU.ketLuan.toLowerCase()}</dt>
         <dd>
           {kl ? (
@@ -65,6 +89,22 @@ export function BanDuyet({ review }: { review: Review }) {
       </dl>
 
       {review.summary ? <p className="qcnote">{review.summary}</p> : null}
+
+      {/* Hợp đồng thiếu đứng TRƯỚC các chiều, không phải sau.
+          Nó là câu trả lời cho "chương này có làm đúng việc đã hứa không" —
+          cụ thể và làm được ngay. Điểm từng chiều là chẩn đoán, đọc sau. Cùng
+          một lý lẽ với việc `BenLe` đặt hợp đồng trên bản duyệt: hợp đồng là
+          thước, phán xét chỉ có nghĩa khi đã biết thước. */}
+      {review.contract_misses && review.contract_misses.length > 0 ? (
+        <>
+          <h3>{CHU.hopDongThieu}</h3>
+          <ul className={lopCanh}>
+            {review.contract_misses.map((m, i) => (
+              <li key={i}>{m}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
 
       {review.dimensions && review.dimensions.length > 0 ? (
         <>
@@ -105,17 +145,6 @@ export function BanDuyet({ review }: { review: Review }) {
         </>
       ) : null}
 
-      {review.contract_misses && review.contract_misses.length > 0 ? (
-        <>
-          <h3>{CHU.hopDongThieu}</h3>
-          <ul className="canh">
-            {review.contract_misses.map((m, i) => (
-              <li key={i}>{m}</li>
-            ))}
-          </ul>
-        </>
-      ) : null}
-
       {review.issues && review.issues.length > 0 ? (
         <>
           <h3>
@@ -130,13 +159,21 @@ export function BanDuyet({ review }: { review: Review }) {
   );
 }
 
-/** Một vấn đề Editor nêu, kèm dẫn chứng và đề xuất. */
+/**
+ * Một vấn đề Editor nêu, kèm dẫn chứng và đề xuất.
+ *
+ * `v.type` đi qua `nhanChieu` chứ không hiện trần: nguồn Go ghi rõ nó là
+ * "问题维度" (internal/domain/review.go:37) — cùng bộ từ vựng với
+ * `Dimension.Name`, tức `consistency`, `pacing`, `foreshadow`. Hiện trần thì
+ * người dùng đọc bản duyệt tiếng Việt mà loại vấn đề lại là chữ tiếng Anh, và
+ * đúng những chữ ấy đã có bản dịch ngay trong CHIEU ở bảng bên trên.
+ */
 function VanDe({ v }: { v: Issue }) {
   const m = nhanMuc(v.severity);
   return (
     <div className="vande">
       <div className="dau">
-        <span className="loai">{v.type}</span>
+        <span className="loai">{nhanChieu(v.type)}</span>
         {m ? <span className={`muc ${m.mau}`}>{m.nhan}</span> : null}
         {v.chapters && v.chapters.length > 0 ? (
           <span className="ch">ch. {v.chapters.join(', ')}</span>

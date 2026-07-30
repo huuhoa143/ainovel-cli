@@ -125,7 +125,7 @@ function NguoiMot({ c, anh }: { c: Character; anh: CharacterSnapshot | undefined
           <dl className="kv kvnguoi">
             {anh.status ? (
               <>
-                <dt>hiện trạng</dt>
+                <dt>{CHU.hienTrang}</dt>
                 <dd>{anh.status}</dd>
               </>
             ) : null}

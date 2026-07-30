@@ -5,16 +5,9 @@ import { useEffect, useRef, useState } from 'react';
 import { layChuong } from '@/lib/api';
 import { soTu } from '@/lib/dinhdang';
 import type { Tone } from '@/lib/nhan';
-import {
-  CHU,
-  GIAI_THICH,
-  TRANG_THAI_CHUONG,
-  nhanChieu,
-  nhanHopDong,
-  nhanKetLuan,
-  nhanMuc,
-  nhanPhamViDuyet,
-} from '@/lib/nhan';
+import { CHU, GIAI_THICH, TRANG_THAI_CHUONG, nhanKetLuan } from '@/lib/nhan';
+
+import { BanDuyet } from './BanDuyet';
 import type { ChapterDetail, ChapterRow, Contract, Review, Snapshot } from '@/lib/types';
 
 /**
@@ -330,7 +323,13 @@ function BenLe({
       {contract ? <HopDong contract={contract} /> : null}
 
       <h3>{CHU.banDuyetEditor}</h3>
-      {review ? <BanDuyet review={review} /> : <p className="trong">{GIAI_THICH.banDuyetChuaCo}</p>}
+      {/* `tieuDe={false}`: tiêu đề đã có ngay trên. `le`: cột này 296px, đúng
+          bề rộng mà biến thể `.kvle` được đo cho. */}
+      {review ? (
+        <BanDuyet review={review} le tieuDe={false} />
+      ) : (
+        <p className="trong">{GIAI_THICH.banDuyetChuaCo}</p>
+      )}
     </aside>
   );
 }
@@ -369,131 +368,6 @@ function HopDong({ contract }: { contract: Contract }) {
   );
 }
 
-/**
- * Bản duyệt: kết luận, các chiều, rồi vấn đề kèm dẫn chứng.
- *
- * Kiểm định là hàng mảnh có kết luận, KHÔNG phải thẻ điểm (DESIGN.md
- * § Components). Điểm số đứng sau kết luận và nhỏ hơn: kết luận là thứ người
- * vận hành cần, con số chỉ để so giữa các lần chạy.
- */
-function BanDuyet({ review }: { review: Review }) {
-  const kl = nhanKetLuan(review.verdict);
-  const hd = nhanHopDong(review.contract_status);
-
-  return (
-    <>
-      <dl className="kv kvle">
-        <dt>kết luận</dt>
-        <dd>
-          {kl ? (
-            <span className={`st ${kl.mau}`}>
-              <span className="ky" aria-hidden="true">
-                {kyTheoTone(kl.mau)}
-              </span>
-              {kl.nhan}
-            </span>
-          ) : (
-            <span className="trong">{CHU.khongCo}</span>
-          )}
-        </dd>
-        <dt>phạm vi</dt>
-        <dd>{nhanPhamViDuyet(review.scope)}</dd>
-        {hd ? (
-          <>
-            <dt>hợp đồng</dt>
-            <dd>
-              <span className={`st ${hd.mau}`}>
-                <span className="ky" aria-hidden="true">
-                  {kyTheoTone(hd.mau)}
-                </span>
-                {hd.nhan}
-              </span>
-            </dd>
-          </>
-        ) : null}
-      </dl>
-
-      {review.summary ? <p className="qcnote">{review.summary}</p> : null}
-
-      {review.contract_misses && review.contract_misses.length > 0 ? (
-        <>
-          <h3>{CHU.hopDongThieu}</h3>
-          <ul className="canh canhle">
-            {review.contract_misses.map((m, i) => (
-              <li key={i}>{m}</li>
-            ))}
-          </ul>
-        </>
-      ) : null}
-
-      {review.dimensions && review.dimensions.length > 0 ? (
-        <>
-          <h3>
-            {CHU.cacChieu} · {review.dimensions.length} chiều
-          </h3>
-          {review.dimensions.map((d, i) => {
-            const v = nhanKetLuan(d.verdict);
-            return (
-              <div key={`${d.name}-${i}`}>
-                <div className="qcrow">
-                  <span className="ten">{nhanChieu(d.name)}</span>
-                  <span className={`v ${v?.mau ?? 'muted'}`}>
-                    {v ? (
-                      <>
-                        <span className="ky" aria-hidden="true">
-                          {kyTheoTone(v.mau)}
-                        </span>
-                        {v.nhan}
-                      </>
-                    ) : (
-                      <span className="trong">{CHU.khongCo}</span>
-                    )}
-                    {d.score ? <span className="diem">{d.score}</span> : null}
-                  </span>
-                </div>
-                {d.comment ? <p className="qcnote">{d.comment}</p> : null}
-              </div>
-            );
-          })}
-        </>
-      ) : null}
-
-      {review.issues && review.issues.length > 0 ? (
-        <>
-          <h3>
-            {CHU.vanDeNeuRa} · {review.issues.length}
-          </h3>
-          {review.issues.map((v, i) => {
-            const m = nhanMuc(v.severity);
-            return (
-              <div className="vande" key={i}>
-                <div className="dau">
-                  <span className="loai">{nhanChieu(v.type)}</span>
-                  {m ? <span className={`muc ${m.mau}`}>{m.nhan}</span> : null}
-                </div>
-                <p>{v.description}</p>
-                {/* Dẫn chứng là NGUYÊN VĂN của tác phẩm nên nó mang serif, giống
-                    thân bài bên cạnh — người đọc thấy ngay đây là câu bị nêu,
-                    không phải lời của Editor. */}
-                {v.evidence ? (
-                  <p>
-                    <span className="dx">{CHU.danChung}: </span>
-                    <q className="dc">{v.evidence}</q>
-                  </p>
-                ) : null}
-                {v.suggestion ? (
-                  <p className="dx">
-                    {CHU.deXuat}: {v.suggestion}
-                  </p>
-                ) : null}
-              </div>
-            );
-          })}
-        </>
-      ) : null}
-    </>
-  );
-}
 
 /**
  * Ký hiệu đi kèm một kết luận, suy từ tông màu — cùng công thức với Inspector
