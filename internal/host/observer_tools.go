@@ -186,7 +186,7 @@ func dispatchSummary(agent, task string) string {
 	if firstLine == "" {
 		return agent
 	}
-	return agent + "（" + truncate(firstLine, 30) + "）"
+	return agent + DispatchTaskOpen + truncate(firstLine, 30) + DispatchTaskClose
 }
 
 func (o *observer) updateToolCallSummary(agent, tool, summary string) {
