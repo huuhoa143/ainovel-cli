@@ -1,0 +1,27 @@
+# Phụ thuộc và sản phẩm build của web studio.
+#
+# .gitignore ở gốc repo viết cho Go nên không biết gì về thư mục này: `*.out`
+# chỉ khớp TỆP đuôi .out, không khớp thư mục `out/`, và không có dòng nào cho
+# node_modules. Thiếu tệp này thì `git status` trong web/ có hơn 3.000 mục và
+# một lần `git add` sẽ đưa cả node_modules vào lịch sử.
+
+node_modules/
+
+# Bản build tĩnh. Sinh lại được bằng `npm run build`, và engine chỉ cần nó lúc
+# chạy (`ainovel-cli serve --web web/out`), không cần trong lịch sử.
+/out/
+/.next/
+
+# Đầu ra của tsc --noEmit
+*.tsbuildinfo
+
+# Biến môi trường máy cá nhân (AINOVEL_ENGINE, NEXT_PUBLIC_MOCK)
+.env
+.env.local
+.env*.local
+
+# Ảnh chụp do Playwright MCP ghi ra khi tự kiểm hình
+/.playwright-mcp/
+
+.DS_Store
+*.log

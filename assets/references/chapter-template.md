@@ -1,19 +1,19 @@
-# 第[X]章：[章节标题]
+# Chương [X]: [Tiêu đề chương]
 
-## 本章概要
-- **核心事件**：[一句话概括本章发生的事]
-- **承接上章**：[回应上一章的悬念]
-- **悬念钩子**：[本章结尾的钩子]
-
----
-
-## 正文
-
-[章节正文内容 3000-6000 字，最低不低于 2500 字]
+## Tóm tắt chương
+- **Sự kiện cốt lõi**: [Một câu tóm gọn những gì xảy ra trong chương này]
+- **Tiếp nối chương trước**: [Phản hồi điểm móc của chương trước]
+- **Điểm móc**: [Điểm móc ở cuối chương này]
 
 ---
 
-## 章节备注
-- 本章悬念：[简述结尾钩子]
-- 下章预告：[可选，1-2句话]
-- 伏笔标记：[如果埋下伏笔，在此记录]
+## Nội dung chính
+
+[Nội dung chương 3000-6000 từ, tối thiểu không dưới 2500 từ]
+
+---
+
+## Ghi chú chương
+- Điểm móc chương này: [Mô tả ngắn điểm móc cuối chương]
+- Xem trước chương sau: [Tùy chọn, 1-2 câu]
+- Đánh dấu phục bút: [Nếu có cài phục bút, ghi chép tại đây]

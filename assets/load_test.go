@@ -53,14 +53,16 @@ func TestLoad_NoOverrides(t *testing.T) {
 
 func TestInterventionPromptsKeepScopeContract(t *testing.T) {
 	prompts := loadPrompts()
-	for _, phrase := range []string{"上下文不等于修改授权", "最小充分范围", "分析范围不等于修改范围"} {
+	for _, phrase := range []string{"ngữ cảnh không đồng nghĩa với quyền sửa", "phạm vi tối thiểu đủ dùng", "phạm vi phân tích không đồng nghĩa phạm vi sửa"} {
 		if !strings.Contains(prompts.ArbiterIntervention, phrase) {
-			t.Fatalf("Arbiter 干预提示缺少范围契约 %q", phrase)
+			t.Fatalf("prompt can thiệp của Arbiter thiếu khế ước phạm vi %q", phrase)
 		}
 	}
-	for _, phrase := range []string{"用户原始干预", "分析范围不等于修改范围", "最小充分章节集合"} {
+	// "Can thiệp gốc của người dùng" phải khớp đúng nhãn mà
+	// internal/host.interventionDispatchTask đính vào task hạ nguồn.
+	for _, phrase := range []string{"Can thiệp gốc của người dùng", "phạm vi phân tích không đồng nghĩa phạm vi sửa", "tập chương tối thiểu đủ dùng"} {
 		if !strings.Contains(prompts.Editor, phrase) {
-			t.Fatalf("Editor 提示缺少范围契约 %q", phrase)
+			t.Fatalf("prompt Editor thiếu khế ước phạm vi %q", phrase)
 		}
 	}
 }
@@ -71,9 +73,9 @@ func TestStructuredArbiterPromptsContainOnlySemantics(t *testing.T) {
 		"plan_start": prompts.ArbiterPlanStart,
 		"failure":    prompts.ArbiterFailure,
 	} {
-		for _, duplicate := range []string{"```json", "不要 Markdown", "输出一个 JSON 对象"} {
+		for _, duplicate := range []string{"```json", "đừng dùng Markdown", "xuất ra một đối tượng JSON"} {
 			if strings.Contains(prompt, duplicate) {
-				t.Fatalf("%s 提示词仍重复维护输出格式 %q", name, duplicate)
+				t.Fatalf("prompt %s vẫn duy trì trùng lặp định dạng đầu ra %q", name, duplicate)
 			}
 		}
 	}
@@ -166,7 +168,7 @@ func TestOverrideVoice_SharesAssemblyPath(t *testing.T) {
 		t.Fatal("占位符必须被消耗")
 	}
 	// 协议部分不受 voice 覆盖影响
-	if !strings.Contains(got, "## 执行协议") {
+	if !strings.Contains(got, "## Giao thức thực thi") {
 		t.Fatal("协议模板不得被 voice 覆盖破坏")
 	}
 }

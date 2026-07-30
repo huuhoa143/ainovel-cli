@@ -1,0 +1,112 @@
+[
+  {
+    "seq": 4822,
+    "time": "2026-07-30T17:41:02+07:00",
+    "kind": "ui_event",
+    "category": "TOOL",
+    "agent": "writer",
+    "summary": "draft_chapter ghi 2.980 từ",
+    "payload": {
+      "ID": "call-8821",
+      "Category": "TOOL",
+      "Agent": "writer",
+      "Summary": "draft_chapter ghi 2.980 từ",
+      "Level": "success",
+      "FinishedAt": "2026-07-30T17:41:02+07:00",
+      "Failed": false,
+      "Duration": 71800000000
+    }
+  },
+  {
+    "seq": 4823,
+    "time": "2026-07-30T17:41:04+07:00",
+    "kind": "ui_event",
+    "category": "DISPATCH",
+    "agent": "writer",
+    "summary": "consistency_check chương 47",
+    "payload": {
+      "ID": "call-8822",
+      "Category": "DISPATCH",
+      "Agent": "writer",
+      "Summary": "consistency_check chương 47",
+      "Level": "info",
+      "FinishedAt": "0001-01-01T00:00:00Z",
+      "Failed": false
+    }
+  },
+  {
+    "seq": 4824,
+    "time": "2026-07-30T17:41:19+07:00",
+    "kind": "ui_event",
+    "category": "CHECK",
+    "agent": "writer",
+    "summary": "soát nhất quán: không thấy xung đột",
+    "payload": {
+      "ID": "call-8822",
+      "Category": "CHECK",
+      "Agent": "writer",
+      "Summary": "soát nhất quán: không thấy xung đột",
+      "Level": "success",
+      "FinishedAt": "2026-07-30T17:41:19+07:00",
+      "Failed": false,
+      "Duration": 15200000000
+    }
+  },
+  {
+    "seq": 4825,
+    "time": "2026-07-30T17:41:26+07:00",
+    "kind": "ui_event",
+    "category": "ERROR",
+    "agent": "writer",
+    "summary": "commit_chapter bị chặn, thử lại lượt 2",
+    "payload": {
+      "ID": "call-8823",
+      "Category": "ERROR",
+      "Agent": "writer",
+      "Summary": "commit_chapter bị chặn, thử lại lượt 2",
+      "Level": "warn",
+      "Kind": "stream_idle",
+      "FinishedAt": "2026-07-30T17:41:26+07:00",
+      "Failed": true
+    }
+  },
+  {
+    "seq": 4826,
+    "time": "2026-07-30T17:41:33+07:00",
+    "kind": "ui_event",
+    "category": "CONTEXT",
+    "agent": "writer",
+    "summary": "Writer ngữ cảnh 87% (111400/128000) chiến lược: summarize",
+    "payload": {
+      "ID": "call-8824",
+      "Category": "CONTEXT",
+      "Agent": "writer",
+      "Summary": "Writer ngữ cảnh 87% (111400/128000) chiến lược: summarize",
+      "Level": "warn",
+      "Percent": 87,
+      "Tokens": 111400,
+      "ContextWindow": 128000,
+      "Strategy": "summarize",
+      "FinishedAt": "2026-07-30T17:41:33+07:00",
+      "Failed": false
+    }
+  },
+  {
+    "seq": 4827,
+    "time": "2026-07-30T17:41:41+07:00",
+    "kind": "ui_event",
+    "category": "REVIEW",
+    "agent": "editor",
+    "summary": "review chương 47: cần sửa nhịp",
+    "payload": {
+      "ID": "call-8824",
+      "Category": "REVIEW",
+      "Agent": "editor",
+      "Summary": "review chương 47: cần sửa nhịp",
+      "Level": "warn",
+      "FinishedAt": "2026-07-30T17:41:41+07:00",
+      "Failed": false,
+      "Duration": 14900000000
+    }
+  }
+]

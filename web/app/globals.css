@@ -1,0 +1,1544 @@
+/* ══ ainovel studio ═══════════════════════════════════════════════════════
+   Token và component lấy từ DESIGN.md, hình lấy từ bản mockup đã duyệt
+   docs/design/explorations/d-studio.html.
+
+   Hai lỗi của bản mockup chỉ ảnh chụp mới bắt được, nên ở đây chúng bị thiết
+   kế cho không xảy ra được:
+
+     1. `:first-of-type` khớp nhiều phần tử làm drop cap ăn vào dòng thông tin
+        ("2.980 từ" thành chữ "2." khổng lồ). → Drop cap CHỈ bám vào một lớp
+        đặt tay (`.mocua`), không bao giờ bám vào bộ chọn vị trí.
+     2. Khoảng trắng dựa vào whitespace HTML bị mất khi format lại
+        ("62%79k/128k"). → Mọi khoảng cách là `gap`/`margin`, không có chỗ nào
+        trông cậy vào dấu cách giữa hai thẻ.
+   ══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* bề mặt — trung tính đã nhuộm hue vàng của thương hiệu */
+  --bg: oklch(0.155 0.008 74);
+  --panel: oklch(0.185 0.009 74);
+  --panel-2: oklch(0.215 0.01 74);
+  --raised: oklch(0.245 0.011 74);
+  --line: oklch(0.275 0.01 74);
+  --line-2: oklch(0.225 0.009 74);
+
+  /* chữ — tỉ số tương phản so với --bg */
+  --ink: oklch(0.945 0.01 82); /* 16.1:1 */
+  --ink-2: oklch(0.755 0.012 82); /* 8.2:1 */
+  --ink-3: oklch(0.625 0.011 82); /* 4.9:1 — SÀN CỨNG, không hạ thêm */
+
+  /* ngữ nghĩa — màu cho dữ liệu, không cho khung */
+  --gold: oklch(0.805 0.128 80); /* đang chạy, tiêu điểm — tín hiệu duy nhất */
+  --teal: oklch(0.755 0.085 176); /* đã nghiệm thu */
+  --amber: oklch(0.785 0.125 62); /* cần chú ý, chờ viết lại */
+  --red: oklch(0.705 0.155 25); /* lỗi, mốc ngưỡng nén */
+  --violet: oklch(0.745 0.095 300); /* tên tool, cửa kiểm định */
+
+  /* chữ đặt trên nền màu đặc: đủ tối để đạt ngưỡng trên vàng và lam-lục */
+  --tren-mau: oklch(0.2 0.02 74);
+
+  /* Bề rộng tối thiểu của một khối trên trục. Đủ cho "T5 · chờ mở" ở màn hình
+     rộng; màn hình hẹp hạ xuống để trục còn nguyên hình dạng thay vì bị cắt —
+     hình dạng trục ("đang ở đâu trong công trình") là thông tin chính, chữ
+     trong khối là phụ và đã có ở chú giải khi trỏ chuột. */
+  --khoi-min: 72px;
+
+  --r: 5px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --z-sticky: 10;
+  --z-pop: 30;
+  --z-tip: 40;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 13px/1.5 var(--ui);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden; /* khung ứng dụng cố định, không phải trang cuộn */
+}
+
+::selection {
+  background: color-mix(in oklch, var(--gold) 30%, transparent);
+}
+
+/* Bàn phím là hạng nhất: mọi thứ hội tụ được phải thấy rõ. */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* ══ khung ứng dụng ═══════════════════════════════════════════════════ */
+
+.khung {
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: 44px 1fr 30px;
+  grid-template-columns: 194px 1fr 292px;
+  grid-template-areas:
+    'bar bar bar'
+    'rail canvas insp'
+    'trans trans trans';
+}
+
+@media (max-width: 1240px) {
+  .khung {
+    grid-template-columns: 194px 1fr;
+    grid-template-areas: 'bar bar' 'rail canvas' 'trans trans';
+  }
+  .insp {
+    display: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .khung {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'bar' 'canvas' 'trans';
+  }
+  .rail {
+    display: none;
+  }
+}
+
+/* Màn hình rất hẹp: giữ HÌNH DẠNG trục thay vì giữ chữ trong khối. */
+@media (max-width: 700px) {
+  :root {
+    --khoi-min: 40px;
+  }
+  .lanes {
+    grid-template-columns: 62px minmax(0, 1fr);
+    gap: 6px 8px;
+  }
+  .sect,
+  .head,
+  .canhbao {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  /* Khối quá hẹp thì bỏ phạm vi, GIỮ số hiệu tập/cung và ký hiệu trạng thái:
+     mất "1–18" còn đọc được trục, mất "T1" thì không biết đang xem khối nào. */
+  .blk .txt {
+    display: none;
+  }
+}
+
+/* ══ thanh trên ═══════════════════════════════════════════════════════ */
+
+.bar {
+  grid-area: bar;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+
+.logo {
+  font: 600 13px/1 var(--ui);
+  letter-spacing: -0.01em;
+  padding-right: 4px;
+  white-space: nowrap;
+}
+.logo em {
+  font-style: normal;
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+.picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  max-width: 320px;
+  padding: 0 9px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.16s var(--ease);
+}
+.picker:hover {
+  background: var(--raised);
+}
+.picker[disabled] {
+  cursor: default;
+  opacity: 1;
+}
+.picker b {
+  font-weight: 500;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.picker .meta {
+  color: var(--ink-3);
+  font: 400 11.5px var(--mono);
+  white-space: nowrap;
+}
+.picker .chev {
+  color: var(--ink-3);
+  font-size: 9px;
+  margin-left: 2px;
+}
+
+/* danh sách tác phẩm — mở ra ngay dưới bộ chọn */
+.pickwrap {
+  position: relative;
+}
+.picklist {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  z-index: var(--z-pop);
+  min-width: 288px;
+  max-height: 60dvh;
+  overflow-y: auto;
+  padding: 4px;
+  margin: 0;
+  list-style: none;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: 0 8px 24px oklch(0.1 0.008 74 / 0.55);
+}
+.picklist button {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  align-items: baseline;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 8px;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  color: var(--ink-2);
+  font: 400 12.5px var(--ui);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.picklist button:hover {
+  background: var(--raised);
+  color: var(--ink);
+}
+.picklist button[aria-current='true'] {
+  background: var(--raised);
+  color: var(--ink);
+}
+.picklist .ten {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.picklist .ten em {
+  font-style: italic;
+  color: var(--ink-3);
+}
+.picklist .sl {
+  font: 400 11.5px var(--mono);
+  color: var(--ink-3);
+}
+
+.slate {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  white-space: nowrap;
+  min-width: 0;
+}
+.slate .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  flex: none;
+}
+.slate .dot.running {
+  background: var(--gold);
+}
+.slate .dot.complete {
+  background: var(--teal);
+}
+.slate .dot.idle {
+  background: var(--line);
+}
+.slate .chu {
+  margin-left: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ĐO ĐƯỢC ở 400px: thanh trên cần 401px trong một khung KHÔNG cuộn được (body
+   overflow:hidden), nên viền phải của huy hiệu "dòng sự kiện" bị cắt — mất đúng
+   dấu hiệu cho biết dòng sự kiện còn sống. Tệ hơn: .slate bị nén về bề rộng 0
+   mà các đốm bên trong vẫn vẽ ra ngoài, đè lên huy hiệu.
+
+   Bỏ slate là lựa chọn đúng: nó là tin TỔNG HỢP của cả xưởng (mấy tác phẩm, mấy
+   cái đang chạy) và mở bộ chọn ra là thấy lại; còn tình trạng kết nối thì không
+   có chỗ nào khác nói. Bỏ slate thu lại 172px cho bộ chọn, vừa đủ cho bề rộng
+   thật 161px của nó.
+
+   Khối này phải nằm SAU `.slate { display: flex }`: cùng độ đặc hiệu thì thứ tự
+   trong tệp quyết định, và đặt nó cùng với các điểm ngắt ở đầu tệp thì rule
+   `display: flex` bên dưới ghi đè lại — đã thử và slate vẫn hiện. */
+@media (max-width: 700px) {
+  .slate {
+    display: none;
+  }
+}
+
+.bar .right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.kbd {
+  font: 400 11px var(--mono);
+  color: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 3px 6px;
+  white-space: nowrap;
+}
+.kbd.live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.kbd.live .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--line);
+}
+.kbd.live[data-tt='song'] .dot {
+  background: var(--gold);
+  animation: dapnhip 2.2s var(--ease) infinite;
+}
+.kbd.live[data-tt='mat'] {
+  color: var(--amber);
+  border-color: color-mix(in oklch, var(--amber) 40%, var(--line));
+}
+.kbd.live[data-tt='mat'] .dot {
+  background: var(--amber);
+}
+
+/* ══ rail trái ════════════════════════════════════════════════════════ */
+
+.rail {
+  grid-area: rail;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 4px 8px 10px;
+  overflow-y: auto;
+}
+.rail .grp {
+  font: 500 10.5px/1 var(--ui);
+  color: var(--ink-3);
+  padding: 12px 8px 7px;
+}
+.rail a,
+.rail .muc {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 8px;
+  border-radius: var(--r);
+  color: var(--ink-2);
+  text-decoration: none;
+  font-size: 12.5px;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.rail a:hover {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+.rail a[aria-current='page'] {
+  background: var(--panel-2);
+  color: var(--ink);
+  font-weight: 500;
+}
+.rail .g {
+  width: 14px;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 12px;
+  flex: none;
+}
+.rail a[aria-current='page'] .g {
+  color: var(--gold);
+}
+.rail .nhan {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rail .n {
+  margin-left: auto;
+  font: 400 11px var(--mono);
+  color: var(--ink-3);
+  flex: none;
+}
+.rail .n.warn {
+  color: var(--amber);
+}
+
+/* ══ canvas ═══════════════════════════════════════════════════════════ */
+
+.canvas {
+  grid-area: canvas;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 15px 18px 11px;
+  border-bottom: 1px solid var(--line-2);
+  flex-wrap: wrap;
+}
+.head h1 {
+  font: 600 14.5px/1.2 var(--ui);
+  margin: 0;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.head .sub {
+  color: var(--ink-3);
+  font-size: 12px;
+  min-width: 0;
+}
+
+/* ── bộ chọn mức xem ── */
+/* Đẩy sang phải trong .head như bản mockup. `flex-wrap` của .head lo phần màn
+   hình hẹp: bộ chọn xuống dòng riêng thay vì nén tiêu đề. */
+.mucxem {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+}
+.mucxem .lbl {
+  color: var(--ink-3);
+  font-size: 11px;
+  padding: 0 6px 0 4px;
+  white-space: nowrap;
+}
+.mucxem button {
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  color: var(--ink-3);
+  font: 400 11.5px var(--ui);
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.mucxem button:hover:not(:disabled):not([aria-pressed='true']) {
+  color: var(--ink-2);
+}
+.mucxem button[aria-pressed='true'] {
+  background: var(--raised);
+  color: var(--ink);
+  font-weight: 500;
+}
+/* Mức chưa mở: nét đứt nói "không phải bạn bấm sai, dữ liệu chưa có". */
+.mucxem button:disabled {
+  color: var(--ink-3);
+  border: 1px dashed var(--line-2);
+  padding: 3px 9px;
+  cursor: not-allowed;
+}
+
+.sect {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line-2);
+  min-width: 0;
+}
+.sect:last-child {
+  border-bottom: 0;
+}
+.sect > h2 {
+  font: 500 11.5px/1.4 var(--ui);
+  color: var(--ink-3);
+  margin: 0 0 12px;
+}
+.sect > h2 .phu {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+/* ── cảnh báo nhất quán của store ── */
+.canhbao {
+  margin: 0;
+  padding: 11px 18px;
+  background: color-mix(in oklch, var(--amber) 9%, var(--bg));
+  border-bottom: 1px solid color-mix(in oklch, var(--amber) 26%, var(--line-2));
+}
+.canhbao h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 6px;
+  font: 500 11.5px/1.4 var(--ui);
+  color: var(--amber);
+}
+.canhbao ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+.canhbao li {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+/* ── trục sản xuất ── */
+/* Cột nhãn 96px, không phải 74px của bản mockup: "Cung, tập 3" bị ngắt hai
+   dòng ở 74px. Nhãn tiếng Việt dài hơn tiếng Anh 20–30%. */
+/* minmax(0, 1fr) chứ không phải 1fr: cột `1fr` không co xuống dưới min-content,
+   nên sáu khối tập (mỗi khối min-width 72px = 432px) từng kéo giãn cả lưới và
+   làm trục + bảng bị cắt mất bên phải ở 400px — cắt mà không cuộn được. */
+.lanes {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 6px 12px;
+  align-items: center;
+  min-width: 0;
+}
+.lane-lbl {
+  font: 400 11.5px/1.5 var(--ui);
+  color: var(--ink-3);
+  text-align: right;
+}
+.lane {
+  display: flex;
+  gap: 3px;
+  height: 24px;
+  min-width: 0;
+}
+
+.blk {
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 6px;
+  min-width: var(--khoi-min);
+  font: 500 10.5px/1 var(--mono);
+  color: var(--tren-mau);
+  overflow: hidden;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  cursor: default;
+}
+.blk .ky {
+  font-family: var(--ui);
+  font-size: 9px;
+  flex: none;
+}
+.blk .idx {
+  flex: none;
+}
+.blk .txt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.blk.done {
+  background: color-mix(in oklch, var(--teal) 66%, var(--panel));
+}
+.blk.running {
+  background: var(--gold);
+}
+.blk.planned {
+  background: var(--panel-2);
+  color: var(--ink-3);
+  border-color: var(--line);
+}
+/* Vân sọc chéo phân biệt CHƯA QUY HOẠCH với ĐÃ QUY HOẠCH NHƯNG CHƯA CHẠY —
+   hai trạng thái khác nhau về bản chất trong mô hình cuốn-vòng-cung hai tầng. */
+.blk.unplanned {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--panel-2) 0 4px,
+    var(--panel) 4px 8px
+  );
+  color: var(--ink-3);
+  border-color: var(--line-2);
+}
+/* Khối chưa biết phạm vi: viền nét đứt nói rõ "độ rộng này không có nguồn". */
+.blk.chuabiet {
+  border-style: dashed;
+  border-color: var(--line);
+}
+
+/* lane chương: 1 vạch = 1 chương */
+.chlane {
+  display: flex;
+  height: 20px;
+  min-width: 0;
+}
+.chlane i {
+  flex: 1 1 0;
+  min-width: 0;
+  background: var(--panel-2);
+}
+.chlane i.done {
+  background: color-mix(in oklch, var(--teal) 62%, var(--panel));
+}
+.chlane i.running {
+  background: var(--gold);
+}
+.chlane i.rewrite {
+  background: color-mix(in oklch, var(--amber) 68%, var(--panel));
+}
+.chlane i.gate {
+  background: var(--violet);
+}
+
+.ruler {
+  display: flex;
+  margin-top: 5px;
+  font: 400 10px var(--mono);
+  color: var(--ink-3);
+}
+.ruler span {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.ruler span + span {
+  text-align: center;
+}
+.ruler span:last-child {
+  text-align: right;
+}
+
+.keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 11px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+.keys span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.keys b {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  flex: none;
+}
+.keys .ky {
+  font-size: 9px;
+}
+
+/* ── bảng chương ── */
+/* Bảng có 6 cột không nén được (số liệu mono + nhãn trạng thái). Ở màn hình hẹp
+   nó phải cuộn ngang trong khung riêng, chứ không đẩy tràn cả canvas: ở 400px
+   các cột "Số từ" và "Thời lượng" từng bị cắt mất hẳn, không cách nào xem. */
+.bangwrap {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.bang {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.bang thead th {
+  text-align: left;
+  font: 500 11px/1.4 var(--ui);
+  color: var(--ink-3);
+  padding: 0 10px 8px;
+  border-bottom: 1px solid var(--line-2);
+  white-space: nowrap;
+}
+.bang thead th.num {
+  text-align: right;
+}
+.bang tbody td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line-2);
+  vertical-align: baseline;
+}
+.bang tbody tr {
+  transition: background 0.12s var(--ease);
+  cursor: pointer;
+}
+.bang tbody tr:hover {
+  background: var(--panel);
+}
+.bang tbody tr[aria-selected='true'] {
+  background: var(--panel-2);
+}
+/* Hàng chọn đánh dấu bằng inset box-shadow 1px, KHÔNG viền màu dày bên trái. */
+.bang tbody tr[aria-selected='true'] td:first-child {
+  box-shadow: inset 1px 0 0 var(--gold);
+}
+.bang tbody tr:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+}
+td.ch {
+  font: 500 12px var(--mono);
+  color: var(--ink-2);
+  width: 46px;
+}
+td.title {
+  font-weight: 400;
+  min-width: 140px;
+}
+td.title .draft {
+  color: var(--ink-3);
+  font-style: italic;
+}
+td.num {
+  text-align: right;
+  font: 400 12px var(--mono);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+td.who {
+  color: var(--ink-2);
+  font-size: 12px;
+  white-space: nowrap;
+}
+/* Giá trị không có nguồn: không bao giờ là 0, luôn là gạch ngang. */
+.trong {
+  color: var(--ink-3);
+}
+
+/* ── đốm + ký hiệu + chữ: ba kênh cho một trạng thái ── */
+.st {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.st .ky {
+  font-size: 9px;
+  line-height: 1;
+  flex: none;
+}
+.st.teal {
+  color: var(--teal);
+}
+.st.gold {
+  color: var(--gold);
+}
+.st.amber {
+  color: var(--amber);
+}
+.st.red {
+  color: var(--red);
+}
+.st.violet {
+  color: var(--violet);
+}
+.st.muted {
+  color: var(--ink-3);
+}
+/* Nhịp đập là chuyển động duy nhất mang thông tin: nó phân biệt ĐANG chạy với
+   ĐÃ DỪNG ở trạng thái này — điều ảnh tĩnh không nói được. */
+.st.gold .ky {
+  animation: dapnhip 2.2s var(--ease) infinite;
+}
+@keyframes dapnhip {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ── nhật ký phán quyết ── */
+.log {
+  display: grid;
+  gap: 0;
+}
+.entry {
+  display: grid;
+  grid-template-columns: 52px 136px 1fr auto;
+  gap: 12px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line-2);
+  align-items: baseline;
+  font-size: 12.5px;
+}
+.entry:last-child {
+  border-bottom: 0;
+}
+.entry:hover {
+  background: var(--panel);
+}
+.entry time {
+  font: 400 11.5px var(--mono);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.entry .kind {
+  min-width: 0;
+}
+.entry .kind .ma {
+  display: block;
+  font: 400 11.5px/1.5 var(--mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.entry .kind .giai {
+  display: block;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+.entry .kind.violet .ma {
+  color: var(--violet);
+}
+.entry .kind.teal .ma {
+  color: var(--teal);
+}
+.entry .kind.red .ma {
+  color: var(--red);
+}
+.entry .kind.amber .ma {
+  color: var(--amber);
+}
+.entry .kind.muted .ma {
+  color: var(--ink-2);
+}
+.entry .why {
+  color: var(--ink-2);
+  line-height: 1.72;
+  min-width: 0;
+}
+.entry .why b {
+  color: var(--ink);
+  font-weight: 500;
+}
+.entry .why .loi {
+  display: block;
+  margin-top: 3px;
+  color: var(--red);
+  font: 400 11.5px/1.6 var(--mono);
+  word-break: break-word;
+}
+.entry .why .vao {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-3);
+  font-size: 11.5px;
+}
+.entry .replay {
+  font: 400 11.5px var(--ui);
+  color: var(--ink-3);
+  background: none;
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.14s var(--ease), border-color 0.14s var(--ease);
+}
+.entry .replay:hover {
+  color: var(--ink);
+  border-color: var(--line);
+}
+.entry .replay[hidden] {
+  display: none;
+}
+
+.thoBanQuyet {
+  margin: 8px 0 0;
+  padding: 10px 11px;
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  font: 400 11.5px/1.6 var(--mono);
+  color: var(--ink-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+/* ── dòng sự kiện trực tiếp ── */
+/* Cửa sổ cuộn riêng, KHÔNG để danh sách tự dài ra: engine đang chạy phát sự
+   kiện liên tục, và một danh sách không chặn sẽ đẩy ô can thiệp xuống ngoài
+   tầm với rồi dồn lại cả canvas mỗi lần có sự kiện mới. ĐO ĐƯỢC khi thử: sau
+   ~40 sự kiện, canvas cao 1890px và ô can thiệp bị transport che mất. */
+.dong {
+  display: grid;
+  gap: 0;
+  max-height: 216px;
+  overflow-y: auto;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+}
+.dong .sk {
+  display: grid;
+  grid-template-columns: 52px 84px 1fr;
+  gap: 12px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line-2);
+  align-items: baseline;
+  font-size: 12.5px;
+}
+.dong .sk:last-child {
+  border-bottom: 0;
+}
+.dong time {
+  font: 400 11.5px var(--mono);
+  color: var(--ink-3);
+}
+.dong .loai {
+  font: 400 11px var(--mono);
+  color: var(--violet);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dong .sk.loi .loai {
+  color: var(--red);
+}
+.dong .tt {
+  color: var(--ink-2);
+  line-height: 1.72;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.dong .tt .vai {
+  color: var(--ink-3);
+}
+
+/* ── ô can thiệp ── */
+.steerbox {
+  display: flex;
+  gap: 9px;
+  align-items: stretch;
+}
+.steerbox input {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 8px 11px;
+  color: var(--ink);
+  font: 400 13px/1.5 var(--ui);
+}
+.steerbox input::placeholder {
+  color: var(--ink-3); /* cùng ngưỡng 4.5:1 như thân bài */
+  opacity: 1;
+}
+.steerbox input:disabled {
+  background: var(--bg);
+  border-style: dashed;
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+.steerbox button {
+  background: var(--gold);
+  color: var(--tren-mau);
+  border: 0;
+  border-radius: var(--r);
+  padding: 8px 15px;
+  font: 500 12.5px var(--ui);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter 0.16s var(--ease);
+}
+.steerbox button:hover:not(:disabled) {
+  filter: brightness(1.07);
+}
+.steerbox button:disabled {
+  background: var(--panel-2);
+  color: var(--ink-3);
+  border: 1px dashed var(--line);
+  cursor: not-allowed;
+}
+/* ── dòng "n chương ngoài tập 3" ── */
+/* Phép lọc phải nói ra mình ẩn gì. Khi phần bị ẩn còn VIỆC TỒN thì dòng này đổi
+   sang tông cần-chú-ý kèm ký hiệu, vì lúc đó nó không còn là ghi chú mà là tin
+   vận hành: có chương chờ viết lại nằm ngoài tầm mắt. */
+.phamvihint {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  line-height: 1.72;
+  color: var(--ink-3);
+  max-width: 74ch;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.phamvihint.con-ton {
+  color: var(--amber);
+}
+.phamvihint .ky {
+  font-size: 9px;
+  flex: none;
+}
+.phamvihint button {
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 0;
+  color: var(--ink-2);
+  font: 400 11.5px var(--ui);
+  cursor: pointer;
+  transition: color 0.14s var(--ease), border-color 0.14s var(--ease);
+}
+.phamvihint button:hover {
+  color: var(--ink);
+  border-bottom-color: var(--ink-3);
+}
+
+.steerhint {
+  margin: 9px 0 0;
+  font-size: 11.5px;
+  line-height: 1.72;
+  color: var(--ink-3);
+  max-width: 74ch;
+}
+.steerhint .vidu {
+  color: var(--ink-2);
+  font: 400 11.5px var(--mono);
+}
+
+/* ══ inspector ════════════════════════════════════════════════════════ */
+
+.insp {
+  grid-area: insp;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  overflow-y: auto;
+  min-width: 0;
+}
+.insp .ihead {
+  padding: 13px 14px 11px;
+  border-bottom: 1px solid var(--line-2);
+}
+.insp .ihead .no {
+  font: 400 11px var(--mono);
+  color: var(--ink-3);
+}
+.insp .ihead h2 {
+  font: 500 14px/1.4 var(--ui);
+  margin: 4px 0 6px;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.insp .ihead h2 .draft {
+  color: var(--ink-3);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 8px 10px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+.tabs button {
+  background: none;
+  border: 0;
+  border-bottom: 1.5px solid transparent;
+  color: var(--ink-3);
+  font: 400 12px var(--ui);
+  padding: 6px 9px;
+  cursor: pointer;
+  transition: color 0.14s var(--ease);
+}
+.tabs button:hover {
+  color: var(--ink-2);
+}
+.tabs button[aria-selected='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--gold);
+  font-weight: 500;
+}
+
+.ibody {
+  padding: 13px 14px 22px;
+}
+.ibody h3 {
+  font: 500 11px/1.4 var(--ui);
+  color: var(--ink-3);
+  margin: 0 0 9px;
+}
+/* h3 nào không phải cái đầu tiên cũng cần khoảng thở, không chỉ h3 liền h3:
+   ở đây h3 đi sau <dl> nên bộ chọn h3+h3 không với tới. */
+.ibody h3:not(:first-child) {
+  margin-top: 20px;
+}
+.ibody .trong {
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--ink-3);
+  margin: 0;
+}
+
+/* Câu "chưa có gì" NẰM TRONG một section của canvas: section đã có padding
+   riêng nên không được dùng lại .ibody (padding của inspector), nếu không câu
+   đó thụt vào sâu hơn tiêu đề section ngay trên nó. */
+.trongSect {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--ink-3);
+  max-width: 74ch;
+}
+
+/* Cột nhãn 104px: 82px làm "Nhịp bắt buộc" ngắt hai dòng. */
+.kv {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  gap: 7px 10px;
+  margin: 0;
+  font-size: 12.5px;
+}
+.kv dt {
+  color: var(--ink-3);
+  line-height: 1.72;
+}
+.kv dd {
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.72;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.kv dd.m {
+  font: 400 12px/1.72 var(--mono);
+}
+
+.canh {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 5px;
+}
+.canh li {
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--ink-2);
+}
+
+/* kiểm định: hàng mảnh có kết luận, không phải thẻ điểm */
+.qcrow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-2);
+  font-size: 12.5px;
+  align-items: baseline;
+}
+.qcrow .ten {
+  line-height: 1.72;
+}
+.qcrow .v {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.qcrow .v .ky {
+  font-size: 9px;
+}
+.qcrow .v .diem {
+  font: 400 11.5px var(--mono);
+  color: var(--ink-3);
+}
+.qcrow .v.teal {
+  color: var(--teal);
+}
+.qcrow .v.amber {
+  color: var(--amber);
+}
+.qcrow .v.red {
+  color: var(--red);
+}
+.qcrow .v.muted {
+  color: var(--ink-3);
+}
+.qcnote {
+  margin: 5px 0 0;
+  font-size: 12px;
+  color: var(--ink-3);
+  line-height: 1.72;
+}
+.qcnote q {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--ink-2);
+}
+
+.vande {
+  border-bottom: 1px solid var(--line-2);
+  padding: 9px 0;
+}
+.vande:last-of-type {
+  border-bottom: 0;
+}
+.vande .dau {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.vande .loai {
+  font: 400 11px var(--mono);
+  color: var(--violet);
+}
+.vande .muc {
+  font-size: 11px;
+}
+.vande .muc.amber {
+  color: var(--amber);
+}
+.vande .muc.red {
+  color: var(--red);
+}
+.vande .muc.muted {
+  color: var(--ink-3);
+}
+.vande .ch {
+  font: 400 11px var(--mono);
+  color: var(--ink-3);
+  margin-left: auto;
+}
+.vande p {
+  margin: 5px 0 0;
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--ink-2);
+}
+.vande .dc {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--ink-2);
+}
+.vande .dx {
+  color: var(--ink-3);
+}
+
+/* ── văn tiểu thuyết: serif là dấu hiệu ngữ nghĩa ── */
+.excerpt {
+  margin: 0;
+  padding: 11px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  font: 400 13px/1.72 var(--serif);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+/* Khổ đọc dài: 1.78, cao hơn 1.72 của trích đoạn ngắn. */
+.banthao {
+  padding: 13px 14px 26px;
+}
+.banthao .doan {
+  margin: 0 0 1.1em;
+  font: 400 13px/1.78 var(--serif);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.banthao .doan:last-child {
+  margin-bottom: 0;
+}
+/* Drop cap bám vào MỘT lớp đặt tay, không bao giờ vào bộ chọn vị trí: ở bản
+   mockup `:first-of-type` khớp cả dòng thông tin và biến "2.980 từ" thành chữ
+   "2." khổng lồ. line-height 0.94 chứ không phải 0.86 — "Ấ", "Ế", "Ộ", "Ữ" cao
+   hơn Latin trơn và bị cắt ngọn. Lỗi này ẩn khi chương mở bằng "Đêm" vì "Đ"
+   không có dấu trên, nên phải chừa chỗ ngay từ đầu. */
+.banthao .doan.mocua::first-letter {
+  float: left;
+  font-size: 2.9em;
+  line-height: 0.94;
+  padding: 0.04em 0.09em 0 0;
+  color: var(--ink);
+  font-weight: 400;
+}
+
+.docthem {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 7px 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink-2);
+  font: 400 12px var(--ui);
+  cursor: pointer;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.docthem:hover {
+  background: var(--raised);
+  color: var(--ink);
+}
+
+/* ══ transport ════════════════════════════════════════════════════════ */
+
+.trans {
+  grid-area: trans;
+  display: flex;
+  align-items: stretch;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  font: 400 11.5px var(--ui);
+  color: var(--ink-2);
+  padding: 0 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Ở bề rộng thường dùng, transport vừa đủ chỗ nên thanh cuộn chỉ là tiếng ồn.
+     Dưới điểm ngắt thì nó vẫn tràn (transport không bao giờ bị bỏ theo
+     DESIGN.md, và ẩn bớt ô là mất số liệu vận hành) — khi đó phải THẤY được là
+     còn nội dung bên phải, nếu không người dùng tưởng con số bị mất. */
+  scrollbar-width: none;
+}
+.trans::-webkit-scrollbar {
+  display: none;
+}
+@media (max-width: 1240px) {
+  .trans {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+  }
+  .trans::-webkit-scrollbar {
+    display: block;
+    height: 4px;
+  }
+  .trans::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 2px;
+  }
+  .trans .cell {
+    padding: 0 9px;
+  }
+  /* ĐO ĐƯỢC ở 1240px: transport cần 1333px, tràn 93px, và ô cuối "đã chạy
+     6:12:04" bị cắt ngay ở mép phải. Ô ngữ cảnh là ô béo nhất (264px) và 110px
+     trong đó là cặp token phụ — bỏ nó đi thu lại nhiều hơn phần tràn, nên mọi
+     con số vận hành đều đọc được mà không phải cuộn ngang. Tỉ lệ % vẫn còn. */
+  .trans .token {
+    display: none;
+  }
+}
+.trans .cell {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px;
+  border-right: 1px solid var(--line-2);
+  white-space: nowrap;
+  flex: none;
+}
+.trans .cell:last-child {
+  border-right: 0;
+}
+/* Ô công đoạn là ô DUY NHẤT có bề rộng không chặn: nội dung là câu mô tả tự do
+   từ dòng sự kiện ("soát nhất quán: không thấy xung đột"). ĐO ĐƯỢC ở 1240px:
+   ô này chiếm 324px và đẩy transport tràn 94px, cắt mất "đã chạy" — tức là một
+   câu mô tả dài làm mất con số vận hành. Chặn nó lại, câu đầy đủ vào chú giải. */
+.trans .cell.buoc {
+  /* ĐO ĐƯỢC ở 1240px: nội dung ô này muốn 324px và làm transport tràn 94px, cắt
+     mất "đã chạy" — tức một câu mô tả dài làm mất con số vận hành. Ngân sách an
+     toàn ở 1240px là 324 − 94 = 230px, nên mức chặn hẹp chỉ áp dưới điểm ngắt.
+     Ở màn hình rộng thì có chỗ, và chặn 216px ở đó lại cắt cả tên bước ngắn
+     ("commit_ch…", "soát nhất…") — mất đúng phần mang tin mà không cần thiết. */
+  max-width: 300px;
+  min-width: 0;
+}
+@media (max-width: 1240px) {
+  .trans .cell.buoc {
+    max-width: 216px;
+  }
+}
+.trans .cell.buoc .m {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.trans .cell.push {
+  margin-left: auto;
+}
+.trans .m {
+  font: 500 11.5px var(--mono);
+  color: var(--ink);
+}
+.trans .lbl {
+  color: var(--ink-3);
+}
+.trans .ky {
+  font-size: 9px;
+  color: var(--gold);
+}
+.trans .ky.teal {
+  color: var(--teal);
+}
+.trans .ky.muted {
+  color: var(--ink-3);
+}
+.trans .ky.dap {
+  animation: dapnhip 2.2s var(--ease) infinite;
+}
+.trans .warn {
+  color: var(--amber);
+}
+
+/* thước ngữ cảnh: thấy được chỗ nén sắp xảy ra, không chỉ một con số */
+.ctxbar {
+  width: 62px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--raised);
+  overflow: hidden;
+  position: relative;
+  flex: none;
+}
+.ctxbar i {
+  display: block;
+  height: 100%;
+  background: var(--amber);
+  border-radius: 3px;
+}
+.ctxbar::after {
+  content: '';
+  position: absolute;
+  left: 85%;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--red);
+}
+
+/* ══ trạng thái rỗng và lỗi ═══════════════════════════════════════════ */
+
+.trangtrong {
+  grid-area: canvas;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 13px;
+  max-width: 62ch;
+  padding: 0 18px;
+  margin: 0 auto;
+}
+.trangtrong h1 {
+  font: 600 16px/1.4 var(--ui);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.trangtrong p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.78;
+  color: var(--ink-2);
+}
+.trangtrong .goc {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 7px 10px;
+  align-items: baseline;
+  font-size: 12.5px;
+}
+.trangtrong .goc dt {
+  color: var(--ink-3);
+}
+.trangtrong .goc dd {
+  margin: 0;
+  font: 400 12px var(--mono);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.trangtrong .lenh {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  font: 400 12px/1.6 var(--mono);
+  color: var(--ink-2);
+  overflow-x: auto;
+}
+.trangtrong .loi {
+  color: var(--red);
+  font: 400 12.5px/1.72 var(--mono);
+  overflow-wrap: anywhere;
+}
+.trangtrong button {
+  padding: 7px 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink);
+  font: 400 12.5px var(--ui);
+  cursor: pointer;
+  transition: background 0.14s var(--ease);
+}
+.trangtrong button:hover {
+  background: var(--raised);
+}
+
+/* ══ chuyển động ══════════════════════════════════════════════════════ */
+
+/* Không có animation nào không có đường tắt. */
+@media (prefers-reduced-motion: reduce) {
+  .st.gold .ky,
+  .kbd.live[data-tt='song'] .dot,
+  .trans .ky.dap {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

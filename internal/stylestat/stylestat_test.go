@@ -1,8 +1,19 @@
 package stylestat
 
+// Các test dưới đây khẳng định trên văn bản tiếng Trung, nên phải tự ghim
+// locale=zh: mặc định của repo là tiếng Việt (xem internal/i18n), mà bộ mẫu
+// giọng-AI và cách cắt câu chọn theo ngôn ngữ đang hoạt động. Không ghim thì
+// chúng lặng lẽ đo văn tiếng Trung bằng thước tiếng Việt và ra 0.
+//
+// Cố tình KHÔNG dùng i18n_locale_pin_test.go cấp package như internal/tools:
+// ghim cả package sẽ triệt luôn phần kiểm đường tiếng Việt trong
+// stylestat_vi_test.go, mà đường tiếng Việt mới là đường chạy thật.
+
 import (
 	"strings"
 	"testing"
+
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 func chapterWith(body string) string {
@@ -17,6 +28,8 @@ func TestComputeBelowMinChapters(t *testing.T) {
 }
 
 func TestComputePatterns(t *testing.T) {
+	withLocale(t, i18n.Chinese)
+
 	body := "他不是愤怒，而是恐惧。沉默了几息。像一盏灯。她眼中闪过慌乱，心头一紧。他觉得这是一种说不出的寒意。\n正文。\n"
 	chapters := make([]string, 6)
 	for i := range chapters {
@@ -50,6 +63,8 @@ func TestComputePatterns(t *testing.T) {
 }
 
 func TestComputeTopPhrasesWithStopwords(t *testing.T) {
+	withLocale(t, i18n.Chinese)
+
 	// 「青云山巅」高频出现；「陆九渊」是角色名应被过滤
 	line := "众人望向青云山巅，陆九渊负手而立。\n"
 	chapters := make([]string, 10)
@@ -78,6 +93,8 @@ func TestComputeTopPhrasesWithStopwords(t *testing.T) {
 }
 
 func TestComputeRepeatedSentences(t *testing.T) {
+	withLocale(t, i18n.Chinese)
+
 	motto := "此生未能远行，望你替我看看远方的山海。"
 	chapters := make([]string, 6)
 	for i := range chapters {
@@ -104,6 +121,8 @@ func TestComputeRepeatedSentences(t *testing.T) {
 }
 
 func TestComputeEndingAndOpening(t *testing.T) {
+	withLocale(t, i18n.Chinese)
+
 	short := chapterWith("一整夜没有睡。\n正文很长很长很长。\n他走了。")
 	long := chapterWith("白天的事。\n正文。\n这是一个非常非常非常长的结尾句子，远远超过三十个字符的阈值长度，用来测试中位数。")
 	chapters := []string{short, short, short, long, long}
@@ -120,6 +139,8 @@ func TestComputeEndingAndOpening(t *testing.T) {
 }
 
 func TestComputeTitleFormats(t *testing.T) {
+	withLocale(t, i18n.Chinese)
+
 	chapters := make([]string, 5)
 	for i := range chapters {
 		chapters[i] = chapterWith("正文。")
