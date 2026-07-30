@@ -19,10 +19,12 @@ import (
 // biến: nếu ai đó dịch lại và bỏ "save_arc_summary" đi cho câu gọn hơn, build đỏ
 // ngay thay vì để livelock xuất hiện trên máy người dùng.
 //
-// Hai msgid dưới đây phải khớp nguyên văn với internal/flow/router.go.
+// Các msgid dưới đây phải khớp nguyên văn với internal/flow/router.go.
 const (
 	msgArcSummaryTask    = "生成第 %d 卷第 %d 弧摘要（save_arc_summary）"
 	msgVolumeSummaryTask = "生成第 %d 卷卷摘要（save_volume_summary）"
+	msgExpandArcTask     = "展开第 %d 卷第 %d 弧（save_foundation type=expand_arc）"
+	msgArcReviewTask     = "对第 %d 卷第 %d 弧做弧级评审（scope=arc）"
 )
 
 func TestTextNhiemVuEditorLuonChuaTenToolOMoiNgonNgu(t *testing.T) {
@@ -57,20 +59,46 @@ func TestTextNhiemVuEditorLuonChuaTenToolOMoiNgonNgu(t *testing.T) {
 	}
 }
 
-// Bản dịch của hai msgid trên phải giữ đúng trật tự (tập trước, cung sau) vì
-// router truyền (Volume, Arc). Cả hai đều là %d nên bộ đối chiếu verb trong
-// internal/i18n không thể phát hiện việc đảo — phải chốt bằng giá trị cụ thể.
-func TestTextTomTatCungKhongDaoTapVaCung(t *testing.T) {
+// Mọi msgid dạng "第 %d 卷第 %d 弧" phải giữ đúng trật tự (tập trước, cung sau) vì
+// router truyền (Volume, Arc). Cả hai tham số đều là %d nên bộ đối chiếu verb
+// trong internal/i18n KHÔNG thể phát hiện việc đảo — phải chốt bằng giá trị cụ
+// thể như dưới đây.
+//
+// Đây là lớp lỗi CÓ HỆ THỐNG trong bản dịch nhận từ fork ngoài, không phải tai
+// nạn lẻ: trong 18 chuỗi chứa cả 卷 và 弧, có 3 chuỗi lệch trật tự và 2 trong số
+// đó mang %d (tức đảo cả dữ liệu). Cả hai đều đã phải sửa tay. Test này quét mọi
+// chuỗi cùng dạng để chuỗi thứ ba không lọt.
+func TestKhongDaoTapVaCungTrongTextNhiemVu(t *testing.T) {
 	t.Cleanup(func() { _ = i18n.SetLocale(i18n.DefaultLocale) })
 	if err := i18n.SetLocale(i18n.Vietnamese); err != nil {
 		t.Fatalf("SetLocale: %v", err)
 	}
-	const volume, arc = 7, 2
-	task := fmt.Sprintf(i18n.F(msgArcSummaryTask), volume, arc)
 
-	iTap := strings.Index(task, fmt.Sprintf("tập %d", volume))
-	iCung := strings.Index(task, fmt.Sprintf("cung %d", arc))
-	if iTap < 0 || iCung < 0 {
-		t.Fatalf("bản dịch phải gán %d cho tập và %d cho cung, được: %s", volume, arc, task)
+	// Hai số khác nhau và không phải chữ số của nhau, để không thể khớp nhầm.
+	const volume, arc = 7, 2
+
+	for _, msgid := range []string{msgArcSummaryTask, msgExpandArcTask, msgArcReviewTask} {
+		t.Run(msgid, func(t *testing.T) {
+			translated := i18n.F(msgid)
+			if translated == msgid {
+				t.Skipf("chưa có bản dịch, đang rơi về tiếng Trung — không có gì để kiểm")
+			}
+			task := fmt.Sprintf(translated, volume, arc)
+
+			if strings.Contains(task, "%!") {
+				t.Fatalf("bản dịch lệch số tham số: %s", task)
+			}
+
+			iTap := strings.Index(task, fmt.Sprintf("tập %d", volume))
+			iCung := strings.Index(task, fmt.Sprintf("cung %d", arc))
+			if iTap < 0 || iCung < 0 {
+				t.Fatalf("bản dịch phải gán %d cho TẬP và %d cho CUNG.\n  msgid: %s\n  dịch : %s",
+					volume, arc, msgid, task)
+			}
+			if iTap > iCung {
+				t.Errorf("trật tự bị đảo — router truyền (Volume, Arc) nên 'tập' phải đứng trước 'cung'.\n  msgid: %s\n  dịch : %s",
+					msgid, task)
+			}
+		})
 	}
 }

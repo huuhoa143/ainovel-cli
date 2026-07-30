@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/voocel/ainovel-cli/internal/host"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // CoCreateSession 承载共创模式的非 UI 状态。
@@ -140,7 +141,7 @@ func (s *CoCreateSession) BuildPlan() (Plan, error) {
 	}
 	return Plan{
 		Mode:        ModeCoCreate,
-		DisplayName: "共创规划",
+		DisplayName: i18n.F("共创规划"),
 		RawPrompt:   s.DraftPrompt(),
 	}, nil
 }

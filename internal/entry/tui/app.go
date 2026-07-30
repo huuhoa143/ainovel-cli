@@ -29,7 +29,7 @@ func Run(cfg bootstrap.Config, bundle assets.Bundle, version string) error {
 	var logWarning error
 	if err != nil {
 		logWarning = fmt.Errorf(i18n.F("文件日志不可用，已继续使用终端日志：%w"), err)
-		slog.Warn("TUI 文件日志不可用，继续运行", "module", "tui", "err", err)
+		slog.Warn(i18n.F("TUI 文件日志不可用，继续运行"), "module", "tui", "err", err)
 		cleanup = func() {}
 	}
 	defer cleanup()

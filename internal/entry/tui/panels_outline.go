@@ -46,7 +46,7 @@ func renderOutlineList(snap host.UISnapshot, contentW int) string {
 		title := truncate(e.Title, contentW-6)
 		line := marker + chStyle + " " + titleStyle.Render(title)
 		if snap.InProgressChapter == e.Chapter {
-			line += lipgloss.NewStyle().Foreground(colorAccent).Italic(true).Render(" 进行中")
+			line += lipgloss.NewStyle().Foreground(colorAccent).Italic(true).Render(i18n.F(" 进行中"))
 		}
 		b.WriteString(line)
 		b.WriteString("\n")
@@ -160,7 +160,7 @@ func renderDetailContent(snap host.UISnapshot, contentW int) string {
 
 	// 大纲
 	if len(snap.Outline) > 0 {
-		outlineHeader := ":: 大纲"
+		outlineHeader := i18n.F(":: 大纲")
 		if snap.Layered {
 			outlineHeader = fmt.Sprintf(i18n.F(":: 大纲（%s · 动态规划大纲）"), snap.CurrentVolumeArc)
 		}
@@ -171,10 +171,10 @@ func renderDetailContent(snap host.UISnapshot, contentW int) string {
 		compassStyle := lipgloss.NewStyle().Foreground(colorDim).Italic(true)
 		if snap.Layered {
 			if snap.NextVolumeTitle != "" {
-				b.WriteString(compassStyle.Render("  ┄ 下一卷：" + snap.NextVolumeTitle))
+				b.WriteString(compassStyle.Render(i18n.F("  ┄ 下一卷：") + snap.NextVolumeTitle))
 				b.WriteString("\n")
 			}
-			b.WriteString(compassStyle.Render("  ··· 后续章节随创作推进自动生成"))
+			b.WriteString(compassStyle.Render(i18n.F("  ··· 后续章节随创作推进自动生成")))
 			b.WriteString("\n")
 			if snap.CompassDirection != "" {
 				direction := fmt.Sprintf(i18n.F("  → 终局：%s"), snap.CompassDirection)
@@ -190,7 +190,7 @@ func renderDetailContent(snap host.UISnapshot, contentW int) string {
 
 	// 角色
 	if len(snap.Characters) > 0 {
-		b.WriteString(panelTitleStyle.Render(":: 角色"))
+		b.WriteString(panelTitleStyle.Render(i18n.F(":: 角色")))
 		b.WriteString("\n")
 		for _, c := range snap.Characters {
 			writeBulletWrapped(&b, c, contentW, cardContentStyle)
@@ -200,7 +200,7 @@ func renderDetailContent(snap host.UISnapshot, contentW int) string {
 
 	// 配角生态：累计已出场的次要角色总数 + 最近活跃前 5 名
 	if snap.SupportingCount > 0 {
-		b.WriteString(panelTitleStyle.Render(":: 配角生态"))
+		b.WriteString(panelTitleStyle.Render(i18n.F(":: 配角生态")))
 		b.WriteString("\n")
 		b.WriteString(cardContentStyle.Render(truncate(fmt.Sprintf(i18n.F("已出场：%d 位"), snap.SupportingCount), contentW)))
 		b.WriteString("\n")
@@ -212,7 +212,7 @@ func renderDetailContent(snap host.UISnapshot, contentW int) string {
 
 	// 前提
 	if snap.Premise != "" {
-		b.WriteString(panelTitleStyle.Render(":: 前提"))
+		b.WriteString(panelTitleStyle.Render(i18n.F(":: 前提")))
 		b.WriteString("\n")
 		for _, line := range wrapStreamText(snap.Premise, contentW) {
 			b.WriteString(lipgloss.NewStyle().Foreground(colorDim).Render(line))
@@ -222,21 +222,21 @@ func renderDetailContent(snap host.UISnapshot, contentW int) string {
 	}
 
 	if snap.LastCommitSummary != "" {
-		b.WriteString(cardTitleStyle.Render("~ 最近提交 ~"))
+		b.WriteString(cardTitleStyle.Render(i18n.F("~ 最近提交 ~")))
 		b.WriteString("\n")
 		writeWrapped(&b, snap.LastCommitSummary, contentW, cardContentStyle)
 		b.WriteString("\n")
 	}
 
 	if snap.LastReviewSummary != "" {
-		b.WriteString(cardTitleStyle.Render("~ 最近审阅 ~"))
+		b.WriteString(cardTitleStyle.Render(i18n.F("~ 最近审阅 ~")))
 		b.WriteString("\n")
 		writeWrapped(&b, snap.LastReviewSummary, contentW, cardContentStyle)
 		b.WriteString("\n")
 	}
 
 	if len(snap.RecentSummaries) > 0 {
-		b.WriteString(cardTitleStyle.Render("~ 摘要 ~"))
+		b.WriteString(cardTitleStyle.Render(i18n.F("~ 摘要 ~")))
 		b.WriteString("\n")
 		for _, s := range snap.RecentSummaries {
 			writeWrapped(&b, s, contentW, cardContentStyle)

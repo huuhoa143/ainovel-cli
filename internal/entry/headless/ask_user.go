@@ -87,7 +87,7 @@ func (h *terminalAskUser) askOne(ctx context.Context, q tools.Question) (string,
 				fmt.Fprintln(h.out, i18n.F("自定义内容不能为空，请重试。"))
 				continue
 			}
-			return "自定义", note, nil
+			return i18n.F("自定义"), note, nil
 		}
 
 		labels, err := parseSelections(line, q.Options, q.MultiSelect)

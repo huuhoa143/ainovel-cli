@@ -98,27 +98,27 @@ func (s *simulationState) refresh(contentW int) {
 	b.WriteString(titleStyle.Render(s.title))
 	b.WriteString("\n\n")
 	if s.source != "" {
-		b.WriteString(dimStyle.Render("来源 "))
+		b.WriteString(dimStyle.Render(i18n.F("来源 ")))
 		b.WriteString(s.source)
 		b.WriteString("\n")
 	}
-	b.WriteString(dimStyle.Render("开始 "))
+	b.WriteString(dimStyle.Render(i18n.F("开始 ")))
 	b.WriteString(formatReportTime(s.startedAt))
 	if !s.finishedAt.IsZero() {
-		b.WriteString(dimStyle.Render("  完成 "))
+		b.WriteString(dimStyle.Render(i18n.F("  完成 ")))
 		b.WriteString(formatReportTime(s.finishedAt))
 	}
 	b.WriteString("\n\n")
 
-	b.WriteString(mutedStyle.Render("阶段 "))
+	b.WriteString(mutedStyle.Render(i18n.F("阶段 ")))
 	b.WriteString(stageStyle.Render(string(s.stage)))
 	if s.total > 0 {
-		b.WriteString(mutedStyle.Render("  进度 "))
+		b.WriteString(mutedStyle.Render(i18n.F("  进度 ")))
 		b.WriteString(fmt.Sprintf("%d/%d", s.current, s.total))
 	}
 	b.WriteString("\n\n")
 
-	b.WriteString(titleStyle.Render("流程日志"))
+	b.WriteString(titleStyle.Render(i18n.F("流程日志")))
 	b.WriteString(" ")
 	b.WriteString(dimStyle.Render(fmt.Sprintf(i18n.F("(%d 条)"), len(s.history))))
 	b.WriteString("\n")
@@ -141,15 +141,15 @@ func (s *simulationState) refresh(contentW int) {
 	b.WriteString("\n\n")
 	switch {
 	case !s.done:
-		b.WriteString(dimStyle.Render("Esc 取消"))
+		b.WriteString(dimStyle.Render(i18n.F("Esc 取消")))
 	case s.err != nil:
-		b.WriteString(errStyle.Render("仿写画像处理失败"))
+		b.WriteString(errStyle.Render(i18n.F("仿写画像处理失败")))
 		b.WriteString("\n")
-		b.WriteString(dimStyle.Render("Esc 关闭面板"))
+		b.WriteString(dimStyle.Render(i18n.F("Esc 关闭面板")))
 	default:
-		b.WriteString(okStyle.Render("仿写画像已就绪，后续 Agent 会从 novel_context 读取"))
+		b.WriteString(okStyle.Render(i18n.F("仿写画像已就绪，后续 Agent 会从 novel_context 读取")))
 		b.WriteString("\n")
-		b.WriteString(dimStyle.Render("Esc 关闭面板"))
+		b.WriteString(dimStyle.Render(i18n.F("Esc 关闭面板")))
 	}
 
 	s.viewport.SetContent(b.String())
@@ -171,8 +171,8 @@ func renderSimulationModal(width, height int, s *simulationState) string {
 	if s.viewport.Height != boxH-4 {
 		s.viewport.Height = boxH - 4
 	}
-	hint := "  ↑↓ 滚动 · Esc 取消/关闭"
-	modal := renderPaddedModalFrame(boxW, boxH, "仿写画像", hint, strings.Split(s.viewport.View(), "\n"))
+	hint := i18n.F("  ↑↓ 滚动 · Esc 取消/关闭")
+	modal := renderPaddedModalFrame(boxW, boxH, i18n.F("仿写画像"), hint, strings.Split(s.viewport.View(), "\n"))
 	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, modal)
 }
 
@@ -210,7 +210,7 @@ func startSimulate(rt *host.Host, reqID int, args []string, width, height int) (
 		cancel()
 		return nil, nil, err
 	}
-	state := newSimulationState(reqID, "生成仿写画像", "./simulate", width, height, cancel)
+	state := newSimulationState(reqID, i18n.F("生成仿写画像"), "./simulate", width, height, cancel)
 	return state, listenSimulationEvent(reqID, ch), nil
 }
 
@@ -224,7 +224,7 @@ func startImportSimulation(rt *host.Host, reqID int, args []string, width, heigh
 		cancel()
 		return nil, nil, err
 	}
-	state := newSimulationState(reqID, "导入仿写画像", args[0], width, height, cancel)
+	state := newSimulationState(reqID, i18n.F("导入仿写画像"), args[0], width, height, cancel)
 	return state, listenSimulationEvent(reqID, ch), nil
 }
 

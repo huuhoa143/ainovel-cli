@@ -83,7 +83,7 @@ func (s *askUserState) choiceLabel(idx int) string {
 	if idx < len(q.Options) {
 		return q.Options[idx].Label
 	}
-	return "自由输入"
+	return i18n.F("自由输入")
 }
 
 func (s *askUserState) choiceDescription(idx int) string {
@@ -91,7 +91,7 @@ func (s *askUserState) choiceDescription(idx int) string {
 	if idx < len(q.Options) {
 		return q.Options[idx].Description
 	}
-	return "以上都不合适，自己补充"
+	return i18n.F("以上都不合适，自己补充")
 }
 
 func (s *askUserState) moveCursor(delta int) {
@@ -228,11 +228,11 @@ func renderAskUserModal(width, height int, state *askUserState) string {
 
 	if state.typing || (q.MultiSelect && state.selected[len(q.Options)]) {
 		b.WriteString("\n")
-		b.WriteString(panelTitleStyle.Render("补充内容"))
+		b.WriteString(panelTitleStyle.Render(i18n.F("补充内容")))
 		b.WriteString("\n")
 		content := state.input
 		if content == "" {
-			content = "请输入..."
+			content = i18n.F("请输入...")
 		}
 		style := lipgloss.NewStyle().
 			Width(boxW-8).
@@ -243,12 +243,12 @@ func renderAskUserModal(width, height int, state *askUserState) string {
 		b.WriteString("\n")
 	}
 
-	hint := "↑↓ 选择 · Enter 确认 · Esc 关闭"
+	hint := i18n.F("↑↓ 选择 · Enter 确认 · Esc 关闭")
 	if q.MultiSelect {
-		hint = "↑↓ 选择 · Space 勾选 · Enter 提交 · Esc 关闭"
+		hint = i18n.F("↑↓ 选择 · Space 勾选 · Enter 提交 · Esc 关闭")
 	}
 	if state.typing {
-		hint = "输入补充内容 · Enter 确认 · Esc 返回选项"
+		hint = i18n.F("输入补充内容 · Enter 确认 · Esc 返回选项")
 	}
 	b.WriteString("\n")
 	b.WriteString(lipgloss.NewStyle().Foreground(colorDim).Render(hint))

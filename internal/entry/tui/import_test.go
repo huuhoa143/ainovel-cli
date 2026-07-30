@@ -10,7 +10,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"fmt"
 	"github.com/voocel/ainovel-cli/internal/host/imp"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // TestImportHistoryCoalescesRetryLines 守护重试行原地更新：同 Key 连续事件只占一行
@@ -173,10 +175,10 @@ func TestRetryCountdown(t *testing.T) {
 	if got := retryCountdown(now.Add(-time.Second), now); got != "" {
 		t.Fatalf("已到点应返回空，得 %q", got)
 	}
-	if got := retryCountdown(now.Add(7500*time.Millisecond), now); got != "8s 后重试" {
+	if got := retryCountdown(now.Add(7500*time.Millisecond), now); got != fmt.Sprintf(i18n.F("%ds 后重试"), 8) {
 		t.Fatalf("7.5s 应上取整为 8s，得 %q", got)
 	}
-	if got := retryCountdown(now.Add(300*time.Millisecond), now); got != "1s 后重试" {
+	if got := retryCountdown(now.Add(300*time.Millisecond), now); got != fmt.Sprintf(i18n.F("%ds 后重试"), 1) {
 		t.Fatalf("不足 1s 应显示 1s，得 %q", got)
 	}
 }
