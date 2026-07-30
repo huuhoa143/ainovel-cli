@@ -15,6 +15,7 @@ import (
 	"github.com/voocel/ainovel-cli/internal/eval"
 	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/rules"
+	"github.com/voocel/ainovel-cli/internal/serve"
 	buildversion "github.com/voocel/ainovel-cli/internal/version"
 )
 
@@ -31,6 +32,10 @@ func main() {
 	// 子命令在常规 flag 解析之前拦截：eval 是离线评测 harness，参数体系独立。
 	if len(os.Args) > 1 && os.Args[1] == "eval" {
 		os.Exit(eval.Command(os.Args[2:]))
+	}
+	// serve 是只读 web studio 服务，不加载引擎配置，参数体系同样独立。
+	if len(os.Args) > 1 && os.Args[1] == "serve" {
+		os.Exit(serve.Command(os.Args[2:]))
 	}
 
 	opts, args, err := parseCLIOptions(os.Args[1:])
