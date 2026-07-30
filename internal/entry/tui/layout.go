@@ -10,28 +10,65 @@ import (
 
 // --- 辅助函数 ---
 
-// renderFieldLabel dựng nhãn trường, ĐẢM BẢO luôn còn ít nhất một khoảng trắng
-// trước giá trị.
+// fieldLabelColumn là bề rộng cột nhãn trong khối "nhãn — giá trị". Nhãn ngắn hơn
+// thì được đệm cho đủ; nhãn dài hơn thì đẩy giá trị sang phải (không cắt, không xé).
+const fieldLabelColumn = 10
+
+// renderFieldLabel dựng nhãn trường: đệm cho đủ cột rồi LUÔN thêm đúng một khoảng
+// trắng phân cách.
 //
-// fieldLabelStyle có Width(10) và tự đệm bằng khoảng trắng, nhưng Width là chiều
-// rộng TỐI THIỂU chứ không phải tối đa: nhãn dài hơn thì lipgloss trả nguyên nhãn,
-// không đệm gì. Nhãn tiếng Trung không bao giờ chạm ngưỡng đó (运行态 chỉ 6 cột
-// hiển thị) nên bản gốc luôn có đệm sẵn. Nhãn tiếng Việt thì chạm: "Trạng thái"
-// và "Đẩy chương" đúng 10 cột, "Đang viết lại" thì vượt — và giao diện in ra
-// "Trạng tháiĐã tạm dừng", dính liền, không đọc được.
+// Trước đây việc đệm giao cho fieldLabelStyle.Width(10). Sai hai đường:
 //
-// Lỗi này KHÔNG test nào bắt được và tôi chỉ thấy khi chạy TUI thật rồi nhìn.
-// Test cột đã có chỉ kiểm nhãn có bị cắt hay không, không kiểm khoảng cách giữa
-// nhãn và giá trị.
+//  1. Width của lipgloss vừa là bề rộng tối thiểu vừa là điểm XUỐNG DÒNG. Nhãn Hán
+//     không bao giờ chạm ngưỡng (运行态 chỉ 6 cột) nên lỗi ngủ yên; nhãn tiếng Việt
+//     "Trạng thái chạy" chiếm 15 cột thì bị xé thành "Trạng thái" / "chạy", và giá
+//     trị rơi xuống dòng dưới dính vào đuôi nhãn — trên màn đọc ra hai dòng vô nghĩa.
+//  2. Bản cũ chỉ thêm khoảng trắng KHI THIẾU, nên nhãn ≤9 cột để giá trị ở cột 10
+//     còn nhãn đúng 10 cột ("Đẩy chương") đẩy giá trị sang cột 11 → cột giá trị lệch
+//     một cột giữa các dòng ngay cạnh nhau.
+//
+// Cả hai chỉ lộ ra khi chạy TUI thật rồi nhìn; xem layout_vi_width_test.go.
 func renderFieldLabel(label string) string {
 	rendered := fieldLabelStyle.Render(label)
-	// lipgloss đã đệm tới Width thì ký tự cuối là khoảng trắng; nhãn vượt Width
-	// thì không có gì. Chỉ thêm khi thật sự thiếu, để không đẩy lệch cột ở nhánh
-	// tiếng Trung đang hiển thị đúng.
-	if !strings.HasSuffix(rendered, " ") {
-		rendered += " "
+	if pad := fieldLabelColumn - lipgloss.Width(label); pad > 0 {
+		rendered += strings.Repeat(" ", pad)
 	}
-	return rendered
+	return rendered + " "
+}
+
+// fitHintToWidth thu gọn dòng gợi ý phím cho vừa maxW bằng cách bỏ bớt MỤC, chứ không
+// cắt giữa chữ — và luôn giữ lại MỤC CUỐI.
+//
+// Hai lý do:
+//
+//  1. Bản cũ cắt cứng theo cột, nên gợi ý tiếng Việt (dài hơn bản Hán) hiện ra
+//     "… · Esc quay lạ" — mất đúng ký tự cuối, không dấu hiệu gì, người dùng đọc ra
+//     một chữ không tồn tại. Thấy ở /config danh sách model tại 100 cột.
+//  2. Mục cuối theo quy ước là lối thoát ("Esc đóng" / "Esc quay lại"). Bỏ lần lượt
+//     từ cuối thì đúng cái người dùng cần nhất khi bí lại là cái mất đầu tiên, nên ở
+//     đây bỏ các mục GIỮA và giữ mục cuối.
+func fitHintToWidth(hint string, maxW int) string {
+	if maxW <= 0 {
+		return ""
+	}
+	if lipgloss.Width(hint) <= maxW {
+		return hint
+	}
+	const sep = " · "
+	items := strings.Split(hint, sep)
+	last := items[len(items)-1]
+	// Giữ items[:k] rồi nối mục cuối; thu k dần cho tới khi vừa.
+	for k := len(items) - 1; k >= 1; k-- {
+		candidate := strings.Join(append(append([]string{}, items[:k]...), last), sep)
+		if lipgloss.Width(candidate) <= maxW {
+			return candidate
+		}
+	}
+	if lipgloss.Width(last) <= maxW {
+		return last
+	}
+	// Ngay cả mục cuối cũng không vừa: đành cắt, nhưng có "..." để thấy là bị cắt.
+	return truncate(hint, maxW)
 }
 
 func renderField(label, value string) string {

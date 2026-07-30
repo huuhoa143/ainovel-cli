@@ -55,11 +55,15 @@ func renderTopBar(snap host.UISnapshot, width int, spinnerFrame, version string)
 	if snap.IsRunning && spinnerFrame != "" {
 		icon = spinnerFrame
 	}
+	// Dịch ở CHỖ DÙNG, không ở bảng statusDisplay: bảng là var cấp package nên được
+	// khởi tạo trước khi locale được đặt, và giá trị sẽ đóng băng theo locale lúc nạp.
+	// Thiếu bước này thì thanh trạng thái luôn hiện "就绪" dù đang ở tiếng Việt.
+	statusText := i18n.F(disp.label)
 	var status string
 	if icon != "" {
-		status = statusIconStyle.Foreground(color).Render(icon) + " " + statusLabelStyle.Render(disp.label)
+		status = statusIconStyle.Foreground(color).Render(icon) + " " + statusLabelStyle.Render(statusText)
 	} else {
-		status = statusLabelStyle.Render(disp.label)
+		status = statusLabelStyle.Render(statusText)
 	}
 
 	innerW := max(12, width-2)

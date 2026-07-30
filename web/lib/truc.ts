@@ -101,6 +101,135 @@ export function chuongTaiDiem(d: DaiVach, ti: number): number {
   return d.from + buoc;
 }
 
+/* ── cửa sổ của lane chương ────────────────────────────────────────────── */
+
+/**
+ * Biên sản xuất: chương cuối cùng còn dấu vết sản xuất.
+ *
+ * Không phải "chương đang chạy": engine có thể đang nghỉ giữa hai cung, và lúc
+ * đó không mark nào ở `running` nhưng dây chuyền vẫn dừng ở một chỗ cụ thể.
+ * Cũng không phải `completed_chapters`: một chương bị trả về viết lại nằm SAU
+ * chương đã xong cuối cùng, và nó chính là chỗ cần nhìn.
+ */
+export function bienSanXuat(marks: ChapterMark[]): number {
+  let bien = 1;
+  for (const m of marks) {
+    if (m.state !== 'pending' && m.chapter > bien) bien = m.chapter;
+  }
+  return bien;
+}
+
+export interface CuaSoTruc {
+  from: number;
+  to: number;
+  /** true khi cửa sổ hẹp hơn toàn trục, tức đang thu phóng. */
+  thuPhong: boolean;
+}
+
+/**
+ * Bề rộng một vạch để đếm được từng chương bằng mắt, tính bằng px.
+ *
+ * Đây là hằng số DUY NHẤT của phép thu phóng, và nó là một ngưỡng thị giác chứ
+ * không phải một số chương: ở 16px một vạch là một vật thể có hình, và một dãy
+ * 2 chương đã nghiệm thu thành khối 32px — thấy được, không phải cái đốm.
+ *
+ * Bề rộng cửa sổ suy ra TỪ BỀ RỘNG LANE THẬT chia cho ngưỡng này, nên nó tự
+ * đổi theo màn hình thay vì cắm một số chương cố định — cùng lý do mà cột nhãn
+ * phải đo từ nhãn thật.
+ */
+const NHIP_VACH_PX = 16;
+
+/** Không thu phóng xuống dưới mức này: cửa sổ 5 chương thì mất cả bối cảnh. */
+const CUA_SO_MIN = 12;
+/** Cũng không mở rộng vô hạn trên màn hình rất rộng. */
+const CUA_SO_MAX = 160;
+
+/**
+ * Cửa sổ nhìn của lane chương.
+ *
+ * Vì sao cần thu phóng: với 2/300 chương xong, phần đã nghiệm thu chiếm 0,67%
+ * bề rộng lane — đúng toán học và vô dụng thị giác. Và đó là tình trạng của
+ * người vận hành trong phần lớn thời gian đầu của một cuốn 300 chương.
+ *
+ * Cửa sổ LỆCH VỀ SAU biên sản xuất (70% phía sau, 30% phía trước) vì hai phía
+ * không mang lượng tin bằng nhau: phía sau là chương đã chạy, mang cả cửa kiểm
+ * định và chương bị trả về; phía trước là một dãy `pending` giống hệt nhau, xem
+ * 25 vạch của nó không biết thêm điều gì so với xem 8 vạch.
+ *
+ * `beRongLane <= 0` nghĩa là CHƯA ĐO ĐƯỢC (lần render đầu, trước khi
+ * ResizeObserver báo về). Khi đó trả về toàn trục: nội dung không được gate sau
+ * một phép đo, và toàn trục là mặc định thật thà nhất — nó không giả vờ biết
+ * lane rộng bao nhiêu.
+ */
+export function cuaSoTruc(tong: number, bien: number, beRongLane: number): CuaSoTruc {
+  if (tong <= 0) return { from: 1, to: 0, thuPhong: false };
+  if (beRongLane <= 0) return { from: 1, to: tong, thuPhong: false };
+
+  const span = Math.min(
+    CUA_SO_MAX,
+    Math.max(CUA_SO_MIN, Math.round(beRongLane / NHIP_VACH_PX)),
+  );
+  if (tong <= span) return { from: 1, to: tong, thuPhong: false };
+
+  let from = Math.round(bien - span * 0.7);
+  if (from < 1) from = 1;
+  let to = from + span - 1;
+  if (to > tong) {
+    to = tong;
+    from = Math.max(1, to - span + 1);
+  }
+  return { from, to, thuPhong: true };
+}
+
+/** Các vạch nằm trong cửa sổ. */
+export function vachTrongCuaSo(marks: ChapterMark[], cs: CuaSoTruc): ChapterMark[] {
+  return marks.filter((m) => m.chapter >= cs.from && m.chapter <= cs.to);
+}
+
+/**
+ * Việc tồn bị cửa sổ che.
+ *
+ * Bắt buộc phải đếm và phải hiện ra: thu phóng là một phép lọc, và một phép lọc
+ * im lặng ẩn đi chương đang chờ viết lại là đúng cái lỗi mà Rail và bộ chọn mức
+ * xem đã phải tránh. `pending` không tính — chương chưa tới nằm ngoài tầm mắt là
+ * chuyện bình thường, chương bị trả về thì không.
+ */
+export function vieccTonNgoaiCuaSo(marks: ChapterMark[], cs: CuaSoTruc): number {
+  return marks.filter(
+    (m) =>
+      (m.chapter < cs.from || m.chapter > cs.to) &&
+      (m.state === 'rewrite' || m.state === 'running' || m.state === 'gate'),
+  ).length;
+}
+
+/**
+ * Mốc số chương cho thước của MỘT ĐOẠN trục.
+ *
+ * Mốc chia đều theo bề rộng thật của đoạn (chứ không làm tròn về số chẵn) vì
+ * thước được đặt theo tỉ lệ: mốc phải nằm đúng chỗ chương đó nằm, nếu không nó
+ * là một cái nhãn chỉ sai chỗ — tệ hơn không có nhãn.
+ */
+export function mocThuocDai(from: number, to: number): number[] {
+  const span = to - from + 1;
+  if (span <= 0) return [];
+  if (span === 1) return [from];
+
+  const soMoc = span <= 14 ? 2 : span <= 40 ? 4 : 6;
+  const buoc = (span - 1) / (soMoc - 1);
+  const mocs: number[] = [];
+  for (let i = 0; i < soMoc; i += 1) {
+    const m = Math.round(from + i * buoc);
+    if (mocs[mocs.length - 1] !== m) mocs.push(m);
+  }
+  return mocs;
+}
+
+/** Vị trí một mốc trong đoạn, theo tỉ lệ 0–1. */
+export function viTriMoc(m: number, from: number, to: number): number {
+  if (to <= from) return 0;
+  return (m - from) / (to - from);
+}
+
 /**
  * Các mốc số chương trên thước dưới lane chương.
  *

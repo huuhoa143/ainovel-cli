@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/voocel/ainovel-cli/internal/host"
 	"github.com/voocel/ainovel-cli/internal/i18n"
 )
@@ -37,19 +38,19 @@ func renderStateContent(snap host.UISnapshot, contentW int) string {
 		overview.WriteString(renderField(i18n.F("推进"), i18n.F("自动")))
 	}
 	if snap.Layered {
-		overview.WriteString(renderField("已完成", fmt.Sprintf(i18n.F("%d 章"), snap.CompletedCount)))
+		overview.WriteString(renderField(i18n.F("已完成"), fmt.Sprintf(i18n.F("%d 章"), snap.CompletedCount)))
 		// 分层动态规划：右栏只展示当前弧已展开的章节，"已规划"也用同一个口径，
 		// 否则会把骨架弧 EstimatedChapters 的粗估算（如 92）混进来，与可见大纲对不上。
 		// progress.TotalChapters 那个值仅用于内部 ContextProfile 决策，不要泄漏到 UI。
 		if planned := len(snap.Outline); planned > 0 {
-			overview.WriteString(renderField("已规划", fmt.Sprintf(i18n.F("%d 章"), planned)))
+			overview.WriteString(renderField(i18n.F("已规划"), fmt.Sprintf(i18n.F("%d 章"), planned)))
 		}
 	} else {
 		switch {
 		case snap.TotalChapters > 0:
-			overview.WriteString(renderField("进度", fmt.Sprintf(i18n.F("%d / %d 章"), snap.CompletedCount, snap.TotalChapters)))
+			overview.WriteString(renderField(i18n.F("进度"), fmt.Sprintf(i18n.F("%d / %d 章"), snap.CompletedCount, snap.TotalChapters)))
 		default:
-			overview.WriteString(renderField("已完成", fmt.Sprintf(i18n.F("%d 章"), snap.CompletedCount)))
+			overview.WriteString(renderField(i18n.F("已完成"), fmt.Sprintf(i18n.F("%d 章"), snap.CompletedCount)))
 		}
 	}
 	overview.WriteString(renderField(i18n.F("字数"), formatNumber(snap.TotalWordCount)))
@@ -61,7 +62,7 @@ func renderStateContent(snap host.UISnapshot, contentW int) string {
 		if !snap.IsRunning {
 			label = i18n.F("待恢复")
 		}
-		overview.WriteString(renderHighlightField(label, truncate(headline, contentW-10)))
+		overview.WriteString(renderHighlightField(label, truncate(headline, sidebarValueWidth(contentW))))
 	}
 	sections = append(sections, renderSidebarSection(i18n.F("概览"), overview.String(), contentW))
 
@@ -72,7 +73,7 @@ func renderStateContent(snap host.UISnapshot, contentW int) string {
 			agentBody.WriteString("\n")
 		}
 		if len(idleAgents) > 0 {
-			agentBody.WriteString(lipgloss.NewStyle().Foreground(colorDim).Render(i18n.F("待命: ") + truncate(strings.Join(idleAgents, " · "), max(8, contentW-2))))
+			agentBody.WriteString(lipgloss.NewStyle().Foreground(colorDim).Render(i18n.F("待命: ") + truncate(strings.Join(idleAgents, " · "), max(8, sidebarBodyWidth(contentW)-lipgloss.Width(i18n.F("待命: "))))))
 			agentBody.WriteString("\n")
 		}
 		sections = append(sections, renderSidebarSection(i18n.F("运行角色"), agentBody.String(), contentW))
@@ -82,18 +83,18 @@ func renderStateContent(snap host.UISnapshot, contentW int) string {
 		var rewrite strings.Builder
 		rewrite.WriteString(renderHighlightField(i18n.F("队列"), fmt.Sprintf("%v", snap.PendingRewrites)))
 		if snap.RewriteReason != "" {
-			rewrite.WriteString(renderField(i18n.F("原因"), truncate(snap.RewriteReason, contentW-10)))
+			rewrite.WriteString(renderField(i18n.F("原因"), truncate(snap.RewriteReason, sidebarValueWidth(contentW))))
 		}
 		sections = append(sections, renderSidebarSection(i18n.F("返工"), rewrite.String(), contentW))
 	}
 
 	if snap.PendingSteer != "" {
 		sections = append(sections, renderSidebarSection(i18n.F("干预"),
-			renderHighlightField(i18n.F("待处理"), truncate(snap.PendingSteer, contentW-10)), contentW))
+			renderHighlightField(i18n.F("待处理"), truncate(snap.PendingSteer, sidebarValueWidth(contentW))), contentW))
 	}
 	if snap.HasAdvanceHold {
 		sections = append(sections, renderSidebarSection(i18n.F("验收停靠"),
-			renderHighlightField(i18n.F("等待"), truncate(snap.AdvanceHoldReason, contentW-10)), contentW))
+			renderHighlightField(i18n.F("等待"), truncate(snap.AdvanceHoldReason, sidebarValueWidth(contentW))), contentW))
 	}
 
 	if body := renderUsageSidebar(snap, contentW); body != "" {
@@ -120,7 +121,7 @@ func renderAgentLine(agent host.AgentSnapshot, width int) string {
 
 	taskLine := agentTaskLine(agent)
 	if taskLine != "" {
-		line += "\n" + lipgloss.NewStyle().Foreground(colorDim).Render("  "+truncate(taskLine, max(8, width-2)))
+		line += "\n" + lipgloss.NewStyle().Foreground(colorDim).Render("  "+truncate(taskLine, max(8, sidebarBodyWidth(width)-2)))
 	}
 
 	detail := agent.Summary
@@ -135,13 +136,16 @@ func renderAgentLine(agent host.AgentSnapshot, width int) string {
 		detail = ""
 	}
 	if detail != "" && detail != taskLine {
-		line += "\n" + lipgloss.NewStyle().Foreground(colorMuted).Render("  "+truncate(detail, max(8, width-2)))
+		line += "\n" + lipgloss.NewStyle().Foreground(colorMuted).Render("  "+truncate(detail, max(8, sidebarBodyWidth(width)-2)))
 	}
 	if ctx := agentContextLine(agent); ctx != "" {
-		line += "\n" + lipgloss.NewStyle().Foreground(colorDim).Italic(true).Render("  "+truncate(ctx, max(8, width-2)))
+		line += "\n" + lipgloss.NewStyle().Foreground(colorDim).Italic(true).Render("  "+truncate(ctx, max(8, sidebarBodyWidth(width)-2)))
 	}
 	return line
 }
+
+// sidebarCardChrome là số cột thẻ tự tiêu ngoài phần thân: viền trái + đệm trái.
+const sidebarCardChrome = 2
 
 func renderSidebarSection(title, body string, width int) string {
 	body = strings.TrimRight(body, "\n")
@@ -155,8 +159,45 @@ func renderSidebarSection(title, body string, width int) string {
 		Border(lipgloss.NormalBorder(), false, false, false, true).
 		BorderForeground(colorDim).
 		PaddingLeft(1).
-		Render(body)
+		Render(fitSidebarBody(body, width))
 	return header + "\n" + card
+}
+
+// fitSidebarBody bó thân thẻ về đúng bề rộng thẻ được cấp.
+//
+// Thẻ tự thêm viền trái + đệm trái (2 cột), nên thân dài đúng `width` làm thẻ rộng
+// `width+2` — vượt chỗ viewport có, và viewport CẮT CỨNG phần dôi mà không để lại
+// dấu hiệu nào. Trên màn thật, dòng "进度  2 / 300 chương" mất đúng một ký tự và
+// hiện thành "2 / 300 chươn": người dùng đọc ra một từ tiếng Việt không tồn tại.
+// Lỗi chỉ có ở tiếng Việt vì "2 / 300 章" bên tiếng Trung ngắn hơn nhiều.
+//
+// Xuống dòng (ansi.Wrap) chứ không cắt: giá trị dài vẫn đọc được trọn, và Wrap
+// hiểu chuỗi ANSI nên không làm hỏng màu.
+// sidebarBodyWidth là số cột thân thẻ thật sự có, sau khi thẻ ăn viền + đệm.
+func sidebarBodyWidth(width int) int {
+	return max(1, width-sidebarCardChrome)
+}
+
+// sidebarValueWidth là số cột còn lại cho GIÁ TRỊ trên một dòng "nhãn — giá trị":
+// thân thẻ trừ cột nhãn và một khoảng trắng phân cách. Trước đây các chỗ gọi tự trừ
+// tay hằng 10 (đúng cột nhãn nhưng bỏ quên 2 cột viền+đệm của thẻ), nên giá trị dài
+// vẫn dôi ra 2 cột và bị viewport cắt cứng.
+func sidebarValueWidth(width int) int {
+	return max(8, sidebarBodyWidth(width)-fieldLabelColumn-1)
+}
+
+func fitSidebarBody(body string, width int) string {
+	limit := sidebarBodyWidth(width)
+	lines := strings.Split(body, "\n")
+	out := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if lipgloss.Width(line) <= limit {
+			out = append(out, line)
+			continue
+		}
+		out = append(out, strings.Split(ansi.Wrap(line, limit, " ·/,"), "\n")...)
+	}
+	return strings.Join(out, "\n")
 }
 
 func sidebarAgents(agents []host.AgentSnapshot) []host.AgentSnapshot {
@@ -408,7 +449,7 @@ func renderCacheSidebar(snap host.UISnapshot, width int) string {
 		warn := lipgloss.NewStyle().Foreground(colorError).Bold(true).
 			Render(fmt.Sprintf(i18n.F("⚠ 上游未返 usage（%d 次）"), snap.MissingAssistantUsage))
 		hint := lipgloss.NewStyle().Foreground(colorDim).Italic(true).
-			Render(truncate(i18n.F("检查 provider stream_options.include_usage"), max(8, width-2)))
+			Render(truncate(i18n.F("检查 provider stream_options.include_usage"), max(8, sidebarBodyWidth(width))))
 		return warn + "\n" + hint + "\n"
 	}
 
@@ -419,7 +460,7 @@ func renderCacheSidebar(snap host.UISnapshot, width int) string {
 	// 全程未启用 → 显示一行解释，避免用户误判为"0% 命中需要排查"
 	if !snap.OverallCacheCapable && snap.TotalCacheReadTokens == 0 && snap.TotalCacheWriteTokens == 0 {
 		return lipgloss.NewStyle().Foreground(colorDim).Italic(true).
-			Render(truncate(i18n.F("当前模型未启用 prompt cache"), max(8, width-2))) + "\n"
+			Render(truncate(i18n.F("当前模型未启用 prompt cache"), max(8, sidebarBodyWidth(width)))) + "\n"
 	}
 
 	var b strings.Builder
@@ -585,7 +626,7 @@ func renderContextSidebar(snap host.UISnapshot, width int) string {
 		b.WriteString(renderField(i18n.F("当前视图"), scope))
 	}
 	if snap.ContextSummaryCount > 0 {
-		b.WriteString(renderField("摘要", fmt.Sprintf(i18n.F("%d 条"), snap.ContextSummaryCount)))
+		b.WriteString(renderField(i18n.F("摘要"), fmt.Sprintf(i18n.F("%d 条"), snap.ContextSummaryCount)))
 	}
 	if snap.ContextActiveMessages > 0 {
 		b.WriteString(renderField(i18n.F("消息数"), fmt.Sprintf("%d", snap.ContextActiveMessages)))

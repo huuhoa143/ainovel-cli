@@ -15,11 +15,14 @@
  */
 
 import type {
+  CastDoc,
   ChapterDetail,
+  OutlineDoc,
   Profile,
   Snapshot,
   StreamEvent,
   Workshop,
+  WorldDoc,
 } from './types';
 
 /** '1' = fixture đầy đủ; 'empty' = xưởng rỗng; rỗng/undefined = gọi engine thật. */
@@ -143,6 +146,47 @@ export async function layHoSo(book: string): Promise<Profile> {
     rules: world ? dem(world.rules) : null,
     foreshadow: world ? dem(world.foreshadow) : null,
   };
+}
+
+/* ── hồ sơ tác phẩm ────────────────────────────────────────────────────── */
+
+/**
+ * Ba endpoint hồ sơ. KHÔNG nuốt lỗi ở đây, khác với `layHoSo`.
+ *
+ * `layHoSo` nuốt lỗi vì nó chỉ tô số đếm cho rail và một lỗi mạng ở đó không
+ * được làm sập bề mặt chính. Còn ba hàm này là nguồn duy nhất của cả một bề
+ * mặt: nuốt lỗi thành `null` sẽ biến "không đọc được store" thành "tác phẩm
+ * chưa có nhân vật nào" — hai câu khác nhau, và câu sau là nói dối.
+ */
+export function layDanY(book: string): Promise<OutlineDoc> {
+  if (LA_MOCK) return mockJson<OutlineDoc>('outline');
+  return doc<OutlineDoc>(`/api/books/${encodeURIComponent(book)}/outline`);
+}
+
+export function layNhanVat(book: string): Promise<CastDoc> {
+  if (LA_MOCK) return mockJson<CastDoc>('cast');
+  return doc<CastDoc>(`/api/books/${encodeURIComponent(book)}/cast`);
+}
+
+export function layTheGioi(book: string): Promise<WorldDoc> {
+  if (LA_MOCK) return mockJson<WorldDoc>('world');
+  return doc<WorldDoc>(`/api/books/${encodeURIComponent(book)}/world`);
+}
+
+/**
+ * Fixture cho chế độ mock. Thiếu tệp thì trả về hồ sơ TRỐNG đúng hình dạng
+ * server (mọi mảng `null`) thay vì ném lỗi: mock là để thử bố cục, và ca "store
+ * chưa có gì" cũng là một bố cục cần thử.
+ */
+async function mockJson<T>(ten: 'outline' | 'cast' | 'world'): Promise<T> {
+  switch (ten) {
+    case 'outline':
+      return (await import('../fixtures/outline.json')).default as unknown as T;
+    case 'cast':
+      return (await import('../fixtures/cast.json')).default as unknown as T;
+    default:
+      return (await import('../fixtures/world.json')).default as unknown as T;
+  }
 }
 
 /* ── dòng sự kiện ──────────────────────────────────────────────────────── */

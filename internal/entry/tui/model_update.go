@@ -31,6 +31,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.updateViewportSize()
 		m.refreshDetailViewport()
 		m.refreshStateViewport()
+		// Luồng sự kiện và Đầu ra trực tiếp cũng phải dựng lại theo bề rộng mới. Bản cũ
+		// chỉ đổi cỡ viewport nên nội dung vẫn giữ cách cắt/ngắt của bề rộng CŨ: nới
+		// cửa sổ ra thì các dòng vẫn cụt "..." như lúc hẹp (thấy rõ khi thu về 100 rồi
+		// phóng lên 160 — dòng vẫn cụt ở mốc 100), còn thu cửa sổ vào thì dòng dôi ra và
+		// bị khung cắt cứng. Cả hai đều dựng lại từ m.events/m.streamRounds nên gọi lại
+		// là đủ, không cần lưu thêm trạng thái.
+		m.refreshEventViewport()
+		m.refreshStreamViewport()
 		return m, nil
 	case tea.KeyMsg:
 		return m.handleKeyMsg(msg)

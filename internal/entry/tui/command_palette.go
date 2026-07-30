@@ -180,9 +180,10 @@ func renderCommandPalette(width int, items []commandPaletteItem, cursor int) str
 		}
 
 		name := nameRenderer.Render(item.Name)
-		// truncateWidth 按视觉宽度截断（中文字符算 2 列）；用 truncate 会按 rune 数算，
-		// 中文场景实际宽度 = 期望的 2 倍，导致弹窗溢出。
-		desc := truncateWidth(item.Description, max(12, contentW-18))
+		// truncate cũng cắt theo bề rộng hiển thị (chữ Hán 2 cột) như truncateWidth,
+		// nhưng thêm "..." khi thật sự cắt — bản cũ cắt lặng nên mô tả tiếng Việt dài
+		// hiện ra "…đồng sáng tác lên kế hoạch cho " và người dùng không biết còn chữ.
+		desc := truncate(item.Description, max(12, contentW-18))
 		descText := descRenderer.Render(desc)
 		line := prefix + name
 		gap := contentW - lipgloss.Width(line) - lipgloss.Width(descText)
@@ -200,7 +201,7 @@ func renderCommandPalette(width int, items []commandPaletteItem, cursor int) str
 	if remaining > 0 {
 		usage = usage + i18n.F(" · 还有 ") + strconv.Itoa(remaining) + i18n.F(" 个命令")
 	}
-	usageLine := mutedStyle.Render(truncateWidth(usage, contentW))
+	usageLine := mutedStyle.Render(truncate(usage, contentW))
 	body = append(body, usageLine+strings.Repeat(" ", max(0, contentW-lipgloss.Width(usageLine))))
 	body = append(body, hint+strings.Repeat(" ", max(0, contentW-lipgloss.Width(hint))))
 

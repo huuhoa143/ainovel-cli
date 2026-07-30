@@ -181,11 +181,27 @@ export function nhanPhase(phase: string): string {
 /* ── kết luận của Editor trong bản duyệt ──────────────────────────────── */
 
 /**
- * Verdict là chuỗi tự do từ mô hình, không phải enum kín. Chỉ các giá trị hay
- * gặp được dịch; còn lại hiện nguyên văn. `mau` suy từ nghĩa để tô cột kết
- * luận, mặc định là trung tính chứ không đoán "đạt".
+ * Ba giá trị ĐẦU là enum kín, server tự kiểm: `save_review` khai báo
+ * `schema.Enum("审阅结论", "accept", "polish", "rewrite")`
+ * (internal/tools/save_review.go:62) nên mọi bản duyệt thật chỉ mang một trong
+ * ba. Chuẩn phán quyết ở assets/prompts/editor.md:137–139:
+ *
+ *   rewrite = có vấn đề critical → buộc viết lại
+ *   polish  = không critical nhưng có error ảnh hưởng trải nghiệm đọc
+ *   accept  = chỉ có warning hoặc không có vấn đề (ca thường gặp nhất)
+ *
+ * Vì `accept` là ca THƯỜNG GẶP NHẤT, thiếu nó trong bảng này nghĩa là phần lớn
+ * bản duyệt hiện chữ "accept" giữa một bề mặt tiếng Việt — đúng cái mà quy tắc
+ * "enum tiếng Anh → nhãn tiếng Việt ở MỘT chỗ" tồn tại để chặn.
+ *
+ * Các giá trị dưới là bản duyệt cũ hoặc chuỗi tự do; giữ lại để không mất chữ.
+ * Giá trị lạ hiện nguyên văn với tông trung tính, KHÔNG đoán "đạt".
  */
 const KET_LUAN: Record<string, { nhan: string; mau: Tone }> = {
+  accept: { nhan: 'nghiệm thu', mau: 'teal' },
+  polish: { nhan: 'gia công', mau: 'amber' },
+  rewrite: { nhan: 'viết lại', mau: 'red' },
+
   pass: { nhan: 'đạt', mau: 'teal' },
   passed: { nhan: 'đạt', mau: 'teal' },
   approve: { nhan: 'duyệt', mau: 'teal' },
@@ -194,7 +210,6 @@ const KET_LUAN: Record<string, { nhan: string; mau: Tone }> = {
   warn: { nhan: 'cần chú ý', mau: 'amber' },
   minor: { nhan: 'lỗi nhẹ', mau: 'amber' },
   revise: { nhan: 'cần sửa', mau: 'amber' },
-  rewrite: { nhan: 'viết lại', mau: 'amber' },
   fail: { nhan: 'không đạt', mau: 'red' },
   failed: { nhan: 'không đạt', mau: 'red' },
   reject: { nhan: 'trả về', mau: 'red' },
@@ -227,13 +242,31 @@ export function nhanHopDong(
 
 /* ── mức nghiêm trọng của vấn đề Editor nêu ───────────────────────────── */
 
+/**
+ * Ba giá trị đầu là enum kín của server:
+ * `schema.Enum("严重程度", "critical", "error", "warning")`
+ * (internal/tools/save_review.go:42, lọc lại ở dòng 179). Định nghĩa lấy từ
+ * bảng phân cấp trong assets/prompts/editor.md:127–131:
+ *
+ *   critical = lỗi logic nặng, buộc phải sửa (nhân vật đã chết lại xuất hiện)
+ *   error    = mâu thuẫn rõ hoặc vấn đề phẩm chất (hành xử lệch tính cách)
+ *   warning  = khuyết điểm nhẹ (chi tiết chưa chính xác, câu cần gia công)
+ *
+ * `error` và `warning` từng không có trong bảng này, nên hai mức HAY GẶP NHẤT
+ * hiện ra dưới dạng chữ Anh trần giữa bề mặt tiếng Việt.
+ *
+ * Phần dưới là các mức của bản duyệt cũ, giữ để không mất chữ.
+ */
 const MUC: Record<string, { nhan: string; mau: Tone }> = {
+  critical: { nhan: 'nghiêm trọng', mau: 'red' },
+  error: { nhan: 'mâu thuẫn rõ', mau: 'amber' },
+  warning: { nhan: 'khuyết điểm nhẹ', mau: 'muted' },
+
   low: { nhan: 'nhẹ', mau: 'muted' },
   minor: { nhan: 'nhẹ', mau: 'muted' },
   medium: { nhan: 'vừa', mau: 'amber' },
   major: { nhan: 'nặng', mau: 'amber' },
   high: { nhan: 'nặng', mau: 'red' },
-  critical: { nhan: 'nghiêm trọng', mau: 'red' },
 };
 
 export function nhanMuc(severity: string | undefined): { nhan: string; mau: Tone } | undefined {
@@ -244,22 +277,122 @@ export function nhanMuc(severity: string | undefined): { nhan: string; mau: Tone
 /* ── bảy chiều kiểm định của Editor ───────────────────────────────────── */
 
 /**
- * Tên chiều do Editor sinh ra nên là chuỗi tự do; bảng này dịch các chiều
- * chuẩn, còn lại hiện nguyên văn.
+ * Tên chiều là chuỗi tự do trong hợp đồng (`schema.Property("dimension", ...)`
+ * không phải Enum), nhưng bảy chiều NỀN được prompt chốt tên:
+ *
+ *   "Duyệt nền thường bao trọn consistency / character / pacing / continuity /
+ *    foreshadow / hook / aesthetic"  — assets/prompts/editor.md:118
+ *
+ * Bảng cũ ở đây dịch một bộ tên khác (`setting_consistency`,
+ * `character_behavior`, `foreshadowing`, `prose`) nên năm trong bảy chiều thật
+ * rơi xuống nhánh "hiện nguyên văn": bản duyệt hiện ra "consistency",
+ * "character", "continuity", "foreshadow", "aesthetic" bằng chữ Anh.
+ *
+ * Cả hai bộ tên đều giữ: Editor được phép bổ sung chiều cụ thể hơn và bản duyệt
+ * cũ vẫn nằm trong store. Tên ngoài bảng hiện nguyên văn — thà không dịch hơn
+ * là đoán sai một chiều.
  */
 const CHIEU: Record<string, string> = {
+  consistency: 'nhất quán',
+  character: 'nhân vật',
+  pacing: 'nhịp',
+  continuity: 'mạch tự sự',
+  foreshadow: 'phục bút',
+  hook: 'móc chương',
+  aesthetic: 'chất văn',
+
   setting_consistency: 'nhất quán thiết lập',
   character_behavior: 'hành vi nhân vật',
-  pacing: 'nhịp',
   narrative: 'mạch tự sự',
   foreshadowing: 'phục bút',
-  hook: 'móc chương',
   prose: 'chất văn',
   style: 'văn phong',
 };
 
 export function nhanChieu(name: string): string {
   return CHIEU[name.toLowerCase().trim().replace(/[\s-]+/g, '_')] ?? name;
+}
+
+/* ── trạng thái một phục bút ───────────────────────────────────────────── */
+
+/**
+ * Enum kín: `ForeshadowEntry.Status` chỉ nhận planted / advanced / resolved
+ * (internal/domain/review.go:16, và `ForeshadowUpdate.Action` là plant /
+ * advance / resolve).
+ *
+ * Tông màu ở đây KHÔNG theo trực giác "xong là tốt": phục bút đã thu là
+ * chuyện đã đóng nên trung tính, còn phục bút mới gieo là VIỆC TỒN — nó là món
+ * nợ tự sự chưa trả, và đó mới là thứ người vận hành cần thấy.
+ */
+const PHUC_BUT: Record<string, NhanTrangThai> = {
+  planted: { nhan: 'mới gieo', ky: '◇', mau: 'amber' },
+  advanced: { nhan: 'đã đẩy thêm', ky: '◆', mau: 'gold' },
+  resolved: { nhan: 'đã thu', ky: '●', mau: 'teal' },
+};
+
+export function nhanPhucBut(status: string): NhanTrangThai {
+  return (
+    PHUC_BUT[status.toLowerCase().trim()] ?? { nhan: status, ky: '○', mau: 'muted' }
+  );
+}
+
+/* ── hạng nhân vật ─────────────────────────────────────────────────────── */
+
+/**
+ * `Character.Tier`: core / important / secondary / decorative, mặc định
+ * important khi vắng (internal/domain/story.go:26). Chỗ gọi truyền chuỗi rỗng
+ * cho ca vắng và nhận về 'quan trọng' — đúng mặc định của server, không đoán.
+ */
+const HANG: Record<string, string> = {
+  core: 'cốt lõi',
+  important: 'quan trọng',
+  secondary: 'phụ',
+  decorative: 'điểm xuyết',
+};
+
+export function nhanHang(tier: string | undefined): string {
+  return HANG[(tier ?? 'important').toLowerCase().trim()] ?? (tier as string);
+}
+
+/* ── nhóm luật thế giới ────────────────────────────────────────────────── */
+
+/**
+ * `WorldRule.Category`: magic / technology / geography / society / other
+ * (internal/domain/story.go:116). Nhóm lạ hiện nguyên văn.
+ */
+const NHOM_LUAT: Record<string, string> = {
+  magic: 'phép thuật',
+  technology: 'kỹ thuật',
+  geography: 'địa lý',
+  society: 'xã hội',
+  other: 'khác',
+};
+
+export function nhanNhomLuat(category: string): string {
+  return NHOM_LUAT[category.toLowerCase().trim()] ?? category;
+}
+
+/** Thứ tự nhóm luật khi hiện: đi từ luật cứng nhất tới luật mềm nhất. */
+export const THU_TU_NHOM_LUAT = [
+  'magic',
+  'technology',
+  'geography',
+  'society',
+  'other',
+] as const;
+
+/* ── phạm vi một bản duyệt ─────────────────────────────────────────────── */
+
+/** `ReviewEntry.Scope`: chapter / global / arc (internal/domain/review.go:57). */
+const PHAM_VI_DUYET: Record<string, string> = {
+  chapter: 'chương',
+  arc: 'cung',
+  volume: 'tập',
+  global: 'toàn bộ',
+};
+
+export function nhanPhamViDuyet(scope: string): string {
+  return PHAM_VI_DUYET[scope.toLowerCase().trim()] ?? scope;
 }
 
 /* ── chữ dùng nhiều lần trong bố cục ──────────────────────────────────── */
@@ -335,6 +468,52 @@ export const CHU = {
   hopDongThieu: 'Hợp đồng còn thiếu',
   trichDoan: 'Trích đoạn',
 
+  // trục sản xuất — cửa sổ của lane chương
+  cuaSo: (from: number, to: number, tong: number) => `${from}–${to} / ${tong}`,
+  vungDangLam: 'Về vùng đang làm',
+  hienToanBo: (tong: number) => `Hiện toàn bộ ${tong} chương`,
+  ngoaiCuaSo: (n: number) => `${n} chương ngoài cửa sổ`,
+  conTonNgoaiCuaSo: (n: number) => `${n} trong đó còn việc tồn`,
+
+  // bề mặt đọc truyện
+  docBanThao: 'Đọc bản thảo',
+  chuongTruoc: 'Chương trước',
+  chuongSau: 'Chương sau',
+  banDuyetEditor: 'Bản duyệt của Editor',
+  hopDongChuong: 'Hợp đồng chương',
+  chonChuongDeDoc: 'Chọn chương để đọc',
+
+  // dàn ý phân tầng
+  tienDe: 'Tiền đề',
+  chuDe: 'Chủ đề',
+  mucTieuCung: 'Mục tiêu cung',
+  tapChot: 'tập chốt',
+  soChuongDuKien: (n: number) => `${n} chương dự kiến`,
+  soChuongDaMo: (n: number) => `${n} chương đã mở`,
+  danYPhang: 'Dàn ý phẳng',
+
+  // nhân vật
+  hang: 'Hạng',
+  vai: 'Vai',
+  biDanh: 'Bí danh',
+  netTinhCach: 'Nét tính cách',
+  // ĐO ĐƯỢC ở 1440px: "Đường dây nhân vật" cần ~130px và ngắt thành hai dòng
+  // ("Đường dây nhân" / "vật") trong cột nhãn 116px. Nới cột lên 140px cho một
+  // nhãn là cách làm sai ở đây: khối này ĐÃ là hồ sơ của một nhân vật, nên chữ
+  // "nhân vật" trong nhãn là dư. Thuật ngữ đầy đủ nằm ở chú giải.
+  duongDay: 'Đường dây',
+  duongDayDay: 'Đường dây nhân vật',
+  trangThaiCuoiCung: 'Trạng thái ở cuối cung gần nhất',
+  quanHe: 'Quan hệ',
+  dongLuc: 'Động lực',
+  nangLuc: 'Năng lực',
+
+  // luật thế giới & phục bút
+  ranhGioi: 'Ranh giới',
+  gieoOChuong: (n: number) => `gieo ở chương ${n}`,
+  thuOChuong: (n: number) => `thu ở chương ${n}`,
+  luoiQuanHe: 'Lưới quan hệ',
+
   // transport
   congDoan: 'công đoạn',
   congDoanVuaXong: 'vừa xong',
@@ -399,7 +578,21 @@ export const GIAI_THICH = {
   xuongTrongGoc: 'thư mục gốc',
 
   khongTaiDuoc: 'Không đọc được store',
-  chuaChonChuong: 'Chưa chọn chương — bấm một hàng trong bảng chương.',
+
+  /**
+   * Inspector khi chưa chọn chương.
+   *
+   * Trước đây tiêu đề panel hiện "Chương / *chưa đặt tiêu đề*" trong khi thân
+   * panel nói "Chưa chọn chương" — hai câu nói hai chuyện khác nhau, và câu ở
+   * tiêu đề là câu sai: nó khẳng định có một chương đang mở mà chương đó chưa
+   * được đặt tiêu đề. Giờ tiêu đề và thân nói cùng một điều, và câu duy nhất
+   * còn lại là câu HƯỚNG DẪN, không phải câu lặp lại trạng thái.
+   */
+  chuaChonChuongTieuDe: 'Chưa chọn chương',
+  chuaChonChuong:
+    'Bấm một hàng trong bảng chương để xem hợp đồng, bản duyệt và bản thảo của chương đó.',
+  tabChuaChonChuong: 'chưa chọn chương nên chưa có gì để mở',
+
   chuongChuaCoDuLieu: 'Chương này chưa có dữ liệu trong store.',
   chuaCoHopDong: 'Chương này chưa có hợp đồng — Writer lập hợp đồng ở bước plan.',
   chuaCoDuyet: 'Chưa có bản duyệt cho chương này.',
@@ -407,4 +600,51 @@ export const GIAI_THICH = {
   chuaCoPhanQuyet: 'Chưa có phán quyết nào được ghi.',
   chuaCoChuong: 'Chưa có chương nào có dấu vết sản xuất.',
   duLieuLech: 'Dữ liệu store lệch',
+
+  /* ── cửa sổ của lane chương ─────────────────────────────────────────── */
+
+  /**
+   * Vì sao lane chương thu phóng.
+   *
+   * Với 2/300 chương xong, phần "đã nghiệm thu" chiếm 0,67% bề rộng lane — đúng
+   * toán học và vô dụng thị giác. Và người vận hành sẽ ở tình trạng đó trong
+   * phần lớn thời gian đầu của một cuốn 300 chương.
+   */
+  cuaSoGiai:
+    'Lane chương thu phóng vào vùng đang sản xuất để một vạch đủ rộng mà đếm được. Bề rộng cửa sổ suy từ bề rộng lane thật, không phải số cố định. Vị trí trong toàn bộ công trình vẫn đọc ở lane Tập/Cung phía trên và ở dãy số dưới lane.',
+  cuaSoDayDu: 'Đang hiện toàn bộ trục — mỗi vạch mỏng hơn nhưng tỉ lệ là tỉ lệ thật.',
+
+  /* ── các bề mặt hồ sơ tác phẩm ──────────────────────────────────────── */
+
+  /**
+   * `null` KHÁC `[]`. Hai câu dưới đây là hai sự thật khác nhau và không được
+   * gộp: một cái nói engine chưa ghi tệp đó lần nào, một cái nói đã ghi mà rỗng.
+   */
+  chuaDungNen: (muc: string) =>
+    `Store chưa có ${muc}. Engine ghi mục này ở bước dựng nền; tác phẩm chưa qua bước đó thì chưa có tệp nào để đọc.`,
+  dungNenMaRong: (muc: string) => `Đã dựng nền nhưng chưa có ${muc} nào được ghi.`,
+
+  chuaCoTienDe: 'Chưa có tiền đề — premise.md chưa được ghi.',
+  chuaCoDanY: 'Chưa có dàn ý nào trong store.',
+  cungChuaMo:
+    'Cung còn là bộ khung: Architect sẽ mở chi tiết chương khi dây chuyền tới lượt.',
+  tapChuaMo: 'Tập còn là bộ khung — chưa có cung nào được quy hoạch.',
+  danYPhangGiai:
+    'Bản dàn trải của dàn ý phân tầng, do engine ghi lại để tra theo số chương. Cùng một sự thật, khác cách xếp.',
+
+  khongCoAnhChup:
+    'Chưa có ảnh chụp trạng thái nhân vật. Editor ghi ảnh chụp ở cuối mỗi cung, nên tác phẩm chưa qua ranh giới cung nào thì chưa có.',
+
+  /** Bề mặt đọc truyện */
+  docChuaChonChuong:
+    'Chọn một chương trong danh sách bên trái để đọc bản thảo của nó.',
+  chuongTrongStore:
+    'Chương có dấu vết sản xuất nhưng store trả về bản thảo rỗng. Nội dung chương chỉ được đọc từ bản nháp (drafts/); chương đã chốt mà không còn bản nháp thì không có gì để đọc ở đây.',
+  banDuyetChuaCo:
+    'Chương này chưa có bản duyệt. Editor duyệt sau khi bản thảo được chốt.',
+
+  /** Mục rail chưa dựng bề mặt riêng */
+  chuaDungBeMat:
+    'Chưa dựng bề mặt cho khu này. Bấm vào cũng không đi đâu, nên nó không phải liên kết.',
+  namTrongDongSanXuat: 'Khu này nằm trong bề mặt Dòng sản xuất.',
 } as const;

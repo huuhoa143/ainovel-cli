@@ -1,6 +1,7 @@
 'use client';
 
-import { CHU } from '@/lib/nhan';
+import type { Khu } from '@/lib/khu';
+import { CHU, GIAI_THICH } from '@/lib/nhan';
 import type { Profile, Snapshot } from '@/lib/types';
 
 /**
@@ -11,10 +12,28 @@ import type { Profile, Snapshot } from '@/lib/types';
  * số. Rail trống số còn tốt hơn rail có số bịa, vì người vận hành sẽ tin nó và
  * bỏ qua một hàng chờ thật.
  *
- * Các khu chưa dựng được bề mặt riêng thì để dạng liên kết trơ chứ không giả vờ
- * điều hướng: bấm vào một trang chưa có là một lời hứa hụt.
+ * Ba loại mục, và sự khác nhau giữa chúng phải THẤY ĐƯỢC, không chỉ cảm được:
+ *
+ *   1. có bề mặt thật  → nút điều hướng, `aria-current` khi đang mở
+ *   2. nằm trong khu khác → nút điều hướng tới khu đó, chú giải nói rõ
+ *   3. chưa dựng bề mặt → KHÔNG phải nút: chữ mờ + nhãn "chưa dựng"
+ *
+ * Loại 3 là chỗ dễ nói dối nhất. Một mục trông bấm được mà bấm vào không đi đâu
+ * là một lời hứa hụt; tệ hơn là bấm vào rồi ra một bề mặt trống trơn, vì lúc đó
+ * người vận hành kết luận tác phẩm không có dữ liệu chứ không phải studio chưa
+ * dựng bề mặt.
  */
-export function Rail({ snapshot, hoSo }: { snapshot: Snapshot | undefined; hoSo: Profile | undefined }) {
+export function Rail({
+  snapshot,
+  hoSo,
+  khu,
+  onChonKhu,
+}: {
+  snapshot: Snapshot | undefined;
+  hoSo: Profile | undefined;
+  khu: Khu;
+  onChonKhu: (k: Khu) => void;
+}) {
   const marks = snapshot?.timeline.chapters ?? [];
   const rows = snapshot?.chapters ?? [];
 
@@ -31,15 +50,19 @@ export function Rail({ snapshot, hoSo }: { snapshot: Snapshot | undefined; hoSo:
   return (
     <nav className="rail" aria-label="Khu vực sản xuất">
       <div className="grp">{CHU.nhomSanXuat}</div>
-      <a href="#dong-san-xuat" aria-current="page">
-        <span className="g" aria-hidden="true">
-          ▤
-        </span>
-        <span className="nhan">{CHU.dongSanXuat}</span>
-      </a>
-      <Muc
+      <MucDi
+        nhan={CHU.dongSanXuat}
+        ky="▤"
+        di="dong-san-xuat"
+        khu={khu}
+        onChonKhu={onChonKhu}
+      />
+      <MucDi
         nhan={CHU.banThao}
         ky="✎"
+        di="ban-thao"
+        khu={khu}
+        onChonKhu={onChonKhu}
         dem={banThao}
         chuGiai={
           dangSoan > 0
@@ -47,51 +70,124 @@ export function Rail({ snapshot, hoSo }: { snapshot: Snapshot | undefined; hoSo:
             : undefined
         }
       />
-      <Muc nhan={CHU.kiemDinh} ky="◆" dem={cuaKiemDinh} canhBao={cuaKiemDinh > 0} />
-      <Muc nhan={CHU.hangChoVietLai} ky="■" dem={vietLai} canhBao={vietLai > 0} />
+      <MucChuaDung nhan={CHU.kiemDinh} ky="◆" dem={cuaKiemDinh} canhBao={cuaKiemDinh > 0} />
+      <MucChuaDung
+        nhan={CHU.hangChoVietLai}
+        ky="■"
+        dem={vietLai}
+        canhBao={vietLai > 0}
+      />
 
       <div className="grp">{CHU.nhomHoSo}</div>
-      <Muc nhan={CHU.danYPhanTang} ky="☰" dem={soKhoiDanY(snapshot)} />
-      <Muc nhan={CHU.nhanVat} ky="●" dem={hoSo?.characters ?? undefined} />
-      <Muc nhan={CHU.luatTheGioi} ky="⬢" dem={hoSo?.rules ?? undefined} />
-      <Muc
+      <MucDi
+        nhan={CHU.danYPhanTang}
+        ky="☰"
+        di="dan-y"
+        khu={khu}
+        onChonKhu={onChonKhu}
+        dem={soKhoiDanY(snapshot)}
+      />
+      <MucDi
+        nhan={CHU.nhanVat}
+        ky="●"
+        di="nhan-vat"
+        khu={khu}
+        onChonKhu={onChonKhu}
+        dem={hoSo?.characters ?? undefined}
+      />
+      <MucDi
+        nhan={CHU.luatTheGioi}
+        ky="⬢"
+        di="luat-the-gioi"
+        khu={khu}
+        onChonKhu={onChonKhu}
+        dem={hoSo?.rules ?? undefined}
+      />
+      <MucDi
         nhan={CHU.phucBut}
         ky="◇"
+        di="phuc-but"
+        khu={khu}
+        onChonKhu={onChonKhu}
         dem={hoSo?.foreshadow ?? undefined}
         canhBao={(hoSo?.foreshadow ?? 0) > 0}
       />
       {/* Văn phong không có số đếm: store giữ nó là một bản mô tả, không phải
           danh sách đếm được. Không có nguồn thì không hiện ô số. */}
-      <Muc nhan={CHU.vanPhong} ky="✒" />
+      <MucChuaDung nhan={CHU.vanPhong} ky="✒" />
 
       <div className="grp">{CHU.nhomXuong}</div>
-      <Muc nhan={CHU.nhatKyPhanQuyet} ky="⌗" dem={phanQuyet} />
-      <Muc nhan={CHU.chiPhi} ky="$" />
-      <Muc nhan={CHU.toSanXuat} ky="☗" />
-      <Muc nhan={CHU.caiDat} ky="⚙" />
+      {/* Nhật ký phán quyết CÓ bề mặt — nó là một mục trong Dòng sản xuất. Nên
+          đây là điều hướng thật, không phải mục chưa dựng. */}
+      <MucDi
+        nhan={CHU.nhatKyPhanQuyet}
+        ky="⌗"
+        di="dong-san-xuat"
+        khu={khu}
+        onChonKhu={onChonKhu}
+        dem={phanQuyet}
+        chuGiai={GIAI_THICH.namTrongDongSanXuat}
+        neo="nhat-ky-phan-quyet"
+        phu
+      />
+      <MucChuaDung nhan={CHU.chiPhi} ky="$" />
+      <MucChuaDung nhan={CHU.toSanXuat} ky="☗" />
+      <MucChuaDung nhan={CHU.caiDat} ky="⚙" />
     </nav>
   );
 }
 
 /**
- * Một khu vực. `dem === undefined` thì không có ô số — khác hẳn với `dem === 0`,
- * nghĩa là đã đếm và không còn việc tồn.
+ * Mục có bề mặt thật.
+ *
+ * `neo` là id của một section trong khu đích: mục đó nằm bên trong một bề mặt
+ * lớn hơn nên sau khi đổi khu còn phải cuộn tới đúng chỗ, nếu không người dùng
+ * bấm "Nhật ký phán quyết" và nhận về đầu trang Dòng sản xuất.
  */
-function Muc({
+function MucDi({
   nhan,
   ky,
+  di,
+  khu,
+  onChonKhu,
   dem,
   chuGiai,
   canhBao,
+  neo,
+  phu,
 }: {
   nhan: string;
   ky: string;
+  di: Khu;
+  khu: Khu;
+  onChonKhu: (k: Khu) => void;
   dem?: number;
   chuGiai?: string;
   canhBao?: boolean;
+  neo?: string;
+  phu?: boolean;
 }) {
+  // `phu` = mục trỏ vào một phần của khu khác, nên nó KHÔNG sáng lên như mục
+  // chính của khu đó; nếu không thì hai mục cùng sáng và không biết đang ở đâu.
+  const dangMo = !phu && khu === di;
+
   return (
-    <div className="muc" title={chuGiai}>
+    <button
+      type="button"
+      className="mucdi"
+      aria-current={dangMo ? 'page' : undefined}
+      title={chuGiai}
+      onClick={() => {
+        onChonKhu(di);
+        if (neo) {
+          // Cuộn sau khi khu đích đã render. requestAnimationFrame đủ vì React
+          // đã dựng DOM xong ở nhịp vẽ kế tiếp.
+          requestAnimationFrame(() => {
+            document.getElementById(neo)?.scrollIntoView({ block: 'start' });
+          });
+        }
+      }}
+    >
       <span className="g" aria-hidden="true">
         {ky}
       </span>
@@ -99,6 +195,38 @@ function Muc({
       {dem !== undefined ? (
         <span className={`n${canhBao ? ' warn' : ''}`}>{dem}</span>
       ) : null}
+    </button>
+  );
+}
+
+/**
+ * Mục chưa có bề mặt riêng.
+ *
+ * Vẫn hiện số đếm khi có nguồn — con số là tin vận hành và nó đúng dù bề mặt
+ * chưa dựng. Nhưng mục này không phải nút và mang nhãn "chưa dựng", để không ai
+ * bấm rồi chờ.
+ */
+function MucChuaDung({
+  nhan,
+  ky,
+  dem,
+  canhBao,
+}: {
+  nhan: string;
+  ky: string;
+  dem?: number;
+  canhBao?: boolean;
+}) {
+  return (
+    <div className="muc chuadung" title={GIAI_THICH.chuaDungBeMat} aria-disabled="true">
+      <span className="g" aria-hidden="true">
+        {ky}
+      </span>
+      <span className="nhan">{nhan}</span>
+      {dem !== undefined ? (
+        <span className={`n${canhBao ? ' warn' : ''}`}>{dem}</span>
+      ) : null}
+      <span className="tag">chưa dựng</span>
     </div>
   );
 }

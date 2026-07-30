@@ -275,7 +275,7 @@ func (s *modelConfigState) hubFields() []hubField {
 		base = i18n.F("默认地址")
 	}
 	fields = append(fields, hubField{"baseurl", "Base URL", base})
-	fields = append(fields, hubField{"models", "模型", fmt.Sprintf(i18n.F("%d 个"), len(s.models))})
+	fields = append(fields, hubField{"models", i18n.F("模型"), fmt.Sprintf(i18n.F("%d 个"), len(s.models))})
 	testModel := s.testModelName()
 	if testModel == "" {
 		testModel = i18n.F("请先添加模型")
@@ -1020,8 +1020,33 @@ func renderConfigInputCell(input *textinput.Model, width int) string {
 
 // renderProviderHubFields 在 Provider 详情原位置渲染 Key/Base URL 输入框，
 // textinput 自带光标移动和横向视口，长 URL 不会再截掉正在编辑的尾部。
+// providerHubLabelColumn chọn cột nhãn theo nhãn dài nhất ĐÃ DỊCH, giữ sàn 10 để bản
+// tiếng Trung không co lại. Bản cũ dùng pad = max(1, 10-w): nhãn ngắn để giá trị ở cột
+// 10 còn nhãn "Test kết nối" (12 cột) đẩy giá trị sang cột 13 → lệch 3 cột, mắt thấy ngay.
+func providerHubLabelColumn(labels []string) int {
+	w := 10
+	for _, label := range labels {
+		w = max(w, lipgloss.Width(label))
+	}
+	return w
+}
+
+// padProviderHubLabel đệm nhãn cho đủ cột bằng tay. KHÔNG dùng Style.Width vì Width của
+// lipgloss xuống dòng khi nhãn dài hơn cột, và dòng bị xé sẽ làm vỡ khung modal.
+func padProviderHubLabel(label string, column int) string {
+	if pad := column - lipgloss.Width(label); pad > 0 {
+		return label + strings.Repeat(" ", pad)
+	}
+	return label
+}
+
 func renderProviderHubFields(state *modelConfigState, contentW int) []string {
 	fields := state.hubFields()
+	labels := make([]string, 0, len(fields))
+	for _, f := range fields {
+		labels = append(labels, f.label)
+	}
+	labelColumn := providerHubLabelColumn(labels)
 	lines := make([]string, 0, len(fields))
 	dirty := state.isDirty()
 	for i, f := range fields {
@@ -1039,10 +1064,13 @@ func renderProviderHubFields(state *modelConfigState, contentW int) []string {
 			marker = lipgloss.NewStyle().Foreground(selectedColor).Bold(true).Render("› ")
 			labelStyle = labelStyle.Foreground(selectedColor).Bold(true)
 		}
-		pad := max(1, 10-lipgloss.Width(f.label))
+		// Đệm tới cột chung rồi luôn thêm một khoảng trắng phân cách, để giá trị của MỌI
+		// dòng thẳng một cột kể cả khi nhãn dài hơn cột.
+		paddedLabel := padProviderHubLabel(f.label, labelColumn)
+		gap := " "
 		if state.editingField == f.id {
-			state.input.Width = max(8, contentW-2-lipgloss.Width(f.label)-pad)
-			line := marker + labelStyle.Render(f.label) + strings.Repeat(" ", pad) + state.input.View()
+			state.input.Width = max(8, contentW-2-lipgloss.Width(paddedLabel)-len(gap))
+			line := marker + labelStyle.Render(paddedLabel) + gap + state.input.View()
 			lines = append(lines, truncateStyledWidth(line, contentW))
 			continue
 		}
@@ -1050,7 +1078,7 @@ func renderProviderHubFields(state *modelConfigState, contentW int) []string {
 		if f.value == "" {
 			line = marker + labelStyle.Render(f.label)
 		} else {
-			line = marker + labelStyle.Render(f.label) + strings.Repeat(" ", pad) +
+			line = marker + labelStyle.Render(paddedLabel) + gap +
 				lipgloss.NewStyle().Foreground(colorDim).Render(f.value)
 		}
 		lines = append(lines, truncateStyledWidth(line, contentW))

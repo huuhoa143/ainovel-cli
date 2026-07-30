@@ -20,6 +20,7 @@ import {
   laySnapshot,
   layWorkshop,
 } from './api';
+import { KHU_MAC_DINH, laKhu, type Khu } from './khu';
 import type { Profile, Snapshot, StreamEvent, Workshop } from './types';
 
 /** Số sự kiện giữ lại trong dòng. Nhật ký là cửa sổ, không phải log đầy đủ. */
@@ -98,6 +99,7 @@ export interface Studio {
   snapshot: Snapshot | undefined;
   hoSo: Profile | undefined;
   chuongChon: number | undefined;
+  khu: Khu;
   song: CongDoanSong | undefined;
   suKien: StreamEvent[];
   ketNoi: TinhTrangKetNoi;
@@ -105,6 +107,7 @@ export interface Studio {
   loi: string | undefined;
   chonTacPham: (id: string) => void;
   chonChuong: (n: number) => void;
+  chonKhu: (k: Khu) => void;
   taiLai: () => void;
 }
 
@@ -114,11 +117,19 @@ function tacPhamTuUrl(): string | undefined {
   return new URLSearchParams(window.location.search).get('tp') ?? undefined;
 }
 
-function ghiUrl(tp: string, chuong: number | undefined) {
+/**
+ * Ghi cả ba mảnh vị trí vào URL trong MỘT lần.
+ *
+ * `replaceState` với một URLSearchParams mới thay thế toàn bộ query string, nên
+ * mọi chỗ ghi phải đi qua đây. Có hai chỗ ghi thì chỗ nào chạy sau sẽ xóa tham
+ * số của chỗ kia — chọn chương xong là mất khu đang xem.
+ */
+function ghiUrl(tp: string, chuong: number | undefined, khu: Khu) {
   if (typeof window === 'undefined') return;
   const q = new URLSearchParams();
   q.set('tp', tp);
   if (chuong) q.set('ch', String(chuong));
+  if (khu !== KHU_MAC_DINH) q.set('khu', khu);
   window.history.replaceState(null, '', `${window.location.pathname}?${q}`);
 }
 
@@ -129,12 +140,22 @@ function chuongTuUrl(): number | undefined {
   return Number.isFinite(n) && n > 0 ? n : undefined;
 }
 
+function khuTuUrl(): Khu {
+  if (typeof window === 'undefined') return KHU_MAC_DINH;
+  const v = new URLSearchParams(window.location.search).get('khu');
+  return laKhu(v) ? v : KHU_MAC_DINH;
+}
+
 export function useStudio(): Studio {
   const [workshop, setWorkshop] = useState<Workshop>();
   const [tacPham, setTacPham] = useState<string>();
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [hoSo, setHoSo] = useState<Profile>();
   const [chuongChon, setChuongChon] = useState<number>();
+  // Khu đọc từ URL ngay lúc dựng state: `next export` không render trước gì nên
+  // không có nguy cơ lệch giữa máy chủ và máy khách, và đọc trong useEffect sẽ
+  // làm bề mặt nháy qua Dòng sản xuất một nhịp trước khi về đúng khu.
+  const [khu, setKhu] = useState<Khu>(khuTuUrl);
   const [song, setSong] = useState<CongDoanSong>();
   const [suKien, setSuKien] = useState<StreamEvent[]>([]);
   const [ketNoi, setKetNoi] = useState<TinhTrangKetNoi>('dang-mo');
@@ -147,9 +168,11 @@ export function useStudio(): Studio {
   const henRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const tacPhamRef = useRef<string>(undefined);
   const chuongRef = useRef<number | undefined>(undefined);
+  const khuRef = useRef<Khu>(KHU_MAC_DINH);
 
   tacPhamRef.current = tacPham;
   chuongRef.current = chuongChon;
+  khuRef.current = khu;
 
   /* ── 1. danh sách tác phẩm ─────────────────────────────────────────── */
   useEffect(() => {
@@ -289,7 +312,7 @@ export function useStudio(): Studio {
     setSnapshot(undefined);
     setHoSo(undefined);
     setTacPham(id);
-    ghiUrl(id, undefined);
+    ghiUrl(id, undefined, khuRef.current);
   }, []);
 
   const chonChuong = useCallback(
@@ -297,13 +320,19 @@ export function useStudio(): Studio {
       setChuongChon(n);
       const id = tacPhamRef.current;
       if (!id) return;
-      ghiUrl(id, n);
+      ghiUrl(id, n, khuRef.current);
       void napSnapshot(id, n).catch((e: unknown) => {
         setLoi(e instanceof Error ? e.message : String(e));
       });
     },
     [napSnapshot],
   );
+
+  const chonKhu = useCallback((k: Khu) => {
+    setKhu(k);
+    const id = tacPhamRef.current;
+    if (id) ghiUrl(id, chuongRef.current, k);
+  }, []);
 
   const taiLai = useCallback(() => setLanTai((n) => n + 1), []);
 
@@ -314,6 +343,7 @@ export function useStudio(): Studio {
       snapshot,
       hoSo,
       chuongChon: chuongChon ?? snapshot?.selected?.chapter,
+      khu,
       song,
       suKien,
       ketNoi,
@@ -321,6 +351,7 @@ export function useStudio(): Studio {
       loi,
       chonTacPham,
       chonChuong,
+      chonKhu,
       taiLai,
     }),
     [
@@ -329,6 +360,7 @@ export function useStudio(): Studio {
       snapshot,
       hoSo,
       chuongChon,
+      khu,
       song,
       suKien,
       ketNoi,
@@ -336,6 +368,7 @@ export function useStudio(): Studio {
       loi,
       chonTacPham,
       chonChuong,
+      chonKhu,
       taiLai,
     ],
   );

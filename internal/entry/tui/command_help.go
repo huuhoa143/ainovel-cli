@@ -11,16 +11,21 @@ import (
 
 type helpState struct {
 	viewport viewport.Model
+	// wrappedFor là bề rộng mà nội dung hiện tại đã được ngắt dòng theo. Phải nhớ để
+	// ngắt LẠI khi cửa sổ đổi cỡ: bản cũ chỉ đổi viewport.Width nên nội dung vẫn giữ
+	// cách ngắt của bề rộng CŨ, rồi khung modal cắt cứng từng dòng theo bề rộng MỚI —
+	// đoạn giữa mỗi dòng biến mất hẳn. Ở 100 cột, mô tả /import mất nguyên cụm
+	// "xong; --guide dù": không phải cắt đuôi mà là mất chữ giữa câu.
+	wrappedFor int
 }
 
 func newHelpState(width, height int) *helpState {
 	boxW, boxH := reportModalSize(width, height)
 	contentW := paddedModalContentWidth(boxW)
-	text := renderHelpText(contentW)
 
 	vp := viewport.New(contentW, boxH-4)
-	vp.SetContent(text)
-	return &helpState{viewport: vp}
+	vp.SetContent(renderHelpText(contentW))
+	return &helpState{viewport: vp, wrappedFor: contentW}
 }
 
 func renderHelpText(width int) string {
@@ -43,7 +48,9 @@ func renderHelpText(width int) string {
 			b.WriteString(usageStyle.Render("  alias: /" + strings.Join(spec.Aliases, " /")))
 		}
 		b.WriteString("\n")
-		b.WriteString(usageStyle.Render("Usage: " + spec.Usage))
+		// Dòng Usage cũng phải ngắt: /import có usage dài hơn khung ở mọi bề rộng, và
+		// khung cắt cứng nên phần "[--guide=<...>]" mất luôn cả dấu đóng.
+		b.WriteString(usageStyle.Render(wrapText("Usage: "+spec.Usage, width)))
 		b.WriteString("\n")
 		b.WriteString(descStyle.Render(wrapText(spec.Description, width)))
 		b.WriteString("\n")
@@ -78,6 +85,12 @@ func renderHelpModal(width, height int, state *helpState) string {
 	}
 	if state.viewport.Height != boxH-4 {
 		state.viewport.Height = boxH - 4
+	}
+	// Ngắt dòng LẠI theo bề rộng mới, nếu không nội dung ngắt cho bề rộng cũ sẽ bị
+	// khung cắt cứng và mất chữ ở giữa câu.
+	if state.wrappedFor != contentW {
+		state.viewport.SetContent(renderHelpText(contentW))
+		state.wrappedFor = contentW
 	}
 
 	modal := renderPaddedModalFrame(

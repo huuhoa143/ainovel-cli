@@ -1,14 +1,22 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
+
 import { CHU, GIAI_THICH, TRANG_THAI_KHOI, TRANG_THAI_VACH } from '@/lib/nhan';
 import {
+  bienSanXuat,
   chuongTaiDiem,
+  cuaSoTruc,
   doTruc,
   hoVach,
-  mocThuoc,
+  mocThuocDai,
   nhanPhamVi,
   nhomVach,
   phamViGon,
+  vachTrongCuaSo,
+  vieccTonNgoaiCuaSo,
+  viTriMoc,
+  type CuaSoTruc,
 } from '@/lib/truc';
 import type { Capabilities, ChapterMark, LaneBlock, MarkState, Timeline } from '@/lib/types';
 
@@ -59,14 +67,7 @@ export function Truc({
         ) : null}
 
         <div className="lane-lbl">{CHU.chuong}</div>
-        <div>
-          <LaneChuong marks={marks} chuongChon={chuongChon} onChonChuong={onChonChuong} />
-          <div className="ruler" aria-hidden="true">
-            {mocThuoc(tong).map((m) => (
-              <span key={m}>{m}</span>
-            ))}
-          </div>
-        </div>
+        <LaneChuong marks={marks} chuongChon={chuongChon} onChonChuong={onChonChuong} />
       </div>
 
       <ChuGiai marks={marks} />
@@ -149,11 +150,18 @@ function Lane({
 }
 
 /**
- * Lane chương: một vạch một chương.
+ * Lane chương: một vạch một chương, trong một CỬA SỔ quanh biên sản xuất.
  *
- * `role="img"` với `aria-label` tổng hợp: 300 phần tử rỗng là tiếng ồn cho
- * trình đọc màn hình, còn một câu tóm tắt thì dùng được. Bảng chương ngay dưới
- * mới là chỗ điều hướng bằng bàn phím.
+ * Vì sao có cửa sổ: xem `cuaSoTruc` trong lib/truc.ts. Tóm lại là ở 2/300 chương
+ * xong, phần đã nghiệm thu chiếm 0,67% bề rộng lane — đúng tỉ lệ và không dùng
+ * được, mà đó lại là tình trạng của phần lớn thời gian đầu một cuốn 300 chương.
+ *
+ * Cửa sổ đo từ bề rộng lane THẬT (ResizeObserver) chứ không cắm số chương cố
+ * định, nên nó tự đúng ở 1440px và ở 400px.
+ *
+ * `role="img"` với `aria-label` tổng hợp: 300 phần tử rỗng là tiếng ồn cho trình
+ * đọc màn hình, còn một câu tóm tắt thì dùng được. Bảng chương ngay dưới mới là
+ * chỗ điều hướng bằng bàn phím.
  */
 function LaneChuong({
   marks,
@@ -164,62 +172,192 @@ function LaneChuong({
   chuongChon: number | undefined;
   onChonChuong: (n: number) => void;
 }) {
-  const ho = hoVach(marks.length);
-  const dem = demTrangThai(marks);
-  const nhan = tomTatTruc(marks.length, dem);
+  const oLane = useRef<HTMLDivElement>(null);
+  const [beRong, setBeRong] = useState(0);
+  /** true = người vận hành đã tự chọn xem toàn trục, đừng thu phóng lại. */
+  const [xemToanBo, setXemToanBo] = useState(false);
 
-  // Lane thưa: vẽ từng chương, có khoảng hở, đếm được bằng mắt.
-  if (ho > 0) {
+  // Đo bề rộng lane thật. `beRong = 0` cho tới khi đo được, và lúc đó
+  // `cuaSoTruc` trả về toàn trục — nội dung hiện ngay, không chờ phép đo.
+  useEffect(() => {
+    const el = oLane.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver((mucs) => {
+      const w = mucs[0]?.contentRect.width ?? 0;
+      // Làm tròn để một dao động dưới điểm ảnh không kéo cả trục vẽ lại.
+      setBeRong(Math.round(w));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const tong = marks.length;
+  const bien = bienSanXuat(marks);
+  const cs = xemToanBo
+    ? { from: 1, to: tong, thuPhong: false }
+    : cuaSoTruc(tong, bien, beRong);
+  const trong = cs.thuPhong ? vachTrongCuaSo(marks, cs) : marks;
+  const an = marks.length - trong.length;
+  const ton = vieccTonNgoaiCuaSo(marks, cs);
+
+  const ho = hoVach(trong.length);
+  const nhan = tomTatTruc(trong.length, demTrangThai(trong), cs, tong);
+
+  return (
+    <div ref={oLane}>
+      {/* Lane thưa: vẽ từng chương, có khoảng hở, đếm được bằng mắt.
+          Lane dày: gộp dải để một dãy chương cùng trạng thái là một khối liền,
+          không phải vạch sọc do làm mờ dưới điểm ảnh. */}
+      {ho > 0 ? (
+        <div className="chlane" role="img" aria-label={nhan} style={{ gap: `${ho}px` }}>
+          {trong.map((m) => (
+            <i
+              key={m.chapter}
+              className={m.state}
+              onClick={() => onChonChuong(m.chapter)}
+              title={`chương ${m.chapter} · ${TRANG_THAI_VACH[m.state].nhan}`}
+              style={{
+                borderRadius: 1.5,
+                outline: m.chapter === chuongChon ? '1px solid var(--ink)' : undefined,
+                outlineOffset: 1,
+              }}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="chlane" role="img" aria-label={nhan}>
+          {nhomVach(trong).map((d) => (
+            <i
+              key={d.from}
+              className={d.state}
+              style={{
+                flexGrow: d.len,
+                flexShrink: 1,
+                flexBasis: 0,
+                // Chương đang chọn nằm trong dải này: đánh dấu bằng vạch sáng để
+                // thấy được vị trí trên một trục 300 chương.
+                boxShadow:
+                  chuongChon !== undefined && chuongChon >= d.from && chuongChon <= d.to
+                    ? 'inset 0 0 0 1px var(--ink)'
+                    : undefined,
+              }}
+              title={
+                d.len === 1
+                  ? `chương ${d.from} · ${TRANG_THAI_VACH[d.state].nhan}`
+                  : `chương ${d.from}–${d.to} (${d.len}) · ${TRANG_THAI_VACH[d.state].nhan}`
+              }
+              onClick={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                onChonChuong(chuongTaiDiem(d, (e.clientX - r.left) / r.width));
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      <Thuoc cs={cs} />
+
+      <CuaSoNoi
+        cs={cs}
+        tong={tong}
+        an={an}
+        ton={ton}
+        xemToanBo={xemToanBo}
+        onDoi={() => setXemToanBo((v) => !v)}
+      />
+    </div>
+  );
+}
+
+/**
+ * Thước số chương.
+ *
+ * Mốc đặt theo TỈ LỆ vị trí thật, không phải chia đều ô flex. Bản trước dùng
+ * `flex: 1 1 0` cho mỗi mốc, nên mốc thứ hai của bốn mốc nằm ở 37,5% bề rộng
+ * trong khi chương của nó nằm ở 33,1% — một cái nhãn chỉ sai chỗ, tệ hơn không
+ * có nhãn. Sai số đó là 40px trên một lane 810px.
+ *
+ * Mốc đầu và mốc cuối dùng LỚP ĐẶT TAY (`dau`/`cuoi`) chứ không dùng
+ * `:first-child`/`:last-child`: cùng lý do drop cap không được bám vào bộ chọn
+ * vị trí — bộ chọn vị trí khớp theo từng phần tử cha và sẽ trúng chỗ không ngờ
+ * khi cấu trúc đổi.
+ */
+function Thuoc({ cs }: { cs: CuaSoTruc }) {
+  const mocs = mocThuocDai(cs.from, cs.to);
+  if (mocs.length === 0) return null;
+  return (
+    <div className="ruler" aria-hidden="true">
+      {mocs.map((m, i) => (
+        <span
+          key={m}
+          className={i === 0 ? 'dau' : i === mocs.length - 1 ? 'cuoi' : undefined}
+          style={{ left: `${viTriMoc(m, cs.from, cs.to) * 100}%` }}
+        >
+          {m}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Dòng nói ra cửa sổ đang che gì.
+ *
+ * Bắt buộc phải có: thu phóng là một phép lọc, và phép lọc im lặng ẩn một chương
+ * chờ viết lại là đúng cái lỗi mà Rail và bộ chọn mức xem đã phải tránh. Khi
+ * phần bị che còn việc tồn, dòng này đổi sang tông cần-chú-ý kèm ký hiệu — lúc
+ * đó nó không còn là ghi chú mà là tin vận hành.
+ */
+function CuaSoNoi({
+  cs,
+  tong,
+  an,
+  ton,
+  xemToanBo,
+  onDoi,
+}: {
+  cs: CuaSoTruc;
+  tong: number;
+  an: number;
+  ton: number;
+  xemToanBo: boolean;
+  onDoi: () => void;
+}) {
+  // Không thu phóng và cũng không phải do người dùng chọn: cửa sổ đúng bằng cả
+  // trục, không có gì để nói.
+  if (!cs.thuPhong && !xemToanBo) return null;
+
+  if (!cs.thuPhong) {
     return (
-      <div className="chlane" role="img" aria-label={nhan} style={{ gap: `${ho}px` }}>
-        {marks.map((m) => (
-          <i
-            key={m.chapter}
-            className={m.state}
-            onClick={() => onChonChuong(m.chapter)}
-            title={`chương ${m.chapter} · ${TRANG_THAI_VACH[m.state].nhan}`}
-            style={{
-              borderRadius: 1.5,
-              outline: m.chapter === chuongChon ? '1px solid var(--ink)' : undefined,
-              outlineOffset: 1,
-            }}
-          />
-        ))}
-      </div>
+      <p className="phamvihint">
+        {GIAI_THICH.cuaSoDayDu}{' '}
+        <button type="button" onClick={onDoi}>
+          {CHU.vungDangLam}
+        </button>
+      </p>
     );
   }
 
-  // Lane dày: gộp dải để một dãy chương cùng trạng thái là một khối liền, không
-  // phải vạch sọc do làm mờ dưới điểm ảnh.
   return (
-    <div className="chlane" role="img" aria-label={nhan}>
-      {nhomVach(marks).map((d) => (
-        <i
-          key={d.from}
-          className={d.state}
-          style={{
-            flexGrow: d.len,
-            flexShrink: 1,
-            flexBasis: 0,
-            // Chương đang chọn nằm trong dải này: đánh dấu bằng vạch sáng để
-            // thấy được vị trí trên một trục 300 chương.
-            boxShadow:
-              chuongChon !== undefined && chuongChon >= d.from && chuongChon <= d.to
-                ? 'inset 0 0 0 1px var(--ink)'
-                : undefined,
-          }}
-          title={
-            d.len === 1
-              ? `chương ${d.from} · ${TRANG_THAI_VACH[d.state].nhan}`
-              : `chương ${d.from}–${d.to} (${d.len}) · ${TRANG_THAI_VACH[d.state].nhan}`
-          }
-          onClick={(e) => {
-            const r = e.currentTarget.getBoundingClientRect();
-            onChonChuong(chuongTaiDiem(d, (e.clientX - r.left) / r.width));
-          }}
-        />
-      ))}
-    </div>
+    <p className={`phamvihint${ton > 0 ? ' con-ton' : ''}`} title={GIAI_THICH.cuaSoGiai}>
+      {ton > 0 ? (
+        <span className="ky" aria-hidden="true">
+          ■
+        </span>
+      ) : null}
+      <span>
+        {CHU.chuong} {CHU.cuaSo(cs.from, cs.to, tong)}
+      </span>
+      {an > 0 ? (
+        <span>
+          · {CHU.ngoaiCuaSo(an)}
+          {ton > 0 ? ` — ${CHU.conTonNgoaiCuaSo(ton)}` : ''}
+        </span>
+      ) : null}
+      <button type="button" onClick={onDoi}>
+        {CHU.hienToanBo(tong)}
+      </button>
+    </p>
   );
 }
 
@@ -235,8 +373,21 @@ function demTrangThai(marks: Pick<ChapterMark, 'state'>[]): Record<MarkState, nu
   return d;
 }
 
-function tomTatTruc(tong: number, dem: Record<MarkState, number>): string {
-  const phan: string[] = [`${tong} chương`];
+/**
+ * Câu tóm tắt cho trình đọc màn hình.
+ *
+ * Khi thu phóng, câu này phải nói rõ đang đọc ĐOẠN NÀO của cả trục: người dùng
+ * trình đọc màn hình không thấy được thước số bên dưới.
+ */
+function tomTatTruc(
+  hien: number,
+  dem: Record<MarkState, number>,
+  cs: CuaSoTruc,
+  tong: number,
+): string {
+  const phan: string[] = cs.thuPhong
+    ? [`chương ${cs.from}–${cs.to} trong ${tong} chương`]
+    : [`${tong} chương`];
   for (const [ma, n] of Object.entries(dem) as [MarkState, number][]) {
     if (n > 0) phan.push(`${n} ${TRANG_THAI_VACH[ma].nhan}`);
   }

@@ -206,6 +206,118 @@ export interface Profile {
   foreshadow: number | null;
 }
 
+/* ── hồ sơ tác phẩm: dàn ý / nhân vật / luật thế giới ───────────────────── */
+
+/**
+ * Ba endpoint hồ sơ (`/outline`, `/cast`, `/world`) trả `null` cho từng mảng
+ * khi tệp tương ứng không tồn tại (store.ReadJSON + os.IsNotExist → nil, nil).
+ *
+ * `null` KHÁC `[]` ở đây và cả hai đều phải hiện khác nhau:
+ *   null = chưa dựng nền tác phẩm, engine chưa ghi tệp đó lần nào
+ *   []   = đã dựng nền mà mục này rỗng — một sự thật khác hẳn
+ * Gộp hai ca lại thành "chưa có gì" là nói dối một trong hai.
+ */
+
+/** Một chương trong dàn ý — cũng là hợp đồng chương khi đã mở. */
+export interface OutlineEntry {
+  chapter: number;
+  title: string;
+  core_event: string;
+  hook: string;
+  /** null khi Architect chưa chia cảnh cho chương này. */
+  scenes: string[] | null;
+}
+
+/** Cung trong một tập. `chapters === null` = còn là bộ khung, chưa mở. */
+export interface ArcOutline {
+  index: number;
+  title: string;
+  goal: string;
+  /** Số chương dự kiến của cung còn là bộ khung; mở rồi thì server bỏ khóa. */
+  estimated_chapters?: number;
+  chapters: OutlineEntry[] | null;
+}
+
+/** Tập. `arcs === null` = tập mới là bộ khung, Architect chưa mở cung nào. */
+export interface VolumeOutline {
+  index: number;
+  title: string;
+  /** Xung đột/chủ đề cốt lõi của tập. */
+  theme: string;
+  /** true = tập chốt: cả bộ thu về trong tập này. */
+  final?: boolean;
+  arcs: ArcOutline[] | null;
+}
+
+/** GET /api/books/{book}/outline */
+export interface OutlineDoc {
+  /** Tiền đề, dạng markdown thô. Rỗng khi chưa có premise.md. */
+  premise: string;
+  volumes: VolumeOutline[] | null;
+  /** Dàn ý phẳng — với truyện phân tầng thì đây là bản dàn trải của volumes. */
+  flat: OutlineEntry[] | null;
+}
+
+export interface Character {
+  name: string;
+  aliases?: string[];
+  role: string;
+  description: string;
+  arc: string;
+  traits: string[] | null;
+  /** core / important / secondary / decorative. Vắng = important. */
+  tier?: string;
+}
+
+/** Trạng thái một nhân vật ở cuối cung gần nhất. */
+export interface CharacterSnapshot {
+  volume: number;
+  arc: number;
+  name: string;
+  status: string;
+  power?: string;
+  motivation: string;
+  relations?: string;
+}
+
+/** GET /api/books/{book}/cast */
+export interface CastDoc {
+  characters: Character[] | null;
+  snapshots: CharacterSnapshot[] | null;
+}
+
+export interface WorldRule {
+  /** magic / technology / geography / society / other */
+  category: string;
+  rule: string;
+  /** Ranh giới không được vi phạm. */
+  boundary: string;
+}
+
+export interface ForeshadowEntry {
+  id: string;
+  description: string;
+  planted_at: number;
+  /** planted / advanced / resolved */
+  status: string;
+  /** Chỉ có khi status = resolved. */
+  resolved_at?: number;
+}
+
+export interface RelationshipEntry {
+  character_a: string;
+  character_b: string;
+  relation: string;
+  chapter: number;
+}
+
+/** GET /api/books/{book}/world */
+export interface WorldDoc {
+  rules: WorldRule[] | null;
+  foreshadow: ForeshadowEntry[] | null;
+  relations: RelationshipEntry[] | null;
+}
+
 /** Một sự kiện SSE — khung ở internal/serve/events.go:sseEvent. */
 export interface StreamEvent {
   seq: number;

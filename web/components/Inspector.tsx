@@ -13,6 +13,7 @@ import {
   nhanHopDong,
   nhanKetLuan,
   nhanMuc,
+  nhanPhamViDuyet,
 } from '@/lib/nhan';
 import type { ChapterDetail, Contract, Review, Selection, Snapshot } from '@/lib/types';
 
@@ -42,18 +43,49 @@ export function Inspector({
 
   return (
     <aside className="insp" aria-label="Chi tiết chương">
+      {/* Tiêu đề panel và thân panel phải nói CÙNG MỘT điều.
+          Bản trước hiện "Chương / chưa đặt tiêu đề" ở tiêu đề trong khi thân nói
+          "Chưa chọn chương" — và câu ở tiêu đề là câu sai: nó khẳng định có một
+          chương đang mở, chỉ là chương đó chưa được đặt tên. Giờ ca chưa chọn có
+          đúng một câu trạng thái (ở tiêu đề) và đúng một câu hướng dẫn (ở thân). */}
       <div className="ihead">
-        <div className="no">{viTri(snapshot, chuongChon)}</div>
-        <h2>
-          {sel?.title ? sel.title : <span className="draft">{CHU.chuaDatTieuDe}</span>}
-        </h2>
-        {chuongChon ? <TrangThaiChuong snapshot={snapshot} chuong={chuongChon} /> : null}
+        {chuongChon ? (
+          <>
+            <div className="no">{viTri(snapshot, chuongChon)}</div>
+            <h2>
+              {sel?.title ? sel.title : <span className="draft">{CHU.chuaDatTieuDe}</span>}
+            </h2>
+            <TrangThaiChuong snapshot={snapshot} chuong={chuongChon} />
+          </>
+        ) : (
+          <h2 className="chuachon">{GIAI_THICH.chuaChonChuongTieuDe}</h2>
+        )}
       </div>
 
+      {/* Tab bị vô hiệu khi chưa chọn chương: ba tab trông bấm được mà bấm nào
+          cũng ra cùng một câu là một lời hứa hụt nhỏ, lặp ba lần. */}
       <div className="tabs" role="tablist" aria-label="Mặt của chương">
-        <TabNut tab="hopdong" hienTai={tab} onChon={setTab} nhan={CHU.tabHopDong} />
-        <TabNut tab="kiemdinh" hienTai={tab} onChon={setTab} nhan={CHU.tabKiemDinh} />
-        <TabNut tab="banthao" hienTai={tab} onChon={setTab} nhan={CHU.tabBanThao} />
+        <TabNut
+          tab="hopdong"
+          hienTai={tab}
+          onChon={setTab}
+          nhan={CHU.tabHopDong}
+          tat={!chuongChon}
+        />
+        <TabNut
+          tab="kiemdinh"
+          hienTai={tab}
+          onChon={setTab}
+          nhan={CHU.tabKiemDinh}
+          tat={!chuongChon}
+        />
+        <TabNut
+          tab="banthao"
+          hienTai={tab}
+          onChon={setTab}
+          nhan={CHU.tabBanThao}
+          tat={!chuongChon}
+        />
       </div>
 
       {!chuongChon ? (
@@ -76,17 +108,21 @@ function TabNut({
   hienTai,
   onChon,
   nhan,
+  tat,
 }: {
   tab: Tab;
   hienTai: Tab;
   onChon: (t: Tab) => void;
   nhan: string;
+  tat?: boolean;
 }) {
   return (
     <button
       type="button"
       role="tab"
-      aria-selected={tab === hienTai}
+      aria-selected={!tat && tab === hienTai}
+      disabled={tat}
+      title={tat ? GIAI_THICH.tabChuaChonChuong : undefined}
       onClick={() => onChon(tab)}
     >
       {nhan}
@@ -95,8 +131,7 @@ function TabNut({
 }
 
 /** "Chương 47 · tập 3 · cung 2" — suy từ trục, không bịa khi chưa biết. */
-function viTri(snapshot: Snapshot | undefined, chuong: number | undefined): string {
-  if (!chuong) return CHU.chuong;
+function viTri(snapshot: Snapshot | undefined, chuong: number): string {
   const phan = [`${CHU.chuong} ${chuong}`];
   if (snapshot?.capabilities.layered_outline) {
     const tap = snapshot.timeline.volumes.find(
@@ -225,7 +260,7 @@ function TabKiemDinh({ review }: { review: Review | undefined }) {
           )}
         </dd>
         <dt>phạm vi</dt>
-        <dd>{phamViDuyet(review.scope)}</dd>
+        <dd>{nhanPhamViDuyet(review.scope)}</dd>
         {hopDong ? (
           <>
             <dt>hợp đồng</dt>
@@ -340,19 +375,6 @@ function kyTheoTone(mau: Tone): string {
       return '○';
     default:
       return '■';
-  }
-}
-
-function phamViDuyet(scope: string): string {
-  switch (scope) {
-    case 'chapter':
-      return CHU.chuong.toLowerCase();
-    case 'arc':
-      return CHU.cung.toLowerCase();
-    case 'volume':
-      return CHU.tap.toLowerCase();
-    default:
-      return scope;
   }
 }
 

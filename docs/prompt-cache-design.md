@@ -1,106 +1,109 @@
-# 提示词缓存设计：litellm / agentcore / ainovel 三层协同
+# Thiết kế cache prompt: phối hợp ba tầng litellm / agentcore / ainovel
 
-> 本文是一份讲解材料：介绍我们如何在三个协作仓库中设计端到端的 LLM 提示词缓存
-> （prompt caching），包含设计原理、真实排查案例与可对照的源码位置。
+> Bài này là một tài liệu giảng giải: giới thiệu cách chúng tôi thiết kế cache prompt LLM
+> (prompt caching) đầu-cuối trên ba repo phối hợp, gồm nguyên lý thiết kế, ca tra lỗi thật và các vị trí mã nguồn đối chiếu được.
 >
-> - **litellm** —— LLM 网关：协议翻译与能力声明
-> - **agentcore** —— Agent 框架：缓存放置与缓存身份
-> - **ainovel-cli** —— 应用层：一行配置接入（codebot 同理）
+> - **litellm** — cổng LLM: dịch giao thức và khai báo năng lực
+> - **agentcore** — framework Agent: chỗ đặt cache và danh tính cache
+> - **ainovel-cli** — tầng ứng dụng: một dòng cấu hình là tiếp vào (codebot cũng vậy)
 
 ---
 
-## 1. 为什么值得做：成本模型与一个真实案例
+## 1. Vì sao đáng làm: mô hình chi phí và một ca thật
 
-Agent 系统的请求有个结构特点：**每一轮请求都携带全部历史**。一个 30 轮的工具循环，
-第 30 轮的请求体里包含前 29 轮的所有消息。不做缓存时，同样的前缀字节被反复计费。
+Request của hệ thống Agent có một đặc điểm về cấu trúc: **mỗi lượt request đều mang theo toàn bộ lịch sử**. Một vòng lặp tool 30 lượt thì
+body của request ở lượt 30 chứa toàn bộ tin nhắn của 29 lượt trước. Không cache thì cùng những byte tiền tố đó bị tính tiền lặp đi lặp lại.
 
-两大厂商的缓存定价（以 Anthropic 为例）：
+Giá cache của hai hãng lớn (lấy Anthropic làm ví dụ):
 
-| 项目 | 相对普通输入价 |
+| Mục | So với giá đầu vào thường |
 |---|---|
-| 缓存写入（5 分钟 TTL） | 1.25x |
-| 缓存写入（1 小时 TTL） | 2x |
-| **缓存读取** | **0.1x（省 90%）** |
+| Ghi cache (TTL 5 phút) | 1,25x |
+| Ghi cache (TTL 1 giờ) | 2x |
+| **Đọc cache** | **0,1x (tiết kiệm 90%)** |
 
-真实案例：一次 33 章的长篇小说生成跑掉了 $58，事后分析 `meta/usage.json` 发现
-**整体缓存命中率只有 8.5%**（coordinator 仅 2.7%，architect 为 0）。逐请求比对
-usage 序列（input vs cache_read）后定位出三个根因：
+Ca thật: một lần sinh tiểu thuyết dài 33 chương đốt mất $58, phân tích `meta/usage.json` sau đó phát hiện
+**tỉ lệ trúng cache tổng thể chỉ 8,5%** (coordinator chỉ 2,7%, architect là 0). Sau khi so từng request theo
+chuỗi usage (input vs cache_read) thì định vị được ba nguyên nhân gốc:
 
-1. **tools 字节抖动**：subagent 工具的 Description/Schema 每轮从 Go map 直接迭代重建，
-   顺序随机 → 请求体从第 0 字节起就与上一轮不同 → 前缀缓存全部失效；
-2. **没有路由亲和**：OpenAI 系没传 `prompt_cache_key`，字节完全相同的请求也可能被
-   负载均衡到没有缓存的实例（铁证：33 个会话中字节相同的首请求只命中 12 个）；
-3. **Claude 系零断点**：Anthropic 是显式缓存，不打 `cache_control` 断点 = 完全没有缓存。
+1. **Byte tools dao động**: Description/Schema của tool subagent mỗi lượt dựng lại bằng cách duyệt trực tiếp map của Go,
+   thứ tự ngẫu nhiên → body request khác lượt trước ngay từ byte thứ 0 → cache tiền tố mất hiệu lực toàn bộ;
+2. **Không có ái lực định tuyến**: dòng OpenAI không gửi `prompt_cache_key`, những request giống nhau từng byte cũng có thể bị
+   cân bằng tải sang một instance không có cache (chứng cứ sắt: trong 33 phiên, các request đầu tiên giống nhau từng byte chỉ trúng 12);
+3. **Dòng Claude không có điểm ngắt nào**: Anthropic là cache tường minh, không đóng điểm ngắt `cache_control` = hoàn toàn không có cache.
 
-这三个根因分别对应下文的三块设计：**前缀稳定纪律**、**缓存身份**、**断点编排**。
-
----
-
-## 2. 预备知识：两种缓存协议的心智模型
-
-### 2.1 OpenAI：自动前缀缓存（隐式）
-
-- 服务端自动对 **≥1024 tokens** 的前缀做缓存，无需客户端声明；
-- 命中按 128-token 对齐的粒度增长；
-- 请求可带 `prompt_cache_key`（官方字段）做**路由亲和**——同 key 的请求尽量落到
-  同一缓存分片；
-- usage 里 `cached_tokens` 报告命中量；**缓存写入永远不上报**（`cache_write` 恒 0
-  是正常现象，不是 bug）。
-
-### 2.2 Anthropic：显式断点（cache_control）
-
-- 客户端在内容块上打 `cache_control` 断点，**断点覆盖它之前的一切**
-  （顺序固定为 tools → system → messages）；
-- 每请求**最多 4 个断点**；
-- 写价 1.25x（5m）/ 2x（1h），读价 0.1x；
-- `cache_control` **不允许打在 thinking 块上**（会被 400 拒绝）。
-
-### 2.3 共同前提
-
-无论隐式还是显式，缓存都只认**字节级前缀相等**。所以一切设计的地基是同一句话：
-
-> **把变化频率从低到高排序整个请求：静态的放最前面，动态的放最后面，
-> 且已发送的历史一个字节都不能变。**
+Ba nguyên nhân gốc này ứng với ba khối thiết kế dưới đây: **kỷ luật ổn định tiền tố**, **danh tính cache**, **điều phối điểm ngắt**.
 
 ---
 
-## 3. 总体架构：三层分工
+## 2. Kiến thức nền: mô hình tư duy của hai giao thức cache
+
+### 2.1 OpenAI: cache tiền tố tự động (ngầm)
+
+- Phía server tự cache tiền tố **≥1024 token**, không cần client khai báo;
+- Phần trúng tăng theo hạt canh 128-token;
+- Request có thể mang `prompt_cache_key` (trường chính thức) để tạo **ái lực định tuyến** — các request cùng key thì cố gắng rơi vào
+  cùng một phân đoạn cache;
+- Trong usage, `cached_tokens` báo lượng trúng; **việc ghi cache thì không bao giờ được báo lên** (`cache_write` luôn bằng 0
+  là hiện tượng bình thường, không phải bug).
+
+### 2.2 Anthropic: điểm ngắt tường minh (cache_control)
+
+- Client đóng điểm ngắt `cache_control` trên một khối nội dung, **điểm ngắt bao phủ mọi thứ trước nó**
+  (thứ tự cố định là tools → system → messages);
+- Mỗi request **nhiều nhất 4 điểm ngắt**;
+- Giá ghi 1,25x (5m) / 2x (1h), giá đọc 0,1x;
+- `cache_control` **không được đóng trên khối thinking** (sẽ bị 400 từ chối).
+
+### 2.3 Tiền đề chung
+
+Dù ngầm hay tường minh, cache đều chỉ nhận **tiền tố bằng nhau ở mức byte**. Nên nền móng của mọi thiết kế là đúng một câu:
+
+> **Sắp toàn bộ request theo tần suất thay đổi từ thấp lên cao: cái tĩnh đặt trước nhất, cái động đặt sau cùng,
+> và phần lịch sử đã gửi thì không được đổi một byte nào.**
+
+---
+
+## 3. Kiến trúc tổng thể: phân việc ba tầng
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│ 应用层（ainovel-cli / codebot）                          │
-│   决定"缓存身份"取什么值：一书一基、一角色一名             │
-│   接入成本 = 每个 agent 两行配置                          │
+│ Tầng ứng dụng (ainovel-cli / codebot)                  │
+│   Quyết "danh tính cache" lấy giá trị gì:              │
+│   một sách một nền, một vai một tên                    │
+│   Chi phí tiếp vào = hai dòng cấu hình mỗi agent       │
 ├────────────────────────────────────────────────────────┤
-│ agentcore（Agent 框架）                                  │
-│   决定"断点放哪、key 何时派生"：                          │
-│   system 地板 + 末消息滚动尖端；spawn 追加 #seq；          │
-│   按 provider 能力门控，不支持则静默丢弃                   │
+│ agentcore (framework Agent)                            │
+│   Quyết "đặt điểm ngắt ở đâu, key phái sinh khi nào":  │
+│   sàn system + đỉnh cuộn ở tin nhắn cuối;              │
+│   spawn thì nối #seq; gác theo năng lực provider,      │
+│   không hỗ trợ thì bỏ im lặng                          │
 ├────────────────────────────────────────────────────────┤
-│ litellm（LLM 网关）                                      │
-│   纯协议翻译：cache_control ↔ 各厂商字段、                │
-│   prompt_cache_key 透传、Capabilities 能力声明            │
-│   不做任何"要不要缓存"的决策                              │
+│ litellm (cổng LLM)                                     │
+│   Dịch giao thức thuần: cache_control ↔ trường của     │
+│   từng hãng, truyền xuyên prompt_cache_key,            │
+│   khai báo Capabilities                                │
+│   Không ra bất kỳ quyết định "có cache hay không"      │
 └────────────────────────────────────────────────────────┘
 ```
 
-切分原则：**litellm 只回答"这个端点支持什么"，agentcore 只回答"缓存点放在哪"，
-应用层只回答"身份是什么"**。每层单独可测，应用换一个（codebot 复用同一套
-agentcore/litellm）不用重写缓存逻辑。
+Nguyên tắc chia: **litellm chỉ trả lời "endpoint này hỗ trợ những gì", agentcore chỉ trả lời "điểm cache đặt ở đâu",
+tầng ứng dụng chỉ trả lời "danh tính là gì"**. Mỗi tầng kiểm thử riêng được, đổi ứng dụng khác (codebot dùng lại cùng bộ
+agentcore/litellm) thì không phải viết lại logic cache.
 
 ---
 
-## 4. 根基：前缀字节稳定三纪律
+## 4. Nền móng: ba kỷ luật ổn định byte tiền tố
 
-缓存收益的前提是前缀字节稳定。三条纪律各自对应一次真实事故。
+Điều kiện tiên quyết để cache có lợi là byte tiền tố ổn định. Ba kỷ luật, mỗi cái ứng với một sự cố thật.
 
-### 纪律一：tools 序列化必须字节确定
+### Kỷ luật một: việc tuần tự hóa tools buộc phải tất định ở mức byte
 
-事故：`subagent` 工具把注册的 agent 列表嵌进自己的 Description/Schema，而列表来自
-Go map 迭代——每次调用顺序随机，tools 字节每轮都变，coordinator 命中率因此只有 2.7%。
-（Claude Code 团队也被同款问题咬过：他们的全 fleet 曾因此多付 10.2% 的缓存写入。）
+Sự cố: tool `subagent` nhúng danh sách agent đã đăng ký vào Description/Schema của chính nó, mà danh sách thì đến từ
+việc duyệt map của Go — mỗi lời gọi một thứ tự ngẫu nhiên, byte tools mỗi lượt một khác, nên tỉ lệ trúng của coordinator chỉ 2,7%.
+(Nhóm Claude Code cũng bị đúng vấn đề này cắn: cả fleet của họ từng vì thế mà trả thêm 10,2% cho việc ghi cache.)
 
-修复（agentcore `subagent/subagent.go`）：
+Khắc phục (agentcore `subagent/subagent.go`):
 
 ```go
 // sortedAgentNames returns registered agent names in deterministic order.
@@ -112,60 +115,62 @@ func (t *Tool) sortedAgentNames() []string {
 }
 ```
 
-> 教训的一般形式：**任何进入请求体的集合，序列化前必须排序**。Go 的 map 迭代
-> 随机化会把这个 bug 藏得很深——功能完全正常，只有账单不正常。
+> Dạng tổng quát của bài học: **bất kỳ tập hợp nào đi vào body request thì buộc phải sắp xếp trước khi tuần tự hóa**. Việc
+> Go ngẫu nhiên hóa phép duyệt map sẽ giấu con bug này rất sâu — tính năng hoàn toàn bình thường, chỉ hóa đơn là bất thường.
 
-### 纪律二：历史必须 append-only（压缩要"提交"）
+### Kỷ luật hai: lịch sử buộc phải append-only (nén thì phải "nộp")
 
-事故：writer 的上下文压缩策略是"投影"（每次调用时临时改写历史视图，但不落回
-基线）。一旦超过阈值，**每一轮都在重新改写整个前缀** → 每轮全 miss。
+Sự cố: chiến lược nén ngữ cảnh của writer là "phép chiếu" (mỗi lời gọi thì tạm viết lại view của lịch sử, nhưng không
+rơi lại vào baseline). Một khi vượt ngưỡng thì **mỗi lượt lại viết lại toàn bộ tiền tố** → mỗi lượt miss toàn phần.
 
-修复：投影后提交（`CommitOnProject: true`），让改写只发生一次，之后恢复
-append-only，直到下次越过阈值。
+Khắc phục: chiếu xong thì nộp (`CommitOnProject: true`), để việc viết lại chỉ xảy ra một lần, sau đó trở lại
+append-only, cho tới lần vượt ngưỡng sau.
 
-> 一般形式：上下文压缩是**计划内的一次性断裂**（重置前缀，付一次全价），
-> 这没问题；不能接受的是**每轮都断**。压缩要么不做，要么做完固化。
+> Dạng tổng quát: nén ngữ cảnh là **một lần đứt có kế hoạch** (reset tiền tố, trả giá đầy đủ một lần),
+> chuyện đó không sao; cái không chấp nhận được là **mỗi lượt đều đứt**. Nén thì hoặc đừng làm, hoặc làm xong thì cố định lại.
 
-### 纪律三：动态内容进尾部
+### Kỷ luật ba: nội dung động đi vào phần đuôi
 
-每轮变化的东西（世界状态信封、每轮提醒、最新工具结果）只允许**追加在消息尾部**，
-绝不回头修改中段。ainovel 的 `novel_context` 信封就是尾部追加式设计——它每章都变，
-但它变不影响前面几十万 token 的缓存。
+Những thứ đổi mỗi lượt (phong bì trạng thái thế giới, phần nhắc mỗi lượt, kết quả tool mới nhất) chỉ được phép **nối vào đuôi tin nhắn**,
+tuyệt đối không quay lại sửa phần giữa. Phong bì `novel_context` của ainovel chính là thiết kế nối-vào-đuôi — nó đổi ở mỗi chương,
+nhưng nó đổi thì không ảnh hưởng cache của mấy trăm nghìn token phía trước.
 
 ---
 
-## 5. 缓存身份：一书一基、一角色一名、一会话一键
+## 5. Danh tính cache: một sách một nền, một vai một tên, một phiên một khóa
 
-OpenAI 系的 `prompt_cache_key` 解决的是**路由问题**：字节相同的请求若被负载均衡到
-不同实例，照样 miss。key 的设计目标是"同一条缓存血统的请求，永远带同一个 key"。
+`prompt_cache_key` của dòng OpenAI giải quyết **vấn đề định tuyến**: request giống nhau từng byte mà bị cân bằng tải sang
+instance khác thì vẫn miss. Mục tiêu thiết kế của key là "các request thuộc cùng một huyết mạch cache thì luôn mang cùng một key".
 
-我们的三级身份（ainovel `internal/agents/build.go`）：
+Ba cấp danh tính của chúng tôi (ainovel `internal/agents/build.go`):
 
 ```go
-// promptCacheBase 从书目录派生稳定短哈希，作为提示词缓存身份前缀：同一本书
-// 跨进程重启共享路由桶，且不向 provider 泄露本地路径。角色后缀由调用方拼接，
-// subagent 每次 spawn 再追加 "#seq"（一次会话一个键）。
+// promptCacheBase phái sinh một băm ngắn ổn định từ thư mục sách, làm tiền tố
+// danh tính cache prompt: cùng một cuốn sách thì dùng chung xô định tuyến xuyên
+// các lần khởi động lại process, và không để lộ đường dẫn cục bộ cho provider.
+// Hậu tố vai do bên gọi nối vào; subagent mỗi lần spawn còn nối thêm "#seq"
+// (một phiên một khóa).
 func promptCacheBase(bookDir string) string {
 	sum := sha256.Sum256([]byte(bookDir))
 	return "nvl-" + hex.EncodeToString(sum[:6])
 }
 ```
 
-应用层接入就是每个 agent 两行：
+Tầng ứng dụng tiếp vào chỉ là hai dòng cho mỗi agent:
 
 ```go
 writer := subagent.Config{
 	// ...
-	CacheLastMessage: "ephemeral",                // Claude 断点开关（见 §6）
-	PromptCacheKey:   cacheBase + "-writer",      // OpenAI 路由身份（角色级）
+	CacheLastMessage: "ephemeral",                // công tắc điểm ngắt của Claude (xem §6)
+	PromptCacheKey:   cacheBase + "-writer",      // danh tính định tuyến OpenAI (cấp vai)
 }
-// coordinator（顶层 Agent）同理：
+// coordinator (Agent tầng đỉnh) cũng vậy:
 agentcore.WithCacheLastMessage("ephemeral"),
 agentcore.WithPromptCacheKey(cacheBase+"-coordinator"),
 ```
 
-第三级（会话级）由 agentcore 自动派生——每次 spawn 一个新会话，就是一条新的
-缓存血统（agentcore `subagent/subagent.go`）：
+Cấp thứ ba (cấp phiên) do agentcore tự phái sinh — mỗi lần spawn một phiên mới là một huyết mạch
+cache mới (agentcore `subagent/subagent.go`):
 
 ```go
 runSeq := t.runSeq.Add(1)
@@ -179,28 +184,28 @@ if promptCacheKey != "" {
 }
 ```
 
-最终形态：`nvl-a1b2c3-writer#17` = 这本书、writer 角色、第 17 次 spawn 的会话。
+Hình thái cuối: `nvl-a1b2c3-writer#17` = cuốn sách này, vai writer, phiên của lần spawn thứ 17.
 
-> 为什么不是全局一个 key？不同会话前缀不同，混在一个路由桶里会稀释命中。
-> 为什么不带时间戳/随机数？key 必须**跨请求稳定**，会话内每轮都要相同。
+> Vì sao không phải một key toàn cục? Các phiên khác nhau thì tiền tố khác nhau, trộn vào cùng một xô định tuyến sẽ pha loãng phần trúng.
+> Vì sao không mang dấu thời gian/số ngẫu nhiên? key buộc phải **ổn định xuyên các request**, trong một phiên thì mỗi lượt phải giống nhau.
 
-codebot 的对应设计：key 语义 = SessionID（切会话 = 换血统），teammate 追加名字
-后缀，宿主复用同一 Agent 实例切会话时调 `Agent.SetPromptCacheKey` 重指身份。
+Thiết kế tương ứng của codebot: ngữ nghĩa key = SessionID (đổi phiên = đổi huyết mạch), teammate thì nối thêm hậu tố tên,
+còn khi host dùng lại cùng một instance Agent để đổi phiên thì gọi `Agent.SetPromptCacheKey` để trỏ lại danh tính.
 
 ---
 
-## 6. Claude 断点编排：地板 + 滚动尖端
+## 6. Điều phối điểm ngắt của Claude: sàn + đỉnh cuộn
 
-Anthropic 不打断点 = 零缓存。我们的预算分配（上限 4 个断点/请求）：
+Anthropic không đóng điểm ngắt = không cache. Cách phân bổ ngân sách của chúng tôi (giới hạn 4 điểm ngắt/request):
 
 ```
-[tools][system ←断点①"地板"][...历史消息...][最新消息 ←断点②"滚动尖端"]
+[tools][system ←điểm ngắt① "sàn"][...tin nhắn lịch sử...][tin nhắn mới nhất ←điểm ngắt② "đỉnh cuộn"]
 ```
 
-### 6.1 地板（floor）：钉住静态前缀
+### 6.1 Sàn (floor): đóng đinh tiền tố tĩnh
 
-system prompt 是最大的静态块。给它一个专属断点，保证**新会话/尾部缓存被逐出时，
-至少 system+tools 前缀仍然从缓存读**（agentcore `loop.go`）：
+system prompt là khối tĩnh lớn nhất. Cho nó một điểm ngắt riêng để bảo đảm **khi phiên mới bắt đầu/khi cache ở đuôi bị đuổi ra,
+thì ít nhất tiền tố system+tools vẫn đọc từ cache** (agentcore `loop.go`):
 
 ```go
 } else if agentCtx.SystemPrompt != "" {
@@ -215,10 +220,10 @@ system prompt 是最大的静态块。给它一个专属断点，保证**新会�
 }
 ```
 
-### 6.2 滚动尖端（rolling tip）：每轮推进覆盖面
+### 6.2 Đỉnh cuộn (rolling tip): mỗi lượt đẩy diện bao phủ lên
 
-把一个断点打在**最后一条非 system 消息**上。工具循环里每次 LLM 调用都会写一条
-覆盖到最新 tool_use+tool_result 的缓存，下一轮直接读，不再重传：
+Đóng một điểm ngắt trên **tin nhắn không phải system cuối cùng**. Trong vòng lặp tool, mỗi lời gọi LLM đều ghi một bản
+cache bao phủ tới tool_use+tool_result mới nhất, lượt sau đọc luôn, không truyền lại nữa:
 
 ```go
 // markLastMessageForCache returns a copy of messages with cache_control attached
@@ -237,15 +242,15 @@ func markLastMessageForCache(messages []Message, cacheControl string) []Message 
 }
 ```
 
-注意跳过尾部 system reminder：它每轮都变，把断点打在它身上等于每轮写一条
-永远不会被复用的缓存。
+Chú ý bỏ qua system reminder ở đuôi: nó đổi mỗi lượt, đóng điểm ngắt lên nó thì bằng với mỗi lượt ghi một bản
+cache sẽ không bao giờ được dùng lại.
 
-### 6.3 末块语义：一条消息只烧一个断点
+### 6.3 Ngữ nghĩa khối cuối: một tin nhắn chỉ đốt một điểm ngắt
 
-消息级的 `cache_control` 语义是"在这条消息之后写一个断点"。翻译到块级时只允许
-落在**最后一个可缓存块**上——给每个块都打标会把 4 个断点的预算烧穿；而 Anthropic
-拒绝 thinking 块携带 `cache_control`，所以从尾部扫、跳过 reasoning
-（agentcore `llm/litellm.go`）：
+Ngữ nghĩa `cache_control` ở mức tin nhắn là "ghi một điểm ngắt sau tin nhắn này". Dịch xuống mức khối thì chỉ được
+rơi vào **khối cache được cuối cùng** — gắn cờ cho mọi khối sẽ đốt cháy hết ngân sách 4 điểm ngắt; mà Anthropic
+từ chối cho khối thinking mang `cache_control`, nên quét từ đuôi lên và bỏ qua reasoning
+(agentcore `llm/litellm.go`):
 
 ```go
 if cache != nil {
@@ -261,9 +266,9 @@ if cache != nil {
 }
 ```
 
-### 6.4 TTL 管道
+### 6.4 Đường ống TTL
 
-配置值约定为 `"type[:ttl]"` 字符串，如 `"ephemeral"`（默认 5m）或 `"ephemeral:1h"`：
+Giá trị cấu hình quy ước là chuỗi `"type[:ttl]"`, như `"ephemeral"` (mặc định 5m) hoặc `"ephemeral:1h"`:
 
 ```go
 func cacheControlFromMetadata(metadata map[string]any) *litellm.CacheControl {
@@ -278,17 +283,17 @@ func cacheControlFromMetadata(metadata map[string]any) *litellm.CacheControl {
 }
 ```
 
-要不要升 1h 用数据说话：写价从 1.25x 涨到 2x，只有实测调用间隔经常超过 5 分钟
-才值得（我们实测 coordinator 中位间隔 172s，没升）。
+Có nên nâng lên 1h thì để dữ liệu nói: giá ghi tăng từ 1,25x lên 2x, chỉ đáng khi đo thực tế thấy khoảng cách giữa các lời gọi
+thường xuyên vượt 5 phút (chúng tôi đo được trung vị của coordinator là 172s, nên không nâng).
 
 ---
 
-## 7. 安全发送：能力门控 + 官方端点判定
+## 7. Gửi an toàn: gác theo năng lực + phán định endpoint chính thức
 
-### 7.1 能力门控：不支持的字段不出门
+### 7.1 Gác theo năng lực: trường không được hỗ trợ thì không ra khỏi cửa
 
-litellm 各 provider 对 `ProviderOptions` **严格校验**（未知键直接报错），所以
-agentcore 在发送前按能力声明门控（agentcore `llm/litellm.go`）：
+Các provider của litellm **kiểm nghiêm** `ProviderOptions` (khóa không rõ là báo lỗi luôn), nên
+agentcore gác theo khai báo năng lực trước khi gửi (agentcore `llm/litellm.go`):
 
 ```go
 // Prompt-cache routing identity. Capability-gated: litellm providers
@@ -299,19 +304,19 @@ if callCfg.PromptCacheKey != "" && caps.Cache.PromptKey == litellm.SupportYes {
 }
 ```
 
-### 7.2 官方端点判定：兼容生态没有未知字段契约
+### 7.2 Phán định endpoint chính thức: hệ sinh thái tương thích không có hợp đồng nào cho trường không rõ
 
-`prompt_cache_key` 是 OpenAI 官方字段，但"OpenAI 兼容"端点的行为没有任何统一契约。
-联网实证（2026-07）：
+`prompt_cache_key` là trường chính thức của OpenAI, nhưng hành vi của các endpoint "tương thích OpenAI" thì không có hợp đồng thống nhất nào.
+Thực chứng trên mạng (2026-07):
 
-- **严格端直接拒绝**：Groq、Cerebras、火山引擎、Fireworks 对该字段返回 400/422
-  （Zed #36215、OpenClaw #48155 都因此改成条件发送）；
-- **重编组型中转静默丢弃**：one-api/new-api/sub2api 的非透传路径把请求体解析进
-  结构体再 re-marshal，未知字段无声消失（发了白发）；
-- **宽松端忽略**：Ollama、当前版 vLLM、MiniMax。
+- **Endpoint nghiêm thì từ chối luôn**: Groq, Cerebras, Volcano Engine, Fireworks trả 400/422 với trường này
+  (Zed #36215, OpenClaw #48155 đều vì thế mà đổi sang gửi có điều kiện);
+- **Loại trung chuyển tái đóng gói thì bỏ im lặng**: các đường không-truyền-xuyên của one-api/new-api/sub2api phân tích body request vào
+  struct rồi re-marshal, trường không rõ biến mất không tiếng (gửi cũng như không);
+- **Endpoint dễ tính thì bỏ qua**: Ollama, vLLM bản hiện tại, MiniMax.
 
-所以 litellm openai provider 的能力声明按 BaseURL **动态**判定
-（litellm `provider/openai/capabilities.go`）：
+Nên khai báo năng lực của openai provider trong litellm phán định **động** theo BaseURL
+(litellm `provider/openai/capabilities.go`):
 
 ```go
 // promptCacheParamsSupport reports whether this endpoint is trusted to accept
@@ -333,130 +338,130 @@ func isOfficialBaseURL(baseURL string) bool {
 }
 ```
 
-官方 `api.openai.com` → `SupportYes`（发送）；第三方 BaseURL → `SupportUnknown`
-（§7.1 的门控自动不发，**默认永不炸任何端点**）；确认自己的中转原样透传的用户，
-在 provider 配置里显式 opt-in：
+`api.openai.com` chính thức → `SupportYes` (gửi); BaseURL của bên thứ ba → `SupportUnknown`
+(phép gác ở §7.1 tự động không gửi, **mặc định không bao giờ làm nổ endpoint nào**); người dùng đã xác nhận proxy của mình truyền xuyên nguyên trạng thì
+opt-in tường minh trong cấu hình provider:
 
 ```jsonc
 "my-relay": {
   "type": "openai",
   "base_url": "https://relay.example.com/v1",
-  "extra": { "prompt_cache_params": true }   // 我确认这个中转透传请求体
+  "extra": { "prompt_cache_params": true }   // tôi xác nhận proxy này truyền xuyên body request
 }
 ```
 
-> 为什么开关做在 litellm 能力层而不是应用配置层？因为运行时 `/model` 切 provider
-> 会换 client，能力声明跟着 client 自动切换；应用构造期的判定覆盖不了运行时切换。
+> Vì sao công tắc làm ở tầng năng lực của litellm mà không ở tầng cấu hình ứng dụng? Bởi vì lúc chạy `/model` đổi provider
+> sẽ đổi client, khai báo năng lực theo client mà đổi tự động; còn phép phán định ở kỳ dựng của ứng dụng thì không bao phủ được việc đổi lúc chạy.
 
 ---
 
-## 8. 观测：缓存链断裂检测
+## 8. Quan sát: phát hiện đứt chuỗi cache
 
-缓存是"看不见的功能"——坏了不报错，只是变贵。所以要有观测（借鉴 Claude Code 的
-promptCacheBreakDetection，做了轻量版）。
+Cache là "tính năng không thấy được" — hỏng thì không báo lỗi, chỉ là đắt hơn. Nên phải có quan sát (học theo
+promptCacheBreakDetection của Claude Code, làm bản nhẹ).
 
-判定口径（ainovel `internal/host/usage.go`）：
+Tiêu chí phán định (ainovel `internal/host/usage.go`):
 
 ```go
-// 同一会话（role+task）内：前缀未缩短，而命中量较上次下降 >5% 且降幅 ≥2000 tokens
+// Trong cùng một phiên (role+task): tiền tố không ngắn lại, mà lượng trúng giảm >5% so với lần trước và mức giảm ≥2000 token
 broke := prevPrefix > 0 && prefix >= prevPrefix &&
 	float64(u.CacheRead) < float64(prevRead)*cacheBreakKeepRatio &&
 	prevRead-u.CacheRead >= cacheBreakMinDropTokens
 ```
 
-四个关键设计，每个都对应一类误报：
+Bốn thiết kế then chốt, mỗi cái ứng với một loại báo sai:
 
-| 设计 | 防的误报 |
+| Thiết kế | Loại báo sai được ngăn |
 |---|---|
-| **双阈值**（相对 5% 且绝对 2000） | 单一相对阈值被小前缀噪声淹没；单一绝对阈值漏掉大前缀退化 |
-| **基线跟随会话（role+task）** | 检测维度必须与 `prompt_cache_key` 的会话粒度（`#seq`）对齐；按 role 跨会话比较，会在"上一会话很短、新会话首请求前缀反而更长"时误报（Codex review 抓到的真实缺口） |
-| **前缀缩短 = 合法重置** | 上下文压缩是计划内断裂，重置基线不告警 |
-| **replay 不检测** | 启动时重放历史会把陈年断裂刷成新告警 |
+| **Ngưỡng đôi** (tương đối 5% và tuyệt đối 2000) | Ngưỡng tương đối đơn lẻ bị nhiễu của tiền tố nhỏ nhấn chìm; ngưỡng tuyệt đối đơn lẻ bỏ sót việc thoái hóa ở tiền tố lớn |
+| **Baseline đi theo phiên (role+task)** | Chiều đo buộc phải khớp với hạt canh phiên của `prompt_cache_key` (`#seq`); so sánh theo role xuyên phiên sẽ báo sai khi "phiên trước rất ngắn, còn request đầu của phiên mới lại có tiền tố dài hơn" (chỗ hụt thật mà Codex review bắt được) |
+| **Tiền tố ngắn lại = reset hợp pháp** | Nén ngữ cảnh là đứt có kế hoạch, reset baseline chứ không cảnh báo |
+| **replay thì không phát hiện** | Phát lại lịch sử lúc khởi động sẽ làm những vết đứt cũ hiện thành cảnh báo mới |
 
-告警时按时间间隔给归因提示：间隔 >1h → 疑似 1h TTL 过期；>5m → 疑似 5m TTL 过期；
-很短 → 疑似服务端逐出/路由漂移（**中转站轮询上游账号是最常见原因**）。计数持久化到
-`usage.json` 并显示在 TUI 缓存面板的"链路断裂"行。
-
----
-
-## 9. 闩锁红线：会话单调原则
-
-一条对未来功能的宪法级约束：
-
-> **一切会进入缓存前缀的量（system prompt、tools、thinking 参数、采样参数），
-> 在会话内首次计算后必须冻结——宁可陈旧，不可破缓存。**
-
-例子:"运行时调 thinking 强度"这类功能，如果让新强度立即作用于进行中的会话，
-等于每次调整都重写前缀、作废全部缓存。正确做法是新值只对**新 spawn 的会话**生效。
-任何"运行时可调 X"的需求评审，第一个问题都是：X 在不在缓存前缀里？
+Khi cảnh báo thì đưa gợi ý quy nguyên theo khoảng thời gian: khoảng >1h → nghi TTL 1h hết hạn; >5m → nghi TTL 5m hết hạn;
+rất ngắn → nghi bị server đuổi ra/định tuyến trôi (**trạm trung chuyển luân phiên các tài khoản upstream là nguyên nhân thường gặp nhất**). Số lần được lưu bền vào
+`usage.json` và hiện ở dòng "đứt chuỗi" trên panel cache của TUI.
 
 ---
 
-## 10. 常见误判与天花板
+## 9. Vạch đỏ của chốt khóa: nguyên tắc đơn điệu trong phiên
 
-1. **OpenAI 的 `cache_write` 恒 0 是正常的**——API 不上报写入量，别当 bug 查。
-2. **中转站天花板**：中转若轮询多个上游账号，客户端字节再稳也会 miss（上游账号 A
-   的缓存对账号 B 不可见）。这解释了"字节完全相同的请求只命中 12/33"的谜团。
-   **这不是客户端可解的问题**——Claude Code 团队的数据也显示约九成"客户端未变化
-   却断裂"的案例是服务端原因。
-3. **验证口径**：会话 JSONL 不含 system prompt 和完整请求体，**逐请求 usage 序列
-   （input vs cache_read）才是诊断金标准**。一个实用指纹：命中量若恰好钉在
-   "system 提示词 token 数按 128 向下取整"，说明只有 system 段命中、消息段全 miss。
-4. **收益核算**：读价 0.1x、写价 1.25x，意味着一条缓存只要被读 1 次就回本。
-   多轮 agent 会话里断点几乎总是正收益，所以 `CacheLastMessage` 不设开关、默认开。
+Một ràng buộc cấp hiến pháp cho các tính năng tương lai:
+
+> **Mọi lượng sẽ đi vào tiền tố cache (system prompt, tools, tham số thinking, tham số lấy mẫu)
+> đều buộc phải đóng băng sau lần tính đầu tiên trong phiên — thà cũ chứ không được phá cache.**
+
+Ví dụ: những tính năng kiểu "chỉnh cường độ thinking lúc đang chạy", nếu để cường độ mới tác động ngay vào phiên đang diễn ra,
+thì mỗi lần chỉnh là một lần viết lại tiền tố, làm mất hiệu lực toàn bộ cache. Cách đúng là giá trị mới chỉ có hiệu lực với **phiên spawn mới**.
+Với mọi yêu cầu kiểu "chỉnh được X lúc chạy", câu hỏi đầu tiên đều là: X có nằm trong tiền tố cache không?
 
 ---
 
-## 11. 接入指南速查
+## 10. Các phán định sai thường gặp và giới hạn trần
 
-**ainovel-cli**（已内置）：每个 agent 配 `CacheLastMessage: "ephemeral"` +
-`PromptCacheKey: promptCacheBase(bookDir) + "-<role>"`，其余全自动。
+1. **`cache_write` của OpenAI luôn bằng 0 là bình thường** — API không báo lượng ghi, đừng coi là bug rồi đi tra.
+2. **Giới hạn trần của trạm trung chuyển**: nếu trạm luân phiên nhiều tài khoản upstream thì byte của client có ổn cỡ nào cũng vẫn miss (cache của tài khoản upstream A
+   thì tài khoản B không thấy được). Điều này giải thích được câu đố "request giống nhau hoàn toàn từng byte mà chỉ trúng 12/33".
+   **Đây không phải vấn đề client giải được** — dữ liệu của nhóm Claude Code cũng cho thấy khoảng chín phần mười các ca "client không đổi
+   mà vẫn đứt" là do nguyên nhân phía server.
+3. **Tiêu chí kiểm chứng**: JSONL của phiên không chứa system prompt và body request đầy đủ, **chuỗi usage từng request
+   (input vs cache_read) mới là chuẩn vàng để chẩn đoán**. Một dấu tay thực dụng: nếu lượng trúng đóng đinh đúng ở
+   "số token của system prompt làm tròn xuống theo 128" thì nghĩa là chỉ đoạn system trúng, còn đoạn tin nhắn miss toàn bộ.
+4. **Tính lợi ích**: giá đọc 0,1x, giá ghi 1,25x, nghĩa là một bản cache chỉ cần được đọc 1 lần là hoàn vốn.
+   Trong phiên agent nhiều lượt thì điểm ngắt gần như luôn có lợi, nên `CacheLastMessage` không đặt công tắc, mặc định bật.
 
-**codebot**（已内置）：key = SessionID；`Reset`/`SwitchSession` 时
-`agent.SetPromptCacheKey(newSessionID)`；teammate 用 `sessionID + "-" + name`。
+---
 
-**新应用接 agentcore** 的最小清单：
+## 11. Bảng tra nhanh hướng dẫn tiếp vào
+
+**ainovel-cli** (đã dựng sẵn): mỗi agent cấu hình `CacheLastMessage: "ephemeral"` +
+`PromptCacheKey: promptCacheBase(bookDir) + "-<role>"`, còn lại tự động hết.
+
+**codebot** (đã dựng sẵn): key = SessionID; khi `Reset`/`SwitchSession` thì
+`agent.SetPromptCacheKey(newSessionID)`; teammate dùng `sessionID + "-" + name`.
+
+Danh mục tối thiểu để **ứng dụng mới tiếp vào agentcore**:
 
 ```go
 agentcore.NewAgent(
-	agentcore.WithCacheLastMessage("ephemeral"),   // Claude 断点：地板+滚动尖端
-	agentcore.WithPromptCacheKey(stableIdentity),  // OpenAI 路由：稳定、每会话唯一
+	agentcore.WithCacheLastMessage("ephemeral"),   // điểm ngắt Claude: sàn + đỉnh cuộn
+	agentcore.WithPromptCacheKey(stableIdentity),  // định tuyến OpenAI: ổn định, mỗi phiên một khóa
 	// ...
 )
 ```
 
-外加自查三问（对应三纪律）：
+Cộng thêm ba câu tự kiểm (ứng với ba kỷ luật):
 
-1. 我的 tools 序列化是字节确定的吗？（集合都排序了吗）
-2. 我的历史是 append-only 的吗？（压缩会提交吗）
-3. 我每轮变化的内容都在尾部吗？
-
----
-
-## 12. 给学习者的经验清单
-
-- 缓存优化的本质是**字节纪律**，不是调参：先保证前缀稳定，再谈 key 和断点。
-- 诊断永远从**逐请求 usage 序列**开始，不要从代码猜。
-- Go map 迭代随机化 + 请求体序列化 = 最隐蔽的缓存杀手，功能测试永远发现不了。
-- "OpenAI 兼容"是营销词不是契约：官方字段发给第三方端点前，先找一手证据
-  （源码/issue/同类客户端的已落地修法），"一般会忽略"是危险的推断。
-- 观测要防误报优先：检测维度必须与缓存血统的粒度对齐；宁可漏报不可误报，
-  否则告警很快会被无视。
-- 分层的检验标准：换一个应用（codebot）接入时，缓存逻辑一行都不用重写。
+1. Việc tuần tự hóa tools của tôi có tất định ở mức byte không? (các tập hợp đã sắp xếp hết chưa)
+2. Lịch sử của tôi có append-only không? (nén có nộp không)
+3. Những nội dung đổi mỗi lượt của tôi có ở phần đuôi hết không?
 
 ---
 
-### 附：源码索引
+## 12. Danh mục kinh nghiệm cho người học
 
-| 主题 | 位置 |
+- Bản chất của việc tối ưu cache là **kỷ luật byte**, không phải chỉnh tham số: bảo đảm tiền tố ổn định trước, rồi mới nói tới key và điểm ngắt.
+- Chẩn đoán thì luôn bắt đầu từ **chuỗi usage từng request**, đừng đoán từ code.
+- Go ngẫu nhiên hóa phép duyệt map + tuần tự hóa body request = kẻ sát hại cache ẩn nhất, kiểm thử tính năng không bao giờ phát hiện ra.
+- "Tương thích OpenAI" là từ tiếp thị, không phải hợp đồng: trước khi gửi trường chính thức sang endpoint bên thứ ba thì hãy tìm chứng cứ hạng nhất
+  (mã nguồn/issue/cách vá đã đáp đất của các client cùng loại), "nói chung là sẽ bỏ qua" là một suy luận nguy hiểm.
+- Quan sát thì ưu tiên chống báo sai: chiều đo buộc phải khớp với hạt canh của huyết mạch cache; thà bỏ sót chứ không được báo sai,
+  nếu không thì cảnh báo sẽ nhanh chóng bị phớt lờ.
+- Chuẩn kiểm nghiệm của việc phân tầng: khi đổi sang một ứng dụng khác (codebot) để tiếp vào thì logic cache không phải viết lại một dòng nào.
+
+---
+
+### Phụ lục: chỉ mục mã nguồn
+
+| Chủ đề | Vị trí |
 |---|---|
-| tools 确定性排序 | agentcore `subagent/subagent.go` `sortedAgentNames` |
-| 会话级 key 派生（#seq） | agentcore `subagent/subagent.go` `runAgent` |
-| system 地板 + 滚动尖端 | agentcore `loop.go` `callLLM` / `markLastMessageForCache` |
-| 末块断点 + 跳 thinking | agentcore `llm/litellm.go` `convertAgentBlocks` |
-| TTL 解析（"ephemeral:1h"） | agentcore `llm/litellm.go` `cacheControlFromMetadata` |
-| 能力门控 | agentcore `llm/litellm.go` `applyCallConfig` |
-| 官方端点判定 + opt-in | litellm `provider/openai/capabilities.go` / `provider.go Config` |
-| 缓存身份（一书一基） | ainovel `internal/agents/build.go` `promptCacheBase` |
-| 断裂检测 | ainovel `internal/host/usage.go` `noteCacheBreak` |
-| 架构定位 | ainovel `docs/architecture.md` §6.6 |
+| Sắp xếp tất định cho tools | agentcore `subagent/subagent.go` `sortedAgentNames` |
+| Phái sinh key cấp phiên (#seq) | agentcore `subagent/subagent.go` `runAgent` |
+| Sàn system + đỉnh cuộn | agentcore `loop.go` `callLLM` / `markLastMessageForCache` |
+| Điểm ngắt ở khối cuối + bỏ qua thinking | agentcore `llm/litellm.go` `convertAgentBlocks` |
+| Phân tích TTL ("ephemeral:1h") | agentcore `llm/litellm.go` `cacheControlFromMetadata` |
+| Gác theo năng lực | agentcore `llm/litellm.go` `applyCallConfig` |
+| Phán định endpoint chính thức + opt-in | litellm `provider/openai/capabilities.go` / `provider.go Config` |
+| Danh tính cache (một sách một nền) | ainovel `internal/agents/build.go` `promptCacheBase` |
+| Phát hiện đứt | ainovel `internal/host/usage.go` `noteCacheBreak` |
+| Định vị trong kiến trúc | ainovel `docs/architecture.md` §6.5 |

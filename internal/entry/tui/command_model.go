@@ -315,10 +315,16 @@ func renderModelSwitchBar(width int, state *modelSwitchState) string {
 		Bold(true).
 		Render(i18n.F("/model 切换模型"))
 
-	row1 := renderModelField(i18n.F("角色"), state.roleLabel(), state.focus == modelFocusRole)
-	row2 := renderModelField("Provider", state.provider(), state.focus == modelFocusProvider)
-	row3 := renderModelField(i18n.F("模型"), state.modelLabel(), state.focus == modelFocusModel)
-	row4 := renderModelField(i18n.F("推理强度"), state.thinkingLabel(), state.focus == modelFocusThinking)
+	// Cột nhãn tính từ nhãn ĐÃ DỊCH, không phải hằng số: "推理强度:" chỉ 10 cột nên
+	// hằng 12 cũ vừa đủ, còn "Độ mạnh suy luận:" chiếm 18 cột và bị Width(12) xé
+	// thành hai dòng — làm vỡ hẳn khung /model (xem renderModelField).
+	labelW := modelFieldLabelColumn(
+		i18n.F("角色"), "Provider", i18n.F("模型"), i18n.F("推理强度"),
+	)
+	row1 := renderModelField(i18n.F("角色"), state.roleLabel(), state.focus == modelFocusRole, labelW)
+	row2 := renderModelField("Provider", state.provider(), state.focus == modelFocusProvider, labelW)
+	row3 := renderModelField(i18n.F("模型"), state.modelLabel(), state.focus == modelFocusModel, labelW)
+	row4 := renderModelField(i18n.F("推理强度"), state.thinkingLabel(), state.focus == modelFocusThinking, labelW)
 	hint := lipgloss.NewStyle().
 		Foreground(colorDim).
 		Italic(true).
@@ -360,25 +366,47 @@ func renderModelSwitchBar(width int, state *modelSwitchState) string {
 	bottomBorder := lineStyle.Render("└" + strings.Repeat("─", innerW) + "┘")
 
 	body := make([]string, 0, len(lines))
-	for _, line := range lines {
-		padding := innerW - lipgloss.Width(line)
-		if padding < 0 {
-			padding = 0
+	for _, entry := range lines {
+		// Tách theo "\n" trước khi đóng khung: nếu một phần tử lỡ chứa nhiều dòng thì
+		// lipgloss.Width trả bề rộng dòng DÀI NHẤT và ta chỉ đệm một lần cho cả cụm →
+		// viền phải rơi sai cột, viền trái mất ở các dòng sau. Đã xảy ra thật khi nhãn
+		// tiếng Việt bị xé (xem renderModelField); tách ở đây là lưới an toàn.
+		for _, line := range strings.Split(entry, "\n") {
+			line = truncateStyledWidth(line, innerW)
+			padding := innerW - lipgloss.Width(line)
+			if padding < 0 {
+				padding = 0
+			}
+			body = append(body, lineStyle.Render("│")+line+strings.Repeat(" ", padding)+lineStyle.Render("│"))
 		}
-		body = append(body, lineStyle.Render("│")+line+strings.Repeat(" ", padding)+lineStyle.Render("│"))
 	}
 
 	return strings.Join(append(append([]string{topBorder}, body...), bottomBorder), "\n")
 }
 
-func renderModelField(label, value string, focused bool) string {
+// modelFieldLabelColumn chọn bề rộng cột nhãn theo nhãn dài nhất ĐÃ DỊCH, giữ sàn 12
+// để bản tiếng Trung không co lại so với trước.
+func modelFieldLabelColumn(labels ...string) int {
+	w := 12
+	for _, label := range labels {
+		w = max(w, lipgloss.Width(label+":"))
+	}
+	return w
+}
+
+func renderModelField(label, value string, focused bool, labelW int) string {
 	if strings.TrimSpace(value) == "" {
 		value = i18n.F("未设置")
 	}
+	// Đệm bằng tay, KHÔNG dùng Width: Width của lipgloss xuống dòng khi nhãn dài hơn
+	// cột, và vòng dựng khung ở renderModelSwitchBar coi mỗi phần tử là MỘT dòng nên
+	// một nhãn xuống dòng làm viền phải rơi sai cột và viền trái mất hẳn.
 	labelText := lipgloss.NewStyle().
 		Foreground(colorMuted).
-		Width(12).
 		Render(label + ":")
+	if pad := labelW - lipgloss.Width(label+":"); pad > 0 {
+		labelText += strings.Repeat(" ", pad)
+	}
 	style := lipgloss.NewStyle().Padding(0, 1).Foreground(bodyTextColor)
 	if focused {
 		style = style.Foreground(colorAccent).Bold(true).Underline(true)

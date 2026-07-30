@@ -3,16 +3,21 @@
 import { useState } from 'react';
 
 import { BangChuong, GhiChuChiPhi } from '@/components/BangChuong';
+import { DanY } from '@/components/DanY';
+import { DocTruyen } from '@/components/DocTruyen';
 import { Inspector } from '@/components/Inspector';
 import { MucXem } from '@/components/MucXem';
+import { NhanVat } from '@/components/NhanVat';
 import { DongSuKien, NhatKy } from '@/components/NhatKy';
 import { OCanThiep } from '@/components/OCanThiep';
 import { Rail } from '@/components/Rail';
+import { LuatTheGioi, PhucBut } from '@/components/TheGioi';
 import { ThanhTren } from '@/components/ThanhTren';
 import { Transport } from '@/components/Transport';
 import { DangTai, KhongTaiDuoc, XuongTrong } from '@/components/XuongTrong';
 import { Truc } from '@/components/Truc';
 import { so } from '@/lib/dinhdang';
+import { dungInspector, type Khu as KhuMa } from '@/lib/khu';
 import { CHU, GIAI_THICH, nhanPhamViXem, nhanPhase } from '@/lib/nhan';
 import {
   type MucXem as Muc,
@@ -31,10 +36,15 @@ export default function Trang() {
   const sachDangXem = s.workshop?.books.find((b) => b.id === s.tacPham);
   const xuongTrong = s.workshop && s.workshop.books.length === 0;
 
+  // Cột inspector chỉ tồn tại ở khu dùng nó. Các bề mặt khác tự mang chi tiết
+  // của mình, nên giữ lại 292px trống ở đó là lấy mất 1/5 bề rộng để hiện một
+  // panel không nói gì.
+  const coInsp = !!s.snapshot && !xuongTrong && dungInspector(s.khu);
+
   // Thanh trên và transport luôn hiện, kể cả khi canvas chưa có gì: chúng là
   // câu trả lời cho "dây chuyền còn sống không", câu hỏi đầu tiên khi mở studio.
   return (
-    <div className="khung">
+    <div className={`khung${coInsp ? '' : ' rong'}`}>
       <ThanhTren
         workshop={s.workshop}
         dangXem={sachDangXem}
@@ -50,14 +60,27 @@ export default function Trang() {
         <DangTai />
       ) : (
         <>
-          <Rail snapshot={s.snapshot} hoSo={s.hoSo} />
-          <Canvas
+          <Rail
             snapshot={s.snapshot}
+            hoSo={s.hoSo}
+            khu={s.khu}
+            onChonKhu={s.chonKhu}
+          />
+          <Khu
+            khu={s.khu}
+            snapshot={s.snapshot}
+            tacPham={s.tacPham}
             chuongChon={s.chuongChon}
             onChonChuong={s.chonChuong}
             suKien={s.suKien}
           />
-          <Inspector snapshot={s.snapshot} tacPham={s.tacPham} chuongChon={s.chuongChon} />
+          {coInsp ? (
+            <Inspector
+              snapshot={s.snapshot}
+              tacPham={s.tacPham}
+              chuongChon={s.chuongChon}
+            />
+          ) : null}
         </>
       )}
 
@@ -69,6 +92,58 @@ export default function Trang() {
       />
     </div>
   );
+}
+
+/**
+ * Bề mặt của khu đang mở.
+ *
+ * Chỉ khu được chọn được render — không phải ẩn bằng CSS. Panel bị treo
+ * transition trên tab ẩn từng làm mất trắng cả khối khi render headless, và một
+ * bề mặt bị ẩn vẫn giữ nguyên hiệu ứng cuộn của nó.
+ */
+function Khu({
+  khu,
+  snapshot,
+  tacPham,
+  chuongChon,
+  onChonChuong,
+  suKien,
+}: {
+  khu: KhuMa;
+  snapshot: Snapshot;
+  tacPham: string | undefined;
+  chuongChon: number | undefined;
+  onChonChuong: (n: number) => void;
+  suKien: Parameters<typeof DongSuKien>[0]['suKien'];
+}) {
+  switch (khu) {
+    case 'ban-thao':
+      return (
+        <DocTruyen
+          snapshot={snapshot}
+          tacPham={tacPham}
+          chuongChon={chuongChon}
+          onChonChuong={onChonChuong}
+        />
+      );
+    case 'dan-y':
+      return <DanY snapshot={snapshot} tacPham={tacPham} />;
+    case 'nhan-vat':
+      return <NhanVat tacPham={tacPham} />;
+    case 'luat-the-gioi':
+      return <LuatTheGioi tacPham={tacPham} />;
+    case 'phuc-but':
+      return <PhucBut tacPham={tacPham} />;
+    default:
+      return (
+        <Canvas
+          snapshot={snapshot}
+          chuongChon={chuongChon}
+          onChonChuong={onChonChuong}
+          suKien={suKien}
+        />
+      );
+  }
 }
 
 function Canvas({
@@ -148,7 +223,7 @@ function Canvas({
         <GhiChuChiPhi capabilities={snapshot.capabilities} />
       </section>
 
-      <section className="sect">
+      <section className="sect" id="nhat-ky-phan-quyet">
         <h2>
           {CHU.nhatKyPhanQuyet} · <span className="phu">Arbiter</span>
         </h2>
