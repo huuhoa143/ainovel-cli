@@ -291,7 +291,7 @@ func AnalyzeNext(ctx context.Context, m callModel, systemPrompt string, w *Works
 
 	for {
 		payload := buildAnalyzePayload(normalized, seg, ledger, start, end)
-		res, err := callStructured[AnalysisBatchResult](ctx, m, analysisContract, systemPrompt, payload, budget.MaxOutputTokens, prof, func(r *AnalysisBatchResult) error {
+		res, err := callStructured[AnalysisBatchResult](ctx, m, analysisContract(), systemPrompt, payload, budget.MaxOutputTokens, prof, func(r *AnalysisBatchResult) error {
 			return validateBatch(r, seg, start, end)
 		})
 		if err != nil {

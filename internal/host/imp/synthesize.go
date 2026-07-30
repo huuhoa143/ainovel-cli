@@ -150,7 +150,7 @@ func Synthesize(ctx context.Context, m callModel, bookPrompt, rangePrompt string
 			continue
 		}
 		prof.step(ri+1, len(ranges), i18n.F("区间摘要 %d/%d（第 %d-%d 章）..."), ri+1, len(ranges), startCh, endCh)
-		rd, err := callStructured[RangeDigest](ctx, m, rangeContract, rangePrompt, buildRangePayload(rangeFacts), maxTokens, prof, func(d *RangeDigest) error {
+		rd, err := callStructured[RangeDigest](ctx, m, rangeContract(), rangePrompt, buildRangePayload(rangeFacts), maxTokens, prof, func(d *RangeDigest) error {
 			return validateRangeDigest(d, startCh, endCh, "range digest")
 		})
 		if err != nil {
@@ -194,7 +194,7 @@ func reduceToFit(ctx context.Context, m callModel, rangePrompt string, digests [
 			startCh, endCh := g[0].StartChapter, g[len(g)-1].EndChapter
 			prof.step(gi+1, len(groups), i18n.F("归并区间摘要（第 %d 轮 %d/%d，第 %d-%d 章）..."),
 				round, gi+1, len(groups), startCh, endCh)
-			rd, err := callStructured[RangeDigest](ctx, m, rangeContract, rangePrompt, buildDigestReducePayload(g), maxTokens, prof, func(d *RangeDigest) error {
+			rd, err := callStructured[RangeDigest](ctx, m, rangeContract(), rangePrompt, buildDigestReducePayload(g), maxTokens, prof, func(d *RangeDigest) error {
 				return validateRangeDigest(d, startCh, endCh, i18n.F("合并区间"))
 			})
 			if err != nil {
@@ -256,7 +256,7 @@ func rangeInputDigest(facts []ImportedChapterFacts) string {
 
 func synthesizeBook(ctx context.Context, m callModel, systemPrompt, payload string, n, maxTokens int, prof callProfile) (*BookSynthesis, error) {
 	prof.step(0, 0, "%s", i18n.F("生成全书综合（premise/characters/大纲结构）..."))
-	s, err := callStructured[BookSynthesis](ctx, m, synthesisContract, systemPrompt, buildBookPayload(payload, n), maxTokens, prof, func(s *BookSynthesis) error {
+	s, err := callStructured[BookSynthesis](ctx, m, synthesisContract(), systemPrompt, buildBookPayload(payload, n), maxTokens, prof, func(s *BookSynthesis) error {
 		return validateSynthesis(s, n)
 	})
 	if err != nil {

@@ -58,14 +58,24 @@ func (d *FailureDecision) ValidateAgainst(f FailureFacts) error {
 
 // failureContract 紧邻 FailureDecision:action 封闭枚举,dispatch 可空对象
 // (仅 reroute 时非 null);跨字段组合仍由 ValidateAgainst 按事实校验。
-var failureContract = llmcontract.Contract{
-	Name:        "arbiter_failure",
-	Description: i18n.F("失败/僵局裁定:给出出路"),
-	Schema: schema.Object(
-		schema.Property("action", schema.Enum(i18n.F("出路"), "retry", "reroute", "abort")).Required(),
-		schema.Property("dispatch", dispatchSchema(i18n.F("派单目标(仅 reroute 时给出,否则为 null)"))).Required(),
-		schema.Property("reason", schema.String(i18n.F("裁定理由"))).Required(),
-	),
+//
+// Là FUNC, không phải var — dù nội dung tĩnh. Lý do: mô tả schema đi qua i18n.F,
+// và khởi tạo biến cấp gói chạy TRƯỚC mọi init() của Go. Để ở dạng var thì bản
+// dịch bị chốt theo locale lúc nạp package: test ghim locale
+// (i18n_locale_pin_test.go) không tác dụng, và một lệnh đổi ngôn ngữ lúc chạy sẽ
+// không đổi được mô tả gửi cho LLM. Bọc thành func để bản dịch được đọc lúc DÙNG.
+// Chi phí không đáng kể: dựng một lần cho mỗi lượt hỏi trọng tài, đi kèm một
+// request LLM. KHÔNG cache bằng sync.Once — cache chính là cái bug đang sửa.
+func failureContract() llmcontract.Contract {
+	return llmcontract.Contract{
+		Name:        "arbiter_failure",
+		Description: i18n.F("失败/僵局裁定:给出出路"),
+		Schema: schema.Object(
+			schema.Property("action", schema.Enum(i18n.F("出路"), "retry", "reroute", "abort")).Required(),
+			schema.Property("dispatch", dispatchSchema(i18n.F("派单目标(仅 reroute 时给出,否则为 null)"))).Required(),
+			schema.Property("reason", schema.String(i18n.F("裁定理由"))).Required(),
+		),
+	}
 }
 
 // DecideFailure 失败/僵局咨询。失败语义:返回 error → Engine 按最保守路径处理
@@ -75,7 +85,7 @@ func DecideFailure(ctx context.Context, model agentcore.ChatModel, systemPrompt 
 	if err != nil {
 		return FailureDecision{}, err
 	}
-	return decide(ctx, model, failureContract, systemPrompt, payload, func(d *FailureDecision) error {
+	return decide(ctx, model, failureContract(), systemPrompt, payload, func(d *FailureDecision) error {
 		return d.ValidateAgainst(facts)
 	})
 }

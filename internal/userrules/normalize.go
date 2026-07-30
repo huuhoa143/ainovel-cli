@@ -29,22 +29,35 @@ const normalizeMaxTokens = 8192
 
 // normalizeContract 紧邻边界 DTO：全字段 required、fatigue_words 用对象数组
 // （strict 模式禁止动态 key 的 map），两种模式共用同一 DTO 约定。
-var normalizeContract = llmcontract.Contract{
-	Name:        "userrules_normalize",
-	Description: i18n.F("把用户自然语言写作规则归一化为结构化字段"),
-	Schema: schema.Object(
-		schema.Property("structured", schema.Object(
-			schema.Property("genre", schema.String(i18n.F("题材;无则空字符串"))).Required(),
-			schema.Property("forbidden_chars", schema.Array(i18n.F("禁止出现的字符"), schema.String(i18n.F("字符")))).Required(),
-			schema.Property("forbidden_phrases", schema.Array(i18n.F("禁止出现的短语(字面精确匹配)"), schema.String(i18n.F("短语")))).Required(),
-			schema.Property("fatigue_words", schema.Array(i18n.F("疲劳词及每章出现上限"), schema.Object(
-				schema.Property("word", schema.String(i18n.F("疲劳词"))).Required(),
-				schema.Property("max_per_chapter", schema.Int(i18n.F("每章出现次数上限(正整数)"))).Required(),
-			))).Required(),
-		)).Required(),
-		schema.Property("preferences", schema.String(i18n.F("自然语言风格/人物/审美偏好;无则空字符串"))).Required(),
-		schema.Property("uncertain", schema.Array(i18n.F("故意未提升到 structured 的项+原因"), schema.String(i18n.F("条目")))).Required(),
-	),
+//
+// Là FUNC, không phải var — dù nội dung tĩnh. Lý do: mô tả schema đi qua i18n.F,
+// và khởi tạo biến cấp gói chạy TRƯỚC mọi init() của Go. Để ở dạng var thì bản
+// dịch bị chốt theo locale lúc nạp package: test ghim locale
+// (i18n_locale_pin_test.go) không tác dụng, và một lệnh đổi ngôn ngữ lúc chạy sẽ
+// không đổi được mô tả gửi cho LLM. Bọc thành func để bản dịch được đọc lúc DÙNG.
+//
+// Chi phí dựng lại schema mỗi lần gọi là không đáng kể: chỗ dùng là Normalize —
+// một lần cho mỗi nguồn quy tắc, đi kèm một request LLM. Đây là công cụ chạy một
+// lần lúc khởi động sách, không phải vòng lặp nóng. KHÔNG cache bằng sync.Once —
+// cache chính là cái bug đang sửa.
+func normalizeContract() llmcontract.Contract {
+	return llmcontract.Contract{
+		Name:        "userrules_normalize",
+		Description: i18n.F("把用户自然语言写作规则归一化为结构化字段"),
+		Schema: schema.Object(
+			schema.Property("structured", schema.Object(
+				schema.Property("genre", schema.String(i18n.F("题材;无则空字符串"))).Required(),
+				schema.Property("forbidden_chars", schema.Array(i18n.F("禁止出现的字符"), schema.String(i18n.F("字符")))).Required(),
+				schema.Property("forbidden_phrases", schema.Array(i18n.F("禁止出现的短语(字面精确匹配)"), schema.String(i18n.F("短语")))).Required(),
+				schema.Property("fatigue_words", schema.Array(i18n.F("疲劳词及每章出现上限"), schema.Object(
+					schema.Property("word", schema.String(i18n.F("疲劳词"))).Required(),
+					schema.Property("max_per_chapter", schema.Int(i18n.F("每章出现次数上限(正整数)"))).Required(),
+				))).Required(),
+			)).Required(),
+			schema.Property("preferences", schema.String(i18n.F("自然语言风格/人物/审美偏好;无则空字符串"))).Required(),
+			schema.Property("uncertain", schema.Array(i18n.F("故意未提升到 structured 的项+原因"), schema.String(i18n.F("条目")))).Required(),
+		),
+	}
 }
 
 // Normalizer 把单个来源的自然语言规则归一化成 rules.Candidate。
@@ -74,8 +87,12 @@ func (n *Normalizer) Normalize(ctx context.Context, source, text string) (rules.
 		return rules.Candidate{}, errors.New(i18n.F("归一化模型未配置"))
 	}
 
+	// Dựng contract MỘT lần cho lượt gọi này rồi dùng lại trong các hook: vẫn là
+	// đọc bản dịch lúc dùng (mỗi lần Normalize đọc lại), nhưng không dựng lại
+	// schema ba lần cho cùng một request.
+	contract := normalizeContract()
 	out, err := llmcontract.Execute(ctx, n.model, llmcontract.Request[normalizerOutput]{
-		Contract:     normalizeContract,
+		Contract:     contract,
 		SystemPrompt: normalizerSystemPrompt(),
 		Payload:      text,
 		Options:      []agentcore.CallOption{agentcore.WithMaxTokens(normalizeMaxTokens)},
@@ -87,9 +104,9 @@ func (n *Normalizer) Normalize(ctx context.Context, source, text string) (rules.
 		Hooks: llmcontract.Hooks{
 			Resolved: func(res llmcontract.Resolution) {
 				slog.Debug(i18n.F("规则归一化协议选择"), "module", "rules", "source", source,
-					"contract", normalizeContract.Name, "structured_mode", res.Mode,
+					"contract", contract.Name, "structured_mode", res.Mode,
 					"capability_source", res.Source, "provider", res.Provider, "model", res.Model,
-					"schema_fingerprint", normalizeContract.Fingerprint())
+					"schema_fingerprint", contract.Fingerprint())
 			},
 			Correction: func(ev llmcontract.Correction) {
 				slog.Warn(i18n.F("规则归一化输出自愈"), "module", "rules", "source", source,

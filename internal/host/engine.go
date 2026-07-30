@@ -531,7 +531,20 @@ func contentFilterAdvice(werr error) string {
 
 // errInvalidWriteTarget 标记 runWorker 前置校验拦下的非法写作目标，供错误链和
 // Arbiter 事实保留稳定语义；是否重试或改派仍由统一失败流程决定。
-var errInvalidWriteTarget = errors.New(i18n.F("非法写作目标"))
+//
+// Ca này KHÔNG sửa được bằng cách bọc thành func như các bảng nhãn/contract khác.
+// `errors.New(i18n.F(...))` ở cấp gói chốt văn bản theo locale lúc nạp package
+// (khởi tạo biến cấp gói chạy TRƯỚC mọi init()), nhưng sentinel còn phải giữ
+// ĐỊNH DANH để errors.Is nhận ra — mà mỗi lần gọi func lại sinh một errors.New
+// khác, tức phá luôn errors.Is.
+//
+// Cách đúng cho sentinel: giữ đúng MỘT giá trị, nhưng để Error() đọc bản dịch lúc
+// DÙNG. Struct rỗng nên so sánh được, errors.Is vẫn khớp qua ==.
+type invalidWriteTargetError struct{}
+
+func (invalidWriteTargetError) Error() string { return i18n.F("非法写作目标") }
+
+var errInvalidWriteTarget error = invalidWriteTargetError{}
 
 func (e *engine) failureFacts(kind string, inst *flow.Instruction, workerErr error) arbiter.FailureFacts {
 	f := arbiter.FailureFacts{Kind: kind, Agent: inst.Agent, Task: inst.Task, Repeats: e.repeats}

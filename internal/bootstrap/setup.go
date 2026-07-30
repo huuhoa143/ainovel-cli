@@ -225,16 +225,23 @@ func runProviderSelect() (setupProvider, error) {
 	return result.items[result.cursor], nil
 }
 
-var apiTypeOptions = []setupProvider{
-	{name: "openai", label: i18n.F("OpenAI 兼容")},
-	{name: "anthropic", label: i18n.F("Anthropic 兼容")},
-	{name: "gemini", label: i18n.F("Gemini 兼容")},
+// apiTypeOptions là FUNC, không phải var: nhãn đi qua i18n.F, và khởi tạo biến
+// cấp gói chạy TRƯỚC mọi init() của Go — để ở dạng var thì nhãn bị chốt theo
+// locale lúc nạp package, nên test ghim locale không tác dụng và một lệnh đổi
+// ngôn ngữ lúc chạy sẽ không đổi được ba nhãn này. Chi phí bằng không: chỗ dùng
+// duy nhất là runTypeSelect, chạy một lần khi người dùng mở màn hình thiết lập.
+func apiTypeOptions() []setupProvider {
+	return []setupProvider{
+		{name: "openai", label: i18n.F("OpenAI 兼容")},
+		{name: "anthropic", label: i18n.F("Anthropic 兼容")},
+		{name: "gemini", label: i18n.F("Gemini 兼容")},
+	}
 }
 
 func runTypeSelect() (string, error) {
 	m := setupSelectModel{
 		title: i18n.F("API 协议类型"),
-		items: apiTypeOptions,
+		items: apiTypeOptions(),
 	}
 	p := tea.NewProgram(m, tea.WithOutput(os.Stderr))
 	final, err := p.Run()

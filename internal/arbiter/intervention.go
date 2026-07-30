@@ -133,24 +133,27 @@ type InterventionDecision struct {
 	Reason   string         `json:"reason"`
 }
 
-var interventionContract = llmcontract.Contract{
-	Name:        "arbiter_intervention",
-	Description: i18n.F("用户干预裁定：回答、规则、暂停、重开与派单"),
-	Schema: schema.Object(
-		schema.Property("answer", llmcontract.Nullable(schema.String(i18n.F("回显给用户的文字；无则为 null")))).Required(),
-		schema.Property("rules", llmcontract.Nullable(schema.String(i18n.F("要落盘的长效写作规则原文；无则为 null")))).Required(),
-		schema.Property("hold", llmcontract.Nullable(schema.Object(
-			schema.Property("cancel", schema.Bool(i18n.F("是否取消既有一次性暂停"))).Required(),
-			schema.Property("after", llmcontract.Nullable(schema.Enum(i18n.F("暂停触发点；取消时为 null"), string(domain.AdvanceHoldAtBoundary), string(domain.AdvanceHoldAfterRewritesDrained)))).Required(),
-			schema.Property("reason", llmcontract.Nullable(schema.String(i18n.F("用户诉求摘要；取消时可为 null")))).Required(),
-		))).Required(),
-		schema.Property("reopen", llmcontract.Nullable(schema.Object(
-			schema.Property("chapters", schema.Array(i18n.F("需要重开的章节号"), schema.Int(i18n.F("章节号")))).Required(),
-			schema.Property("reason", llmcontract.Nullable(schema.String(i18n.F("重开理由")))).Required(),
-		))).Required(),
-		schema.Property("dispatch", dispatchSchema(i18n.F("派单目标；无需派单时为 null"))).Required(),
-		schema.Property("reason", schema.String(i18n.F("一句话裁定理由"))).Required(),
-	),
+// Là func chứ không phải var vì cùng lý do với failureContract() — xem chú thích ở đó.
+func interventionContract() llmcontract.Contract {
+	return llmcontract.Contract{
+		Name:        "arbiter_intervention",
+		Description: i18n.F("用户干预裁定：回答、规则、暂停、重开与派单"),
+		Schema: schema.Object(
+			schema.Property("answer", llmcontract.Nullable(schema.String(i18n.F("回显给用户的文字；无则为 null")))).Required(),
+			schema.Property("rules", llmcontract.Nullable(schema.String(i18n.F("要落盘的长效写作规则原文；无则为 null")))).Required(),
+			schema.Property("hold", llmcontract.Nullable(schema.Object(
+				schema.Property("cancel", schema.Bool(i18n.F("是否取消既有一次性暂停"))).Required(),
+				schema.Property("after", llmcontract.Nullable(schema.Enum(i18n.F("暂停触发点；取消时为 null"), string(domain.AdvanceHoldAtBoundary), string(domain.AdvanceHoldAfterRewritesDrained)))).Required(),
+				schema.Property("reason", llmcontract.Nullable(schema.String(i18n.F("用户诉求摘要；取消时可为 null")))).Required(),
+			))).Required(),
+			schema.Property("reopen", llmcontract.Nullable(schema.Object(
+				schema.Property("chapters", schema.Array(i18n.F("需要重开的章节号"), schema.Int(i18n.F("章节号")))).Required(),
+				schema.Property("reason", llmcontract.Nullable(schema.String(i18n.F("重开理由")))).Required(),
+			))).Required(),
+			schema.Property("dispatch", dispatchSchema(i18n.F("派单目标；无需派单时为 null"))).Required(),
+			schema.Property("reason", schema.String(i18n.F("一句话裁定理由"))).Required(),
+		),
+	}
 }
 
 // ValidateAgainst 按事实做机械校验(场景内合法性;类型已排除跨场景动作)。
@@ -229,7 +232,7 @@ func DecideIntervention(ctx context.Context, model agentcore.ChatModel, systemPr
 	if err != nil {
 		return InterventionDecision{}, err
 	}
-	return decide(ctx, model, interventionContract, systemPrompt, payload, func(d *InterventionDecision) error {
+	return decide(ctx, model, interventionContract(), systemPrompt, payload, func(d *InterventionDecision) error {
 		return d.ValidateAgainst(facts)
 	})
 }

@@ -94,7 +94,7 @@ func AnalyzeSource(ctx context.Context, llm LLMChat, systemPrompt string, source
 	if strings.TrimSpace(systemPrompt) == "" {
 		return nil, fmt.Errorf("source prompt is required")
 	}
-	report, err := generateStructured(ctx, llm, sourceReportContract, systemPrompt, buildSourceUserPrompt(source), func(report *domain.SimulationSourceReport) error {
+	report, err := generateStructured(ctx, llm, sourceReportContract(), systemPrompt, buildSourceUserPrompt(source), func(report *domain.SimulationSourceReport) error {
 		if strings.TrimSpace(report.Summary) == "" {
 			return fmt.Errorf("summary is required")
 		}
@@ -115,7 +115,7 @@ func MergeSynthesis(ctx context.Context, llm LLMChat, systemPrompt string, exist
 	if strings.TrimSpace(systemPrompt) == "" {
 		return nil, fmt.Errorf("merge prompt is required")
 	}
-	synthesis, err := generateStructured[domain.SimulationSynthesis](ctx, llm, synthesisContract, systemPrompt, buildMergeUserPrompt(existing, reports), nil)
+	synthesis, err := generateStructured[domain.SimulationSynthesis](ctx, llm, synthesisContract(), systemPrompt, buildMergeUserPrompt(existing, reports), nil)
 	if err != nil {
 		return nil, fmt.Errorf("parse synthesis: %w", err)
 	}
