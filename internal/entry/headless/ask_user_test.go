@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/tools"
 )
 
@@ -43,7 +44,12 @@ func TestTerminalAskUserCustomInput(t *testing.T) {
 	if err != nil {
 		t.Fatalf("handle: %v", err)
 	}
-	if got := resp.Answers["还有什么限制？"]; got != "自定义" {
+	// So qua i18n.F chứ không chốt cứng chữ: giá trị này là nhãn hiển thị (đường
+	// sinh ra nó là ask_user.go:90 `return i18n.F("自定义"), ...`), không phải
+	// sentinel — đã kiểm không có chỗ nào so sánh với nó, và resp.Answers chỉ chảy
+	// vào formatAnswers rồi thành text tự do trong prompt gửi LLM. Chốt cứng chữ
+	// làm test đỏ mỗi lần bản dịch đổi, mà chẳng kiểm thêm điều gì.
+	if got := resp.Answers["还有什么限制？"]; got != i18n.F("自定义") {
 		t.Fatalf("unexpected answer: %q", got)
 	}
 	if got := resp.Notes["还有什么限制？"]; got != "不要感情线" {

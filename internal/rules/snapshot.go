@@ -183,13 +183,68 @@ func SystemDefaults() Candidate {
 		Source: "system_defaults",
 		Structured: Structured{
 			// 定长固定串的 AI 套句；checker 字面子串匹配，带变量的模式（不是X而是Y）归语义层。
-			ForbiddenPhrases: []string{i18n.F("某种程度上"), i18n.F("值得注意的是"), i18n.F("不知为何"), i18n.F("五味杂陈")},
-			FatigueWords: map[string]int{
-				"不禁": 1, "竟然": 1, "仿佛": 2, "此外": 1, "然而": 2,
-				"一丝": 2, "一抹": 2, "一缕": 2, "宛如": 1, "不由得": 1,
-				"像一": 3, "沉默了": 2, "没有说话": 2, "几息": 3, "一息": 3, "数息": 2,
-			},
+			ForbiddenPhrases: forbiddenPhrases(),
+			FatigueWords:     fatigueWords(),
 		},
+	}
+}
+
+// fatigueWords / forbiddenPhrases chọn bảng theo ngôn ngữ đang hoạt động, cùng
+// khuôn với stylestat.profile().
+//
+// Vì sao KHÔNG bọc từng khóa map bằng i18n.F: khóa map là dữ liệu, và bọc chúng
+// vừa làm bảng đóng băng theo locale lúc init gói, vừa lệ thuộc thứ tự init —
+// đúng hai lớp bug đã phải sửa ở chỗ khác trong repo này.
+//
+// Vì sao đây là lỗi thật, không phải chuyện hình thức: checker so khớp CHUỖI CON
+// LITERAL với văn bản do mô hình sinh ra (rules/checker.go:72
+// appendFatigueWords). Bảng tiếng Trung khớp 0 lần trong văn tiếng Việt, nên cả
+// 16 ngưỡng chết lặng — không lỗi, không log, và mọi chương đều "sạch từ gây
+// mỏi". Trước đó ForbiddenPhrases (slice) được bọc nên đã sang tiếng Việt và
+// hoạt động, còn FatigueWords (khóa map) bị bỏ qua đúng luật "khóa map là dữ
+// liệu" — thành ra một nửa cơ chế sống, một nửa chết.
+//
+// Ngưỡng giữ nguyên con số của upstream: hệ số chữ Hán → chữ Việt đo được ~1,0
+// (cả hai đơn âm), nên "tối đa N lần mỗi chương" mang cùng ý nghĩa ở hai ngôn
+// ngữ.
+func fatigueWords() map[string]int {
+	if i18n.Active() == i18n.Chinese {
+		return map[string]int{
+			"不禁": 1, "竟然": 1, "仿佛": 2, "此外": 1, "然而": 2,
+			"一丝": 2, "一抹": 2, "一缕": 2, "宛如": 1, "不由得": 1,
+			"像一": 3, "沉默了": 2, "没有说话": 2, "几息": 3, "一息": 3, "数息": 2,
+		}
+	}
+	// Bảng tiếng Việt không phải bản dịch từng chữ mà là các từ/cụm mà văn AI
+	// tiếng Việt thật sự lạm dụng, chọn tương ứng theo CHỨC NĂNG của bản gốc:
+	// liên từ chuyển ý, lượng từ mờ, so sánh sáo, nhịp im lặng, đơn vị thời gian
+	// tiên hiệp. Phải khớp với bộ mẫu của stylestat để một bên dạy và một bên đo
+	// cùng một thứ.
+	return map[string]int{
+		// liên từ chuyển ý bị lạm dụng (此外 / 然而)
+		"ngoài ra": 1, "tuy nhiên": 2, "thế nhưng": 2, "bên cạnh đó": 1,
+		// "không kìm được" (不禁 / 不由得)
+		"không khỏi": 1, "bất giác": 1, "chẳng khỏi": 1,
+		// bất ngờ hóa (竟然)
+		"không ngờ": 1, "nào ngờ": 1,
+		// so sánh sáo (仿佛 / 宛如 / 像一)
+		"tựa như": 2, "như thể": 2, "chẳng khác nào": 1, "hệt như": 1,
+		// lượng từ mờ (一丝 / 一抹 / 一缕)
+		"một thoáng": 2, "một tia": 2, "một nét": 2, "một làn": 2,
+		// nhịp im lặng (沉默了 / 没有说话)
+		"im lặng": 2, "không nói gì": 2, "không đáp": 2,
+		// đơn vị thời gian tiên hiệp (几息 / 一息 / 数息)
+		"trong nháy mắt": 3, "chớp mắt": 3, "khoảnh khắc": 3,
+	}
+}
+
+func forbiddenPhrases() []string {
+	if i18n.Active() == i18n.Chinese {
+		return []string{"某种程度上", "值得注意的是", "不知为何", "五味杂陈"}
+	}
+	return []string{
+		i18n.F("某种程度上"), i18n.F("值得注意的是"),
+		i18n.F("不知为何"), i18n.F("五味杂陈"),
 	}
 }
 
