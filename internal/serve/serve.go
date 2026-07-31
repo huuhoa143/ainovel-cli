@@ -177,6 +177,9 @@ func (s *server) routes() *http.ServeMux {
 	mux.HandleFunc("GET /api/books/{book}/cost", s.handleCost)
 	mux.HandleFunc("GET /api/books/{book}/settings", s.handleSettings)
 	mux.HandleFunc("GET /api/books/{book}/events", s.handleEvents)
+	// Chẩn đoán chỉ ĐỌC store, nên nó ở nhóm đọc: phải chạy được đúng lúc engine không mở
+	// được — đó chính là lúc người ta cần nó.
+	mux.HandleFunc("GET /api/books/{book}/diag", s.handleChanDoan)
 
 	// Nhóm GHI. Không mắc vào mux khi không cho ghi — trả 404 thay vì 403 là có chủ ý:
 	// route không tồn tại thì không có gì để dò, và giao diện đã có `/api/engine` để hỏi
