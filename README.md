@@ -269,9 +269,16 @@ ainovel-cli serve --root ./output --book ten-tac-pham --addr 127.0.0.1:8420
 
 Studio cho xem: trục sản xuất tập/cung/chương theo tỉ lệ thật, bảng chương kèm trạng thái từng công đoạn, nhật ký phán quyết của Arbiter (mỗi dòng có lý do dựa trên sự thật), và dòng sự kiện realtime qua SSE.
 
-Studio **chỉ đọc**. Engine là process riêng và nó sở hữu quyền ghi trạng thái; nếu studio cũng ghi thì hai process cùng sửa `meta/run_meta.json` và ý kiến can thiệp có thể mất trắng không dấu vết. Vì vậy ô can thiệp trên web tự ẩn cho tới khi engine hỗ trợ hợp tác ghi.
+Studio **làm được cả vòng đời**: tạo tác phẩm, chạy, can thiệp, nghiệm thu từng chương, đặt khóa API, đổi model theo vai, nhập truyện ngoài, xuất bản — không cần mở terminal lần nào.
 
-Mặc định chỉ lắng nghe localhost: store chứa toàn văn tác phẩm chưa phát hành và khóa cấu hình, mở ra mạng công cộng là rò rỉ. Đổi `--addr` sang địa chỉ công cộng sẽ bị cảnh báo.
+Engine chạy **trong cùng process** với studio. Bản trước của tài liệu này giải thích vì sao studio chỉ đọc ("engine là process riêng và nó sở hữu quyền ghi; hai process cùng sửa `meta/run_meta.json` sẽ làm mất ý kiến can thiệp"), và lý lẽ đó đúng với tiền đề của nó. Tiền đề đã đổi: không còn hai process, studio LÀ người ghi duy nhất. Mọi lệnh ghi đi qua `*host.Host` nên chúng dùng đúng những giao dịch mà engine dùng cho chính nó.
+
+Hai hàng rào đi kèm:
+
+- **Khóa mức tệp** (`meta/studio.lock`). `store.IO.WithWriteLock` chỉ là mutex trong process, nên nó không thấy process khác. TUI vẫn chạy được, nên khóa này là thứ chặn hai bên cùng mở một cuốn. Nó nêu PID đang giữ và đường dẫn tệp cần xóa nếu khóa mồ côi.
+- **Đường ghi chỉ bật trên loopback.** Từ khi studio giữ khóa API và khởi động được engine, một yêu cầu từ người lạ không chỉ đọc được bản thảo mà còn tiêu được tiền. Nên `--addr` không phải loopback thì cả nhóm route ghi KHÔNG được mắc — studio lui về đúng hành vi chỉ-đọc cũ. Thêm một hàng rào chống CSRF sang localhost (header riêng + kiểm `Origin`/`Host`), vì mọi trang web đang mở đều gọi được tới `127.0.0.1`.
+
+Khóa API đi **một chiều**: đặt được qua giao diện, nhưng API không bao giờ trả nó về — chỗ nào cần hiện thì chỉ hiện dạng che (`sk-4…802`).
 
 ### Quản lý nhiều tiểu thuyết
 

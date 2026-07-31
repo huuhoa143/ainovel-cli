@@ -33,7 +33,8 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "eval" {
 		os.Exit(eval.Command(os.Args[2:]))
 	}
-	// serve 是只读 web studio 服务，不加载引擎配置，参数体系同样独立。
+	// serve 是 web studio 服务：参数体系独立，自己加载配置并在本进程内跑引擎。
+	// （曾经是只读的，所以这里写着"不加载引擎配置"——见 internal/serve/serve.go 顶部。）
 	if len(os.Args) > 1 && os.Args[1] == "serve" {
 		os.Exit(serve.Command(os.Args[2:]))
 	}

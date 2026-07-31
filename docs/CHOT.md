@@ -122,6 +122,44 @@ Ghi ra để không ai tưởng bị bỏ sót, và để lần sau không đào
 | `scripts/i18n/tm.json` | **KHÔNG AI** — bản chụp có xuất xứ, đóng băng |
 | git commit | **chỉ người điều phối** |
 
+## Đợt đưa toàn bộ lên web (31/07) — điều kiện xong
+
+Sáu đợt, làm tuần tự, mỗi đợt tự chạy được đầu-cuối.
+
+- [x] **Đợt 1 — xương sống.** Engine chạy TRONG process `serve`. Khóa mức tệp trong `store` (không phải trong `serve` — `host.New` có 5 chỗ gọi). Ba hàng rào bảo mật.
+- [x] **Đợt 2 — cấu hình.** Khóa API một chiều, màn cài lần đầu, model theo vai. Thêm `/open` (mở máy mà không chạy).
+- [x] **Đợt 3 — vòng đời.** Chế độ nghiệm thu, cấp phép chương, mở lại. Điều khiển trong thanh transport. `Capabilities.Steer` thôi viết cứng.
+- [x] **Đợt 4 — hai luồng chặn.** Cầu nối `ask_user` (modal không có nút Đóng) và cùng dựng.
+- [x] **Đợt 5 — luồng tệp.** Nhập truyện, mô phỏng văn phong, xuất bản tải về. Thêm `Host.SimulateFrom`.
+- [x] **Đợt 6 — sửa tài liệu nói sai.** `PRODUCT.md`, `README.md`, `main.go`, `serve.go` package doc, `settings.go`, `model.go`, và 5 câu trong `web/lib/nhan.ts`.
+
+**Bằng chứng đầu-cuối**: một cuốn tạo TỪ TRÌNH DUYỆT — nhập yêu cầu → engine đặt tên
+"Ba đêm đèn tắt" → viết 3 chương → xuất TXT 32KB tải về. Không mở terminal lần nào.
+
+### Sáu lỗi bài kiểm bắt được của chính tôi trong đợt này
+
+Ghi ra vì cả sáu cùng một hình dạng: mã trông đúng, và chỉ một phép đo mới thấy sai.
+
+| Lỗi | Vì sao nó sống được |
+|---|---|
+| `laDiaChiCucBo(":8420")` trả true → đường ghi BẬT khi nghe mọi giao diện | một bảng dùng cho hai câu hỏi: chuỗi rỗng trong header `Host` vô hại, trong địa chỉ bind nghĩa là "tất cả" |
+| `warnIfPublic` mắc đúng lỗi đó từ trước, và `TestWarnIfPublic` tự mâu thuẫn | bài kiểm xếp `:8420` là cục bộ rồi đòi cảnh báo cho `0.0.0.0:8420` — với Go hai chuỗi đó là một |
+| khóa tệp đặt trong `serve` là VÔ DỤNG | `host.New` có 5 chỗ gọi; khóa ở một chỗ chỉ chặn chỗ đó tự đụng chính nó |
+| kiểm `ValidateBase` trên riêng tệp đích | tệp project hợp lệ khi chỉ chứa phần ghi đè; kiểm nó một mình chặn đúng cách dùng mà lớp cấu hình tồn tại để phục vụ |
+| đọc bản đã TRỘN rồi ghi lại | đổ credential global vào tệp project — người dùng commit nó lên git |
+| `daTraLoi = true` TRƯỚC khi kiểm đáp án | một đáp án thiếu khóa người dùng ra khỏi chính câu hỏi đang chặn engine của họ |
+
+### Việc tồn của đợt này — CỐ Ý không làm
+
+| Việc | Vì sao không làm |
+|---|---|
+| Stream từng chữ cho cùng dựng và ba luồng tệp | cả bốn đều CHẶN tới khi xong, nên bản không-stream đủ chức năng — chỉ hiện muộn hơn. Stream đòi một kênh SSE thứ hai có vòng đời riêng phải hòa với kênh sự kiện đang có; nó mua sự mượt, không mua tính năng |
+| Xem trước cách chia chương khi nhập truyện | `imp` có bước xem-trước-rồi-xác-nhận tương tác. Bản web hiện chỉ có `auto_confirm` bật/tắt: tắt thì luồng dừng ở bước xem trước và nhật ký nói rõ. Dựng cả bước xác nhận tương tác là một tiểu-ứng-dụng riêng |
+| Chạy nhiều tác phẩm song song | bộ giám sát dựng dạng map nên đỡ được, nhưng `soToiDa = 1`. Hai cuốn cùng chạy là gấp đôi tiền và RAM |
+| Mật khẩu / chạy trên VPS | người dùng chọn không. Nên đường ghi TỪ CHỐI bind ngoài loopback, và đó là hàng rào thay cho xác thực |
+| `/help` và `Ctrl+L`/`Ctrl+U`/`Tab` đổi pane | cơ chế xem của terminal, không phải tính năng |
+| Bài kiểm cho `cung_dung.go` và `tep.go` | hai tệp này chủ yếu là đấu dây tới `Host`; phần có logic riêng (áp ba luật của `ApplyReply`) nằm ở phía web. Kiểm chúng cho đúng cần một `Host` giả, tức một tầng giả thứ hai để bảo trì |
+
 ## Thứ duy nhất còn lại mà không agent nào làm được
 
 **Chưa ai đọc một chương do mô hình THẬT sinh ra.** Mọi bằng chứng hiện có là build

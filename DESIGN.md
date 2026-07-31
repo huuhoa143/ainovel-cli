@@ -131,3 +131,55 @@ Tối giản và có lý do. Không bounce, không elastic.
 - Không animate thuộc tính layout.
 - `prefers-reduced-motion: reduce` → tắt nhịp đập, mọi transition về `0.01ms`.
 - Nội dung **không** bị gate sau animation: hiển thị mặc định rồi mới thêm hiệu ứng.
+
+## Mẫu cho bề mặt GHI
+
+Studio thôi chỉ-đọc, nên có một nhóm mẫu mới. Ghi ra vì chúng là quyết định, không phải sở thích.
+
+### Nút nói ra hệ quả, không nói ra hành động
+
+Câu cảnh của bề mặt ghi: *người vận hành ngồi trước máy lúc khuya, sắp bấm một nút sẽ chạy 6 giờ và tiêu 35 đô*. Nên nhãn nút nói cái sẽ xảy ra, không nói cái nút làm:
+
+- ô can thiệp: `Tiêm vào lượt đang chạy` / `Đánh thức lượt mới` — hai hệ quả khác nhau, nên hai nhãn khác nhau, và nhãn đổi theo trạng thái thật của engine
+- tạo tác phẩm: câu *"bấm Bắt đầu là gọi model thật và tiêu tiền thật"* đứng **ngay trên** nút, không ở đầu trang — người dùng đọc dòng gần nút nhất trước khi bấm
+- KHÔNG hiện số tiền dự kiến trước khi Arbiter quyết số chương: mọi con số lúc đó là số bịa
+
+### Nút chỉ hiện khi nó làm được việc
+
+Không vẽ một nút rồi để nó thất bại với lỗi từ tầng dưới:
+
+- `Dừng` và `Chạy` loại trừ nhau theo `IsRunning`, không phải hai nút luôn hiện
+- `Cho đi tiếp 1 chương` chỉ có ở chế độ nghiệm thu — ở chế độ tự chạy engine không chờ giấy phép nào
+- chưa mở máy thì hiện ĐÚNG MỘT nút `Mở máy`, không hiện bốn nút cùng thất bại vì một lý do
+- nút `Lưu` của dải kênh vai chỉ bật khi có gì đổi thật: bốn nút luôn bật cạnh nhau mời bấm bừa, và mỗi cú bấm dựng lại model set của engine đang chạy
+
+### `disabled` khi đang gửi là bắt buộc
+
+Bấm đôi một nút ghi = hai lượt ghi chồng nhau. Với nút tạo tác phẩm thì đó là hai engine và tiền đôi.
+
+### Modal chỉ dùng khi hệ thống THẬT SỰ bị chặn
+
+Đúng một chỗ dùng modal: khi engine gọi `ask_user` rồi đứng chờ. Nó không đóng được bằng ESC hay bấm ra ngoài, và **không có nút Đóng** — đóng không làm engine đi tiếp, nên một nút như thế là nút hứa hẹn sai. Lớp phủ tối đặc (`0.86` alpha), không phải glass mờ: bề mặt phía sau đúng nghĩa là không dùng được lúc này.
+
+### Trạng thái bằng nền và màu chữ, không bằng dải cạnh
+
+Dải cạnh màu bị cấm (xem danh sách CẤM). Nên:
+
+- vai đã đặt riêng vs thừa hưởng: khác **nền** (`--panel-2` vs `--panel`)
+- dòng nhật ký lỗi/cảnh báo: khác **màu chữ**, không phải nền cả dòng — một dòng nền đỏ trong danh sách dài làm mắt nhảy tới nó rồi mất mạch đọc theo thời gian
+- `Dừng` mang viền amber, KHÔNG đỏ: đỏ nghĩa là lỗi, còn dừng có chủ ý không phải lỗi
+
+### Biểu mẫu tiếng Việt
+
+- cột nhãn **132px**, không 96px như phản xạ: `Nhà cung cấp`, `Địa chỉ gốc`, `Độ suy luận` dài hơn nhãn Anh 20–30%
+- dưới 560px thì gập xuống một cột — ô nhập bị bóp là lỗi tệ hơn nhãn xuống dòng
+- `line-height` **1.72** cho nhãn, **1.78** cho ô nhập nhiều dòng: dấu tiếng Việt xếp hai tầng
+- ô nhập chữ mono cho thứ **đối chiếu được** (khóa, địa chỉ, tên model) — chúng là định danh, và mono làm sai một ký tự nhìn ra được
+
+### Chữ trên `--gold` phải tối
+
+`--gold` ở L 0.805. Chữ sáng trên nó không đạt AA, nên nút chính dùng `oklch(0.19 0.02 74)`.
+
+### `min-width: 0` chỉ cho phép co; `max-width` mới buộc
+
+Một block con có `min-content` lớn hơn cha sẽ **tràn ra ngoài cha và đè** phần tử bên cạnh, và `text-overflow: ellipsis` không bao giờ chạy. Đo được ở thanh trên: khung bọc 150px mà picker 237px, tràn 88px, phủ lên nhãn `dòng sự kiện`. Cần cả hai.

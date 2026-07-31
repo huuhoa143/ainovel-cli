@@ -14,7 +14,7 @@ Bối cảnh sử dụng: engine chạy hàng giờ đến hàng ngày mà khôn
 2. Chất lượng có tuột không — Editor bắt lỗi gì, chương nào bị trả về?
 3. Thành quả đọc ra sao?
 
-Việc họ làm trên bề mặt này: theo dõi nhiều tác phẩm cùng lúc, tra vì sao máy quyết như vậy, tiêm ý kiến can thiệp vào dây chuyền đang chạy, xem kết quả kiểm định, và đọc bản thảo.
+Việc họ làm trên bề mặt này: tạo tác phẩm mới, chạy và dừng dây chuyền, theo dõi nhiều tác phẩm cùng lúc, tra vì sao máy quyết như vậy, tiêm ý kiến can thiệp vào dây chuyền đang chạy, nghiệm thu từng chương, xem kết quả kiểm định, đọc bản thảo, và xuất bản.
 
 Đây **không** phải công cụ cho người đọc truyện. Người đọc nhận sản phẩm đã xuất bản, không vào đây.
 
@@ -22,7 +22,9 @@ Việc họ làm trên bề mặt này: theo dõi nhiều tác phẩm cùng lúc
 
 ainovel biến một câu yêu cầu thành một bộ tiểu thuyết dài hoàn chỉnh bằng tiếng Việt, chạy trọn vẹn không cần người can thiệp. Engine tất định điều phối ba tác tử tự chủ (Architect / Writer / Editor) và gọi Arbiter khi cần phán quyết ngữ nghĩa.
 
-Web studio là **bề mặt vận hành** của cỗ máy đó: nơi giám sát dây chuyền, kiểm soát chất lượng, và truy vết quyết định. Nó không nhân bản logic engine — engine vẫn là nguồn sự thật duy nhất, studio đọc từ store.
+Web studio là **bề mặt duy nhất** của cỗ máy đó: nơi tạo tác phẩm, chạy dây chuyền, giám sát, can thiệp, kiểm soát chất lượng và truy vết quyết định. Nó không nhân bản logic engine — engine chạy trong cùng process và mọi lệnh đi qua `*host.Host`, nên engine vẫn là nguồn sự thật duy nhất.
+
+TUI trong terminal vẫn chạy được nhưng đã **đóng băng**: không thêm tính năng mới cho nó nữa.
 
 Thành công trông như thế này: người vận hành mở studio sau 6 giờ đi vắng và trong vòng 5 giây biết được dây chuyền khỏe hay bệnh, không cần đọc log.
 
