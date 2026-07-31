@@ -19,6 +19,9 @@ import type {
   ChapterDetail,
   CauHinhDoc,
   CostDoc,
+  DapCungDung,
+  KetQuaLuongTep,
+  LuotCungDung,
   OutlineDoc,
   Profile,
   SettingsDoc,
@@ -26,6 +29,7 @@ import type {
   StreamEvent,
   StyleDoc,
   TinhTrangNguon,
+  TrangThaiSong,
   VaiModelDoc,
   Workshop,
   WorldDoc,
@@ -617,4 +621,191 @@ export function moMay(book: string): Promise<{ book: string; dir: string; runnin
 
 export function dongMay(book: string): Promise<{ closed: boolean }> {
   return ghi(`/api/books/${encodeURIComponent(book)}/close`, 'POST');
+}
+
+export function chaySach(book: string): Promise<{ book: string; resumed: string; state: string }> {
+  return ghi(`/api/books/${encodeURIComponent(book)}/run`, 'POST');
+}
+
+export function dungSach(book: string): Promise<{ aborted: boolean }> {
+  return ghi(`/api/books/${encodeURIComponent(book)}/abort`, 'POST');
+}
+
+/**
+ * Gửi một câu của người vận hành vào dây chuyền.
+ *
+ * Một hàm cho cả ba việc (can thiệp khi đang chạy / đánh thức khi đã dừng / yêu cầu sau
+ * khi xong) vì server tự chọn theo trạng thái engine, đúng như TUI dùng một ô nhập cho cả
+ * ba. `applied` cho biết việc nào đã xảy ra để giao diện nói đúng thay vì đoán.
+ */
+export function canThiep(book: string, text: string): Promise<{ applied: 'steer' | 'continue' }> {
+  return ghi(`/api/books/${encodeURIComponent(book)}/steer`, 'POST', { text });
+}
+
+export function taoSach(
+  id: string,
+  prompt: string,
+): Promise<{ book: string; dir: string; state: string }> {
+  return ghi('/api/books', 'POST', { id, prompt });
+}
+
+export function doiCheDoTien(
+  book: string,
+  mode: 'auto' | 'review',
+): Promise<{ mode: string; permit_chapter: number; has_hold: boolean }> {
+  return ghi(`/api/books/${encodeURIComponent(book)}/advance-mode`, 'PUT', { mode });
+}
+
+export function choDiTiep(
+  book: string,
+): Promise<{ permit_chapter: number; running: boolean }> {
+  return ghi(`/api/books/${encodeURIComponent(book)}/advance`, 'POST');
+}
+
+export function moLaiSach(
+  book: string,
+  direction: string,
+): Promise<{ reopened: boolean; resumed: string }> {
+  return ghi(`/api/books/${encodeURIComponent(book)}/reopen`, 'POST', { direction });
+}
+
+/** Trạng thái sống của engine đang mở — `Snapshot()` của Host, tên trường kiểu Go. */
+export function laySong(book: string): Promise<TrangThaiSong> {
+  return doc<TrangThaiSong>(`/api/books/${encodeURIComponent(book)}/live`);
+}
+
+/* ── engine hỏi người dùng ─────────────────────────────────────────────── */
+
+export function traLoiHoi(
+  book: string,
+  id: string,
+  answers: Record<string, string>,
+  notes?: Record<string, string>,
+): Promise<{ answered: boolean }> {
+  return ghi(`/api/books/${encodeURIComponent(book)}/ask`, 'POST', { id, answers, notes });
+}
+
+/* ── cùng dựng ─────────────────────────────────────────────────────────── */
+
+export function cungDungMoSach(history: LuotCungDung[]): Promise<DapCungDung> {
+  return ghi('/api/cocreate', 'POST', { history });
+}
+
+export function cungDungGiaiDoan(
+  book: string,
+  history: LuotCungDung[],
+): Promise<DapCungDung> {
+  return ghi(`/api/books/${encodeURIComponent(book)}/stage-cocreate`, 'POST', { history });
+}
+
+export function chotCungDung(book: string, apply: string): Promise<{ applied: boolean }> {
+  return ghi(`/api/books/${encodeURIComponent(book)}/stage-cocreate`, 'POST', {
+    history: [],
+    apply,
+  });
+}
+
+/* ── luồng tệp ─────────────────────────────────────────────────────────── */
+
+/**
+ * Tải tệp lên và chạy một luồng.
+ *
+ * Không dùng `ghi()`: thân là `multipart/form-data`, và `ghi()` đặt cứng
+ * `Content-Type: application/json`. Header rào vẫn phải có — nhưng KHÔNG được tự đặt
+ * Content-Type cho multipart, vì `fetch` phải tự sinh `boundary`.
+ */
+async function taiLen<T>(duong: string, form: FormData): Promise<T> {
+  const res = await fetch(`${GOC}${duong}`, {
+    method: 'POST',
+    headers: { 'X-Ainovel-Studio': '1' },
+    body: form,
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    let td = `HTTP ${res.status}`;
+    try {
+      const b = (await res.json()) as { error?: string };
+      if (b?.error) td = b.error;
+    } catch {
+      /* thân không phải JSON */
+    }
+    throw new LoiApi(td, res.status);
+  }
+  return (await res.json()) as T;
+}
+
+export function nhapTruyen(
+  book: string,
+  tep: File,
+  tuyChon: { autoConfirm?: boolean; story?: string; guide?: string; continueAfter?: boolean },
+): Promise<KetQuaLuongTep> {
+  const f = new FormData();
+  f.append('file', tep);
+  if (tuyChon.autoConfirm) f.append('auto_confirm', 'true');
+  if (tuyChon.story) f.append('story', tuyChon.story);
+  if (tuyChon.guide) f.append('guide', tuyChon.guide);
+  if (tuyChon.continueAfter) f.append('continue', 'true');
+  return taiLen<KetQuaLuongTep>(`/api/books/${encodeURIComponent(book)}/import`, f);
+}
+
+export function chayMoPhong(book: string, tep: File[]): Promise<KetQuaLuongTep> {
+  const f = new FormData();
+  for (const t of tep) f.append('file', t);
+  return taiLen<KetQuaLuongTep>(`/api/books/${encodeURIComponent(book)}/simulate`, f);
+}
+
+export function nhapHoSoMoPhong(book: string, tep: File): Promise<KetQuaLuongTep> {
+  const f = new FormData();
+  f.append('file', tep);
+  return taiLen<KetQuaLuongTep>(`/api/books/${encodeURIComponent(book)}/simulate/profile`, f);
+}
+
+/**
+ * Xuất bản và TẢI VỀ.
+ *
+ * Không đi qua `ghi()` vì phản hồi là tệp nhị phân, không phải JSON. Tên tệp lấy từ
+ * `Content-Disposition` của server — server biết tên đúng (có dấu tiếng Việt, đã mã hóa
+ * RFC 5987), còn giao diện thì phải đoán.
+ */
+export async function xuatBan(
+  book: string,
+  tuyChon: { format?: 'TXT' | 'EPUB'; from?: number; to?: number } = {},
+): Promise<{ ten: string; boQua: number[]; soChuong: number }> {
+  const q = new URLSearchParams();
+  if (tuyChon.format) q.set('format', tuyChon.format);
+  if (tuyChon.from) q.set('from', String(tuyChon.from));
+  if (tuyChon.to) q.set('to', String(tuyChon.to));
+
+  const res = await fetch(
+    `${GOC}/api/books/${encodeURIComponent(book)}/export?${q.toString()}`,
+    { method: 'POST', headers: { 'X-Ainovel-Studio': '1' }, cache: 'no-store' },
+  );
+  if (!res.ok) {
+    let td = `HTTP ${res.status}`;
+    try {
+      const b = (await res.json()) as { error?: string };
+      if (b?.error) td = b.error;
+    } catch {
+      /* không phải JSON */
+    }
+    throw new LoiApi(td, res.status);
+  }
+
+  const cd = res.headers.get('Content-Disposition') ?? '';
+  const khop = /filename\*=UTF-8''([^;]+)/.exec(cd) ?? /filename="([^"]+)"/.exec(cd);
+  const ten = khop ? decodeURIComponent(khop[1]!) : `${book}.txt`;
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = ten;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  const boQua = (res.headers.get('X-Ainovel-Skipped') ?? '')
+    .split(',')
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  return { ten, boQua, soChuong: Number(res.headers.get('X-Ainovel-Chapters') ?? 0) };
 }

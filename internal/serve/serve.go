@@ -196,6 +196,24 @@ func (s *server) routes() *http.ServeMux {
 		mux.HandleFunc("PUT /api/config", raoGhi(s.handleGhiCauHinh))
 		mux.HandleFunc("GET /api/books/{book}/models", s.handleDocVaiModel)
 		mux.HandleFunc("PUT /api/books/{book}/models", raoGhi(s.handleGhiVaiModel))
+
+		// Vòng đời sáng tác — bản web của /review, /next, /reopen.
+		mux.HandleFunc("PUT /api/books/{book}/advance-mode", raoGhi(s.handleDoiCheDoTien))
+		mux.HandleFunc("POST /api/books/{book}/advance", raoGhi(s.handleChoDiTiep))
+		mux.HandleFunc("POST /api/books/{book}/reopen", raoGhi(s.handleMoLai))
+
+		// Engine hỏi người dùng — luồng CHẶN. Câu hỏi đi kèm /live; đây là đường trả lời.
+		mux.HandleFunc("POST /api/books/{book}/ask", raoGhi(s.handleTraLoiHoi))
+
+		// Cùng dựng — đối thoại nhiều lượt. Lịch sử do client giữ, xem cung_dung.go.
+		mux.HandleFunc("POST /api/cocreate", raoGhi(s.handleCungDungMoSach))
+		mux.HandleFunc("POST /api/books/{book}/stage-cocreate", raoGhi(s.handleCungDungGiaiDoan))
+
+		// Luồng tệp: tải lên để nhập / mô phỏng, tải về để xuất bản.
+		mux.HandleFunc("POST /api/books/{book}/import", raoGhi(s.handleNhap))
+		mux.HandleFunc("POST /api/books/{book}/simulate", raoGhi(s.handleMoPhong))
+		mux.HandleFunc("POST /api/books/{book}/simulate/profile", raoGhi(s.handleNhapHoSoMoPhong))
+		mux.HandleFunc("POST /api/books/{book}/export", raoGhi(s.handleXuatBan))
 	}
 
 	if s.webDir != "" {
@@ -269,6 +287,12 @@ func (s *server) handleStudio(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, err)
 		return
 	}
+	// Steer là khả năng của SERVER, không phải của store — nên nó được đặt ở đây chứ
+	// không trong buildSnapshot. `buildSnapshot` chỉ biết thư mục tác phẩm; nó không biết
+	// server có mắc nhóm route ghi hay không, và trước đây nó viết cứng `false` kèm một
+	// chú thích nói "cần engine hợp tác". Engine giờ chạy trong process này, nên câu trả
+	// lời đúng là: ghi được khi và chỉ khi nhóm route ghi tồn tại.
+	snap.Capabilities.Steer = s.choGhi && s.may != nil
 	writeJSON(w, snap)
 }
 

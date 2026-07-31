@@ -173,11 +173,15 @@ func (s *server) handleSong(w http.ResponseWriter, r *http.Request) {
 	}
 	loi, dung := p.tinhTrang()
 	out := struct {
-		Open     bool            `json:"open"`
-		Stopped  bool            `json:"stopped"`
-		LastErr  string          `json:"last_error,omitempty"`
+		Open    bool   `json:"open"`
+		Stopped bool   `json:"stopped"`
+		LastErr string `json:"last_error,omitempty"`
+		// Asking khác nil nghĩa là engine ĐANG CHẶN chờ người dùng. Đi kèm /live chứ không
+		// có endpoint riêng: giao diện đã dò /live để biết engine còn chạy, và hai vòng dò
+		// lệch nhịp sẽ có lúc nói "đang chạy" trong khi nó đứng chờ chính người đang xem.
+		Asking   *hoiRa          `json:"asking,omitempty"`
 		Snapshot host.UISnapshot `json:"snapshot"`
-	}{Open: true, Stopped: dung, Snapshot: p.eng.Snapshot()}
+	}{Open: true, Stopped: dung, Asking: hoiRaTu(p.hoi.dangCho()), Snapshot: p.eng.Snapshot()}
 	if loi != nil {
 		out.LastErr = loi.Error()
 	}

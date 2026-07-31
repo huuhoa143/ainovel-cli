@@ -25,7 +25,16 @@ export function Transport({
   song,
   suKien,
   trong,
+  children,
 }: {
+  /**
+   * Điều khiển dây chuyền, chèn từ ngoài.
+   *
+   * Nhận qua `children` chứ không tự dựng: transport là bề mặt CHỈ ĐỌC về trạng thái máy
+   * và nó không nên biết gì về các route ghi. Giữ nó không phụ thuộc `api.ts` cũng là giữ
+   * cho nó dựng được ở chế độ mock, nơi không có engine nào để bấm.
+   */
+  children?: React.ReactNode;
   transport: TransportData | undefined;
   song: CongDoanSong | undefined;
   suKien: StreamEvent[];
@@ -42,6 +51,7 @@ export function Transport({
         <div className="cell">
           <span className="lbl">{trong ? CHU.khongCoGiTheoDoi : CHU.dangTai}</span>
         </div>
+        {children}
       </footer>
     );
   }
@@ -160,6 +170,8 @@ export function Transport({
         <span className="lbl">{CHU.daChay}</span>
         <span className="m">{chay ?? CHU.khongCo}</span>
       </div>
+
+      {children}
     </footer>
   );
 }

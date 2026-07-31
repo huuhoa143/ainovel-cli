@@ -5,6 +5,11 @@ import { useState } from 'react';
 import { BangChuong, GhiChuChiPhi } from '@/components/BangChuong';
 import { CaiDat } from '@/components/CaiDat';
 import { CauHinhXuong } from '@/components/CauHinhXuong';
+import { CungDung } from '@/components/CungDung';
+import { DieuKhien } from '@/components/DieuKhien';
+import { HoiChan } from '@/components/HoiChan';
+import { NhapXuat } from '@/components/NhapXuat';
+import { TacPhamMoi } from '@/components/TacPhamMoi';
 import { ChiPhi } from '@/components/ChiPhi';
 import { DanY } from '@/components/DanY';
 import { DocTruyen } from '@/components/DocTruyen';
@@ -43,6 +48,15 @@ export default function Trang() {
   const s = useStudio();
   const may = useMay();
 
+  // Chốt bản nháp từ cùng dựng: chuyển sang khu Tác phẩm mới với bản nháp đã có. Không tự
+  // tạo luôn — người dùng còn phải đặt tên thư mục, và một cú tạo ngầm sẽ tiêu tiền mà họ
+  // chưa xác nhận.
+  const [nhapTuCungDung, datNhapTuCungDung] = useState('');
+  const chotCungDung = (banNhap: string) => {
+    datNhapTuCungDung(banNhap);
+    s.chonKhu('tac-pham-moi');
+  };
+
   const sachDangXem = s.workshop?.books.find((b) => b.id === s.tacPham);
   const xuongTrong = s.workshop && s.workshop.books.length === 0;
 
@@ -68,6 +82,11 @@ export default function Trang() {
           của brief thiết kế, và nó đứng TRƯỚC mọi nhánh khác vì nó chặn tất cả. */
       may.canCaiDat ? (
         <CauHinhXuong lanDau />
+      ) : xuongTrong && may.choGhi ? (
+        // Xưởng rỗng + ghi được → dẫn thẳng vào tạo tác phẩm. Hiện một trang trống kèm
+        // một lệnh CLI là câu trả lời của bản chỉ-đọc; giờ studio tạo được nên để người
+        // dùng tự đi tìm chỗ tạo là bắt họ đoán.
+        <TacPhamMoi onXong={s.chonTacPham} />
       ) : xuongTrong ? (
         <XuongTrong root={s.workshop?.root} />
       ) : s.loi && !s.snapshot ? (
@@ -88,7 +107,11 @@ export default function Trang() {
             tacPham={s.tacPham}
             chuongChon={s.chuongChon}
             onChonChuong={s.chonChuong}
+            onChonTacPham={s.chonTacPham}
+            onChotCungDung={chotCungDung}
+            nhapSan={nhapTuCungDung}
             suKien={s.suKien}
+            dangChay={mayDangChay(s.snapshot)}
           />
           {coInsp ? (
             <Inspector
@@ -100,12 +123,28 @@ export default function Trang() {
         </>
       )}
 
+      {/* Modal chặn: engine đang ĐỨNG chờ trả lời. Đặt ở tầng Trang chứ không trong một khu
+          vì nó phải hiện bất kể người dùng đang xem bề mặt nào — một dây chuyền đứng chờ
+          không được ẩn sau một lựa chọn điều hướng. */}
+      <HoiChan tacPham={s.tacPham} choGhi={may.choGhi} />
+
       <Transport
         transport={s.snapshot?.transport}
         song={s.song}
         suKien={s.suKien}
         trong={xuongTrong}
-      />
+      >
+        {/* Điều khiển sống TRONG transport: đó là chỗ trả lời "dây chuyền còn sống không",
+            nên nút bấm phải ở cùng chỗ với câu trả lời. Đặt nó trong một bề mặt riêng sẽ
+            buộc người vận hành đổi khu để dừng một dây chuyền họ đang nhìn thấy đang chạy. */}
+        <DieuKhien
+          snapshot={s.snapshot}
+          tacPham={s.tacPham}
+          choGhi={may.choGhi}
+          dangChay={s.snapshot ? mayDangChay(s.snapshot) : false}
+          onDoi={s.taiLai}
+        />
+      </Transport>
     </div>
   );
 }
@@ -123,14 +162,22 @@ function Khu({
   tacPham,
   chuongChon,
   onChonChuong,
+  onChonTacPham,
+  onChotCungDung,
+  nhapSan,
   suKien,
+  dangChay,
 }: {
   khu: KhuMa;
   snapshot: Snapshot;
   tacPham: string | undefined;
   chuongChon: number | undefined;
   onChonChuong: (n: number) => void;
+  onChonTacPham: (id: string) => void;
+  onChotCungDung: (banNhap: string) => void;
+  nhapSan: string;
   suKien: Parameters<typeof DongSuKien>[0]['suKien'];
+  dangChay: boolean;
 }) {
   switch (khu) {
     case 'ban-thao':
@@ -172,8 +219,22 @@ function Khu({
       return <CaiDat tacPham={tacPham} />;
     // Khu mức MÁY: cố ý KHÔNG nhận `tacPham`. Truyền vào sẽ mời người sau dùng nó rồi
     // biến một bề mặt toàn cục thành nửa-theo-tác-phẩm.
+    case 'nhap-xuat':
+      return <NhapXuat tacPham={tacPham} />;
     case 'cau-hinh':
       return <CauHinhXuong />;
+    case 'tac-pham-moi':
+      return <TacPhamMoi onXong={onChonTacPham} nhapSan={nhapSan} />;
+    // Cùng dựng giai đoạn cần tác phẩm; cùng dựng mở sách thì không. Một khu cho cả hai,
+    // chế độ suy từ việc có tác phẩm đang xem hay không.
+    case 'cung-dung':
+      return (
+        <CungDung
+          cheDo={tacPham ? 'giai-doan' : 'mo-sach'}
+          tacPham={tacPham}
+          onXong={onChotCungDung}
+        />
+      );
     case 'dan-y':
       return <DanY snapshot={snapshot} tacPham={tacPham} />;
     case 'nhan-vat':
@@ -186,9 +247,11 @@ function Khu({
       return (
         <Canvas
           snapshot={snapshot}
+          tacPham={tacPham}
           chuongChon={chuongChon}
           onChonChuong={onChonChuong}
           suKien={suKien}
+          dangChay={dangChay}
         />
       );
   }
@@ -196,14 +259,18 @@ function Khu({
 
 function Canvas({
   snapshot,
+  tacPham,
   chuongChon,
   onChonChuong,
   suKien,
+  dangChay,
 }: {
   snapshot: Snapshot;
+  tacPham: string | undefined;
   chuongChon: number | undefined;
   onChonChuong: (n: number) => void;
   suKien: Parameters<typeof DongSuKien>[0]['suKien'];
+  dangChay: boolean;
 }) {
   const canhBao = snapshot.warnings ?? [];
 
@@ -290,7 +357,11 @@ function Canvas({
         <h2>
           {CHU.canThiep} · <span className="phu">nói vào dây chuyền đang chạy</span>
         </h2>
-        <OCanThiep capabilities={snapshot.capabilities} />
+        <OCanThiep
+          capabilities={snapshot.capabilities}
+          tacPham={tacPham}
+          dangChay={dangChay}
+        />
       </section>
 
       {/* Chỗ trống cuối để hàng cuối bảng không dính vào transport. */}

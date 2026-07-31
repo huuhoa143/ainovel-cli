@@ -52,10 +52,12 @@ func buildSnapshot(st *store.Store, id string, selected int) (*Snapshot, error) 
 			// lane trên dù có đủ dữ liệu để vẽ. Đã gặp thật lúc thử với dữ liệu
 			// thật: payload có 2 tập, 2 cung, mà capability báo false.
 			LayeredOutline: len(timeline.Volumes) > 0,
-			Steer:          false, // cần engine hợp tác; xem ghi chú trong serve.go
-			StyleRules:     coVanPhong(styleDoc),
-			CostBreakdown:  coChiPhiChiTiet(costDoc),
-			RunSettings:    coCaiDat(settingsDoc),
+			// Steer do handleStudio đặt: nó phụ thuộc server (có mắc route ghi không), không
+			// phụ thuộc store. Để false ở đây là giá trị khởi tạo, không phải kết luận.
+			Steer:         false,
+			StyleRules:    coVanPhong(styleDoc),
+			CostBreakdown: coChiPhiChiTiet(costDoc),
+			RunSettings:   coCaiDat(settingsDoc),
 		},
 		Transport: buildTransport(st, progress, cps),
 		Decisions: buildDecisions(st),

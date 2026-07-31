@@ -565,7 +565,55 @@ export const CHU = {
   caiLanDau: 'Cài đặt lần đầu',
   batDauDung: 'Bắt đầu dùng',
   moMay: 'Mở máy cho tác phẩm này',
+  viDuCanThiep: 'ví dụ: Lâm Thanh nên do dự lâu hơn trước khi rút kiếm',
+  dangGui: 'Đang gửi…',
+  tiemVaoLuotDangChay: 'Tiêm vào lượt đang chạy',
+  danhThucLuotMoi: 'Đánh thức lượt mới',
+  chay: 'Chạy',
+  dung: 'Dừng',
+  choDiTiep: 'Cho đi tiếp 1 chương',
+  cheDoNghiemThu: 'Nghiệm thu từng chương',
+  cheDoTuChay: 'Tự chạy liên tục',
+  taoTacPham: 'Tác phẩm mới',
+  batDauViet: 'Bắt đầu viết',
+  yeuCauTruyen: 'Yêu cầu truyện',
+  tenThuMuc: 'Tên thư mục',
+  moLai: 'Mở lại để viết tiếp',
+  huongVietTiep: 'Hướng viết tiếp (có thể để trống)',
   dongMay: 'Đóng máy',
+  dieuKhien: 'Điều khiển dây chuyền',
+  engineDangHoi: 'Dây chuyền đang hỏi bạn',
+  tuNhap: 'Tự nhập',
+  nhapCauTraLoi: 'nhập câu trả lời của bạn',
+  themGhiChuTuyChon: 'thêm ghi chú (tùy chọn)',
+  traLoiVaTiepTuc: 'Trả lời và cho đi tiếp',
+  cungDung: 'Cùng dựng',
+  guiLuot: 'Gửi',
+  chotBanNhap: 'Chốt và chạy theo bản này',
+  banNhapHienTai: 'Bản yêu cầu đang có',
+  goiYTiepTheo: 'Có thể nói tiếp',
+  ban: 'Bạn',
+  nhapXuat: 'Nhập & Xuất',
+  xuatBan: 'Xuất bản',
+  dinhDang: 'Định dạng',
+  tuChuong: 'Từ chương',
+  denChuong: 'Đến chương',
+  chuongCuoi: 'chương cuối',
+  taiVe: 'Xuất và tải về',
+  nhapTruyenNgoai: 'Nhập truyện từ ngoài',
+  tepNguon: 'Tệp nguồn',
+  huongDanChia: 'Hướng dẫn chia',
+  tuDongChotChia: 'Tự động chốt cách chia',
+  batDauNhap: 'Bắt đầu nhập',
+  dangChayLuong: 'Đang chạy…',
+  moPhongVanPhong: 'Mô phỏng văn phong',
+  nguLieu: 'Ngữ liệu',
+  hoSoSan: 'Hồ sơ sẵn',
+  dungHoSoTuNguLieu: 'Dựng hồ sơ từ ngữ liệu',
+  nhapHoSoSan: 'Nhập hồ sơ sẵn',
+  daTaiVe: (ten: string, so: number) => `Đã tải về ${ten} — ${so} chương`,
+  boQuaChuong: (n: number[]) =>
+    `bỏ qua ${n.length} chương chưa hoàn thành (${n.slice(0, 8).join(', ')}${n.length > 8 ? '…' : ''})`,
 
   // canvas
   trucSanXuat: 'Trục sản xuất',
@@ -851,9 +899,55 @@ export const GIAI_THICH = {
   kenhVaiThuaHuong:
     'Vai chưa đặt riêng thì dùng model mặc định. Đổi mặc định sẽ đổi luôn các vai này.',
   /** capabilities.steer === false */
+  /**
+   * Hai câu này nói về ca đường ghi BỊ TẮT, và lý do đã đổi.
+   *
+   * Câu cũ nói "engine sở hữu quyền ghi, studio ghi vào là hai process cùng sửa một tệp".
+   * Tiền đề đó hết hiệu lực: engine chạy trong process studio. Giờ ô chỉ vô hiệu khi
+   * studio lắng nghe ngoài loopback — lúc đó nhóm route ghi cố ý không được mắc, vì một
+   * bề mặt giữ khóa API và khởi động được engine không được phơi ra mạng.
+   */
   canThiepTat:
-    'Engine sở hữu quyền ghi vào store. Nếu studio cũng ghi thì hai process cùng sửa một tệp và ý kiến can thiệp sẽ mất trắng — không lỗi, không dấu vết. Can thiệp qua web cần engine hợp tác trước; hiện tại dùng TUI.',
-  canThiepChoDay: 'Ô nhập vô hiệu — engine bản này chưa nhận can thiệp qua web',
+    'Studio đang lắng nghe ngoài loopback nên đường ghi bị tắt: bề mặt này giữ khóa API và khởi động được engine, nên nó không được nhận lệnh ghi từ mạng. Chạy lại với --addr 127.0.0.1:8420 để dùng đầy đủ.',
+  canThiepChoDay: 'Ô nhập vô hiệu — studio đang ở chế độ chỉ đọc',
+  canThiepArbiterXuLy:
+    'Arbiter phân loại phạm vi ảnh hưởng rồi xếp các chương bị tác động vào hàng chờ viết lại. Phán quyết được ghi vào nhật ký ở trên.',
+  daTiemVaoLuot:
+    'Đã tiêm vào lượt đang chạy. Arbiter đang phán quyết; chương bị ảnh hưởng có thể vào hàng chờ viết lại.',
+  daDanhThuc: 'Đã đánh thức một lượt chạy mới với câu vừa gửi.',
+  engineDangChanCho:
+    'Dây chuyền đã DỪNG LẠI ở đây và không tiến thêm bước nào cho tới khi bạn trả lời. Nó hỏi vì thiếu thông tin ảnh hưởng rõ tới hướng quy hoạch.',
+  muonThoatThiDung: 'Không muốn trả lời thì dừng dây chuyền ở thanh dưới.',
+  cungDungGiaiThich:
+    'Nói qua vài lượt để làm rõ ý trước khi engine bắt đầu. Mỗi lượt là một lời gọi model thật, nhưng rẻ hơn nhiều so với việc để nó viết sai hướng rồi phải viết lại.',
+  cungDungCanMayMo:
+    'Cùng dựng cần một engine đang mở để gọi model. Mở một tác phẩm bất kỳ rồi quay lại — hoặc nếu đã biết mình muốn gì thì gõ thẳng vào ô yêu cầu ở Tác phẩm mới.',
+  nhapXuatCanTacPham: 'Chọn một tác phẩm trước — cả ba luồng đều tác động lên store của một tác phẩm cụ thể.',
+  xuatBanGiaiThich:
+    'Hợp nhất các chương đã hoàn thành thành một tệp và tải về máy bạn. Chương chưa viết xong bị bỏ qua, và số chương bỏ qua được nói ra sau khi tải.',
+  nhapTruyenGiaiThich:
+    'Đọc một cuốn có sẵn, chia chương theo nghĩa rồi dựng dàn ý, nhân vật và tóm tắt từ nó. Luồng này GIỮ khóa độc quyền của engine nên nó không chạy song song với việc viết.',
+  tuDongChotLaUyQuyenMu:
+    'Tự động chốt là uỷ quyền MÙ: nó nhận cách chia chương mà bạn chưa xem. Để tắt thì luồng dừng lại ở bước xem trước, và nhật ký nói rõ nó đang chờ gì.',
+  moPhongGiaiThich:
+    'Dựng hồ sơ văn phong từ ngữ liệu bạn tải lên, để Writer viết theo giọng đó. Hoặc nhập một hồ sơ đã dựng sẵn — đường đó bỏ qua cả bước phân tích.',
+  luongCoTheLau:
+    'Đang chạy. Luồng này gọi model nhiều lượt nên có thể mất vài phút — bản này chỉ hiện nhật ký sau khi xong, nên trang im lặng KHÔNG có nghĩa là treo.',
+  cungDungGiaiDoanTamDung:
+    'Vào cùng dựng giai đoạn sẽ TẠM DỪNG dây chuyền: bàn về chặng tiếp thì không để nó viết tiếp trong lúc bàn.',
+  /* vòng đời sáng tác */
+  vongDoiCanMoMay:
+    'Các nút điều khiển cần engine đang mở. Mở máy không gọi model lần nào — nó chỉ gắn engine vào tác phẩm.',
+  cheDoReviewLaGi:
+    'Chế độ nghiệm thu: engine dừng trước MỖI chương mới và chờ bạn cho đi tiếp từng chương một. Dùng khi muốn đọc soát trước khi nó viết thêm.',
+  cheDoAutoLaGi:
+    'Chế độ tự chạy: engine viết liên tục tới khi xong hoặc hết ngân sách. Không dừng chờ ai.',
+  taoSachGiaiThich:
+    'Một câu yêu cầu là đủ. Arbiter sẽ đọc nó để chọn mức quy hoạch và số chương, rồi bắt đầu dựng nền tác phẩm.',
+  taoSachTenThuMuc:
+    'Tên này thành thư mục trên đĩa nên chỉ nhận chữ thường không dấu, số, gạch ngang và gạch dưới. Tên hiển thị của tác phẩm do chính truyện quyết định, không phải tên này.',
+  taoSachSeTieuTien:
+    'Bấm Bắt đầu là gọi model thật và tiêu tiền thật. Dây chuyền sẽ chạy liên tục tới khi bạn dừng.',
 
   /** capabilities.per_chapter_cost === false */
   khongCoChiPhiTheoChuong:
@@ -883,12 +977,20 @@ export const GIAI_THICH = {
 
   /** không có tác phẩm nào */
   xuongTrongTieuDe: 'Xưởng chưa có tác phẩm',
+  /**
+   * Câu cũ: "Studio chỉ đọc store — tác phẩm được tạo bằng engine", kèm một lệnh CLI.
+   * Cả hai giờ sai: studio TẠO được tác phẩm. Câu này chỉ còn dùng ở chế độ chỉ đọc
+   * (studio chạy ngoài loopback), nên nó nói đúng ca đó.
+   */
   xuongTrongThan:
-    'Thư mục gốc không chứa tác phẩm nào có meta/progress.json. Studio chỉ đọc store — tác phẩm được tạo bằng engine.',
+    'Thư mục gốc không chứa tác phẩm nào có meta/progress.json. Studio đang ở chế độ chỉ đọc nên không tạo được tác phẩm từ đây — chạy lại với --addr 127.0.0.1:8420 để tạo trên web.',
   xuongTrongLenh: 'ainovel-cli run --root <thư mục gốc>',
   xuongTrongGoc: 'thư mục gốc',
 
   khongTaiDuoc: 'Không đọc được store',
+  /** Bản trước nói "engine và studio là hai tiến trình rời nhau" — hết đúng từ đợt 1. */
+  khongTaiDuocViSao:
+    'Studio đọc trực tiếp thư mục gốc. Nếu thư mục gốc sai, hoặc tác phẩm này chưa có meta/progress.json, thì không có gì để đọc.',
 
   /**
    * Inspector khi chưa chọn chương.

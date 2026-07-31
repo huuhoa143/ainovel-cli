@@ -56,6 +56,13 @@ type boMay struct {
 	napConfg func() (bootstrap.Config, error) // tách ra để test tiêm được
 }
 
+// mocBayGio là một chỗ duy nhất lấy thời điểm hiện tại trong gói này.
+//
+// Gói lại thành hàm chứ không rải `time.Now()` khắp nơi: các mốc trong bộ giám sát (mở
+// lúc nào, chạy từ khi nào) được đọc lên giao diện, và hai công thức lấy giờ khác nhau
+// là hai mốc lệch nhau mà không ai kiểm.
+func mocBayGio() time.Time { return time.Now() }
+
 func newBoMay(root string) *boMay {
 	return &boMay{
 		root:     root,
@@ -71,6 +78,10 @@ type phienMay struct {
 	eng    *host.Host
 	moLuc  time.Time
 	chayTu time.Time
+
+	// hoi là cầu nối `ask_user`: engine hỏi rồi CHẶN chờ trả lời từ trình duyệt.
+	// Xem hoi_nguoi_dung.go — đây là lý do quyết định cho việc engine chạy in-process.
+	hoi *cauNoiHoi
 
 	// mu chỉ canh ba trường dưới. Không dùng mu của boMay: một phiên báo lỗi không
 	// được chặn phiên khác đang mở.
@@ -138,7 +149,10 @@ func (b *boMay) mo(id string) (*phienMay, error) {
 		return nil, err
 	}
 
-	p := &phienMay{id: id, eng: eng, moLuc: time.Now()}
+	p := &phienMay{id: id, eng: eng, moLuc: mocBayGio(), hoi: &cauNoiHoi{}}
+	// Phải cắm handler TRƯỚC khi engine có cơ hội chạy. Không cắm thì `AskUserTool` gọi
+	// vào handler nil và engine đứng im mà không ai biết nó đang chờ gì.
+	eng.AskUser().SetHandler(p.hoi.handler)
 	b.dang[id] = p
 	slog.Info("studio mở engine", "module", "serve", "book", id, "dir", dir)
 	return p, nil
@@ -219,7 +233,7 @@ func (b *boMay) tao(id, yeuCau string) (*phienMay, error) {
 	if err := p.eng.StartPrepared(plan.RawPrompt); err != nil {
 		return nil, err
 	}
-	p.chayTu = time.Now()
+	p.chayTu = mocBayGio()
 	b.theoDoi(p)
 	return p, nil
 }
@@ -237,7 +251,7 @@ func (b *boMay) chay(id string) (string, error) {
 	if nhan == "" {
 		return "", errors.New("không có phiên nào khôi phục được cho tác phẩm này")
 	}
-	p.chayTu = time.Now()
+	p.chayTu = mocBayGio()
 	b.theoDoi(p)
 	return nhan, nil
 }
@@ -265,7 +279,7 @@ func (b *boMay) canThiep(id, chu string) (string, error) {
 	if err := p.eng.Continue(chu); err != nil {
 		return "", err
 	}
-	p.chayTu = time.Now()
+	p.chayTu = mocBayGio()
 	b.theoDoi(p)
 	return "continue", nil
 }

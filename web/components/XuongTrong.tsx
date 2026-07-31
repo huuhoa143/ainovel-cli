@@ -42,8 +42,7 @@ export function KhongTaiDuoc({ loi, onThuLai }: { loi: string; onThuLai: () => v
       <h1>{GIAI_THICH.khongTaiDuoc}</h1>
       <p className="loi">{loi}</p>
       <p>
-        Engine và studio là hai tiến trình rời nhau. Nếu engine chưa chạy hoặc thư mục gốc
-        sai thì bề mặt này không có gì để đọc.
+        {GIAI_THICH.khongTaiDuocViSao}
       </p>
       <button type="button" onClick={onThuLai}>
         Đọc lại store

@@ -1681,6 +1681,19 @@ func (h *Host) importModelRuntime(role string, model agentcore.ChatModel) imp.Mo
 
 // Simulate 读取 simulate 目录并生成或增量更新仿写画像。
 func (h *Host) Simulate(ctx context.Context) (<-chan sim.Event, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("get working dir: %w", err)
+	}
+	return h.SimulateFrom(ctx, filepath.Join(wd, "simulate"))
+}
+
+// SimulateFrom 与 Simulate 相同，但语料目录由调用方给出。
+//
+// web studio 需要它：语料是用户上传的，落在一个每次请求独立的临时目录，
+// 而不是进程 CWD 下的固定 ./simulate。Simulate 保留原签名并委托到这里，
+// 所以 TUI 调用点一个字都不用改。
+func (h *Host) SimulateFrom(ctx context.Context, sourceDir string) (<-chan sim.Event, error) {
 	if err := h.acquireExclusive(i18n.F("生成仿写画像")); err != nil {
 		return nil, err
 	}
@@ -1689,11 +1702,6 @@ func (h *Host) Simulate(ctx context.Context) (<-chan sim.Event, error) {
 	h.exclusiveCancel = cancel
 	h.mu.Unlock()
 
-	wd, err := os.Getwd()
-	if err != nil {
-		h.releaseExclusive()
-		return nil, fmt.Errorf("get working dir: %w", err)
-	}
 	deps := sim.Deps{
 		Store: h.store,
 		LLM:   h.models.ForRole("architect"),
@@ -1702,7 +1710,7 @@ func (h *Host) Simulate(ctx context.Context) (<-chan sim.Event, error) {
 			Merge:  h.bundle.Prompts.SimulationMerge,
 		},
 	}
-	ch, err := sim.Run(ctx, deps, sim.Options{SourceDir: filepath.Join(wd, "simulate")})
+	ch, err := sim.Run(ctx, deps, sim.Options{SourceDir: sourceDir})
 	if err != nil {
 		h.releaseExclusive()
 		return nil, err

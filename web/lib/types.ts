@@ -657,3 +657,60 @@ export interface VaiModelDoc {
   providers: string[];
   models_by_provider: Record<string, string[] | null>;
 }
+
+/* ── engine hỏi người dùng (luồng CHẶN) ─────────────────────────────────── */
+
+export interface HoiMotCau {
+  question: string;
+  header: string;
+  multi_select: boolean;
+  options: { label: string; description: string }[];
+}
+
+/** Lượt hỏi đang chặn engine. Đi kèm /live, không có endpoint riêng. */
+export interface HoiDangCho {
+  /** Phải gửi lại khi trả lời: một tab cũ trả lời cho lượt khác sẽ bị từ chối. */
+  id: string;
+  questions: HoiMotCau[];
+}
+
+export interface TrangThaiSong {
+  open: boolean;
+  stopped: boolean;
+  last_error?: string;
+  asking?: HoiDangCho;
+  snapshot: Record<string, unknown>;
+}
+
+/* ── cùng dựng ──────────────────────────────────────────────────────────── */
+
+export interface LuotCungDung {
+  role: 'user' | 'assistant';
+  text: string;
+}
+
+export interface DapCungDung {
+  message: string;
+  /** Bản đầy đủ để ghi vào lịch sử. Rỗng → dùng `message`. */
+  raw?: string;
+  /** RỖNG = giữ bản nháp cũ, KHÔNG phải xóa. Xem chú thích dapCungDung phía Go. */
+  draft?: string;
+  ready: boolean;
+  suggestions?: string[];
+}
+
+/* ── luồng tệp ──────────────────────────────────────────────────────────── */
+
+export interface DongNhatKy {
+  stage: string;
+  text: string;
+  current?: number;
+  total?: number;
+  level?: string;
+  error?: boolean;
+}
+
+export interface KetQuaLuongTep {
+  log: DongNhatKy[];
+  failed: boolean;
+}

@@ -3625,3 +3625,376 @@ div:has(> .qcrow) {
     display: none;
   }
 }
+
+/* ── điều khiển dây chuyền trong thanh transport ─────────────────────────── */
+
+/*
+ * Nút bấm sống trong transport vì đó là chỗ trả lời "dây chuyền còn sống không"
+ * (PRODUCT.md lấy bàn transport của DAW làm điểm neo, và ở DAW thì play–stop ở transport).
+ *
+ * `margin-left: auto` KHÔNG dùng ở đây: ô `.push` trong transport đã chiếm chỗ đó. Nhóm
+ * này đứng cuối theo thứ tự DOM và tự nằm bên phải.
+ */
+.dieukhien {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  flex-shrink: 0;
+}
+
+.dkNut {
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--ink);
+  font: 500 11.5px/1 var(--ui);
+  padding: 6px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dkNut:hover:not(:disabled) {
+  border-color: var(--ink-3);
+}
+
+.dkNut:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Chạy mang màu tín hiệu duy nhất (vàng) vì nó là hành động khởi động một việc TIÊU TIỀN.
+   Chữ tối trên vàng: --gold ở L 0.805 nên chữ sáng không đạt AA. */
+.dkNut.dkChay {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: oklch(0.19 0.02 74);
+}
+
+/* Dừng KHÔNG dùng đỏ: đỏ trong hệ này nghĩa là lỗi, và dừng có chủ ý không phải lỗi.
+   Viền amber nói "sắp có hệ quả" mà không nói "đã sai". */
+.dkNut.dkDung {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+/* Chế độ nghiệm thu đang BẬT là một trạng thái đáng thấy: nó nghĩa là dây chuyền sẽ đứng
+   chờ người. Nền teal (đã nghiệm thu) khớp nghĩa đó trong hệ màu đang dùng. */
+.dkNut.dkBat {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.dkNut.dkPhu {
+  color: var(--ink-2);
+}
+
+.dkLoi {
+  font: 400 11px/1.5 var(--ui);
+  color: var(--red);
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  /* Thanh transport đã chật ở khung hẹp. Cho nhóm nút xuống dòng thay vì bóp chúng: một
+     nút bị bóp mất chữ là nút bấm nhầm. */
+  .dieukhien {
+    flex-wrap: wrap;
+    padding: 6px 10px;
+  }
+  .dkLoi {
+    max-width: 100%;
+  }
+}
+
+/* ── ô nhập nhiều dòng (yêu cầu truyện) ─────────────────────────────────── */
+
+.oNhapCao {
+  align-items: start;
+}
+
+.oNhapCao > span {
+  padding-top: 7px;
+}
+
+.oNhap textarea {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 8px 10px;
+  color: var(--ink);
+  /* 1.78 chứ không 1.5: đây là ô người dùng viết văn xuôi tiếng Việt vào, và dấu xếp hai
+     tầng cần chỗ. Cùng con số với khổ đọc dài ở DESIGN.md. */
+  font: 400 13px/1.78 var(--ui);
+  resize: vertical;
+  min-height: 96px;
+  /* Khổ đọc: câu yêu cầu dài sẽ thành một khối dày, và 74ch là hạn đọc được. */
+  max-width: 74ch;
+}
+
+.oNhap textarea:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+/* ── modal khi engine hỏi (luồng CHẶN) ──────────────────────────────────── */
+
+/*
+ * Lớp phủ TỐI và đặc, không phải glass mờ trang trí: engine đang ĐỨNG, nên bề mặt phía sau
+ * đúng nghĩa là không dùng được lúc này. Một lớp phủ nhẹ nói "vẫn có thể bấm ra ngoài" —
+ * điều không đúng ở đây, vì đóng modal không làm dây chuyền đi tiếp.
+ */
+.hoiNen {
+  position: fixed;
+  inset: 0;
+  z-index: 400; /* trên transport (sticky) và dưới không gì cả — đây là lớp chặn */
+  background: oklch(0.12 0.008 74 / 0.86);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  overflow: auto;
+}
+
+.hoiHop {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 16px 48px oklch(0.08 0.006 74 / 0.7);
+  max-width: 640px;
+  width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  padding: 20px 22px;
+}
+
+.hoiDau h2 {
+  font: 600 15px/1.5 var(--ui);
+  color: var(--gold);
+  margin: 0 0 4px;
+}
+
+.hoiThan {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.hoiCau {
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  padding: 12px 14px;
+  margin: 0;
+}
+
+.hoiCau legend {
+  font: 500 13px/1.72 var(--ui);
+  color: var(--ink);
+  padding: 0 6px;
+}
+
+.hoiNhan {
+  display: inline-block;
+  font: 500 10.5px/1 var(--mono);
+  color: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 3px 5px;
+  margin-right: 8px;
+  vertical-align: 1px;
+}
+
+.hoiChon {
+  display: flex;
+  gap: 9px;
+  align-items: baseline;
+  padding: 7px 4px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.hoiChon:hover {
+  background: var(--panel-2);
+}
+
+.hoiChon input {
+  margin-top: 3px;
+  accent-color: var(--gold);
+  flex-shrink: 0;
+}
+
+.hoiChon strong {
+  font: 500 12.5px/1.72 var(--ui);
+  color: var(--ink);
+}
+
+.hoiChon em {
+  display: block;
+  font: 400 11.5px/1.6 var(--ui);
+  font-style: normal;
+  color: var(--ink-2);
+}
+
+.hoiTuNhap {
+  width: 100%;
+  margin-top: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 7px 9px;
+  color: var(--ink);
+  font: 400 12.5px/1.5 var(--ui);
+}
+
+.hoiTuNhap:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.hoiNut {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ── cùng dựng ──────────────────────────────────────────────────────────── */
+
+.cdList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 10px 0 14px;
+}
+
+.cdLuot {
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  padding: 10px 12px;
+  background: var(--panel);
+  /* Khổ đọc: đây là văn xuôi, và 74ch là hạn đọc được. */
+  max-width: 74ch;
+}
+
+/* Lượt người dùng phân biệt bằng NỀN, không bằng dải cạnh (dải cạnh bị cấm) và không
+   bằng cách đẩy sang phải kiểu bong bóng chat — đây là bàn làm việc, không phải tin nhắn. */
+.cdLuot.user {
+  background: var(--panel-2);
+  border-color: var(--line);
+}
+
+.cdVai {
+  display: block;
+  font: 500 10.5px/1 var(--ui);
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+  margin-bottom: 6px;
+}
+
+.cdChu {
+  margin: 0;
+  font: 400 13px/1.78 var(--ui);
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+
+.cdGoiY {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.cdGoiY .lbl {
+  font: 400 11px/1.5 var(--ui);
+  color: var(--ink-3);
+}
+
+/* ── nhật ký luồng tệp ──────────────────────────────────────────────────── */
+
+.nkLuong {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  background: var(--panel);
+  max-height: 340px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nkLuong li {
+  display: grid;
+  grid-template-columns: 128px 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+  font: 400 11.5px/1.6 var(--ui);
+  color: var(--ink-2);
+}
+
+/* Trạng thái bằng MÀU CHỮ, không bằng nền cả dòng: một dòng nhật ký nền đỏ trong danh sách
+   dài làm mắt nhảy tới nó rồi mất mạch đọc theo thứ tự thời gian. */
+.nkLuong li.loi .nkChu {
+  color: var(--red);
+}
+
+.nkLuong li.canh .nkChu {
+  color: var(--amber);
+}
+
+.nkCd {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nkChu {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.nkTd {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  /* Cột công đoạn 128px + tiến độ không còn chỗ cho chữ ở khung hẹp. Xếp dọc: đọc được
+     quan trọng hơn thẳng cột. */
+  .nkLuong li {
+    grid-template-columns: 1fr;
+    gap: 2px;
+    padding-bottom: 4px;
+  }
+}
+
+/* Ô nhập dạng đánh dấu: nhãn bên trái như mọi ô khác, nhưng hộp không giãn hết chiều ngang
+   vì một checkbox rộng 100% là một vùng bấm mà người dùng không đoán được biên. */
+.oNhapCheck input {
+  justify-self: start;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--gold);
+}
+
+.oNhap input[type='file'] {
+  font: 400 12px/1.5 var(--ui);
+  color: var(--ink-2);
+  background: none;
+  border: 1px dashed var(--line);
+  padding: 8px 9px;
+}

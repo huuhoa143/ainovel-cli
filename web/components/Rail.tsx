@@ -239,6 +239,14 @@ export function Rail({
         khu={khu}
         onChonKhu={onChonKhu}
       />
+      <MucDi
+        nhan={CHU.nhapXuat}
+        ky="⇄"
+        di="nhap-xuat"
+        khu={khu}
+        onChonKhu={onChonKhu}
+        chuGiai={GIAI_THICH.xuatBanGiaiThich}
+      />
       <MucNguon
         nhan={CHU.caiDat}
         ky="⚙"
@@ -256,6 +264,22 @@ export function Rail({
           nhầm mà bề mặt Cài đặt đã phải tách ra để tránh: người vận hành đọc nó thành
           "cấu hình của cuốn này". */}
       <div className="grp">{CHU.may}</div>
+      <MucDi
+        nhan={CHU.cungDung}
+        ky="⁂"
+        di="cung-dung"
+        khu={khu}
+        onChonKhu={onChonKhu}
+        chuGiai={GIAI_THICH.cungDungGiaiThich}
+      />
+      <MucDi
+        nhan={CHU.taoTacPham}
+        ky="+"
+        di="tac-pham-moi"
+        khu={khu}
+        onChonKhu={onChonKhu}
+        chuGiai={GIAI_THICH.taoSachGiaiThich}
+      />
       <MucDi
         nhan={CHU.cauHinh}
         ky="⌸"

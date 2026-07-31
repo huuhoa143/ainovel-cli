@@ -31,7 +31,10 @@ export type Khu =
   | 'to-san-xuat'
   | 'chi-phi'
   | 'cai-dat'
-  | 'cau-hinh';
+  | 'cau-hinh'
+  | 'tac-pham-moi'
+  | 'cung-dung'
+  | 'nhap-xuat';
 
 export const KHU: readonly Khu[] = [
   'dong-san-xuat',
@@ -47,6 +50,9 @@ export const KHU: readonly Khu[] = [
   'chi-phi',
   'cai-dat',
   'cau-hinh',
+  'tac-pham-moi',
+  'cung-dung',
+  'nhap-xuat',
 ] as const;
 
 export const KHU_MAC_DINH: Khu = 'dong-san-xuat';
@@ -65,7 +71,7 @@ export function laKhu(v: string | null | undefined): v is Khu {
  * kiểu nhầm mà bề mặt Cài đặt đã phải tách ra để tránh.
  */
 export function laKhuMucMay(khu: Khu): boolean {
-  return khu === 'cau-hinh';
+  return khu === 'cau-hinh' || khu === 'tac-pham-moi' || khu === 'cung-dung';
 }
 
 /**
