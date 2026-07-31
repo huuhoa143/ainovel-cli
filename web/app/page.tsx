@@ -26,6 +26,7 @@ import { ThanhTren } from '@/components/ThanhTren';
 import { ToSanXuat } from '@/components/ToSanXuat';
 import { Transport } from '@/components/Transport';
 import { VanPhong } from '@/components/VanPhong';
+import { ViecTiepTheo } from '@/components/ViecTiepTheo';
 import { DangTai, KhongTaiDuoc, XuongTrong } from '@/components/XuongTrong';
 import { Truc } from '@/components/Truc';
 import { so } from '@/lib/dinhdang';
@@ -74,6 +75,26 @@ export default function Trang() {
         dangXem={sachDangXem}
         ketNoi={s.ketNoi}
         onChon={s.chonTacPham}
+        // Đường vào "Tác phẩm mới" đặt ở thanh trên, cạnh bộ chọn tác phẩm.
+        //
+        // Nó VẪN còn trong rail, nhóm Máy — bỏ đi là bỏ một đường đi. Nhưng ở đó nó là mục
+        // thứ mười lăm trong mười sáu mục cùng sức nặng, và người dùng nói nguyên văn: "bắt
+        // đầu tác phẩm mới thì như thế nào và ở đâu". Thanh trên là chỗ trả lời câu đó:
+        // câu hỏi "cuốn nào" và câu hỏi "cuốn mới" là cùng một loại câu hỏi, nên chúng
+        // thuộc cùng một chỗ.
+        //
+        // Ba điều kiện, ba lý do khác nhau:
+        //  - `choGhi`: ngoài loopback thì `POST /books` bị từ chối, nên một nút dẫn tới
+        //    biểu mẫu chắc chắn thất bại là lời hứa hụt.
+        //  - `!canCaiDat`: chưa có khóa API thì bề mặt duy nhất được vẽ là Cấu hình máy,
+        //    nên bấm nút này sẽ KHÔNG đổi được gì — một nút không phản ứng.
+        //  - `!xuongTrong`: xưởng rỗng thì Tác phẩm mới đã là bề mặt đang mở sẵn.
+        onTaoTacPham={
+          may.choGhi && !may.canCaiDat && !xuongTrong
+            ? () => s.chonKhu('tac-pham-moi')
+            : undefined
+        }
+        dangOTaoTacPham={s.khu === 'tac-pham-moi'}
       />
 
       {/* Chưa có tệp cấu hình thì dẫn THẲNG vào cài đặt, không hiện studio trống.
@@ -107,6 +128,7 @@ export default function Trang() {
             tacPham={s.tacPham}
             chuongChon={s.chuongChon}
             onChonChuong={s.chonChuong}
+            onChonKhu={s.chonKhu}
             onChonTacPham={s.chonTacPham}
             onChotCungDung={chotCungDung}
             nhapSan={nhapTuCungDung}
@@ -162,6 +184,7 @@ function Khu({
   tacPham,
   chuongChon,
   onChonChuong,
+  onChonKhu,
   onChonTacPham,
   onChotCungDung,
   nhapSan,
@@ -173,6 +196,7 @@ function Khu({
   tacPham: string | undefined;
   chuongChon: number | undefined;
   onChonChuong: (n: number) => void;
+  onChonKhu: (k: KhuMa) => void;
   onChonTacPham: (id: string) => void;
   onChotCungDung: (banNhap: string) => void;
   nhapSan: string;
@@ -250,6 +274,7 @@ function Khu({
           tacPham={tacPham}
           chuongChon={chuongChon}
           onChonChuong={onChonChuong}
+          onChonKhu={onChonKhu}
           suKien={suKien}
           dangChay={dangChay}
         />
@@ -262,6 +287,7 @@ function Canvas({
   tacPham,
   chuongChon,
   onChonChuong,
+  onChonKhu,
   suKien,
   dangChay,
 }: {
@@ -269,6 +295,7 @@ function Canvas({
   tacPham: string | undefined;
   chuongChon: number | undefined;
   onChonChuong: (n: number) => void;
+  onChonKhu: (k: KhuMa) => void;
   suKien: Parameters<typeof DongSuKien>[0]['suKien'];
   dangChay: boolean;
 }) {
@@ -296,6 +323,17 @@ function Canvas({
           <MucXem timeline={snapshot.timeline} hienTai={muc} onChon={setMucMuon} />
         ) : null}
       </div>
+
+      {/* Dải việc tiếp theo đứng NGAY dưới đầu trang, trên cả cảnh báo dữ liệu lệch.
+          Hai loại tin khác nhau: dải này trả lời "giờ tôi làm gì", cảnh báo trả lời "cái gì
+          đang không ổn". Câu thứ nhất là câu người dùng mang theo lúc mở trang, nên nó đứng
+          trước — và một cuốn có cảnh báo thì dải vẫn nói được việc tiếp theo. */}
+      <ViecTiepTheo
+        snapshot={snapshot}
+        dangChay={dangChay}
+        onChonKhu={onChonKhu}
+        onChonChuong={onChonChuong}
+      />
 
       {/* Dữ liệu lệch là tin vận hành, không phải chi tiết nội bộ — hiện ngay
           dưới đầu trang thay vì nuốt đi. */}

@@ -66,9 +66,12 @@ export function laKhu(v: string | null | undefined): v is Khu {
  *
  * Nó nằm trong `Khu` để dùng chung một mô hình điều hướng (rail + `?khu=`), nhưng bề mặt
  * của nó không đọc `tacPham` và nội dung không đổi khi người dùng chuyển tác phẩm. Rail
- * đặt nó trong nhóm riêng tên "Máy" để sự khác cấp đó nhìn thấy được — nếu nó nằm lẫn
- * trong nhóm "Xưởng" thì người vận hành sẽ đọc nó là cấu hình của cuốn đang mở, đúng
- * kiểu nhầm mà bề mặt Cài đặt đã phải tách ra để tránh.
+ * đặt nó trong nhóm riêng tên "Chung cho mọi tác phẩm" để sự khác cấp đó nhìn thấy được —
+ * nếu nó nằm lẫn trong nhóm "Chi phí & vận hành" thì người vận hành sẽ đọc nó là cấu hình
+ * của cuốn đang mở, đúng kiểu nhầm mà bề mặt Cài đặt đã phải tách ra để tránh.
+ *
+ * Tên nhóm dài ra chính vì việc đó: một chữ "Máy" (tên cũ) không ngăn được cái nhầm đó,
+ * nó chỉ đặt tên cho một bộ phận của hệ thống.
  */
 export function laKhuMucMay(khu: Khu): boolean {
   return khu === 'cau-hinh' || khu === 'tac-pham-moi' || khu === 'cung-dung';

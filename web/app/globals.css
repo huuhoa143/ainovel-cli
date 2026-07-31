@@ -207,6 +207,7 @@ button {
   gap: 8px;
   height: 28px;
   max-width: 320px;
+  min-width: 0;
   padding: 0 9px;
   background: var(--panel-2);
   border: 1px solid var(--line);
@@ -240,9 +241,72 @@ button {
   margin-left: 2px;
 }
 
+/* ── nút tạo tác phẩm trên thanh trên ─────────────────────────────────────
+   Đường vào chính cho việc bắt đầu một cuốn mới — xem lý do ở ThanhTren.tsx.
+
+   Viền vàng mờ chứ không nền vàng đặc: `PRODUCT.md` nguyên tắc 5 giữ vàng cho DỮ LIỆU
+   (đang chạy, tiêu điểm), nên một nút nền vàng ở thanh trên sẽ hét to hơn nhịp đập của
+   chính dây chuyền. Viền là đủ để nó là thứ sáng thứ hai trên thanh mà không tranh với
+   tín hiệu sống. */
+.nutMoi {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  height: 28px;
+  padding: 0 10px 0 8px;
+  background: color-mix(in oklch, var(--gold) 9%, var(--panel-2));
+  border: 1px solid color-mix(in oklch, var(--gold) 36%, var(--line));
+  border-radius: var(--r);
+  color: var(--ink);
+  font: 500 12.5px var(--ui);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.16s var(--ease), border-color 0.16s var(--ease);
+}
+.nutMoi:hover {
+  background: color-mix(in oklch, var(--gold) 16%, var(--panel-2));
+  border-color: color-mix(in oklch, var(--gold) 55%, var(--line));
+}
+.nutMoi[aria-current='page'] {
+  background: color-mix(in oklch, var(--gold) 20%, var(--panel-2));
+  border-color: var(--gold);
+}
+.nutMoi .ky {
+  color: var(--gold);
+  font: 400 15px/1 var(--mono);
+  margin-top: -1px;
+}
+
+/* Dưới 700px chỉ còn dấu `+`. ĐO ĐƯỢC ở 390px: sau khi đã ẩn `.slate`, thanh trên còn
+   đúng 12px dư (bộ chọn hết ở 262px, huy hiệu kết nối bắt đầu ở 274px), nên một nút mang
+   chữ đẩy huy hiệu ra ngoài mép của một khung không cuộn được. `aria-label` trên nút giữ
+   nguyên tên đầy đủ nên phần mất là hình, không phải nghĩa. */
+@media (max-width: 700px) {
+  .nutMoi .nhan {
+    display: none;
+  }
+  .nutMoi {
+    padding: 0 8px;
+  }
+  /* Tên sản phẩm nhường chỗ cho tên tác phẩm.
+     ĐO ĐƯỢC ở 390px: thêm nút `+` đẩy bộ chọn từ 150px xuống 111px, và "Ba đêm đèn tắt"
+     bị cắt thành "Ba đ…" — tức mất DỮ LIỆU để giữ một nhãn trang trí. Ứng dụng đang mở
+     rồi thì không ai còn hỏi nó là ứng dụng gì; thẻ trình duyệt cũng đã ghi tên đó.
+     `.logo` chiếm 88px cộng 12px gap, đúng phần bộ chọn vừa mất. */
+  .logo {
+    display: none;
+  }
+}
+
 /* danh sách tác phẩm — mở ra ngay dưới bộ chọn */
 .pickwrap {
   position: relative;
+  /* `min-width: 0` CHO PHÉP bộ chọn co lại khi thanh trên hết chỗ; không có nó thì
+     `min-width: auto` của flex item giữ nguyên bề rộng nội dung và phần tử cuối
+     (huy hiệu kết nối) bị đẩy ra ngoài mép. Cặp đôi bắt buộc: `.picker b` đã có
+     `ellipsis` nhưng ellipsis chỉ chạy khi phần tử THẬT SỰ bị co. */
+  min-width: 0;
 }
 .picklist {
   position: absolute;
@@ -397,6 +461,59 @@ button {
   font: 500 10.5px/1 var(--ui);
   color: var(--ink-3);
   padding: 12px 8px 7px;
+}
+
+/* ── nhóm thu gọn được ────────────────────────────────────────────────────
+   Xem Rail.tsx › Nhom cho lý do có nhóm thu gọn và vì sao thu bằng CSS.
+
+   Điểm mấu chốt của khối này: các mục VẪN Ở TRONG DOM khi nhóm đóng. Nhờ vậy
+   (a) effect tự-mở-nhóm đọc được `[aria-current]` của con để biết khu đang mở nằm ở
+   nhóm nào, và (b) dải ngang dưới 860px bật lại được toàn bộ mục bằng một `@media`. */
+.nhomrail[data-mo='0'] .mucnhom {
+  display: none;
+}
+
+/* Nhãn nhóm thành NÚT: cùng cỡ chữ, cùng màu, cùng khoảng đệm với nhãn nhóm tĩnh —
+   sự khác nhau duy nhất là mũi chỉ và trạng thái hover, tức đúng phần nói "bấm được". */
+.rail .grpnut {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  background: none;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--r);
+  transition: color 0.14s var(--ease);
+}
+.rail .grpnut:hover {
+  color: var(--ink-2);
+}
+/* 9.5px chứ không 8px: ở 8px mũi chỉ `▸` đọc thành một dấu chấm giữa dòng, nên hàng nhãn
+   nhóm trông như một mục danh sách có bullet chứ như một cái mở được.
+   KHÔNG kèm số mục vào nhãn nhóm đóng: cột số của rail đang mang nghĩa "còn tồn bao nhiêu
+   việc" (Kiểm định 9, Hàng chờ 1), nên một con số cùng chỗ mà nghĩa là "có 5 khu bên trong"
+   sẽ bị đọc thành việc tồn. Mũi chỉ cộng trạng thái hover là đủ để nói bấm được. */
+.rail .grpnut .chev {
+  width: 9px;
+  font-size: 9.5px;
+  line-height: 1;
+  flex: none;
+}
+.rail .grpnut .tenNhom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Dấu việc tồn của nhóm ĐANG ĐÓNG. Amber vì nó mang đúng nghĩa amber ở nơi khác trong
+   bề mặt này ("cần chú ý"), và nó phải ra được ngoài lớp thu gọn — thu một nhóm không
+   bao giờ được phép ẩn một hàng chờ thật. */
+.rail .grpnut .dauton {
+  margin-left: auto;
+  color: var(--amber);
+  font-size: 8px;
+  flex: none;
 }
 .rail a,
 .rail .muc,
@@ -594,6 +711,138 @@ button {
 .sect > h2 .phu {
   color: var(--ink-3);
   font-weight: 400;
+}
+
+/* ── dải việc tiếp theo ───────────────────────────────────────────────────
+   Xem ViecTiepTheo.tsx cho lý do dải này tồn tại.
+
+   Nó trông như một hàng của thanh transport, không như một tấm thẻ marketing: cùng nền
+   `--panel`, cùng đường kẻ, cùng đốm trạng thái. Đó là chủ ý — `PRODUCT.md` chốt giọng
+   "thiết bị công nghiệp", nên câu chỉ đường phải đến từ CÙNG cái máy đang chạy dây chuyền,
+   không từ một lớp hướng dẫn dán lên trên. */
+.vtt {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 18px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line-2);
+  min-width: 0;
+}
+
+/* Đốm trạng thái: cùng bộ ký hiệu với `.slate .dot` và `.kbd.live .dot` ở thanh trên —
+   vàng là đang chạy, lam-lục là đã nghiệm thu, xám là đứng yên. Một bộ quy ước cho cả
+   bề mặt, không phải một bộ riêng cho dải này. */
+.vttDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+  margin-top: 6px;
+  background: var(--line);
+}
+.vttDot.chay {
+  background: var(--gold);
+}
+.vttDot.xong {
+  background: var(--teal);
+}
+.vttDot.dap {
+  animation: dapnhip 2.2s var(--ease) infinite;
+}
+
+.vttChu {
+  min-width: 0;
+  flex: 1;
+}
+.vttCau {
+  margin: 0;
+  font: 500 13px/1.5 var(--ui);
+  color: var(--ink);
+}
+/* Lời chỉ đường: `--ink-3` là SÀN (4,9:1), và 1.72 là sàn dòng của DESIGN.md cho văn
+   nhiều dấu — câu này dài và mang đầy dấu tiếng Việt. */
+.vttHint {
+  margin: 3px 0 0;
+  font: 400 12px/1.72 var(--ui);
+  color: var(--ink-3);
+  max-width: 82ch;
+}
+
+.vttNut {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Nút chính của dải — hành vi ĐIỀU HƯỚNG, nên nó không được trông như nút chạy.
+   `.dkChay` ở transport là nút tiêu tiền và nó mang nền vàng; nút này mang nền trung tính
+   nổi để hai loại hành vi không bị học lẫn thành một. */
+.vttChinh {
+  height: 28px;
+  padding: 0 13px;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink);
+  font: 500 12.5px var(--ui);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.16s var(--ease), border-color 0.16s var(--ease);
+}
+.vttChinh:hover {
+  background: color-mix(in oklch, var(--gold) 14%, var(--raised));
+  border-color: color-mix(in oklch, var(--gold) 45%, var(--line));
+}
+
+.vttPhu {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink-2);
+  font: 400 12.5px var(--ui);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.16s var(--ease), color 0.16s var(--ease);
+}
+.vttPhu:hover {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+/* Việc tồn: amber, cùng nghĩa amber ở mọi chỗ khác. */
+.vttCanh {
+  color: var(--amber);
+  border-color: color-mix(in oklch, var(--amber) 34%, var(--line));
+}
+.vttCanh:hover {
+  color: var(--amber);
+  background: color-mix(in oklch, var(--amber) 11%, var(--bg));
+}
+.vttCanh .ky {
+  font-size: 8px;
+}
+
+/* Màn hình hẹp: nút xuống dòng riêng và trải hết bề rộng thay vì nén cạnh chữ.
+   Ở 390px một hàng ngang chỉ còn ~150px cho hai nút, tức cả hai đều bị cắt nhãn — mà nhãn
+   ở đây LÀ nội dung ("Đọc từ chương 1" mất phần số là mất chỗ nó dẫn tới). */
+@media (max-width: 700px) {
+  .vtt {
+    flex-wrap: wrap;
+    padding: 11px 12px;
+  }
+  .vttNut {
+    width: 100%;
+    justify-content: flex-start;
+    padding-left: 16px;
+  }
 }
 
 /* ── cảnh báo nhất quán của store ── */
@@ -2574,10 +2823,21 @@ div:has(> .qcrow) {
     background: var(--line);
     border-radius: 2px;
   }
-  /* Nhãn nhóm ("Sản xuất", "Hồ sơ tác phẩm") mất nghĩa khi các mục xếp ngang: nó
+  /* Nhãn nhóm ("Truyện của bạn", "Thế giới truyện") mất nghĩa khi các mục xếp ngang: nó
      không còn đứng TRÊN nhóm nào nữa. */
   .rail .grp {
     display: none;
+  }
+  /* Không còn nhóm thì không còn thu nhóm.
+     Đây là hệ quả bắt buộc của dòng trên, không phải một lựa chọn về hình: nhãn nhóm ẩn
+     đi tức là cái nút mở nhóm cũng ẩn, nên một nhóm đang đóng ở đây sẽ ẩn các mục của nó
+     mà KHÔNG còn cách nào mở lại — mười một khu thành không tới được, đúng cái mà dải
+     ngang ra đời để tránh. `display: contents` để các mục thành con trực tiếp của dải
+     flex; giữ `.mucnhom` là một hộp sẽ làm cả nhóm thành MỘT ô trong dải. */
+  .rail .nhomrail,
+  .rail .nhomrail[data-mo='0'] .mucnhom,
+  .rail .mucnhom {
+    display: contents;
   }
   .rail .mucdi,
   .rail .muc {
@@ -2861,6 +3121,7 @@ div:has(> .qcrow) {
 @media (prefers-reduced-motion: reduce) {
   .st.gold.dap .ky,
   .kbd.live[data-tt='song'] .dot,
+  .vttDot.dap,
   .trans .ky.dap {
     animation: none;
   }

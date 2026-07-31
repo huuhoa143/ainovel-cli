@@ -189,12 +189,26 @@ export function nhanPhamViXem(muc: MucXem, index: number): string {
 
 /* ── phase / flow của tác phẩm ────────────────────────────────────────── */
 
+/**
+ * Năm giá trị của `domain.Phase` — và đúng năm cái đó.
+ *
+ * Bản trước khai `foundation`, `planning`, `reviewing`: ba mã KHÔNG tồn tại trong engine
+ * (`internal/domain/runtime.go:13-17` chỉ có init / premise / outline / writing / complete).
+ * Ba dòng đó không bao giờ khớp, nên chúng vô hại — nhưng cái giá thật là chỗ chúng che:
+ * `premise` và `outline` VẮNG khỏi bảng, và `nhanPhase` trả nguyên mã khi tra không thấy.
+ *
+ * Hệ quả đo được: một cuốn đang dựng nền hiện "premise" trần trên đầu bề mặt và trong dải
+ * việc tiếp theo — chữ tiếng Anh, giữa một bề mặt tiếng Việt, đúng ở giai đoạn người dùng
+ * mới tạo truyện và đang chờ chương đầu. Tức lỗi này chỉ lộ ra ở người dùng LẦN ĐẦU.
+ *
+ * Hai mã đầu dịch theo VIỆC đang làm, không theo tên trường: người đọc cần biết máy đang
+ * làm gì, và "tiền đề" là thuật ngữ nội bộ của engine.
+ */
 const PHASE: Record<string, string> = {
   init: 'khởi tạo',
-  foundation: 'dựng nền',
-  planning: 'quy hoạch',
+  premise: 'dựng nền',
+  outline: 'dựng dàn ý',
   writing: 'đang viết',
-  reviewing: 'đang duyệt',
   complete: 'hoàn thành',
 };
 
@@ -514,9 +528,6 @@ export const CHU = {
     `${tong} tác phẩm · ${dangChay} đang chạy`,
 
   // rail
-  nhomSanXuat: 'Sản xuất',
-  nhomHoSo: 'Hồ sơ tác phẩm',
-  nhomXuong: 'Xưởng',
   dongSanXuat: 'Dòng sản xuất',
   banThao: 'Bản thảo',
   kiemDinh: 'Kiểm định',
@@ -533,7 +544,6 @@ export const CHU = {
 
   /* cấu hình máy — mức MÁY, không phải mức tác phẩm */
   cauHinh: 'Cấu hình máy',
-  may: 'Máy',
   nhaCungCapVaKhoa: 'Nhà cung cấp và khóa',
   macDinh: 'Mặc định',
   kieuVanMacDinh: 'Kiểu văn mặc định',
@@ -593,6 +603,53 @@ export const CHU = {
   banNhapHienTai: 'Bản yêu cầu đang có',
   goiYTiepTheo: 'Có thể nói tiếp',
   ban: 'Bạn',
+
+  /* ── tên nhóm rail: nói RA CÁI BÊN TRONG, không phải bộ phận của nhà máy ──
+   *
+   * Bốn tên cũ — "Sản xuất / Hồ sơ tác phẩm / Xưởng / Máy" — mô tả cách hệ thống được
+   * dựng, không mô tả cái nằm trong nhóm. Người dùng nói thẳng: "các section sản xuất, hồ
+   * sơ tác phẩm… là gì, quá ngợp". Bốn danh từ trừu tượng cạnh nhau không cho biết mục nào
+   * chứa gì, nên 16 mục thành 16 cánh cửa không cái nào được ưu tiên.
+   *
+   * Tên nhóm cuối dài hẳn ra là có chủ ý. `laKhuMucMay` (lib/khu.ts) tồn tại vì ba khu đó
+   * ở mức MÁY chứ không mức tác phẩm — sửa Cấu hình máy là sửa cho MỌI cuốn — và cái nhầm
+   * mà nó đề phòng là người dùng đọc chúng thành "cấu hình của cuốn đang mở". Một chữ
+   * "Máy" không ngăn được cái nhầm đó; "Chung cho mọi tác phẩm" thì nói thẳng ra.
+   */
+  nhomTruyen: 'Truyện của bạn',
+  nhomTheGioi: 'Thế giới truyện',
+  nhomVanHanh: 'Chi phí & vận hành',
+  nhomChung: 'Chung cho mọi tác phẩm',
+  moNhom: (ten: string) => `Mở nhóm ${ten}`,
+  dongNhom: (ten: string) => `Thu nhóm ${ten}`,
+
+  /* ── dải "việc tiếp theo" trên bề mặt mặc định ─────────────────────────────
+   *
+   * Câu trạng thái là HÀM chứ không phải chuỗi: mỗi câu phải mang số thật của cuốn đang
+   * mở. Một câu chung ("Đang chạy") đúng ở mọi lúc nên không nói gì ở lúc nào.
+   */
+  /*
+   * Tên vùng của dải là một nhãn ĐỨNG YÊN, không phải câu trạng thái.
+   *
+   * Bản đầu đặt `aria-label` bằng chính câu trạng thái, và cây trợ năng cho thấy hệ quả:
+   * trình đọc đọc tên vùng rồi đọc lại y nguyên câu đó ở nội dung. Tên vùng để ĐIỀU HƯỚNG
+   * tới, nên nó phải giữ nguyên khi trạng thái đổi.
+   */
+  vttVung: 'Việc tiếp theo',
+  ttDangDungNen: 'Máy đang dựng nền tác phẩm',
+  ttDangViet: (xong: number, tong: number) =>
+    tong > 0
+      ? `Máy đang viết · ${xong}/${tong} chương đã chốt`
+      : `Máy đang viết · ${xong} chương đã chốt`,
+  ttNghi: (xong: number, tong: number) =>
+    tong > 0
+      ? `Máy đang nghỉ · ${xong}/${tong} chương đã chốt`
+      : `Máy đang nghỉ · ${xong} chương đã chốt`,
+  ttXong: (chuong: number, tu: string) => `Truyện đã viết xong · ${chuong} chương · ${tu} từ`,
+  ttChuaCoChuong: 'Chưa có chương nào',
+  docTuChuongDau: 'Đọc từ chương 1',
+  docChuongMoiNhat: 'Đọc chương mới nhất',
+  xemChoVietLai: (n: number) => `${n} chương chờ viết lại`,
   nhapXuat: 'Nhập & Xuất',
   xuatBan: 'Xuất bản',
   dinhDang: 'Định dạng',
@@ -933,6 +990,33 @@ export const GIAI_THICH = {
     'Dựng hồ sơ văn phong từ ngữ liệu bạn tải lên, để Writer viết theo giọng đó. Hoặc nhập một hồ sơ đã dựng sẵn — đường đó bỏ qua cả bước phân tích.',
   luongCoTheLau:
     'Đang chạy. Luồng này gọi model nhiều lượt nên có thể mất vài phút — bản này chỉ hiện nhật ký sau khi xong, nên trang im lặng KHÔNG có nghĩa là treo.',
+  /* ── dải "việc tiếp theo" ──────────────────────────────────────────────────
+   *
+   * Câu chỉ đường tới thanh transport là CHỮ, không phải nút thứ hai.
+   *
+   * Chạy tiếp là hành vi TIÊU TIỀN, và `DieuKhien` trong thanh dưới đã là chỗ bấm nó —
+   * `PRODUCT.md` chốt điểm neo bàn transport của DAW chính vì lý do đó. Đặt thêm một nút
+   * Chạy ở đây là dựng đường tiêu tiền thứ hai, mà hai nút cùng gọi một API thì trạng
+   * thái khóa-lúc-đang-gửi của chúng không thấy nhau: bấm cả hai là hai lượt chạy.
+   */
+  dangDungNenChoMotChut:
+    'Máy đang dựng nền tác phẩm — nhân vật, thế giới, dàn ý. Chưa có chương nào để đọc; việc này thường mất một hai phút.',
+  /*
+   * Câu này KHÔNG dùng lại `luongCoTheLau`.
+   *
+   * Chuỗi đó viết cho các luồng tệp (nhập truyện, mô phỏng văn phong) và nó nói "bản này chỉ
+   * hiện nhật ký sau khi xong, nên trang im lặng KHÔNG có nghĩa là treo" — đúng ở ĐÓ, sai ở
+   * ĐÂY: bề mặt này có dòng sự kiện chạy trực tiếp ngay bên dưới. Dùng lại là dạy người dùng
+   * đừng tin một thứ đang hoạt động, tức tệ hơn không nói gì.
+   */
+  dangVietTuDiTiep:
+    'Máy tự đi tiếp từng chương, không cần bạn bấm gì. Dòng sự kiện ở dưới chạy trực tiếp và chương vừa chốt hiện ngay trong bảng — không phải tải lại trang.',
+  chayTiepOThanhDuoi:
+    'Máy đang nghỉ. Bấm ▶ Chạy ở thanh dưới cùng để nó viết tiếp — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước, việc mở máy không gọi model lần nào.',
+  chuaChayLanNao:
+    'Tác phẩm đã tạo nhưng chưa viết chương nào. Bấm ▶ Chạy ở thanh dưới cùng để máy bắt đầu — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước.',
+  xongCoTheXuat:
+    'Truyện đã viết hết số chương đã quy hoạch. Đọc lại được, và xuất thành một tệp mang về máy được.',
   cungDungGiaiDoanTamDung:
     'Vào cùng dựng giai đoạn sẽ TẠM DỪNG dây chuyền: bàn về chặng tiếp thì không để nó viết tiếp trong lúc bàn.',
   /* vòng đời sáng tác */

@@ -101,13 +101,18 @@ grid-template-areas:   "bar    bar     bar"
 
 | Vùng | Vai trò |
 |---|---|
-| `bar` | chọn tác phẩm + tình trạng cả xưởng (hàm ý nhiều đầu việc) |
-| `rail` | khu vực sản xuất, có số đếm việc tồn |
-| `canvas` | trục sản xuất dạng lane → bảng chương → nhật ký phán quyết → ô can thiệp |
+| `bar` | chọn tác phẩm + **nút tạo tác phẩm** + tình trạng cả xưởng (hàm ý nhiều đầu việc) |
+| `rail` | khu vực sản xuất, có số đếm việc tồn; bốn nhóm, ba nhóm dưới **thu gọn được** |
+| `canvas` | dải việc tiếp theo → trục sản xuất dạng lane → bảng chương → nhật ký phán quyết → ô can thiệp |
 | `insp` | chi tiết đơn vị đang chọn, có tab: Khế ước / Kiểm định / Bản thảo |
 | `trans` | trạng thái máy, năng suất, giá thành — **luôn hiện, không cuộn mất** |
 
-Điểm ngắt: `1240px` bỏ inspector, `860px` bỏ rail. Transport không bao giờ bị bỏ.
+Điểm ngắt: `1240px` bỏ inspector, `860px` rail **thôi làm cột và thành dải ngang cuộn được** —
+không bỏ. Điều khoản cũ ("860px bỏ rail") đúng khi rail là danh sách trang trí của một bề mặt
+duy nhất; giờ nó là đường điều hướng duy nhất giữa mười sáu khu, nên bỏ nó là khóa người dùng
+trong khu đang mở. Ở dải ngang thì nhãn nhóm và phép thu nhóm đều tắt: không còn nhóm thì
+không còn cái để thu, và một nhóm đóng ở đó sẽ ẩn mục mà không còn nút nào mở lại.
+Transport không bao giờ bị bỏ.
 
 Bán kính: `--r: 5px` thống nhất. Không có bán kính lớn — công cụ chuyên nghiệp không bo tròn mềm.
 
@@ -115,6 +120,8 @@ Lớp z có tên: `--z-sticky: 10`, `--z-pop: 30`, `--z-tip: 40`. Không dùng s
 
 ## Components
 
+- **Dải việc tiếp theo** — hàng đầu của bề mặt mặc định: một đốm trạng thái, một câu nói máy đang làm gì *kèm số thật của cuốn đang mở*, một câu chỉ đường, và nhiều nhất hai nút. Nó không mang dữ liệu mới — mọi thứ trong đó đã có ở đâu đó trên trang; nó mang **thứ tự ưu tiên**. Hai luật cứng: (a) nút ở đây chỉ ĐIỀU HƯỚNG, việc chạy engine để nguyên ở transport, vì hai nút cùng gọi một API tiêu tiền thì trạng thái khóa của chúng không thấy nhau; (b) nút mời đọc chỉ trỏ tới chương CHẮC CHẮN có bản thảo (`done`/`rewrite`), và nó chọn chương rồi mới đổi khu — mở bề mặt đọc mà chưa chọn chương là mở một khổ đọc trống.
+- **Nhóm rail thu gọn được** — nhãn nhóm là nút, thu bằng `display: none` chứ không bằng cách thôi render. Ba hệ quả bắt buộc: khu đang mở luôn kéo nhóm chứa nó mở ra (đọc `[aria-current]` từ DOM, không từ một bảng khu→nhóm sẽ lệch), nhóm đóng mà bên trong có việc tồn thì mang dấu amber ra ngoài, và dải ngang dưới 860px bật lại toàn bộ mục bằng một `@media`.
 - **Trục sản xuất (lane)** — Tập / Cung / Chương là ba lane cùng một trục ngang, độ rộng khối tỉ lệ với phạm vi thật. Lane chương: một vạch một chương. Khối "chờ mở" dùng vân sọc chéo để phân biệt *chưa quy hoạch* với *đã quy hoạch nhưng chưa chạy* — hai trạng thái khác nhau về bản chất trong mô hình cuốn-vòng-cung hai tầng.
 - **Bảng chương** — số liệu canh phải và dùng mono; trạng thái công đoạn dùng `đốm + chữ`; hàng được chọn đánh dấu bằng `inset box-shadow 1px`, **không** dùng viền màu dày bên trái.
 - **Inspector có tab** — Khế ước (yêu cầu chương) / Kiểm định (7 chiều) / Bản thảo. Kiểm định là hàng mảnh có kết luận kèm dẫn chứng, không phải thẻ điểm.

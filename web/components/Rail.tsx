@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { Khu } from '@/lib/khu';
 import { CHU, GIAI_THICH } from '@/lib/nhan';
@@ -121,174 +121,330 @@ export function Rail({
 
   return (
     <nav className="rail" aria-label="Khu vực sản xuất" ref={oRail}>
-      <div className="grp">{CHU.nhomSanXuat}</div>
-      <MucDi
-        nhan={CHU.dongSanXuat}
-        ky="▤"
-        di="dong-san-xuat"
-        khu={khu}
-        onChonKhu={onChonKhu}
-      />
-      <MucDi
-        nhan={CHU.banThao}
-        ky="✎"
-        di="ban-thao"
-        khu={khu}
-        onChonKhu={onChonKhu}
-        dem={banThao}
-        chuGiai={
-          dangSoan > 0
-            ? `${banThao ?? 0} chương đã chốt · ${dangSoan} đang soạn`
-            : undefined
-        }
-      />
-      <MucDi
-        nhan={CHU.kiemDinh}
-        ky="◆"
-        di="kiem-dinh"
-        khu={khu}
-        onChonKhu={onChonKhu}
-        dem={kiemDinh}
-        chuGiai={GIAI_THICH.railKiemDinhDem}
-      />
-      <MucDi
-        nhan={CHU.hangChoVietLai}
-        ky="■"
-        di="hang-cho-viet-lai"
-        khu={khu}
-        onChonKhu={onChonKhu}
-        dem={vietLai}
-        canhBao={vietLai > 0}
-      />
+      {/* Nhóm 1 mở sẵn và không thu được: đây là nhóm chứa bề mặt đang mở ở mọi lần vào
+          đầu tiên, nên thu nó lại là để người dùng đối diện một rail rỗng. */}
+      <Nhom ma="truyen" ten={CHU.nhomTruyen} luonMo>
+        {/* Bản thảo lên ĐẦU, trước Dòng sản xuất.
+            Thứ tự cũ đặt bảng giám sát trước thành quả, và đó là thứ tự của người dựng hệ
+            thống chứ không của người viết truyện: cửa đầu tiên nên là thứ người dùng muốn
+            nhất. Bề mặt mặc định vẫn là Dòng sản xuất — đổi cả cửa đó là đổi sản phẩm,
+            không phải sửa rail. */}
+        <MucDi
+          nhan={CHU.banThao}
+          ky="✎"
+          di="ban-thao"
+          khu={khu}
+          onChonKhu={onChonKhu}
+          dem={banThao}
+          chuGiai={
+            dangSoan > 0
+              ? `${banThao ?? 0} chương đã chốt · ${dangSoan} đang soạn`
+              : undefined
+          }
+        />
+        <MucDi
+          nhan={CHU.dongSanXuat}
+          ky="▤"
+          di="dong-san-xuat"
+          khu={khu}
+          onChonKhu={onChonKhu}
+        />
+        <MucDi
+          nhan={CHU.kiemDinh}
+          ky="◆"
+          di="kiem-dinh"
+          khu={khu}
+          onChonKhu={onChonKhu}
+          dem={kiemDinh}
+          chuGiai={GIAI_THICH.railKiemDinhDem}
+        />
+        <MucDi
+          nhan={CHU.hangChoVietLai}
+          ky="■"
+          di="hang-cho-viet-lai"
+          khu={khu}
+          onChonKhu={onChonKhu}
+          dem={vietLai}
+          canhBao={vietLai > 0}
+        />
+        {/* Nhập & Xuất về nhóm này, không ở nhóm vận hành.
+            Xuất bản là hợp nhất BẢN THẢO thành một tệp mang về máy — nó tác động lên chính
+            thứ nhóm này chứa. Ở nhóm vận hành nó nằm giữa chi phí và cấu hình, tức giữa các
+            mục nói về cái máy, nên không ai tìm "xuất truyện ra tệp" ở đó. */}
+        <MucDi
+          nhan={CHU.nhapXuat}
+          ky="⇄"
+          di="nhap-xuat"
+          khu={khu}
+          onChonKhu={onChonKhu}
+          chuGiai={GIAI_THICH.xuatBanGiaiThich}
+        />
+      </Nhom>
 
-      <div className="grp">{CHU.nhomHoSo}</div>
-      <MucDi
-        nhan={CHU.danYPhanTang}
-        ky="☰"
-        di="dan-y"
+      <Nhom
+        ma="the-gioi"
+        ten={CHU.nhomTheGioi}
         khu={khu}
-        onChonKhu={onChonKhu}
-        dem={soKhoiDanY(snapshot)}
-      />
-      <MucDi
-        nhan={CHU.nhanVat}
-        ky="●"
-        di="nhan-vat"
-        khu={khu}
-        onChonKhu={onChonKhu}
-        dem={hoSo?.characters ?? undefined}
-      />
-      <MucDi
-        nhan={CHU.luatTheGioi}
-        ky="⬢"
-        di="luat-the-gioi"
-        khu={khu}
-        onChonKhu={onChonKhu}
-        dem={hoSo?.rules ?? undefined}
-      />
-      <MucDi
-        nhan={CHU.phucBut}
-        ky="◇"
-        di="phuc-but"
-        khu={khu}
-        onChonKhu={onChonKhu}
-        dem={hoSo?.foreshadow ?? undefined}
+        // Phục bút chưa thu là việc TỒN — nhóm thu lại vẫn phải mang dấu đó ra ngoài, nếu
+        // không thu nhóm biến thành ẩn một hàng chờ thật.
         canhBao={(hoSo?.foreshadow ?? 0) > 0}
-      />
-      {/* Văn phong không có số đếm: store giữ nó là một bản mô tả, không phải
-          danh sách đếm được. Không có nguồn thì không hiện ô số. */}
-      <MucNguon
-        nhan={CHU.vanPhong}
-        ky="✒"
-        di="van-phong"
-        khu={khu}
-        onChonKhu={onChonKhu}
-        nguon={hoSo?.vanPhong}
-        chuGiai={GIAI_THICH.railVanPhong}
-        viSaoThieu={GIAI_THICH.thieuEndpointVanPhong}
-      />
+      >
+        <MucDi
+          nhan={CHU.danYPhanTang}
+          ky="☰"
+          di="dan-y"
+          khu={khu}
+          onChonKhu={onChonKhu}
+          dem={soKhoiDanY(snapshot)}
+        />
+        <MucDi
+          nhan={CHU.nhanVat}
+          ky="●"
+          di="nhan-vat"
+          khu={khu}
+          onChonKhu={onChonKhu}
+          dem={hoSo?.characters ?? undefined}
+        />
+        <MucDi
+          nhan={CHU.luatTheGioi}
+          ky="⬢"
+          di="luat-the-gioi"
+          khu={khu}
+          onChonKhu={onChonKhu}
+          dem={hoSo?.rules ?? undefined}
+        />
+        <MucDi
+          nhan={CHU.phucBut}
+          ky="◇"
+          di="phuc-but"
+          khu={khu}
+          onChonKhu={onChonKhu}
+          dem={hoSo?.foreshadow ?? undefined}
+          canhBao={(hoSo?.foreshadow ?? 0) > 0}
+        />
+        {/* Văn phong không có số đếm: store giữ nó là một bản mô tả, không phải
+            danh sách đếm được. Không có nguồn thì không hiện ô số. */}
+        <MucNguon
+          nhan={CHU.vanPhong}
+          ky="✒"
+          di="van-phong"
+          khu={khu}
+          onChonKhu={onChonKhu}
+          nguon={hoSo?.vanPhong}
+          chuGiai={GIAI_THICH.railVanPhong}
+          viSaoThieu={GIAI_THICH.thieuEndpointVanPhong}
+        />
+      </Nhom>
 
-      <div className="grp">{CHU.nhomXuong}</div>
-      {/* Nhật ký phán quyết CÓ bề mặt — nó là một mục trong Dòng sản xuất. Nên
-          đây là điều hướng thật, không phải mục chưa dựng. */}
-      <MucDi
-        nhan={CHU.nhatKyPhanQuyet}
-        ky="⌗"
-        di="dong-san-xuat"
-        khu={khu}
-        onChonKhu={onChonKhu}
-        dem={phanQuyet}
-        chuGiai={GIAI_THICH.namTrongDongSanXuat}
-        neo="nhat-ky-phan-quyet"
-        phu
-      />
-      <MucNguon
-        nhan={CHU.chiPhi}
-        ky="$"
-        di="chi-phi"
-        khu={khu}
-        onChonKhu={onChonKhu}
-        nguon={hoSo?.chiPhi}
-        chuGiai={GIAI_THICH.railChiPhi}
-        viSaoThieu={GIAI_THICH.thieuEndpointChiPhi}
-      />
-      <MucDi
-        nhan={CHU.toSanXuat}
-        ky="☗"
-        di="to-san-xuat"
-        khu={khu}
-        onChonKhu={onChonKhu}
-      />
-      <MucDi
-        nhan={CHU.nhapXuat}
-        ky="⇄"
-        di="nhap-xuat"
-        khu={khu}
-        onChonKhu={onChonKhu}
-        chuGiai={GIAI_THICH.xuatBanGiaiThich}
-      />
-      <MucNguon
-        nhan={CHU.caiDat}
-        ky="⚙"
-        di="cai-dat"
-        khu={khu}
-        onChonKhu={onChonKhu}
-        nguon={hoSo?.caiDat}
-        chuGiai={GIAI_THICH.railCaiDat}
-        viSaoThieu={GIAI_THICH.thieuEndpointCaiDat}
-      />
+      <Nhom ma="van-hanh" ten={CHU.nhomVanHanh} khu={khu}>
+        {/* Nhật ký phán quyết CÓ bề mặt — nó là một mục trong Dòng sản xuất. Nên
+            đây là điều hướng thật, không phải mục chưa dựng. */}
+        <MucDi
+          nhan={CHU.nhatKyPhanQuyet}
+          ky="⌗"
+          di="dong-san-xuat"
+          khu={khu}
+          onChonKhu={onChonKhu}
+          dem={phanQuyet}
+          chuGiai={GIAI_THICH.namTrongDongSanXuat}
+          neo="nhat-ky-phan-quyet"
+          phu
+        />
+        <MucNguon
+          nhan={CHU.chiPhi}
+          ky="$"
+          di="chi-phi"
+          khu={khu}
+          onChonKhu={onChonKhu}
+          nguon={hoSo?.chiPhi}
+          chuGiai={GIAI_THICH.railChiPhi}
+          viSaoThieu={GIAI_THICH.thieuEndpointChiPhi}
+        />
+        <MucDi
+          nhan={CHU.toSanXuat}
+          ky="☗"
+          di="to-san-xuat"
+          khu={khu}
+          onChonKhu={onChonKhu}
+        />
+        <MucNguon
+          nhan={CHU.caiDat}
+          ky="⚙"
+          di="cai-dat"
+          khu={khu}
+          onChonKhu={onChonKhu}
+          nguon={hoSo?.caiDat}
+          chuGiai={GIAI_THICH.railCaiDat}
+          viSaoThieu={GIAI_THICH.thieuEndpointCaiDat}
+        />
+      </Nhom>
 
-      {/* Nhóm MÁY, tách khỏi nhóm Xưởng có chủ ý.
+      {/* Nhóm mức MÁY, tách khỏi ba nhóm trên có chủ ý.
           Cấu hình máy sửa ~/.ainovel/config.json — nó áp cho mọi tác phẩm và mọi lượt
-          chạy sau, không thuộc cuốn đang mở. Để nó lẫn trong nhóm Xưởng là mời đúng cái
+          chạy sau, không thuộc cuốn đang mở. Để nó lẫn vào nhóm vận hành là mời đúng cái
           nhầm mà bề mặt Cài đặt đã phải tách ra để tránh: người vận hành đọc nó thành
-          "cấu hình của cuốn này". */}
-      <div className="grp">{CHU.may}</div>
-      <MucDi
-        nhan={CHU.cungDung}
-        ky="⁂"
-        di="cung-dung"
-        khu={khu}
-        onChonKhu={onChonKhu}
-        chuGiai={GIAI_THICH.cungDungGiaiThich}
-      />
-      <MucDi
-        nhan={CHU.taoTacPham}
-        ky="+"
-        di="tac-pham-moi"
-        khu={khu}
-        onChonKhu={onChonKhu}
-        chuGiai={GIAI_THICH.taoSachGiaiThich}
-      />
-      <MucDi
-        nhan={CHU.cauHinh}
-        ky="⌸"
-        di="cau-hinh"
-        khu={khu}
-        onChonKhu={onChonKhu}
-        chuGiai={GIAI_THICH.cauHinhLaMucMay}
-      />
+          "cấu hình của cuốn này". Tên nhóm nói thẳng ranh giới đó ra. */}
+      <Nhom ma="chung" ten={CHU.nhomChung} khu={khu}>
+        <MucDi
+          nhan={CHU.cungDung}
+          ky="⁂"
+          di="cung-dung"
+          khu={khu}
+          onChonKhu={onChonKhu}
+          chuGiai={GIAI_THICH.cungDungGiaiThich}
+        />
+        {/* Vẫn còn ở đây dù thanh trên đã có nút tạo tác phẩm: nút trên thanh vắng mặt khi
+            máy không ghi được, và bỏ mục này đi thì lúc đó không còn đường nào tới bề mặt.
+            Hai đường tới cùng một bề mặt ĐIỀU HƯỚNG là chuyện lành — khác hẳn hai nút cùng
+            gọi một API tiêu tiền. */}
+        <MucDi
+          nhan={CHU.taoTacPham}
+          ky="+"
+          di="tac-pham-moi"
+          khu={khu}
+          onChonKhu={onChonKhu}
+          chuGiai={GIAI_THICH.taoSachGiaiThich}
+        />
+        <MucDi
+          nhan={CHU.cauHinh}
+          ky="⌸"
+          di="cau-hinh"
+          khu={khu}
+          onChonKhu={onChonKhu}
+          chuGiai={GIAI_THICH.cauHinhLaMucMay}
+        />
+      </Nhom>
     </nav>
+  );
+}
+
+/** Khóa localStorage giữ nhóm nào đang mở. Một khóa cho cả rail, không phải một khóa mỗi nhóm. */
+const KHOA_NHOM_MO = 'ainovel.rail.nhomMo';
+
+/**
+ * Nhóm rail thu gọn được.
+ *
+ * # Vì sao thu gọn, và vì sao mặc định là ĐÓNG
+ *
+ * Mười sáu mục cùng sức nặng là mười sáu cánh cửa không cái nào được ưu tiên — người dùng
+ * nói nguyên văn "quá ngợp". Thu ba nhóm dưới lại còn năm mục thấy được, tức đúng số cửa
+ * mà mọi công cụ viết truyện khác dừng ở (không tool nào vượt 5 khu mức một).
+ *
+ * Mặc định đóng là quyết định về LẦN ĐẦU: người quay lại chỉ trả giá một cú bấm và trạng
+ * thái đó được ghi nhớ, còn người lần đầu thì cái giá của một rail dày là họ không bắt đầu.
+ *
+ * # Vì sao thu bằng CSS chứ không bằng cách thôi render
+ *
+ * Dưới 860px rail là DẢI NGANG và nhãn nhóm bị ẩn (`.rail .grp { display: none }`) vì nó
+ * không còn đứng trên nhóm nào. Nếu trạng thái đóng làm các mục thôi tồn tại thì ở bề rộng
+ * đó chúng biến mất mà không còn cái nút nào để mở lại — tức khóa người dùng ra khỏi mười
+ * một khu. Giữ chúng trong DOM và để một `@media` bật lại là cách duy nhất khiến hai chế độ
+ * không đánh nhau.
+ *
+ * # Vì sao đọc localStorage trong effect
+ *
+ * `web/` là static export: HTML được dựng lúc build, nên đọc localStorage trong lượt render
+ * đầu là hydration mismatch. Effect chạy sau khi React đã gắn cây, nên nó chỉ sửa trạng
+ * thái — cái giá là một nhịp nhóm hiện theo mặc định trước khi về trạng thái đã lưu.
+ */
+function Nhom({
+  ma,
+  ten,
+  khu,
+  luonMo,
+  canhBao,
+  children,
+}: {
+  ma: string;
+  ten: string;
+  /** Khu đang mở — chỉ dùng làm nhịp cho effect tự mở nhóm, không để so trực tiếp. */
+  khu?: Khu;
+  /** Nhóm không thu được: dùng cho nhóm chứa bề mặt mặc định. */
+  luonMo?: boolean;
+  /** Có việc tồn bên trong — dấu phải ra ngoài kể cả khi nhóm đang đóng. */
+  canhBao?: boolean;
+  children: React.ReactNode;
+}) {
+  const [mo, datMo] = useState(!!luonMo);
+  const oNhom = useRef<HTMLDivElement>(null);
+
+  // MỘT effect cho cả hai luật, không phải hai — thứ tự giữa chúng là một luật thật:
+  // "nhóm chứa khu đang mở phải mở" ĐÈ trạng thái đã lưu. Tách ra hai effect thì thứ tự
+  // đó chỉ còn là thứ tự khai báo, và người sửa sau đảo hai khối là mất luật mà không có
+  // gì báo.
+  //
+  // Vì sao luật đó phải thắng: mở `?khu=cai-dat` bằng URL hay tải lại trang trong khu đó,
+  // với nhóm đã lưu là đóng, thì rail KHÔNG có mục nào sáng lên — người dùng không biết
+  // mình đang ở đâu, đúng cái mà `aria-current` tồn tại để nói.
+  //
+  // Phép kiểm đọc từ DOM chứ không từ một bảng "khu nào thuộc nhóm nào". Bảng đó là bản
+  // sao thứ hai của thứ mà chính children đã nói, và hai bản sao thì lệch — thêm một khu
+  // vào nhóm mà quên cập nhật bảng là một lỗi im lặng. Đọc được nhờ các mục ĐANG nằm
+  // trong DOM kể cả khi nhóm đóng, tức nhờ đúng lựa chọn thu-bằng-CSS ở trên.
+  useEffect(() => {
+    if (luonMo) return;
+    if (oNhom.current?.querySelector('[aria-current="page"]')) {
+      datMo(true);
+      return;
+    }
+    try {
+      const luu = window.localStorage.getItem(KHOA_NHOM_MO);
+      if (!luu) return;
+      const d = JSON.parse(luu) as Record<string, boolean>;
+      if (typeof d?.[ma] === 'boolean') datMo(d[ma]);
+    } catch {
+      // localStorage bị chặn hoặc JSON hỏng: giữ mặc định. Một rail không nhớ được trạng
+      // thái vẫn dùng được; một rail sập thì không.
+    }
+  }, [ma, luonMo, khu]);
+
+  const doi = () => {
+    const moi = !mo;
+    datMo(moi);
+    try {
+      const luu = window.localStorage.getItem(KHOA_NHOM_MO);
+      const d = luu ? (JSON.parse(luu) as Record<string, boolean>) : {};
+      window.localStorage.setItem(KHOA_NHOM_MO, JSON.stringify({ ...d, [ma]: moi }));
+    } catch {
+      // Ghi không được thì thôi — trạng thái trong lượt xem này vẫn đúng.
+    }
+  };
+
+  if (luonMo) {
+    return (
+      <div className="nhomrail" data-mo="1" ref={oNhom}>
+        <div className="grp">{ten}</div>
+        <div className="mucnhom">{children}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="nhomrail" data-mo={mo ? '1' : '0'} ref={oNhom}>
+      <button
+        type="button"
+        className="grp grpnut"
+        aria-expanded={mo}
+        aria-controls={`nhom-${ma}`}
+        title={mo ? CHU.dongNhom(ten) : CHU.moNhom(ten)}
+        onClick={doi}
+      >
+        <span className="chev" aria-hidden="true">
+          {mo ? '▾' : '▸'}
+        </span>
+        <span className="tenNhom">{ten}</span>
+        {/* Dấu việc tồn chỉ hiện khi nhóm ĐANG ĐÓNG: mở ra thì con số amber của chính mục
+            đó đã nói, và hai dấu cho một việc là một việc bị đếm hai lần. */}
+        {canhBao && !mo ? (
+          <span className="dauton" aria-hidden="true">
+            ■
+          </span>
+        ) : null}
+      </button>
+      <div className="mucnhom" id={`nhom-${ma}`}>
+        {children}
+      </div>
+    </div>
   );
 }
 

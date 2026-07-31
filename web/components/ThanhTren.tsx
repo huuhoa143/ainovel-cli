@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { tienDo } from '@/lib/dinhdang';
-import { CHU, TRANG_THAI_MAY } from '@/lib/nhan';
+import { CHU, GIAI_THICH, TRANG_THAI_MAY } from '@/lib/nhan';
 import type { Book, Workshop } from '@/lib/types';
 import type { TinhTrangKetNoi } from '@/lib/useStudio';
 
@@ -19,11 +19,16 @@ export function ThanhTren({
   dangXem,
   ketNoi,
   onChon,
+  onTaoTacPham,
+  dangOTaoTacPham,
 }: {
   workshop: Workshop | undefined;
   dangXem: Book | undefined;
   ketNoi: TinhTrangKetNoi;
   onChon: (id: string) => void;
+  /** Vắng = máy này không tạo được tác phẩm; nút KHÔNG được vẽ. Xem lý do ở page.tsx. */
+  onTaoTacPham?: () => void;
+  dangOTaoTacPham?: boolean;
 }) {
   const [mo, setMo] = useState(false);
   const boc = useRef<HTMLDivElement>(null);
@@ -143,6 +148,29 @@ export function ThanhTren({
             </ul>
           ) : null}
         </div>
+      ) : null}
+
+      {/* Nút tạo tác phẩm đứng NGAY SAU bộ chọn, không ở nhóm bên phải.
+          Bên phải là chỗ của tình trạng máy (dòng sự kiện) — tin để ngó, không phải việc để
+          làm. Còn "cuốn nào" và "cuốn mới" là cùng một câu hỏi, nên chúng đứng cạnh nhau.
+
+          Nhãn xuống chỉ còn dấu `+` dưới 700px, và `aria-label` giữ nguyên tên đầy đủ:
+          ĐO ĐƯỢC ở 390px thanh trên chỉ còn 12px dư sau khi đã ẩn slate, nên một nút mang
+          chữ sẽ đẩy huy hiệu kết nối ra ngoài mép. */}
+      {onTaoTacPham ? (
+        <button
+          type="button"
+          className="nutMoi"
+          aria-current={dangOTaoTacPham ? 'page' : undefined}
+          aria-label={CHU.taoTacPham}
+          title={GIAI_THICH.taoSachGiaiThich}
+          onClick={onTaoTacPham}
+        >
+          <span className="ky" aria-hidden="true">
+            +
+          </span>
+          <span className="nhan">{CHU.taoTacPham}</span>
+        </button>
       ) : null}
 
       {sach.length > 0 ? (

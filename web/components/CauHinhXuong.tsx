@@ -18,8 +18,8 @@ import type { CauHinhDoc, NhaCungCap } from '@/lib/types';
  * như chắc chắn không phải mười ô này".
  *
  * Bề mặt này thì ở mức MÁY: nó sửa `~/.ainovel/config.json`, áp cho mọi lượt chạy
- * sau. Hai thứ khác cấp, nên hai bề mặt — và rail đặt cái này trong nhóm "Máy" để
- * sự khác cấp đó nhìn thấy được.
+ * sau. Hai thứ khác cấp, nên hai bề mặt — và rail đặt cái này trong nhóm
+ * "Chung cho mọi tác phẩm" để sự khác cấp đó nhìn thấy được.
  *
  * # Vì sao ô khóa luôn trống
  *
