@@ -398,6 +398,22 @@ func buildTransport(st *store.Store, p *domain.Progress, cps []domain.Checkpoint
 	// field cũ ("step") từng làm giao diện hiện sai công đoạn.
 	if cp := st.Checkpoints.LatestGlobal(); cp != nil {
 		tr.LastStep = cp.Step
+		// Vai suy từ CHÍNH bước đó, cùng bảng mà ChapterRow.Owner dùng — một bảng
+		// cho hai chỗ, nên không thể có chuyện thanh dưới và bảng chương gọi tên
+		// hai vai khác nhau cho cùng một bước.
+		//
+		// Trường này TỪNG được khai mà không ai gán, và cái lỗ đó trúng đúng ca
+		// chính: giao diện đọc `song?.vai ?? transport.agent`, mà `song` chỉ có khi
+		// SSE đang chảy — tức khi engine đang chạy VÀ trang đang mở. Mở studio sau
+		// khi engine đã dừng thì ô `tổ` chỉ còn tên model, mất vai. Đó đúng là ca
+		// mà PRODUCT.md đặt làm ca chính ("mở studio sau 6 giờ đi vắng").
+		//
+		// Lỗ này sống lâu được vì seed-demo có gieo `Agent` vào sự kiện runtime, nên
+		// mọi lượt kiểm bằng fixture đều thấy vai hiện ra bình thường. Fixture giàu
+		// hơn đường thật là chỗ ẩn lỗi tốt nhất.
+		if owners := ownersFromSteps([]string{cp.Step}); len(owners) > 0 {
+			tr.Agent = owners[0]
+		}
 	}
 	return tr
 }
