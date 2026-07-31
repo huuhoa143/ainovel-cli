@@ -63,7 +63,7 @@ Serif là dấu hiệu ngữ nghĩa: thấy serif là thấy văn của tác ph�
 
 **Phép thử khi gặp một loại chữ mới:** chữ này có nằm trong bộ truyện xuất bản không? Có thì serif, không thì `--ui`. Danh sách bốn mục trên là kết quả của phép thử, không phải một bảng trắng để tra — trích đoạn và bản thảo là văn đó, tiêu đề chương được in cùng nó, và dẫn chứng của Editor mang serif vì nó *trích lại* văn đó chứ không vì Editor viết ra nó.
 
-Phép thử này loại hẳn một loại dễ nhầm: **mô tả trong hồ sơ tác phẩm** — mô tả nhân vật, mô tả phục bút, ghi chú luật thế giới. Chúng là bản ghi của engine *về* tác phẩm, viết cho người vận hành, và người đọc truyện không bao giờ thấy chúng; cùng loại với `core_event` của hợp đồng hay `comment` của bản duyệt. Cho chúng serif thì mỗi hồ sơ đọc như một trang truyện và tín hiệu serif loãng đi đúng chỗ nó cần sắc nhất. Chúng dùng `--ui`, vẫn giữ `line-height` và `max-width` của khổ đọc dài.
+Phép thử này loại hẳn một loại dễ nhầm: **mô tả trong hồ sơ tác phẩm** — mô tả nhân vật, mô tả phục bút, ghi chú luật thế giới. Chúng là bản ghi của engine *về* tác phẩm, viết cho người vận hành, và người đọc truyện không bao giờ thấy chúng; cùng loại với `core_event` của khế ước hay `comment` của bản duyệt. Cho chúng serif thì mỗi hồ sơ đọc như một trang truyện và tín hiệu serif loãng đi đúng chỗ nó cần sắc nhất. Chúng dùng `--ui`, vẫn giữ `line-height` và `max-width` của khổ đọc dài.
 
 ### Thang cỡ
 
@@ -104,7 +104,7 @@ grid-template-areas:   "bar    bar     bar"
 | `bar` | chọn tác phẩm + tình trạng cả xưởng (hàm ý nhiều đầu việc) |
 | `rail` | khu vực sản xuất, có số đếm việc tồn |
 | `canvas` | trục sản xuất dạng lane → bảng chương → nhật ký phán quyết → ô can thiệp |
-| `insp` | chi tiết đơn vị đang chọn, có tab: Hợp đồng / Kiểm định / Bản thảo |
+| `insp` | chi tiết đơn vị đang chọn, có tab: Khế ước / Kiểm định / Bản thảo |
 | `trans` | trạng thái máy, năng suất, giá thành — **luôn hiện, không cuộn mất** |
 
 Điểm ngắt: `1240px` bỏ inspector, `860px` bỏ rail. Transport không bao giờ bị bỏ.
@@ -117,7 +117,7 @@ Lớp z có tên: `--z-sticky: 10`, `--z-pop: 30`, `--z-tip: 40`. Không dùng s
 
 - **Trục sản xuất (lane)** — Tập / Cung / Chương là ba lane cùng một trục ngang, độ rộng khối tỉ lệ với phạm vi thật. Lane chương: một vạch một chương. Khối "chờ mở" dùng vân sọc chéo để phân biệt *chưa quy hoạch* với *đã quy hoạch nhưng chưa chạy* — hai trạng thái khác nhau về bản chất trong mô hình cuốn-vòng-cung hai tầng.
 - **Bảng chương** — số liệu canh phải và dùng mono; trạng thái công đoạn dùng `đốm + chữ`; hàng được chọn đánh dấu bằng `inset box-shadow 1px`, **không** dùng viền màu dày bên trái.
-- **Inspector có tab** — Hợp đồng (yêu cầu chương) / Kiểm định (7 chiều) / Bản thảo. Kiểm định là hàng mảnh có kết luận kèm dẫn chứng, không phải thẻ điểm.
+- **Inspector có tab** — Khế ước (yêu cầu chương) / Kiểm định (7 chiều) / Bản thảo. Kiểm định là hàng mảnh có kết luận kèm dẫn chứng, không phải thẻ điểm.
 - **Nhật ký phán quyết** — mỗi dòng: giờ, loại phán quyết, lý do dựa trên sự thật, nút xem lại. Đây là hiện thân của nguyên tắc "máy tất định phải nhìn thấy được".
 - **Transport** — các ô phân cách bằng viền 1px, số liệu mono. Thước ngữ cảnh có **vạch đỏ ở mốc 85%** để thấy ngưỡng nén sắp tới, không chỉ hiện một con số.
 

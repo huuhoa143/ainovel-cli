@@ -8,7 +8,26 @@ với "chữ Trung trong chuỗi hiển thị" (chính là khối lượng công
 
 import re
 
-CJK = re.compile(r"[一-鿿]")
+# Ba dải, không chỉ dải chữ Hán:
+#   一-鿿      U+4E00–U+9FFF  chữ Hán
+#   、-〿      U+3001–U+303F  dấu câu CJK: 。、〈《「『【〜
+#   ！-～      U+FF01–U+FF5E  dạng toàn phần: ！（）：；？
+#
+# # Vì sao phải có hai dải sau — nó là một điểm mù đã gây thiệt hại thật
+#
+# Bản trước chỉ có dải chữ Hán, nên chuỗi CHỈ GỒM DẤU không bao giờ được coi là
+# msgid. Nhưng dự án này vừa tạo ra đúng loại msgid đó: sửa lớp lỗi "dấu câu toàn
+# phần" sinh ra `"（%s）"`, `"《%s》"`, `"## %s（%s）\n\n"` — chúng có bản dịch trong
+# catalog mà bộ thu thập không thấy, nên mọi công cụ dựng trên nó coi chúng là mục
+# CHẾT. `build_catalog.py --prune` sẽ xóa đúng những bản dịch vừa thêm.
+#
+# Cùng điểm mù đã gặp một lần ở phía Go: một bài kiểm dựng riêng để bắt "dấu vết
+# tiếng Trung trong bản xuất" dùng `unicode.Is(unicode.Han, r)` nên xanh suốt trong
+# khi dòng đầu bản xuất là `《Tên sách》` — vì `《` U+300A không phải chữ Hán.
+#
+# `…` (U+2026) nằm ngoài cả ba dải nên vẫn bị loại, đúng chủ đích: nó dùng hợp lệ
+# trong cả tiếng Việt lẫn tiếng Trung.
+CJK = re.compile(r"[一-鿿、-〿！-～]")
 
 
 def has_cjk(s: str) -> bool:
@@ -16,7 +35,7 @@ def has_cjk(s: str) -> bool:
 
 
 def unescape_go(s):
-    """Giải escape của chuỗi Go thường ("...") về giá trị LÚC CHẠY.
+    r"""Giải escape của chuỗi Go thường ("...") về giá trị LÚC CHẠY.
 
     Đây là chỗ từng gây một bug im lặng nghiêm trọng: trước đây hàm tokenize trả
     nguyên văn nguồn, nên `"a\\nb"` trong code cho ra msgid chứa HAI ký tự `\` và
@@ -177,3 +196,35 @@ def strings_with_cjk(src: str):
 
 def comments_with_cjk(src: str):
     return [t for t in tokenize(src) if t.kind in ("line_comment", "block_comment") and has_cjk(t.text)]
+
+
+def _tu_kiem():
+    """Tự kiểm dải nhận diện. Chạy: python3 scripts/i18n/golex.py
+
+    Có mặt vì `has_cjk` từng bỏ sót dấu CJK và điểm mù đó âm thầm biến những msgid
+    chỉ-gồm-dấu thành mục "chết" trong mắt mọi công cụ dựng trên nó. Repo không có
+    hạ tầng test Python, nên chỗ canh rẻ nhất là ngay tại đây.
+    """
+    phai_nhan = "中文《》（）：；、。！？【】「」～"
+    phai_bo = "…·abcÀếợ .,;:()[]!?"
+    loi = []
+    for c in phai_nhan:
+        if not has_cjk(c):
+            loi.append(f"BỎ SÓT {c!r} (U+{ord(c):04X}) — dấu/chữ CJK phải được nhận")
+    for c in phai_bo:
+        if has_cjk(c):
+            loi.append(f"BÁO BỪA {c!r} (U+{ord(c):04X}) — ký tự này dùng hợp lệ trong tiếng Việt")
+    # Chuỗi CHỈ GỒM DẤU cũng phải được coi là msgid: đó là lớp msgid mà lượt sửa
+    # "dấu câu toàn phần" vừa tạo ra, và là lớp bị bỏ sót trước đây.
+    for s in ["（%s）", "《%s》", "## %s（%s）\n\n"]:
+        if not has_cjk(s):
+            loi.append(f"BỎ SÓT msgid chỉ-gồm-dấu: {s!r}")
+    if loi:
+        for e in loi:
+            print("  " + e)
+        raise SystemExit(f"golex tự kiểm: {len(loi)} lỗi")
+    print(f"golex tự kiểm: đạt ({len(phai_nhan)} phải nhận, {len(phai_bo)} phải bỏ)")
+
+
+if __name__ == "__main__":
+    _tu_kiem()

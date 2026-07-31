@@ -343,7 +343,7 @@ Nhập `/diag` trong TUI để chẩn đoán và phân tích các sản phẩm t
 Chẩn đoán bao gồm bốn chiều:
 
 - **Luồng** — vòng viết lại bị kẹt, chỉ thị chuyển hướng chưa được tiêu thụ, trạng thái phase/flow bất thường, số chương bị nhảy
-- **Chất lượng** — chiều duyệt liên tục điểm thấp, tỉ lệ thực hiện hợp đồng, tỉ lệ viết lại, số từ của chương bất thường
+- **Chất lượng** — chiều duyệt liên tục điểm thấp, tỉ lệ thực hiện khế ước, tỉ lệ viết lại, số từ của chương bất thường
 - **Quy hoạch** — phục bút đứng bánh, la bàn lỗi thời, dàn ý cạn, thiếu tóm tắt
 - **Ngữ cảnh** — nhân vật biến mất, lỗ hổng trên trục thời gian, dữ liệu quan hệ đứng bánh
 

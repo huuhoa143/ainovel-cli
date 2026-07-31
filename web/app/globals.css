@@ -85,10 +85,21 @@ button {
 
 /* ══ khung ứng dụng ═══════════════════════════════════════════════════ */
 
+/* Hàng transport là `minmax(30px, auto)` ở MỌI bề rộng, không chỉ dưới điểm ngắt.
+   30px khi vừa một hàng, cao thêm đúng phần cần khi đã xuống dòng.
+   ĐO ĐƯỢC vì sao không thể chốt theo điểm ngắt: với fixture mọi số liệu là "—"
+   thanh cần 944px, nhưng với số liệu THẬT của một phiên đang chạy
+   (`công đoạn soat_nhat_quan vừa xong` · `tổ Writer · gemini-2.5-pro` ·
+   `ngữ cảnh 78%` · `năng suất 3,4 chương/giờ` · `giá thành $0,420 / chương` ·
+   `tổng $128,45` · `đã chạy 6:12:04`) nó cần 1253px. Tức bề rộng nội dung phụ
+   thuộc DỮ LIỆU, không phụ thuộc bề rộng màn hình, và một điểm ngắt cố định luôn
+   sai ở nửa số ca: chốt ở 900px thì cả dải 900–1253px cắt mất `đã chạy` đúng lúc
+   engine bắt đầu có số thật để báo. Nên transport xuống dòng KHI CẦN, ở mọi
+   bề rộng. */
 .khung {
   height: 100dvh;
   display: grid;
-  grid-template-rows: 44px 1fr 30px;
+  grid-template-rows: 44px 1fr minmax(30px, auto);
   grid-template-columns: 194px 1fr 292px;
   grid-template-areas:
     'bar bar bar'
@@ -114,36 +125,9 @@ button {
   }
 }
 
-/* Điểm ngắt 900px: transport XUỐNG DÒNG thay vì cuộn ngang.
-
-   DESIGN.md:108 gọi transport là "luôn hiện, không cuộn mất" và :110 nói nó
-   "không bao giờ bị bỏ". Bản trước giữ được câu thứ hai và mất câu thứ nhất.
-   ĐO ĐƯỢC ở 390px: tám ô cần `scrollWidth 890px` trong `clientWidth 390px` →
-   500px bị đẩy ra ngoài khung và NĂM ô nằm ngoài: `ngữ cảnh · năng suất · giá
-   thành · tổng · đã chạy`. Tức chương/giờ và đô-la/chương — đúng bộ số mà
-   PRODUCT.md Design Principle 3 nói là đơn vị của xưởng — chỉ đọc được sau khi
-   cuộn ngang, còn phần ở lại trong khung là phần ít cần nhất.
-   Xuống dòng thì mọi ô đều hiện cùng lúc, và thanh vẫn ở đáy khung.
-
-   900 chứ không 890: 890px là bề rộng nội dung ĐO ĐƯỢC với fixture hiện tại, và
-   ô công đoạn co giãn theo câu mô tả từ dòng sự kiện. Chừa 10px biên để dải
-   860–890 không rơi vào ca vừa-đủ-tràn-một-chữ.
-
-   Hàng grid của transport thành `minmax(30px, auto)`: 30px khi một hàng như cũ,
-   cao thêm đúng phần cần khi đã xuống dòng. Không đặt chiều cao cố định cho số
-   hàng vì số hàng phụ thuộc bề rộng thật, không phụ thuộc điểm ngắt. */
-@media (max-width: 900px) {
-  .khung,
-  .khung.rong {
-    grid-template-rows: 44px 1fr minmax(30px, auto);
-  }
-  /* Phần biến transport thành nhiều hàng nằm ở khối `@media (max-width: 900px)`
-     TRONG mục transport phía dưới, không ở đây. Thứ tự trong tệp quyết định:
-     `.trans .cell.push { margin-left: auto }` là bộ chọn cùng độ ưu tiên và nó
-     đứng sau khối này, nên một override đặt ở đây bị nó ghi đè. ĐO ĐƯỢC lúc thử
-     đặt ở đây: ở 390px hàng hai để lại một khoảng hở 48px giữa `ngữ cảnh` và
-     `năng suất`. */
-}
+/* Không còn điểm ngắt riêng cho transport: nó xuống dòng khi nội dung không vừa,
+   ở mọi bề rộng. Lý do đo được nằm ở chú thích của `.khung` phía trên, và phần
+   biến nó thành nhiều hàng nằm trong mục transport ở dưới. */
 
 /* Điểm ngắt 860px: rail thôi làm CỘT, thành DẢI NGANG — không biến mất.
 
@@ -1517,14 +1501,17 @@ div:has(> .qcrow) {
   font: 400 11.5px var(--ui);
   color: var(--ink-2);
   padding: 0 4px;
+  /* XUỐNG DÒNG, không cuộn ngang — DESIGN.md:108 "luôn hiện, không cuộn mất".
+     Không đặt sau một điểm ngắt: bề rộng nội dung phụ thuộc DỮ LIỆU (944px khi
+     mọi số là "—", 1253px khi phiên đang chạy có số thật), nên mọi điểm ngắt cố
+     định đều cắt mất `đã chạy` ở nửa dải bên trên nó. Xem chú thích `.khung`.
+
+     `overflow-x: auto` còn lại là lưới an toàn cho ca bệnh lý duy nhất mà xuống
+     dòng không cứu được: MỘT ô rộng hơn cả khung. Bình thường không có thanh
+     cuộn nào vì `scrollWidth === clientWidth`. */
   overflow-x: auto;
   overflow-y: hidden;
-  /* Ở bề rộng thường dùng, transport vừa đủ chỗ nên thanh cuộn chỉ là tiếng ồn.
-     Dưới 900px thì nó XUỐNG DÒNG chứ không cuộn — xem khối `@media (max-width:
-     900px)` ở đầu tệp và lý do đo được ở đó. Cuộn ngang còn lại là phương án dự
-     phòng cho dải 900–1240px: ô công đoạn co theo câu mô tả từ dòng sự kiện nên
-     một câu đủ dài vẫn có thể tràn ở đó, và khi tràn thì phải THẤY được là còn
-     nội dung bên phải, nếu không người dùng tưởng con số bị mất. */
+  flex-wrap: wrap;
   scrollbar-width: none;
 }
 .trans::-webkit-scrollbar {
@@ -1554,12 +1541,19 @@ div:has(> .qcrow) {
     display: none;
   }
 }
+/* `border-bottom` + `min-height` ở MỌI bề rộng, không chỉ dưới điểm ngắt: một hàng
+   đã xuống dòng là một hàng thật nên nó cần kẻ ngang của riêng nó — `border-right`
+   của ô cuối hàng dừng giữa khung và không chia được hàng nào. `min-height` để hàng
+   không bó sát chữ khi không còn chiều cao 30px của grid. Khi thanh vừa MỘT hàng,
+   kẻ dưới trùng mép đáy khung nên không thêm nét nào nhìn thấy được. */
 .trans .cell {
   display: flex;
   align-items: center;
   gap: 7px;
   padding: 0 11px;
   border-right: 1px solid var(--line-2);
+  border-bottom: 1px solid var(--line-2);
+  min-height: 28px;
   white-space: nowrap;
   flex: none;
 }
@@ -1590,8 +1584,24 @@ div:has(> .qcrow) {
   white-space: nowrap;
   min-width: 0;
 }
+/* `margin-left: auto` gom nhóm số liệu về mép phải — nhưng nó CHỈ an toàn khi thanh
+   chắc chắn vừa MỘT hàng. Sau khi xuống dòng, auto margin ăn hết chỗ trống còn lại
+   của hàng nó đang nằm và biến chỗ đó thành một khoảng hở giữa hai ô cùng hàng —
+   đọc ra như thể có ô bị thiếu. ĐO ĐƯỢC: hở 48px ở 390px, và 186px ở 1024px với
+   số liệu thật (hàng 1 kết bằng `ngữ cảnh`, rồi hở, rồi `năng suất`).
+
+   Nên mặc định là 0, và chỉ bật lại từ 1360px — trên ngưỡng đó nội dung rộng nhất
+   đo được (1253px khi ẩn cặp token, ~1303px khi hiện) vẫn vừa một hàng, nên không
+   có hàng thứ hai nào để tạo hở. Dưới 1360px nhóm số liệu chảy liền sau `ngữ cảnh`
+   thay vì dạt phải: đổi lấy việc KHÔNG BAO GIỜ cắt mất con số, đúng thứ tự ưu tiên
+   mà DESIGN.md:108 đặt ra. */
 .trans .cell.push {
-  margin-left: auto;
+  margin-left: 0;
+}
+@media (min-width: 1360px) {
+  .trans .cell.push {
+    margin-left: auto;
+  }
 }
 .trans .m {
   font: 500 11.5px var(--mono);
@@ -1615,30 +1625,6 @@ div:has(> .qcrow) {
 }
 .trans .warn {
   color: var(--amber);
-}
-
-/* Dưới 900px transport xuống dòng — xem lý do đo được ở khối cùng điểm ngắt trong
-   mục "khung ứng dụng". Khối này phải đứng SAU `.trans .cell.push` ở trên vì hai
-   bộ chọn có cùng độ ưu tiên. */
-@media (max-width: 900px) {
-  .trans {
-    flex-wrap: wrap;
-  }
-  /* Mỗi hàng đã xuống dòng là một hàng thật nên nó cần kẻ ngang của riêng nó:
-     `border-right` của ô cuối hàng dừng giữa khung và không chia được hàng nào.
-     `min-height` để hàng không bó sát chữ khi không còn chiều cao 30px của grid. */
-  .trans .cell {
-    border-bottom: 1px solid var(--line-2);
-    min-height: 28px;
-  }
-  /* `margin-left: auto` tồn tại để đẩy nhóm số liệu sang mép phải KHI CÒN CHỖ
-     TRỐNG trên MỘT hàng. Sau khi xuống dòng, chỗ trống nằm ở cuối hàng cuối, và
-     auto margin biến nó thành một khoảng hở giữa hai ô cùng hàng — đọc ra như thể
-     có ô bị thiếu. ĐO ĐƯỢC ở 390px khi chưa reset: hở 48px giữa `ngữ cảnh` và
-     `năng suất`. */
-  .trans .cell.push {
-    margin-left: 0;
-  }
 }
 
 /* thước ngữ cảnh: thấy được chỗ nén sắp xảy ra, không chỉ một con số */

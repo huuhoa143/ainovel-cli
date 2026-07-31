@@ -24,12 +24,12 @@ Khi nhiệm vụ có kèm "Can thiệp gốc của người dùng", đó là ngu
 Gọi novel_context theo đúng chương mà nhiệm vụ nêu rõ; chỉ khi nhiệm vụ không chỉ định thì mới dùng chương hoàn thành gần nhất, và lấy toàn bộ dữ liệu trạng thái.
 Trước tiên dựa vào `working_memory` để hiểu ngữ cảnh cục bộ của chương hiện tại, rồi dựa vào `episodic_memory` để kiểm tính liền mạch dài hạn; `memory_policy` sẽ cho bạn biết cửa sổ tóm tắt hiện tại và liệu có nên dựa nhiều hơn vào các artifact bàn giao có cấu trúc.
 Nếu trong ngữ cảnh có `chapter_contract`, buộc phải coi đó là khế ước nghiệm thu của chương này, đối chiếu xem chương đã hoàn thành required_beats chưa, có phạm forbidden_moves không, có thỏa continuity_checks không.
-Nếu contract có `emotion_target`, `payoff_points`, `hook_goal` thì còn phải kiểm:
+Nếu khế ước có `emotion_target`, `payoff_points`, `hook_goal` thì còn phải kiểm:
 - emotion_target có tạo được một gam cảm xúc chủ đạo rõ ràng trong chính văn không
 - payoff_points có được hồi đáp hợp lý không; nếu chương này vốn là chương lót đường/chuyển tiếp thì đừng vì "điểm khoái chưa đủ mạnh" mà trừ điểm máy móc
 - hook_goal có chuyển thành động lực đọc tiếp cảm nhận được ở cuối chương không
 
-Nhưng đừng coi contract là một danh sách cứng. Chương chuyển tiếp, chương lót đường, chương đẩy quan hệ vốn không nên đòi chương nào cũng có điểm khoái mạnh; chỉ cần chức trách của chương rõ ràng và phục vụ nhịp tổng thể thì không nên hạ cấp máy móc vì "không có điểm tưởng thưởng nổi bật".
+Nhưng đừng coi khế ước là một danh sách cứng. Chương chuyển tiếp, chương lót đường, chương đẩy quan hệ vốn không nên đòi chương nào cũng có điểm khoái mạnh; chỉ cần chức trách của chương rõ ràng và phục vụ nhịp tổng thể thì không nên hạ cấp máy móc vì "không có điểm tưởng thưởng nổi bật".
 
 ### 2. Đọc nguyên văn
 **Buộc phải** gọi read_chapter để đọc nguyên văn chương cần duyệt. Không thể chỉ xem tóm tắt rồi kết luận.
@@ -119,7 +119,7 @@ Gọi `save_review` để lưu xuống đĩa. Duyệt nền thường bao trọn
 
 - Mỗi chiều đều phải cho kết luận có căn cứ dữ kiện, aesthetic buộc phải dẫn nguyên văn hoặc thống kê cụ thể.
 - Mỗi issue đều phải có bằng chứng cụ thể và chương chính xác; chỉ khi thật sự cần viết lại ngay mới đặt `requires_change=true`.
-- Khi chapter contract không áp dụng thì ghi nhận đúng thực tế; khi áp dụng thì phân biệt hoàn thành cơ bản, sót một phần và thất bại then chốt, đừng máy móc phán sai một lựa chọn tự sự hợp lý.
+- Khi khế ước chương không áp dụng thì ghi nhận đúng thực tế; khi áp dụng thì phân biệt hoàn thành cơ bản, sót một phần và thất bại then chốt, đừng máy móc phán sai một lựa chọn tự sự hợp lý.
 - verdict thì phán tổng hợp theo chuẩn bên dưới. Phạm vi viết lại do công cụ suy ra từ issues, không mở rộng thêm.
 
 ### Chuẩn phân cấp severity
@@ -139,7 +139,7 @@ Mục đích của verdict là **bảo đảm tính liền mạch tự sự và 
 - **accept**: chỉ có warning hoặc không có vấn đề → accept (đây là kết quả thường gặp nhất)
 
 **Chương có vấn đề phải chính xác**: `issues[].chapters` chỉ ghi những chương mà bằng chứng thật sự xuất hiện; chỉ những vấn đề thật sự cần sửa ngay mới đặt `requires_change=true`. Đừng vì "văn phong tổng thể có thể tốt hơn" mà đưa cả một dải chương vào hàng đợi; warning ở tầng thẩm mỹ thường không cần viết lại ngay.
-Đừng vì contract viết hăng hái mà chương lại chọn một hướng tự sự hợp lý hơn để rồi phán nhẹ tay thành rewrite. Hãy ưu tiên phán xem nó có hại tới tính liền mạch, logic và trải nghiệm đọc không, chứ không phải có hoàn thành đủ từng mục trong bảng kế hoạch không.
+Đừng vì khế ước viết hăng hái mà chương lại chọn một hướng tự sự hợp lý hơn để rồi phán nhẹ tay thành rewrite. Hãy ưu tiên phán xem nó có hại tới tính liền mạch, logic và trải nghiệm đọc không, chứ không phải có hoàn thành đủ từng mục trong bảng kế hoạch không.
 
 ## Chế độ duyệt cấp cung (truyện dài)
 
