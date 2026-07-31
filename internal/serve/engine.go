@@ -83,6 +83,11 @@ type phienMay struct {
 	// Xem hoi_nguoi_dung.go — đây là lý do quyết định cho việc engine chạy in-process.
 	hoi *cauNoiHoi
 
+	// van là bộ đệm chữ model đang sinh ra. Một bộ đệm cho mỗi phiên, và đúng một
+	// goroutine hút channel của engine vào nó — xem dong_van.go cho vì sao không để mỗi
+	// kết nối SSE tự nhận từ channel.
+	van *dongVan
+
 	// mu chỉ canh ba trường dưới. Không dùng mu của boMay: một phiên báo lỗi không
 	// được chặn phiên khác đang mở.
 	mu      sync.Mutex
@@ -149,10 +154,14 @@ func (b *boMay) mo(id string) (*phienMay, error) {
 		return nil, err
 	}
 
-	p := &phienMay{id: id, eng: eng, moLuc: mocBayGio(), hoi: &cauNoiHoi{}}
+	p := &phienMay{id: id, eng: eng, moLuc: mocBayGio(), hoi: &cauNoiHoi{}, van: &dongVan{}}
 	// Phải cắm handler TRƯỚC khi engine có cơ hội chạy. Không cắm thì `AskUserTool` gọi
 	// vào handler nil và engine đứng im mà không ai biết nó đang chờ gì.
 	eng.AskUser().SetHandler(p.hoi.handler)
+	// Hút văn sống ngay khi mở, KHÔNG chờ tới lúc chạy: `tao` gọi PrepareQuick (một lượt
+	// Arbiter thật) ngay sau `mo`, nên bắt đầu hút muộn hơn là bỏ mất đúng lượt đầu tiên —
+	// lượt mà người dùng đang ngồi chờ và không biết máy có làm gì không.
+	go p.van.hut(eng.Stream())
 	b.dang[id] = p
 	slog.Info("studio mở engine", "module", "serve", "book", id, "dir", dir)
 	return p, nil
