@@ -29,6 +29,16 @@ func buildSnapshot(st *store.Store, id string, selected int) (*Snapshot, error) 
 	cycles := latestChapterCycles(cps)
 	timeline := buildTimeline(st, progress)
 
+	// Ba cờ dưới suy từ CHÍNH builder mà ba endpoint kia dùng, không từ một phép
+	// kiểm riêng — xem ghi chú ở Capabilities. Lỗi đọc ở đây KHÔNG làm sập
+	// snapshot: bề mặt studio không phụ thuộc ba nguồn này, và một usage.json
+	// hỏng không đáng làm trắng cả dòng sản xuất. Cờ false là câu trả lời đúng
+	// cho "không có dữ liệu để vẽ", bất kể vì chưa ghi hay vì đọc không được;
+	// endpoint tương ứng mới là chỗ nói ra ca nào.
+	styleDoc, _ := buildStyle(st)
+	costDoc, _ := buildCost(st)
+	settingsDoc, _ := buildSettings(st)
+
 	snap := &Snapshot{
 		Book:     bookFrom(id, progress, cps),
 		Timeline: timeline,
@@ -43,6 +53,9 @@ func buildSnapshot(st *store.Store, id string, selected int) (*Snapshot, error) 
 			// thật: payload có 2 tập, 2 cung, mà capability báo false.
 			LayeredOutline: len(timeline.Volumes) > 0,
 			Steer:          false, // cần engine hợp tác; xem ghi chú trong serve.go
+			StyleRules:     coVanPhong(styleDoc),
+			CostBreakdown:  coChiPhiChiTiet(costDoc),
+			RunSettings:    coCaiDat(settingsDoc),
 		},
 		Transport: buildTransport(st, progress, cps),
 		Decisions: buildDecisions(st),

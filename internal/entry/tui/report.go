@@ -300,30 +300,104 @@ func formatSeverityCounts(c, w, i int) string {
 	return "(" + strings.Join(parts, " / ") + ")"
 }
 
-// wrapText 对长文本做简单换行。
+// wrapText ngắt văn bản dài theo bề rộng hiển thị, ưu tiên ngắt Ở BIÊN TỪ.
+//
+// Vì sao phải là biên từ: bản cũ ngắt theo từng KÝ TỰ, nên một từ tiếng Việt bị xé
+// làm hai — đo được trên màn hình thật: "chương" → "chư" + "ơng", "dùng" → "dù" +
+// "ng". Cả hai nửa đều là chuỗi đọc được (và "dù" là một từ tiếng Việt thật), nên
+// người dùng đọc ra LỖI CHÍNH TẢ chứ không nhận ra là lỗi layout — sẽ bị báo sai
+// loại mãi. Tiếng Trung không gặp lớp này vì mỗi chữ Hán là một đơn vị đứng riêng,
+// ngắt ở đâu cũng không xé chữ nào; đây là khuyết điểm chỉ thức dậy ở tiếng Việt.
+//
+// Chuỗi KHÔNG có khoảng trắng (một mạch chữ Hán, đường dẫn, URL) vẫn ngắt cứng theo
+// ký tự — đó là cách duy nhất, và TestWrapTextResetsAtNewlines giữ đúng hành vi đó.
 func wrapText(s string, maxWidth int) string {
 	if maxWidth <= 0 || lipgloss.Width(s) <= maxWidth {
 		return s
 	}
+	const indent = "  " // indent continuation
+	indentW := lipgloss.Width(indent)
+	// Bề rộng tối đa một từ được phép chiếm khi bị đẩy xuống dòng tiếp. Từ nào dài
+	// hơn mức này thì không dòng nào chứa nổi nguyên vẹn → phải ngắt cứng.
+	soloW := max(1, maxWidth-indentW)
+
 	var b strings.Builder
-	lineW := 0
+	// word đệm từ đang dở: chỉ khi gặp khoảng trắng mới biết từ đã hết, nên phải
+	// giữ lại rồi mới quyết định đặt nó ở dòng này hay đẩy xuống dòng sau.
+	// sp đệm khoảng trắng đang chờ: chỉ ghi ra KHI BIẾT từ theo sau nó vừa dòng.
+	// Ghi ngay sẽ để lại khoảng trắng ở cuối dòng và làm dòng dôi ra 1 cột — đúng
+	// lỗi TestRenderImportLineWrapsWithoutClipping bắt được (81 > 80).
+	var word, sp strings.Builder
+	lineW, wordW, spW := 0, 0, 0
+	// hasContent: dòng hiện tại đã có chữ chưa — chỉ khi có mới được phép ngắt.
+	// dropSpace: dòng hiện tại do NGẮT DÒNG sinh ra, nên khoảng trắng đầu dòng là
+	// rác và phải bỏ. Với dòng do '\n' của chính văn bản sinh ra thì KHÔNG bỏ:
+	// phần thụt đầu dòng đó là của tác giả (khối xác nhận cắt chương nhiều dòng).
+	hasContent, dropSpace := false, false
+
+	newline := func() {
+		b.WriteString("\n")
+		b.WriteString(indent)
+		lineW = indentW
+		hasContent, dropSpace = false, true
+	}
+	flush := func() {
+		if wordW == 0 {
+			return
+		}
+		switch {
+		case hasContent && lineW+spW+wordW > maxWidth:
+			newline() // bỏ luôn khoảng trắng đang chờ: nó là cuối dòng
+		case spW > 0:
+			b.WriteString(sp.String())
+			lineW += spW
+		}
+		sp.Reset()
+		spW = 0
+		b.WriteString(word.String())
+		lineW += wordW
+		// Từ đã nằm trên dòng: từ đây khoảng trắng là dấu tách thật, không phải rác
+		// đầu dòng nữa. Phải xóa cờ Ở ĐÂY chứ không ở vòng lặp — newline() được gọi
+		// từ chính flush() nên nếu xóa ở vòng lặp thì khoảng trắng ngay sau từ đầu
+		// tiên của dòng tiếp sẽ bị bỏ, dính hai từ vào nhau.
+		hasContent, dropSpace = true, false
+		word.Reset()
+		wordW = 0
+	}
+
 	for _, r := range s {
 		// 原有换行处必须重置行宽：'\n' 宽度为 0，不重置会把多行消息的累计宽度
 		// 误判为超宽，从首个被换行的行起给其后每一行都插入伪换行+缩进（整体打散）。
 		if r == '\n' {
+			flush()
+			sp.Reset()
+			spW = 0
 			b.WriteRune(r)
 			lineW = 0
+			hasContent, dropSpace = false, false
 			continue
 		}
-		w := lipgloss.Width(string(r))
-		if lineW+w > maxWidth && lineW > 0 {
-			b.WriteRune('\n')
-			b.WriteString("  ") // indent continuation
-			lineW = 2
+		if r == ' ' || r == '\t' {
+			flush()
+			if !dropSpace {
+				sp.WriteRune(r)
+				spW += lipgloss.Width(string(r))
+			}
+			continue
 		}
-		b.WriteRune(r)
-		lineW += w
+		// Từ đã dài hơn cả một dòng trống (một mạch chữ Hán, đường dẫn, URL):
+		// ngắt cứng ngay, đừng đệm vô hạn.
+		w := lipgloss.Width(string(r))
+		if wordW+w > soloW {
+			flush()
+			if hasContent && lineW+w > maxWidth {
+				newline()
+			}
+		}
+		word.WriteRune(r)
+		wordW += w
 	}
+	flush()
 	return b.String()
 }
 

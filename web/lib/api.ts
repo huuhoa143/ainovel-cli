@@ -17,10 +17,14 @@
 import type {
   CastDoc,
   ChapterDetail,
+  CostDoc,
   OutlineDoc,
   Profile,
+  SettingsDoc,
   Snapshot,
   StreamEvent,
+  StyleDoc,
+  TinhTrangNguon,
   Workshop,
   WorldDoc,
 } from './types';
@@ -120,10 +124,11 @@ export async function layChuong(book: string, n: number): Promise<ChapterDetail>
  */
 export async function layHoSo(book: string): Promise<Profile> {
   if (LA_MOCK) {
+    const nguon = nguonMock(book);
     if (MOCK === 'empty' || book === 'bien-ky') {
-      return { characters: null, rules: null, foreshadow: null };
+      return { characters: null, rules: null, foreshadow: null, ...nguon };
     }
-    return { characters: 18, rules: 31, foreshadow: 4 };
+    return { characters: 18, rules: 31, foreshadow: 4, ...nguon };
   }
 
   const dem = (v: unknown): number | null => (Array.isArray(v) ? v.length : null);
@@ -136,16 +141,100 @@ export async function layHoSo(book: string): Promise<Profile> {
   };
 
   const b = encodeURIComponent(book);
-  const [cast, world] = await Promise.all([
+  const [cast, world, vanPhong, chiPhi, caiDat] = await Promise.all([
     goi<{ characters: unknown }>(`/api/books/${b}/cast`),
     goi<{ rules: unknown; foreshadow: unknown }>(`/api/books/${b}/world`),
+    hoiTham<StyleDoc>(`/api/books/${b}/style`, coVanPhong),
+    hoiTham<CostDoc>(`/api/books/${b}/cost`, coChiPhi),
+    hoiTham<SettingsDoc>(`/api/books/${b}/settings`, coCaiDat),
   ]);
 
   return {
     characters: cast ? dem(cast.characters) : null,
     rules: world ? dem(world.rules) : null,
     foreshadow: world ? dem(world.foreshadow) : null,
+    vanPhong,
+    chiPhi,
+    caiDat,
   };
+}
+
+/**
+ * Hỏi thăm một endpoint để rail biết vẽ nút hay vẽ nhãn "chưa dựng".
+ *
+ * # Vì sao hỏi thăm chứ không đọc `capabilities`
+ *
+ * Ba cờ trong `capabilities` trả lời "store CÓ dữ liệu không", không trả lời
+ * "engine này CÓ endpoint không". Hai câu đó khác nhau ở đúng ca hay gặp nhất:
+ * tác phẩm mới chưa có meta/usage.json thì cờ là false trong khi bề mặt Chi phí
+ * đã dựng và có câu tử tế để nói về chuyện đó. Gate rail theo cờ sẽ ẩn bề mặt
+ * đúng lúc nó cần lên tiếng.
+ *
+ * # Vì sao 404 là "thiếu endpoint"
+ *
+ * Ba endpoint hồ sơ sẵn có (`/outline`, `/cast`, `/world`) LUÔN trả 200 kèm
+ * `null` khi tệp không tồn tại — xem handleCast/handleWorld trong
+ * internal/serve/serve.go, chúng bỏ qua lỗi đọc và ghi thẳng nil vào JSON. Ba
+ * endpoint mới theo cùng quy ước đó, nên 404 chỉ còn một nghĩa: bản engine đang
+ * chạy không có route này.
+ *
+ * Nếu quy ước đó đổi (endpoint 404 khi thiếu tệp) thì hàm này sẽ báo "chưa dựng"
+ * cho một bề mặt đã dựng — hướng sai an toàn hơn hướng ngược lại, nhưng vẫn sai,
+ * nên nó được ghi ra đây thay vì để người sau tự tìm.
+ *
+ * Lỗi KHÁC 404 (500, store đọc lỗi, mạng đứt) không kết luận gì về endpoint, nên
+ * rail vẫn vẽ nút và bề mặt tự hiện câu lỗi của server. Nuốt nó thành "chưa
+ * dựng" là biến một lỗi tầng đọc thành một sự thật về engine.
+ */
+async function hoiTham<T>(
+  duong: string,
+  coDuLieu: (d: T) => boolean,
+): Promise<TinhTrangNguon> {
+  try {
+    const d = await doc<T>(duong);
+    return coDuLieu(d) ? 'co-nguon' : 'co-route';
+  } catch (e) {
+    if (e instanceof LoiApi && e.status === 404) return 'thieu-endpoint';
+    return 'co-route';
+  }
+}
+
+const coVanPhong = (d: StyleDoc): boolean =>
+  (d.prose?.length ?? 0) > 0 ||
+  (d.dialogue?.length ?? 0) > 0 ||
+  (d.taboos?.length ?? 0) > 0;
+
+/**
+ * Chi phí "có nguồn" khi store đã cộng được một lượt gọi nào.
+ *
+ * KHÔNG kiểm `cost_usd > 0`: một phiên chạy trên model miễn phí có usage thật mà
+ * chi phí đúng bằng 0, và đó là dữ liệu, không phải trống. Nên phép kiểm nhìn vào
+ * số token — thứ luôn tăng khi có một lượt gọi thật.
+ */
+const coChiPhi = (d: CostDoc): boolean =>
+  Object.keys(d.per_agent ?? {}).length > 0 ||
+  Object.keys(d.per_model ?? {}).length > 0 ||
+  (d.overall?.input ?? 0) > 0 ||
+  (d.overall?.output ?? 0) > 0;
+
+const coCaiDat = (d: SettingsDoc): boolean =>
+  !!(d.started_at || d.model || d.provider || d.style);
+
+/**
+ * Ba tác phẩm mẫu được chia đúng ba trạng thái nguồn, để chế độ mock dựng được
+ * cả ba mà không cần engine:
+ *
+ *   tran-yeu-ky       → có dữ liệu
+ *   mot-dem-khong-ten → endpoint có, tệp có mà rỗng
+ *   bien-ky           → endpoint có, store chưa ghi tệp nào
+ *
+ * Không có tác phẩm mẫu nào cho ca "endpoint thiếu": ca đó dựng được bằng chính
+ * bản thật (bản engine chưa có route sẽ trả 404), nên bịa thêm một tác phẩm giả
+ * cho nó là dựng một ca đã có thật.
+ */
+function nguonMock(book: string): Pick<Profile, 'vanPhong' | 'chiPhi' | 'caiDat'> {
+  const tt: TinhTrangNguon = book === 'tran-yeu-ky' ? 'co-nguon' : 'co-route';
+  return { vanPhong: tt, chiPhi: tt, caiDat: tt };
 }
 
 /* ── hồ sơ tác phẩm ────────────────────────────────────────────────────── */
@@ -171,6 +260,87 @@ export function layNhanVat(book: string): Promise<CastDoc> {
 export function layTheGioi(book: string): Promise<WorldDoc> {
   if (LA_MOCK) return mockJson<WorldDoc>('world');
   return doc<WorldDoc>(`/api/books/${encodeURIComponent(book)}/world`);
+}
+
+/* ── ba bề mặt xưởng: văn phong · chi phí · cài đặt ─────────────────────── */
+
+/**
+ * Cùng luật với ba hàm hồ sơ ngay trên: KHÔNG nuốt lỗi.
+ *
+ * Ba bề mặt này phải phân biệt được ba ca — store chưa ghi tệp / tệp có mà rỗng /
+ * không đọc được — và nuốt lỗi thành hồ sơ rỗng sẽ gộp ca thứ ba vào ca thứ nhất.
+ * Đó là biến một lỗi của tầng đọc thành một sự thật về tác phẩm, và không ai đi
+ * kiểm lại một câu như thế.
+ */
+export function layVanPhong(book: string): Promise<StyleDoc> {
+  if (LA_MOCK) return mockXuong<StyleDoc>('style', book);
+  return doc<StyleDoc>(`/api/books/${encodeURIComponent(book)}/style`);
+}
+
+export function layChiPhi(book: string): Promise<CostDoc> {
+  if (LA_MOCK) return mockXuong<CostDoc>('cost', book);
+  return doc<CostDoc>(`/api/books/${encodeURIComponent(book)}/cost`);
+}
+
+export function layCaiDat(book: string): Promise<SettingsDoc> {
+  if (LA_MOCK) return mockXuong<SettingsDoc>('settings', book);
+  return doc<SettingsDoc>(`/api/books/${encodeURIComponent(book)}/settings`);
+}
+
+/**
+ * Fixture ba bề mặt xưởng, chia theo tác phẩm để mock dựng được cả ba trạng thái
+ * rỗng. Xem `nguonMock` để biết tác phẩm nào mang trạng thái nào.
+ *
+ * Hai hình dạng rỗng ở đây KHÔNG giống nhau, và đó là điểm chính:
+ *   - `bien-ky` trả mọi mảng `null` — store chưa ghi tệp nào
+ *   - `mot-dem-khong-ten` trả mảng `[]` và số `0` — tệp có, trong đó rỗng
+ */
+async function mockXuong<T>(
+  ten: 'style' | 'cost' | 'settings',
+  book: string,
+): Promise<T> {
+  if (book === 'tran-yeu-ky') {
+    switch (ten) {
+      case 'style':
+        return (await import('../fixtures/style.json')).default as unknown as T;
+      case 'cost':
+        return (await import('../fixtures/cost.json')).default as unknown as T;
+      default:
+        return (await import('../fixtures/settings.json')).default as unknown as T;
+    }
+  }
+
+  const chuaGhi = MOCK === 'empty' || book === 'bien-ky';
+  switch (ten) {
+    case 'style':
+      return (chuaGhi
+        ? { volume: 0, arc: 0, prose: null, dialogue: null, taboos: null }
+        : { volume: 1, arc: 1, prose: [], dialogue: [], taboos: [], updated_at: '2026-07-29T20:14:52Z' }) as T;
+    case 'cost': {
+      const khong = {
+        input: 0,
+        output: 0,
+        cache_read: 0,
+        cache_write: 0,
+        cost_usd: 0,
+        saved_usd: 0,
+        cache_capable: false,
+      };
+      return (chuaGhi
+        ? { overall: khong, per_agent: null, per_model: null, missing_assistant_usage: 0 }
+        : {
+            overall: khong,
+            per_agent: {},
+            per_model: {},
+            missing_assistant_usage: 0,
+            updated_at: '2026-07-29T20:14:52Z',
+          }) as T;
+    }
+    default:
+      return (chuaGhi
+        ? {}
+        : { started_at: '2026-07-29T18:02:11Z', advance_mode: 'auto' }) as T;
+  }
 }
 
 /**

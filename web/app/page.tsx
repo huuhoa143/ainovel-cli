@@ -3,6 +3,8 @@
 import { useState } from 'react';
 
 import { BangChuong, GhiChuChiPhi } from '@/components/BangChuong';
+import { CaiDat } from '@/components/CaiDat';
+import { ChiPhi } from '@/components/ChiPhi';
 import { DanY } from '@/components/DanY';
 import { DocTruyen } from '@/components/DocTruyen';
 import { HangChoVietLai } from '@/components/HangChoVietLai';
@@ -17,6 +19,7 @@ import { LuatTheGioi, PhucBut } from '@/components/TheGioi';
 import { ThanhTren } from '@/components/ThanhTren';
 import { ToSanXuat } from '@/components/ToSanXuat';
 import { Transport } from '@/components/Transport';
+import { VanPhong } from '@/components/VanPhong';
 import { DangTai, KhongTaiDuoc, XuongTrong } from '@/components/XuongTrong';
 import { Truc } from '@/components/Truc';
 import { so } from '@/lib/dinhdang';
@@ -148,6 +151,16 @@ function Khu({
       );
     case 'to-san-xuat':
       return <ToSanXuat snapshot={snapshot} />;
+    case 'van-phong':
+      return <VanPhong tacPham={tacPham} />;
+    // Chi phí là bề mặt duy nhất trong ba bề mặt mới cần `snapshot`, và nó cần
+    // đúng hai thứ: `capabilities.per_chapter_cost` để nói ra chi phí theo chương
+    // không có nguồn, và `transport.cost_per_chapter` — con số CÓ nguồn thật —
+    // để đặt cạnh cửa sổ của nó (tổng chia số chương đã nghiệm thu).
+    case 'chi-phi':
+      return <ChiPhi tacPham={tacPham} snapshot={snapshot} />;
+    case 'cai-dat':
+      return <CaiDat tacPham={tacPham} />;
     case 'dan-y':
       return <DanY snapshot={snapshot} tacPham={tacPham} />;
     case 'nhan-vat':

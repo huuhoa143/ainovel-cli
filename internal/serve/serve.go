@@ -136,6 +136,9 @@ func (s *server) routes() *http.ServeMux {
 	mux.HandleFunc("GET /api/books/{book}/outline", s.handleOutline)
 	mux.HandleFunc("GET /api/books/{book}/cast", s.handleCast)
 	mux.HandleFunc("GET /api/books/{book}/world", s.handleWorld)
+	mux.HandleFunc("GET /api/books/{book}/style", s.handleStyle)
+	mux.HandleFunc("GET /api/books/{book}/cost", s.handleCost)
+	mux.HandleFunc("GET /api/books/{book}/settings", s.handleSettings)
 	mux.HandleFunc("GET /api/books/{book}/events", s.handleEvents)
 
 	if s.webDir != "" {

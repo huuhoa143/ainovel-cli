@@ -20,6 +20,27 @@ export interface Capabilities {
   layered_outline: boolean;
   /** false → engine chưa hợp tác nhận can thiệp qua web; ô nhập phải vô hiệu. */
   steer: boolean;
+
+  /*
+   * Ba cờ dưới đây phục vụ ba bề mặt Văn phong / Chi phí / Cài đặt.
+   *
+   * Chúng là `?:` chứ không phải `boolean` vì bản engine cũ hơn không có khóa
+   * này trong JSON, và `undefined` ở đây KHÁC `false`: một cái nghĩa là bản
+   * engine không biết câu hỏi, cái kia nghĩa là nó biết và trả lời không.
+   *
+   * Ba cờ này chỉ dùng để chọn CÂU cho trạng thái rỗng — phân biệt "store chưa
+   * có tệp đó" với "tệp có mà rỗng". Chúng KHÔNG dùng để quyết định có vẽ bề mặt
+   * hay không: dữ liệu thật thắng cờ, theo đúng bài học LayeredOutline ghi ở
+   * internal/serve/model.go — hai đường suy luận song song về cùng một dữ liệu
+   * sẽ có lúc lệch, và khi lệch thì ẩn một bề mặt còn đủ dữ liệu để vẽ là hướng
+   * sai tệ hơn.
+   */
+  /** false → store chưa có meta/style_rules.json. */
+  style_rules?: boolean;
+  /** false → store chưa có meta/usage.json. */
+  cost_breakdown?: boolean;
+  /** false → store chưa có cấu hình phiên chạy. */
+  run_settings?: boolean;
 }
 
 export type Activity = 'running' | 'idle' | 'complete';
@@ -199,11 +220,35 @@ export interface ChapterDetail {
   review?: Review;
 }
 
+/**
+ * Bề mặt có tồn tại ở bản engine đang chạy hay không.
+ *
+ * Ba giá trị này là ba câu trả lời KHÁC NHAU cho rail, và trộn chúng lại là
+ * đúng lỗi mà `MucChuaDung` tồn tại để tránh:
+ *
+ *   'thieu-endpoint' → bản engine này không có route đó (404). Rail phải vẽ mục
+ *                      dưới dạng "chưa dựng": bấm vào sẽ không có gì.
+ *   'co-nguon'       → route có và trả về dữ liệu. Rail vẽ nút thật.
+ *   'co-route'       → route có nhưng chưa đọc được / chưa có dữ liệu. Rail vẫn
+ *                      vẽ nút thật, vì bề mặt đã dựng và nó có câu để nói về
+ *                      chuyện store rỗng. Ẩn nút ở đây sẽ biến "tác phẩm mới"
+ *                      thành "studio thiếu bề mặt" — hai kết luận khác nhau.
+ */
+export type TinhTrangNguon = 'thieu-endpoint' | 'co-route' | 'co-nguon';
+
 /** Đếm hồ sơ tác phẩm cho rail. null = endpoint trả null, tức store chưa có. */
 export interface Profile {
   characters: number | null;
   rules: number | null;
   foreshadow: number | null;
+  /**
+   * Ba bề mặt mới chỉ có ở bản engine đã dựng endpoint cho chúng. Rail hỏi thăm
+   * một lượt khi đổi tác phẩm — cùng nhịp với ba số đếm trên, không nằm trong
+   * vòng làm mới 1,5s.
+   */
+  vanPhong: TinhTrangNguon;
+  chiPhi: TinhTrangNguon;
+  caiDat: TinhTrangNguon;
 }
 
 /* ── hồ sơ tác phẩm: dàn ý / nhân vật / luật thế giới ───────────────────── */
@@ -316,6 +361,104 @@ export interface WorldDoc {
   rules: WorldRule[] | null;
   foreshadow: ForeshadowEntry[] | null;
   relations: RelationshipEntry[] | null;
+}
+
+/* ── văn phong: quy tắc viết Editor chưng ra ở ranh giới cung ───────────── */
+
+/** Quy tắc giọng của một nhân vật. */
+export interface CharacterVoice {
+  name: string;
+  /** null khi tệp có mục nhân vật đó mà chưa có quy tắc nào. */
+  rules: string[] | null;
+}
+
+/**
+ * GET /api/books/{book}/style — `domain.WritingStyleRules`.
+ *
+ * `volume`/`arc` là CỬA SỔ của cả tệp, không phải nhãn trang trí: Editor chưng
+ * quy tắc ở ranh giới cung, nên bộ quy tắc này mô tả cung VỪA ĐÓNG. Dây chuyền
+ * đã đi sang cung sau thì nó vẫn là bộ quy tắc mới nhất, nhưng không phải bộ
+ * quy tắc của chương đang viết — và người vận hành phải đọc được điều đó.
+ */
+export interface StyleDoc {
+  volume: number;
+  arc: number;
+  /** 3–5 quy tắc lối kể. null = chưa có tệp / chưa chưng lần nào. */
+  prose: string[] | null;
+  dialogue: CharacterVoice[] | null;
+  /** Danh sách cấm. */
+  taboos: string[] | null;
+  updated_at?: string;
+}
+
+/* ── chi phí: cộng dồn theo tác tử và theo model ────────────────────────── */
+
+/**
+ * Một ô cộng dồn — `domain.AgentUsageTotals`.
+ *
+ * Mọi trường số ở đây là `number`, KHÔNG `?: number`, và đó là điều kiện để bề
+ * mặt Chi phí nói thật: `$0` (đã gọi model mà chưa tốn tiền, hoặc model miễn
+ * phí) và "chưa có số liệu" là hai chuyện khác nhau. Nếu server đặt `omitempty`
+ * lên các trường này thì khóa `0` bị rụng khỏi JSON và hai ca đó gộp lại —
+ * đúng lớp lỗi đã ghi ở `Dimension.Score` trong internal/serve/model.go.
+ *
+ * Vì thế giao diện kiểm bằng `!= null`, không bằng falsy.
+ */
+export interface UsageTotals {
+  input: number;
+  output: number;
+  cache_read: number;
+  cache_write: number;
+  cost_usd: number;
+  saved_usd: number;
+  /** false → model không hỗ trợ đệm, nên hai cột đệm là "không áp dụng", không phải 0. */
+  cache_capable: boolean;
+  /** Số lần chuỗi đệm bị đứt. Chỉ đếm ở đường chạy trực tiếp, không phát lại. */
+  cache_breaks?: number;
+}
+
+/** GET /api/books/{book}/cost — `domain.UsageState`. */
+export interface CostDoc {
+  updated_at?: string;
+  overall: UsageTotals;
+  /** null = chưa có tệp. `{}` = có tệp mà chưa vai nào được cộng. */
+  per_agent: Record<string, UsageTotals> | null;
+  per_model: Record<string, UsageTotals> | null;
+  /**
+   * Số lượt gọi model KHÔNG báo lại usage. Lớn hơn 0 nghĩa là mọi con số trên
+   * bề mặt này là SÀN, không phải số đúng — và đó là tin vận hành, không phải
+   * chi tiết nội bộ.
+   */
+  missing_assistant_usage: number;
+}
+
+/* ── cài đặt phiên chạy ─────────────────────────────────────────────────── */
+
+/**
+ * GET /api/books/{book}/settings — phần công khai được của `domain.RunMeta`.
+ *
+ * KHÔNG có `start_prompt`, `pending_steer`, `plan_start`: yêu cầu gốc của người
+ * dùng và ý kiến can thiệp chưa xử lý không phải cấu hình, và bề mặt này là bề
+ * mặt cấu hình.
+ */
+export interface SettingsDoc {
+  started_at?: string;
+  provider?: string;
+  /** Kiểu văn chọn lúc khởi động — KHÁC quy tắc văn phong Editor chưng ra sau. */
+  style?: string;
+  model?: string;
+  /** short / mid / long */
+  planning_tier?: string;
+  /** auto / review */
+  advance_mode?: string;
+  /**
+   * Chương được cấp phép đi tiếp ở chế độ `review`.
+   *
+   * `0` là giá trị THẬT ("chưa cấp phép chương nào"), không phải vắng — nên nếu
+   * server đặt `omitempty` lên nó thì ca đáng quan tâm nhất của chế độ review
+   * biến mất khỏi JSON. Giao diện kiểm `!= null`.
+   */
+  advance_permit_chapter?: number;
 }
 
 /** Một sự kiện SSE — khung ở internal/serve/events.go:sseEvent. */

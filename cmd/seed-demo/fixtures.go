@@ -10,7 +10,12 @@
 //  3. Ít nhất một tiêu đề chương dễ gây lẫn với số thứ tự chương, xem ch7.
 package main
 
-import "github.com/voocel/ainovel-cli/internal/domain"
+import (
+	"time"
+
+	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/rules"
+)
 
 // ── nhân vật ────────────────────────────────────────────────────────────────
 
@@ -643,5 +648,181 @@ func demoReviews() []domain.ReviewEntry {
 				},
 			},
 		},
+	}
+}
+
+// ── văn phong: hai nguồn, hai vòng đời ──────────────────────────────────────
+
+// demoStyleRules là văn phong Editor CHẮT RA từ các chương đã viết
+// (meta/style_rules.json). Engine thật chỉ ghi tệp này ở BIÊN CUNG
+// (internal/tools/save_arc_summary.go:118), nên nó gắn với một cặp tập/cung cụ
+// thể — ở đây là cung 1 của tập 1, cung vừa chốt xong ở seed này.
+//
+// Cố ý có một quy tắc prose rất dài và một danh sách cấm nhiều mục: bề mặt Văn
+// phong xếp các quy tắc thành danh sách dọc, và ca dài là ca duy nhất lộ ra lỗi
+// tràn chữ khi nhãn tiếng Việt dài hơn nhãn tiếng Anh 20-30%.
+func demoStyleRules() domain.WritingStyleRules {
+	return domain.WritingStyleRules{
+		Volume: 1,
+		Arc:    1,
+		Prose: []string{
+			"Giữ điểm nhìn hạn chế ở Lâm Thanh: chỉ kể những gì y thấy, nghe hoặc suy ra được, " +
+				"tuyệt đối không nhảy vào đầu Bạch Vô Hà để giải thích động cơ — sức nặng của " +
+				"tuyến truyện này nằm ở chỗ người đọc biết nhiều hơn Lâm Thanh nhưng vẫn chưa " +
+				"biết đủ.",
+			"Mỗi cảnh mở bằng một chi tiết vật chất cụ thể (tiếng chuông, mưa trên đá, gáy sổ sờn) trước khi vào đối thoại.",
+			"Câu tả thiên nhiên tối đa hai câu liền nhau, sau đó phải có hành động hoặc thoại chen vào.",
+			"Không dùng câu hỏi tu từ để chuyển đoạn; chuyển bằng hành động hoặc bằng một mốc thời gian cụ thể.",
+		},
+		Dialogue: []domain.CharacterVoice{
+			{
+				Name: "Lâm Thanh",
+				Rules: []string{
+					"Nói ngắn, phần lớn dưới mười chữ; càng xúc động càng ngắn.",
+					"Không bao giờ gọi thẳng tên Bạch Vô Hà, chỉ dùng 'trưởng lão'.",
+					"Hỏi lại thay vì phản bác khi bị dồn.",
+				},
+			},
+			{
+				Name: "Bạch Vô Hà",
+				Rules: []string{
+					"Câu dài, nhiều mệnh đề phụ, luôn nghe như đang dạy đạo lý.",
+					"Dùng 'ta' và 'con'; không bao giờ dùng 'ngươi' với Lâm Thanh trước mặt người ngoài.",
+				},
+			},
+			{
+				Name: "Diệp Tiểu Yến",
+				Rules: []string{
+					"Hay bỏ lửng câu ở cuối khi nói về Bạch gia.",
+					"Dùng từ nghề y chính xác, không nói vòng.",
+				},
+			},
+		},
+		Taboos: []string{
+			"Không để Lâm Thanh đoán đúng ý đồ Bạch gia trước chương 12",
+			"Không dùng lại hình ảnh 'ba tiếng chuông' để kết chương lần thứ hai",
+			"Không cho nhân vật phụ giải thích luật thế giới bằng một đoạn độc thoại dài",
+			"Không mô tả nội tâm Bạch Vô Hà ở bất kỳ chương nào thuộc tuyến Lâm Thanh",
+		},
+		UpdatedAt: time.Now().Add(-2 * time.Hour).Format(time.RFC3339),
+	}
+}
+
+// demoUserRules là quy tắc NGƯỜI DÙNG KHAI đã chuẩn hoá (meta/user_rules.json).
+//
+// Nguồn này khác demoStyleRules cả về bản chất lẫn vòng đời, và đó là lý do bề
+// mặt Văn phong phải hiện cả hai: tệp này được Host ghi ngay lúc mở sách
+// (internal/userrules/service.go:53), còn style_rules.json phải chờ tới biên cung
+// đầu tiên. Một tác phẩm mới chỉ có tệp này — nếu bề mặt chỉ đọc style_rules thì
+// nó rỗng trơn suốt cung đầu.
+//
+// Cố ý dựng Status = degraded: đó là ca một nguồn chuẩn hoá thất bại và bị hạ cấp
+// thành preferences thô, tức quy tắc KHÔNG được máy kiểm mà chỉ mô hình đọc. Giao
+// diện phải hiện khác ca ready, nên seed phải có nó để bề mặt không bao giờ chỉ
+// được thử với đường thuận lợi.
+func demoUserRules() *rules.Snapshot {
+	return &rules.Snapshot{
+		Version: rules.SnapshotVersion,
+		Status:  rules.StatusDegraded,
+		Structured: rules.Structured{
+			Genre:          "tiên hiệp điều tra, nhịp chậm",
+			ForbiddenChars: []string{"Triệu Nhất Đao", "Vương Bá Thiên"},
+			ForbiddenPhrases: []string{
+				"ở một mức độ nào đó", "đáng chú ý là", "không hiểu vì sao",
+				"trăm mối cảm xúc ngổn ngang", "khóe miệng khẽ nhếch lên",
+			},
+			FatigueWords: map[string]int{
+				"tuy nhiên": 2, "thế nhưng": 2, "ngoài ra": 1,
+				"một thoáng": 2, "một tia": 2, "tựa như": 2,
+				"im lặng": 2, "không nói gì": 2,
+				"trong nháy mắt": 3, "khoảnh khắc": 3,
+				"bất giác": 1, "không khỏi": 1,
+			},
+		},
+		Preferences: "## [system_defaults]\n\nGiữ bảng từ gây mỏi mặc định của hệ thống.\n\n" +
+			"## [global:van-phong-cua-toi.md]\n\nTôi muốn truyện đi chậm, mỗi chương chỉ đẩy " +
+			"một bước điều tra, không dồn ba bước vào một chương. Đối thoại phải mang thông " +
+			"tin, không được chỉ để lấp chỗ. Tránh mọi câu sáo của văn mạng: không 'khóe " +
+			"miệng khẽ nhếch', không 'ánh mắt lóe lên tia sáng lạnh'.\n\n" +
+			"## [project:trans-yeu-ky.md]\n\nRiêng cuốn này: mọi mốc thời gian phải khớp với " +
+			"bảng niên biểu ở premise, sai một năm là lỗi nặng chứ không phải lỗi nhỏ.",
+		Sources: []string{
+			"system_defaults",
+			"global:van-phong-cua-toi.md",
+			"project:tran-yeu-ky.md",
+		},
+		Uncertain: []string{
+			"'mỗi chương khoảng ba nghìn chữ' — số chữ là ràng buộc mềm về ngữ nghĩa, " +
+				"cố ý không nâng lên structured (xem rules.Structured), giữ ở kênh preferences",
+			"'giọng kể hơi cổ' — không có trường máy kiểm nào tương ứng, để mô hình tự diễn giải",
+		},
+	}
+}
+
+// ── chi phí: phần chia nhỏ theo tác tử và theo model ────────────────────────
+
+// demoUsage gieo meta/usage.json cho bề mặt Chi phí.
+//
+// Ba ca cố ý nằm trong cùng một bản gieo, vì cả ba đều là ca bẫy thật:
+//
+//  1. arbiter có cost_usd = 0 ĐÚNG NGHĨA — nó có token thật (đã gọi model) nhưng
+//     provider không tính tiền lượt đó. `$0` và "chưa có số liệu" là hai chuyện
+//     khác nhau, và nếu hợp đồng JSON đặt omitempty lên cost_usd thì hàng này ra
+//     JSON không có khoá và bề mặt sẽ hiện nó y như một tác tử chưa chạy.
+//  2. editor có cache_capable = false trong khi các tác tử khác true — cột "tiết
+//     kiệm nhờ đệm" phải hiện khác nhau cho hai loại này, không được hiện $0 như
+//     nhau.
+//  3. MissingUsage > 0 — số lượt mô hình không trả usage. Nó lớn nghĩa là MỌI con
+//     số ở trên đều thiếu, nên bề mặt buộc phải nói ra thay vì để người vận hành
+//     tin một tổng bị hụt.
+func demoUsage() domain.UsageState {
+	perAgent := map[string]domain.AgentUsageTotals{
+		"writer": {
+			Input: 486_320, Output: 92_140, CacheRead: 361_880, CacheWrite: 48_210,
+			Cost: 4.182_6, Saved: 1.734_2, CacheCapable: true, CacheBreaks: 2,
+		},
+		"editor": {
+			Input: 214_760, Output: 38_920, CacheRead: 0, CacheWrite: 0,
+			Cost: 1.906_4, Saved: 0, CacheCapable: false,
+		},
+		"architect": {
+			Input: 96_480, Output: 41_330, CacheRead: 52_100, CacheWrite: 18_640,
+			Cost: 1.284_0, Saved: 0.402_8, CacheCapable: true,
+		},
+		// cost_usd = 0 mà token > 0: ca "$0 là số thật", xem ghi chú (1) ở trên.
+		"arbiter": {
+			Input: 12_840, Output: 3_260, CacheRead: 8_120, CacheWrite: 0,
+			Cost: 0, Saved: 0.041_6, CacheCapable: true,
+		},
+	}
+	perModel := map[string]domain.AgentUsageTotals{
+		"gemini-2.5-pro": {
+			Input: 703_920, Output: 168_390, CacheRead: 414_980, CacheWrite: 66_850,
+			Cost: 7.373_0, Saved: 2.137_0, CacheCapable: true, CacheBreaks: 2,
+		},
+		"gemini-2.5-flash": {
+			Input: 106_480, Output: 7_260, CacheRead: 7_120, CacheWrite: 0,
+			Cost: 0, Saved: 0.041_6, CacheCapable: true,
+		},
+	}
+
+	var overall domain.AgentUsageTotals
+	for _, t := range perAgent {
+		overall.Input += t.Input
+		overall.Output += t.Output
+		overall.CacheRead += t.CacheRead
+		overall.CacheWrite += t.CacheWrite
+		overall.Cost += t.Cost
+		overall.Saved += t.Saved
+		overall.CacheBreaks += t.CacheBreaks
+	}
+	overall.CacheCapable = true
+
+	return domain.UsageState{
+		UpdatedAt:    time.Now().Add(-90 * time.Second),
+		Overall:      overall,
+		PerAgent:     perAgent,
+		PerModel:     perModel,
+		MissingUsage: 3,
 	}
 }

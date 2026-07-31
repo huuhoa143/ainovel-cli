@@ -604,7 +604,7 @@ Trong TUI: `/export [path] [from=N] [to=M] [--overwrite]`. Định dạng suy t�
    chương (A.4.1) nên khẳng định "rỗng" sẽ đỏ vì lỗi của `rules`, không phải vì lỗi bạn muốn bắt.
 3. **Đừng `strings.Contains` trên cả tài liệu `novel_context`.** Nó chứa nguyên văn bản hướng dẫn
    `anti-ai-tone.md`, mà bản đó gọi tên đủ mọi mẫu tật. Bóc JSON ra rồi khẳng định.
-4. **Nhận vai từ bộ tool, không từ chữ trong prompt.** Bộ tool là khế ước mã; prompt là chuỗi đã dịch, biên
+4. **Nhận vai từ bộ tool, không từ chữ trong prompt.** Bộ tool là hợp đồng mã; prompt là chuỗi đã dịch, biên
    tập viên có quyền sửa. Dựng regex từ `i18n.F(msgid)` thay vì viết cứng chuỗi tiếng Việt.
 5. **Mọi ca "bắt được lỗi" phải có ca đối chứng "không báo bừa"** đi kèm, trong cùng một test.
 6. **Đừng dùng ít hơn 5 chương** khi kiểm thống kê: `stylestat.minChapters` và `domain.ReviewInterval` đều

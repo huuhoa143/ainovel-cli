@@ -62,7 +62,7 @@ func renderStateContent(snap host.UISnapshot, contentW int) string {
 		if !snap.IsRunning {
 			label = i18n.F("待恢复")
 		}
-		overview.WriteString(renderHighlightField(label, truncate(headline, sidebarValueWidth(contentW))))
+		overview.WriteString(renderHighlightField(label, truncate(headline, sidebarValueBudget(contentW, sidebarValueMaxLines))))
 	}
 	sections = append(sections, renderSidebarSection(i18n.F("概览"), overview.String(), contentW))
 
@@ -83,18 +83,18 @@ func renderStateContent(snap host.UISnapshot, contentW int) string {
 		var rewrite strings.Builder
 		rewrite.WriteString(renderHighlightField(i18n.F("队列"), fmt.Sprintf("%v", snap.PendingRewrites)))
 		if snap.RewriteReason != "" {
-			rewrite.WriteString(renderField(i18n.F("原因"), truncate(snap.RewriteReason, sidebarValueWidth(contentW))))
+			rewrite.WriteString(renderField(i18n.F("原因"), truncate(snap.RewriteReason, sidebarValueBudget(contentW, sidebarValueMaxLines))))
 		}
 		sections = append(sections, renderSidebarSection(i18n.F("返工"), rewrite.String(), contentW))
 	}
 
 	if snap.PendingSteer != "" {
 		sections = append(sections, renderSidebarSection(i18n.F("干预"),
-			renderHighlightField(i18n.F("待处理"), truncate(snap.PendingSteer, sidebarValueWidth(contentW))), contentW))
+			renderHighlightField(i18n.F("待处理"), truncate(snap.PendingSteer, sidebarValueBudget(contentW, sidebarValueMaxLines))), contentW))
 	}
 	if snap.HasAdvanceHold {
 		sections = append(sections, renderSidebarSection(i18n.F("验收停靠"),
-			renderHighlightField(i18n.F("等待"), truncate(snap.AdvanceHoldReason, sidebarValueWidth(contentW))), contentW))
+			renderHighlightField(i18n.F("等待"), truncate(snap.AdvanceHoldReason, sidebarValueBudget(contentW, sidebarValueMaxLines))), contentW))
 	}
 
 	if body := renderUsageSidebar(snap, contentW); body != "" {
@@ -186,8 +186,40 @@ func sidebarValueWidth(width int) int {
 	return max(8, sidebarBodyWidth(width)-fieldLabelColumn-1)
 }
 
+// sidebarValueMaxLines là số dòng tối đa một giá trị sidebar được phép chiếm. 2 là
+// mức đủ cho mọi giá trị đo được ở tiếng Việt mà vẫn giữ thẻ gọn.
+const sidebarValueMaxLines = 2
+
+// sidebarValueBudget là số cột giá trị được phép chiếm khi cho nó tràn sang tối đa
+// maxLines dòng: dòng đầu nằm cạnh nhãn, các dòng sau chỉ mất phần thụt.
+//
+// Vì sao cần: cắt giá trị theo ĐÚNG MỘT dòng là cách bản cũ giữ sidebar gọn, nhưng
+// nhãn tiếng Việt rộng gấp đôi bản Hán nên cột giá trị chỉ còn ~12 cột — "xử lý viết
+// lại" (14 cột) bị cắt thành "xử lý v..." dù thẻ còn thừa cả chục dòng trống bên dưới.
+// fitSidebarBody giờ đã xuống dòng CÓ THỤT nên tràn dòng là an toàn; cái đáng giữ là
+// nội dung, không phải số dòng.
+func sidebarValueBudget(width, maxLines int) int {
+	budget := sidebarValueWidth(width)
+	for i := 1; i < maxLines; i++ {
+		budget += max(1, sidebarBodyWidth(width)-lipgloss.Width(sidebarContIndent))
+	}
+	return budget
+}
+
+// sidebarContIndent thụt đầu các dòng TIẾP của một trường bị xuống dòng.
+//
+// Không có nó thì dòng tiếp bắt đầu ở cột 1 — đúng cột của NHÃN — nên trên màn thật
+// "Trạng thái chạy Đã tạm dừng" hiện thành hai dòng "Trạng thái chạy Đã" / "tạm dừng",
+// và "tạm dừng" đọc ra như một nhãn mới. Đo được: 9/27 nhãn sidebar vượt cột nhãn 10
+// khi dịch sang tiếng Việt (nhãn Hán chỉ 4–8 cột, bản Việt tới 19), nên đây là lớp
+// lỗi chung của cả sidebar chứ không phải một hai chỗ lẻ.
+const sidebarContIndent = "  "
+
 func fitSidebarBody(body string, width int) string {
 	limit := sidebarBodyWidth(width)
+	// Ngắt theo bề rộng đã trừ phần thụt, để dòng tiếp cộng thụt vào vẫn không vượt
+	// limit — vượt là bị viewport cắt cứng, mất chữ không dấu hiệu.
+	wrapAt := max(1, limit-lipgloss.Width(sidebarContIndent))
 	lines := strings.Split(body, "\n")
 	out := make([]string, 0, len(lines))
 	for _, line := range lines {
@@ -195,7 +227,11 @@ func fitSidebarBody(body string, width int) string {
 			out = append(out, line)
 			continue
 		}
-		out = append(out, strings.Split(ansi.Wrap(line, limit, " ·/,"), "\n")...)
+		sub := strings.Split(ansi.Wrap(line, wrapAt, " ·/,"), "\n")
+		out = append(out, sub[0])
+		for _, cont := range sub[1:] {
+			out = append(out, sidebarContIndent+cont)
+		}
 	}
 	return strings.Join(out, "\n")
 }

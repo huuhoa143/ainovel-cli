@@ -163,13 +163,19 @@ func TestRoChuHanTrongVanVietPhaiBiBat(t *testing.T) {
 // dựng cả một store tiếng Trung chỉ để kiểm một regex là đổi chỗ dễ sai lấy chỗ
 // khó sai.
 func TestRoNhanhTiengTrungGiuNguyenHanhVi(t *testing.T) {
+	// Lưu locale ĐANG chạy rồi trả lại đúng giá trị đó, không hằng hóa "vi".
+	//
+	// Trả về một hằng thì đúng chừng nào gói này còn chạy ở locale mặc định. Ngày
+	// nào internal/e2e có tệp i18n_locale_pin_test.go ghim gói về zh — như 14 gói
+	// khác đã có — thì dòng trả-về-hằng sẽ PHÁ GHIM cho mọi test chạy sau nó, và phá
+	// theo cách tệ nhất: test gây lỗi thì xanh, test khác thì đỏ, nên người đọc đi
+	// sửa sai chỗ. Bẫy đó đã mắc hai lần trong dự án này.
+	truoc := i18n.Active()
 	if err := i18n.SetLocale(i18n.Chinese); err != nil {
 		t.Fatal(err)
 	}
-	// Trả locale về vi cho các test sau trong cùng package (Go chạy tuần tự trong
-	// một package khi không gọi t.Parallel, nhưng dựa vào thứ tự là dựa vào may).
 	t.Cleanup(func() {
-		if err := i18n.SetLocale(i18n.Vietnamese); err != nil {
+		if err := i18n.SetLocale(truoc); err != nil {
 			t.Fatal(err)
 		}
 	})

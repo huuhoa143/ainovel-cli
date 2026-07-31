@@ -144,10 +144,15 @@ func doiSoMsgid(c *ast.CallExpr) (ast.Expr, bool) {
 // ==========================================================================
 
 // dulieuKhongPhaiChu miễn trừ những chỗ literal Hán là DỮ LIỆU, không phải chữ
-// hiển thị. Khóa là {tệp, ký hiệu cấp cao nhất} — không phải {tệp, chuỗi} như
-// quetnguon_test.go, và tuyệt đối không phải {tệp, dòng}.
+// hiển thị. Khóa là {tệp, ký hiệu} — không phải {tệp, chuỗi} như quetnguon_test.go,
+// và tuyệt đối không phải {tệp, dòng}.
 //
-// # Vì sao khóa theo KÝ HIỆU
+// Ký hiệu viết được ở HAI độ mịn, và bộ quét tra độ mịn hơn trước:
+//
+//	"zhPatternDefs"        cả khai báo
+//	"zhPatternDefs.name"   chỉ ô .name của khai báo đó
+//
+// # Vì sao khóa theo KÝ HIỆU chứ không theo chuỗi
 //
 // Những chỗ này là bảng dữ liệu 16–18 mục. Khóa theo chuỗi thì bảng miễn trừ dài
 // 66 dòng và mỗi lần upstream thêm một từ vào bảng dò sáo ngữ là một dòng đỏ;
@@ -159,13 +164,25 @@ func doiSoMsgid(c *ast.CallExpr) (ast.Expr, bool) {
 // lúc nên xét lại nó có còn là dữ liệu, và khi tên đổi thì miễn trừ mất hiệu lực
 // nên có người phải xét lại thật.
 //
-// # Đánh đổi phải nói rõ
+// # Vì sao có độ mịn TRƯỜNG, và vì sao nó không phải chuyện thẩm mỹ
 //
-// Miễn trừ theo ký hiệu nghĩa là một chuỗi HIỂN THỊ mới mọc thêm bên trong một ký
-// hiệu đã miễn trừ sẽ không bị bắt. Chấp nhận được vì mười hai ký hiệu dưới đây
-// đều là bảng dữ liệu thuần hoặc hàm nhận dạng thuần — không ai thêm thông báo
-// người dùng vào giữa bảng từ gây mỏi. Nếu một ký hiệu ở đây lớn dần thành hàm
-// vừa dò vừa báo thì phải tách nó ra, không phải nới miễn trừ.
+// Miễn trừ cả ký hiệu thì mọi TRƯỜNG trong đó được miễn theo, kể cả trường sẽ
+// mọc ra sau. Với một struct trộn hai loại dữ liệu thì đó là miễn trừ quá tay:
+// patternDef có `re` (biểu thức chính quy — dữ liệu thuần) và `name` (nhãn người
+// đọc được, ĐI VÀO báo cáo qua PatternNames và PatternStat.Name). Hai trường, hai
+// lý lẽ khác nhau, nên hai mục.
+//
+// Cái mua được không phải sự gọn gàng mà là: thêm một trường mới vào patternDef
+// thì trường đó KHÔNG được miễn theo — nó phải tự có mục và tự có lý lẽ. Đúng chỗ
+// mà một bảng dữ liệu lặng lẽ mọc thành bảng vừa-dữ-liệu-vừa-hiển-thị.
+//
+// # Đánh đổi còn lại, nói rõ
+//
+// Ở những mục còn khóa theo cả ký hiệu, một chuỗi HIỂN THỊ mới mọc thêm bên trong
+// vẫn không bị bắt. Chấp nhận vì chúng là bảng dữ liệu thuần hoặc hàm nhận dạng
+// thuần — không ai thêm thông báo người dùng vào giữa bảng từ gây mỏi. Nếu một ký
+// hiệu ở đây lớn dần thành hàm vừa dò vừa báo thì phải tách nó ra, hoặc hạ nó
+// xuống độ mịn trường, chứ không nới miễn trừ.
 var dulieuKhongPhaiChu = map[[2]string]string{
 	{"internal/rules/snapshot.go", "fatigueWords"}: "bảng từ gây mỏi nhánh zh; nhánh vi nằm " +
 		"ngay dưới trong cùng hàm, chọn theo i18n.Active(). Bọc = dịch bảng DÒ sang tiếng Việt " +
@@ -174,17 +191,30 @@ var dulieuKhongPhaiChu = map[[2]string]string{
 	{"internal/rules/snapshot.go", "forbiddenPhrases"}: "nhánh zh của cùng cơ chế; nhánh vi ngay " +
 		"dưới CÓ bọc i18n.F. Chú thích tại chỗ ghi lại lần một nửa cơ chế chết vì bên map bị bỏ qua.",
 
-	{"internal/stylestat/stylestat.go", "zhPatternDefs"}: "mẫu dò sáo ngữ trong văn MÔ HÌNH SINH " +
-		"ra. Đây là ngôn ngữ của NỘI DUNG, không phải của giao diện: người dùng chạy giao diện " +
-		"tiếng Việt vẫn có toàn quyền viết truyện tiếng Trung. viPatternDefs là bản song sinh " +
-		"theo CHỨC NĂNG, không phải bản dịch từng chữ.",
+	// zhPatternDefs khóa theo TRƯỜNG, không theo cả khai báo: struct patternDef trộn
+	// hai loại dữ liệu có hai lý lẽ khác nhau, và trường thứ ba mọc ra sau không
+	// được miễn theo.
+	{"internal/stylestat/stylestat.go", "zhPatternDefs.re"}: "biểu thức chính quy dò sáo ngữ trong " +
+		"văn MÔ HÌNH SINH ra. Đây là ngôn ngữ của NỘI DUNG, không phải của giao diện: người dùng " +
+		"chạy giao diện tiếng Việt vẫn có toàn quyền viết truyện tiếng Trung. viPatternDefs là bản " +
+		"song sinh theo CHỨC NĂNG, không phải bản dịch từng chữ.",
 
-	{"internal/stylestat/stylestat.go", "zhProfile"}: "regex nhận tiêu đề chương và mốc thời gian " +
-		"mở chương dạng Trung; viProfile ngay dưới là bản song sinh, chọn theo i18n.Active().",
+	{"internal/stylestat/stylestat.go", "zhPatternDefs.name"}: "nhãn lớp mẫu. Khác .re: nhãn này " +
+		"NGƯỜI ĐỌC ĐƯỢC và nó đi ra ngoài — PatternNames() và PatternStat.Name. An toàn vì " +
+		"profile() chỉ trả zhProfile khi i18n.Active()==Chinese, nên nhãn Hán không bao giờ tới " +
+		"báo cáo ở locale vi; viPatternDefs mang nhãn tiếng Việt. Miễn trừ HẸP NHẤT trong bảng " +
+		"này: nó dựa vào một điều kiện ở nơi khác (profile()), nên ai đổi cách chọn profile phải " +
+		"quay lại đọc dòng này.",
 
-	{"internal/stylestat/stylestat.go", "viProfile"}: "nhánh vi CỐ Ý nhận thêm dạng tiêu đề Trung " +
-		"(第…章): sách nhập từ nguồn tiếng Trung vẫn còn tiêu đề gốc, bỏ dạng zh thì thống kê " +
-		"\"lẫn định dạng tiêu đề\" mù một nửa. Chú thích tại chỗ ghi lại.",
+	{"internal/stylestat/stylestat.go", "zhProfile.openingTime"}: "regex mốc thời gian mở chương " +
+		"dạng Trung; viProfile.openingTime là bản song sinh, chọn theo i18n.Active().",
+
+	{"internal/stylestat/stylestat.go", "zhProfile.titlePrefix"}: "regex nhận tiêu đề chương dạng " +
+		"Trung; viProfile.titlePrefix là bản song sinh.",
+
+	{"internal/stylestat/stylestat.go", "viProfile.titlePrefix"}: "nhánh vi CỐ Ý nhận thêm dạng " +
+		"tiêu đề Trung (第…章): sách nhập từ nguồn tiếng Trung vẫn còn tiêu đề gốc, bỏ dạng zh thì " +
+		"thống kê \"lẫn định dạng tiêu đề\" mù một nửa. Chú thích tại chỗ ghi lại.",
 
 	{"internal/stylestat/stylestat.go", "gramEdgeStop"}: "tập rune hư từ/đại từ để loại n-gram " +
 		"không phải cụm văn phong. Chỉ áp cho đoạn thuần chữ Hán (validGram chặn ngoài dải " +
@@ -199,9 +229,11 @@ var dulieuKhongPhaiChu = map[[2]string]string{
 		"mô hình thật sự chép ra.",
 
 	{"internal/agents/guard/subagent_guards.go", "NewEditorStopGuard"}: "so khớp mô tả TASK để " +
-		"nhận việc được phái. Xem TestHopDongDichGiuManh: nhánh sống được ở locale vi là nhánh " +
-		"so tên tool (save_arc_summary), còn hai chuỗi Hán ở đây là nhánh dự phòng cho task viết " +
-		"bằng văn xuôi Trung. Đây là NỢ đã biết, không phải dữ liệu thuần.",
+		"nhận việc được phái. Nhánh sống được ở locale vi là nhánh so TÊN TOOL (save_arc_summary); " +
+		"hai chuỗi Hán ở đây là nhánh dự phòng cho task viết bằng văn xuôi Trung, và ở locale vi " +
+		"chúng CHẾT. Bất biến giữ cho nhánh tên-tool sống nằm ở internal/agents/guard/" +
+		"locale_invariant_test.go; tiền đề của bất biến đó do TestMsgidNeoPhaiCoTrongCatalog canh. " +
+		"Đây là NỢ đã biết, không phải dữ liệu thuần.",
 
 	{"internal/host/exp/txt.go", "chapterHeaderRe"}: "regex nhận tiêu đề chương dạng Trung; " +
 		"chapterHeaderViRe ngay dưới là bản song sinh cho tiếng Việt.",
@@ -312,9 +344,11 @@ func quetChuaBoc(fset *token.FileSet, teps []tepGo) ([]string, thongKe) {
 	}
 
 	// Lượt ba: báo lỗi.
+	bang := bangKieu(teps)
 	var viPham []string
 	for _, tp := range teps {
 		kyHieu := banDoKyHieu(tp.f)
+		truongCua := banDoTruong(tp, bang)
 		ast.Inspect(tp.f, func(n ast.Node) bool {
 			lit, ok := n.(*ast.BasicLit)
 			if !ok || lit.Kind != token.STRING {
@@ -334,11 +368,16 @@ func quetChuaBoc(fset *token.FileSet, teps []tepGo) ([]string, thongKe) {
 				return true
 			}
 			ten := kyHieu.tim(lit.Pos())
-			if _, mien := dulieuKhongPhaiChu[[2]string{tp.rel, ten}]; mien {
+			truong := truongCua[lit.Pos()]
+			if laDuLieu(tp.rel, ten, truong) {
 				tk.soMienTru++
 				return true
 			}
-			viPham = append(viPham, viTri(fset, tp.rel, lit.Pos())+"  ["+ten+"]  "+rutGon(s))
+			nhan := ten
+			if truong != "" {
+				nhan = ten + "." + truong
+			}
+			viPham = append(viPham, viTri(fset, tp.rel, lit.Pos())+"  ["+nhan+"]  "+rutGon(s))
 			return true
 		})
 	}
@@ -620,6 +659,164 @@ func banDoKyHieu(f *ast.File) banDo {
 	return b
 }
 
+// --------------------------------------------------------------------------
+// Bản đồ TRƯỜNG — để miễn trừ mịn hơn cả khai báo
+// --------------------------------------------------------------------------
+
+// bangKieu gom mọi struct khai trong cùng gói: {thư mục, tên kiểu} → StructType.
+//
+// Cần vì `zhPatternDefs` là `[]patternDef{{"nhãn", regexp.MustCompile(…)}, …}` —
+// phần tử KHÔNG có khóa, nên tên trường chỉ suy được từ khai báo của patternDef.
+// Đường có-khóa (toolDisplays) không cần bảng này; đường không-khóa thì bắt buộc.
+//
+// Khóa theo thư mục vì kiểu chỉ nhìn thấy được trong cùng gói, và kiểu có thể khai
+// ở tệp khác cùng gói (patternDef khai cùng tệp, nhưng đừng dựa vào điều đó).
+func bangKieu(teps []tepGo) map[[2]string]*ast.StructType {
+	ra := map[[2]string]*ast.StructType{}
+	for _, tp := range teps {
+		thuMuc := filepath.ToSlash(filepath.Dir(tp.rel))
+		for _, d := range tp.f.Decls {
+			gd, ok := d.(*ast.GenDecl)
+			if !ok || gd.Tok != token.TYPE {
+				continue
+			}
+			for _, s := range gd.Specs {
+				ts, ok := s.(*ast.TypeSpec)
+				if !ok {
+					continue
+				}
+				if st, ok := boLopBoc(ts.Type).(*ast.StructType); ok {
+					ra[[2]string{thuMuc, ts.Name.Name}] = st
+				}
+			}
+		}
+	}
+	return ra
+}
+
+// giaiKieu thay một tên kiểu bằng khai báo struct của nó, nếu giải được.
+func giaiKieu(kieu ast.Expr, thuMuc string, bang map[[2]string]*ast.StructType) ast.Expr {
+	id, ok := boLopBoc(kieu).(*ast.Ident)
+	if !ok {
+		return kieu
+	}
+	if st, co := bang[[2]string{thuMuc, id.Name}]; co {
+		return st
+	}
+	return kieu
+}
+
+// banDoTruong ánh xạ vị trí literal chuỗi → tên TRƯỜNG struct chứa nó.
+//
+// Tồn tại để bảng miễn trừ viết được ở độ mịn trường ("zhPatternDefs.name"), tức
+// để một struct trộn dữ liệu-thuần với nhãn-hiển-thị không bị miễn trừ cả cục.
+// Xem chú thích của dulieuKhongPhaiChu để biết vì sao độ mịn đó đáng có.
+//
+// Trường ghi được là trường TRONG CÙNG, và literal nằm sâu trong một lời gọi vẫn
+// được quy về trường chứa nó: `re: regexp.MustCompile("第…章")` ghi literal đó là
+// trường `re`, vì cái quyết định nó là dữ liệu hay chữ là VAI của trường, không
+// phải chuyện nó đi qua bao nhiêu lớp hàm.
+func banDoTruong(tp tepGo, bang map[[2]string]*ast.StructType) map[token.Pos]string {
+	ra := map[token.Pos]string{}
+	thuMuc := filepath.ToSlash(filepath.Dir(tp.rel))
+	for _, d := range tp.f.Decls {
+		gd, ok := d.(*ast.GenDecl)
+		if !ok || (gd.Tok != token.VAR && gd.Tok != token.CONST) {
+			continue
+		}
+		for _, s := range gd.Specs {
+			vs, ok := s.(*ast.ValueSpec)
+			if !ok {
+				continue
+			}
+			for _, v := range vs.Values {
+				ghiTruong(v, kieuGoc(v, vs.Type), "", thuMuc, bang, ra)
+			}
+		}
+	}
+	return ra
+}
+
+func ghiTruong(e ast.Expr, kieu ast.Expr, truongHienTai, thuMuc string,
+	bang map[[2]string]*ast.StructType, ra map[token.Pos]string) {
+
+	cl, ok := e.(*ast.CompositeLit)
+	if !ok {
+		if truongHienTai == "" {
+			return
+		}
+		ast.Inspect(e, func(x ast.Node) bool {
+			if lit, ok := x.(*ast.BasicLit); ok && lit.Kind == token.STRING {
+				if _, co := ra[lit.Pos()]; !co {
+					ra[lit.Pos()] = truongHienTai
+				}
+			}
+			return true
+		})
+		return
+	}
+	switch k := boLopBoc(giaiKieu(kieuGoc(cl, kieu), thuMuc, bang)).(type) {
+	case *ast.MapType:
+		for _, el := range cl.Elts {
+			if kv, ok := el.(*ast.KeyValueExpr); ok {
+				ghiTruong(kv.Value, k.Value, truongHienTai, thuMuc, bang, ra)
+			}
+		}
+	case *ast.ArrayType:
+		for _, el := range cl.Elts {
+			if kv, ok := el.(*ast.KeyValueExpr); ok { // mảng có chỉ số tường minh
+				ghiTruong(kv.Value, k.Elt, truongHienTai, thuMuc, bang, ra)
+				continue
+			}
+			ghiTruong(el, k.Elt, truongHienTai, thuMuc, bang, ra)
+		}
+	case *ast.StructType:
+		tr := truongPhang(k)
+		for i, el := range cl.Elts {
+			if kv, ok := el.(*ast.KeyValueExpr); ok {
+				ten := tenIdent(kv.Key)
+				ghiTruong(kv.Value, kieuTheoTen(tr, ten), ten, thuMuc, bang, ra)
+				continue
+			}
+			if i >= len(tr) {
+				continue
+			}
+			ghiTruong(el, tr[i].kieu, tr[i].ten, thuMuc, bang, ra)
+		}
+	default:
+		// Kiểu không giải được: khóa composite (nếu có) chính là tên trường.
+		for _, el := range cl.Elts {
+			kv, ok := el.(*ast.KeyValueExpr)
+			if !ok {
+				ghiTruong(el, nil, truongHienTai, thuMuc, bang, ra)
+				continue
+			}
+			ten := tenIdent(kv.Key)
+			if ten == "" {
+				ten = truongHienTai
+			}
+			ghiTruong(kv.Value, nil, ten, thuMuc, bang, ra)
+		}
+	}
+}
+
+// laDuLieu tra bảng miễn trừ, độ mịn TRƯỜNG trước rồi mới cả khai báo.
+//
+// Thứ tự đó là bản chất của cơ chế: có mục "zhPatternDefs.name" thì ô .name được
+// miễn, mà KHÔNG có mục "zhPatternDefs" thì mọi trường khác của nó vẫn bị canh.
+func laDuLieu(rel, kyHieu, truong string) bool {
+	if kyHieu == "" {
+		return false
+	}
+	if truong != "" {
+		if _, co := dulieuKhongPhaiChu[[2]string{rel, kyHieu + "." + truong}]; co {
+			return true
+		}
+	}
+	_, co := dulieuKhongPhaiChu[[2]string{rel, kyHieu}]
+	return co
+}
+
 func rutGon(s string) string {
 	s = strings.ReplaceAll(s, "\n", "\\n")
 	r := []rune(s)
@@ -801,6 +998,11 @@ var tenLocale = map[string]bool{"Chinese": true, "Vietnamese": true, "DefaultLoc
 // luật: t.Cleanup đăng ký được từ bất kỳ đâu trong ngăn xếp gọi, nên luật phải
 // nhận cả trường hợp hàm phụ trợ cùng gói đăng ký hộ. Bản thân hàm phụ trợ vẫn bị
 // xét riêng, nên nó trả sai thì vẫn đỏ.
+//
+// Và vì "bất kỳ đâu trong ngăn xếp" là điều kiện thật, phép lan truyền chạy tới
+// ĐIỂM BẤT ĐỘNG chứ không một tầng: một hàm gọi một hàm gọi t.Cleanup vẫn là đã
+// đăng ký. Bản một tầng sẽ báo bừa vào chuỗi phụ trợ hai tầng — cách viết hoàn
+// toàn bình thường mà repo chưa có, nên đây là chỗ hở bịt TRƯỚC khi mã mọc tới.
 func TestKhongPhaGhimLocale(t *testing.T) {
 	fset, teps := napNguon(t, true)
 	viPham, bomHenGio, ghim, soDoiLocale := quetGhimLocale(fset, teps)
@@ -847,7 +1049,14 @@ func quetGhimLocale(fset *token.FileSet, teps []tepGo) (viPham, bomHenGio []stri
 	// được từ bất kỳ đâu trong ngăn xếp gọi, nên một test gọi datLocaleStore(t, …)
 	// là đã có chỗ trả dù thân nó không có dòng nào. Khóa theo {thư mục, tên} vì
 	// hàm phụ trợ chỉ gọi được trong cùng gói.
+	//
+	// Lan truyền tới ĐIỂM BẤT ĐỘNG, không phải một tầng: chuỗi phụ-trợ-gọi-phụ-trợ
+	// (datLocale → datLocaleStore → t.Cleanup) là cách viết bình thường, và bản một
+	// tầng sẽ báo bừa vào nó. Báo bừa là chỗ bộ canh bị tắt, nên chỗ hở này đáng bịt
+	// dù hôm nay chưa có chuỗi nào dài hai tầng — luật phải đúng trước khi mã mọc
+	// tới đó, chứ không phải sau.
 	phuTroTra := map[[2]string]bool{}
+	than := map[[2]string]*ast.BlockStmt{}
 	for _, tp := range teps {
 		thuMuc := filepath.ToSlash(filepath.Dir(tp.rel))
 		for _, d := range tp.f.Decls {
@@ -855,8 +1064,24 @@ func quetGhimLocale(fset *token.FileSet, teps []tepGo) (viPham, bomHenGio []stri
 			if !ok || fd.Body == nil || fd.Recv != nil {
 				continue
 			}
+			khoa := [2]string{thuMuc, fd.Name.Name}
+			than[khoa] = fd.Body
 			if len(timChoTraLocale(fd.Body)) > 0 {
-				phuTroTra[[2]string{thuMuc, fd.Name.Name}] = true
+				phuTroTra[khoa] = true
+			}
+		}
+	}
+	// Mỗi vòng thêm những hàm gọi tới một hàm đã biết là trả-hộ. Hội tụ vì tập chỉ
+	// lớn lên và bị chặn trên bởi số hàm.
+	for doi := true; doi; {
+		doi = false
+		for khoa, body := range than {
+			if phuTroTra[khoa] {
+				continue
+			}
+			if goiPhuTroTra(body, khoa[0], phuTroTra) {
+				phuTroTra[khoa] = true
+				doi = true
 			}
 		}
 	}
@@ -1078,13 +1303,32 @@ func timChoTraLocale(body *ast.BlockStmt) []choTra {
 // Nên luật này không kiểm bất biến — nó kiểm TIỀN ĐỀ của bất biến: msgid mà một
 // bài kiểm neo vào phải thật sự tra được trong catalog.
 //
+// # Nó đã bắt được lỗi thật, hai lần, theo hai đường khác nhau
+//
+// Lần một, ngay sau khi dựng: một lượt prune "3 mục catalog chết" — đã kiểm tay
+// rằng chúng không còn trong mã sản phẩm, nhưng không kiểm có TEST nào neo vào.
+// Luật này đỏ ngay. Truy ra thì bộ canh bất biến neo vào một chuỗi router KHÔNG
+// CÒN PHÁT RA (upstream đã đổi câu), tức nó vốn đã vô nghĩa mà không ai thấy:
+// msgid còn bản dịch nên i18n.F trả bản dịch và bài kiểm chạy bình thường — chỉ là
+// chạy trên một chuỗi mà code không bao giờ sinh. Cả msgid trôi lẫn catalog bị
+// prune đều lộ ra ở cùng một chỗ, vì cả hai đều làm hỏng đúng tiền đề này.
+//
+// Lần đó cũng cho thấy `t.Skipf` là một dạng im lặng: bài kiểm trật tự tham số tự
+// bỏ qua khi chưa có bản dịch, nên nó không bao giờ nói gì. Bỏ-qua-âm-thầm và
+// xanh-rỗng là một lớp lỗi, không phải hai.
+//
 // # Vì sao nhận diện được mà không cần bảng khai tay
 //
-// Một hằng cấp package trong mã kiểm thử, giá trị là chuỗi có chữ Hán, nằm trong
-// tệp CÓ gọi i18n.F/T — chỉ có một lý do để tồn tại: nó là msgid được neo. Đo
-// được: cách nhận này tách sạch 4 hằng msgid của guard khỏi 4 hằng văn bản mẫu
-// (văn truyện tiếng Trung dùng làm dữ liệu lint ở internal/rules và internal/e2e),
-// vì hai tệp kia không gọi i18n.F/T lần nào. Không mục miễn trừ nào.
+// Hai hình thức neo, hai cách nhận (chi tiết ở quetMsgidNeo):
+//
+//   - NHÚNG THẲNG `i18n.F("汉字…")` — chính lời gọi là bằng chứng, không cần hàng
+//     rào nào, không có đường báo bừa.
+//   - HẰNG cấp package giá trị chuỗi Hán, trong tệp CÓ gọi i18n.F/T — chỉ có một
+//     lý do để tồn tại. Hàng rào "tệp có gọi i18n" là thứ tách sạch 4 hằng msgid
+//     của guard khỏi 4 hằng văn truyện tiếng Trung dùng làm dữ liệu lint ở
+//     internal/rules và internal/e2e: hai tệp kia gọi i18n.F/T đúng 0 lần.
+//
+// Không mục miễn trừ nào, ở cả hai hình thức.
 func TestMsgidNeoPhaiCoTrongCatalog(t *testing.T) {
 	_, teps := napNguon(t, true)
 
@@ -1134,12 +1378,54 @@ func TestMsgidNeoPhaiCoTrongCatalog(t *testing.T) {
 }
 
 // quetMsgidNeo tìm msgid neo trong mã kiểm thử và kiểm chúng có trong catalog.
+//
+// Neo có HAI hình thức, và cả hai đều là cùng một sự phụ thuộc:
+//
+//	const msgTask = "生成…（save_arc_summary）"   →  i18n.F(msgTask)
+//	i18n.F("生成…（save_arc_summary）")            →  nhúng thẳng
+//
+// Hình thức thứ hai mới thêm. Lý do thêm: lỗi prune catalog thật sự đã xảy ra
+// thuộc đúng họ này, chỉ khác cách khai báo — nên bịt một hình thức mà bỏ hình
+// thức kia là để cửa mở đúng bằng chiều rộng cũ. Đo được trên repo: 38 chỗ nhúng
+// thẳng, 0 chỗ thiếu catalog, nên mở rộng này không tốn một mục miễn trừ nào.
 func quetMsgidNeo(teps []tepGo, c catalog, tenCatalog string) ([]string, int) {
 	var viPham []string
 	soNeo := 0
+	bao := func(rel, ten, msgid string) {
+		if _, co := c[msgid]; co {
+			return
+		}
+		viPham = append(viPham, rel+"  "+ten+"  (catalog "+tenCatalog+")  "+rutGon(msgid))
+	}
+
 	for _, tp := range teps {
-		// Tệp không gọi i18n.F/T thì hằng chữ Hán trong đó là dữ liệu mẫu, không
-		// phải msgid được neo. Đây là toàn bộ cơ chế chống báo bừa của luật này.
+		// Neo dạng NHÚNG THẲNG: literal Hán là đối số của i18n.F/T ngay tại chỗ.
+		// Không cần hàng rào "tệp có gọi i18n" như dạng hằng — chính lời gọi đã là
+		// bằng chứng đây là msgid, nên dạng này không có đường báo bừa.
+		ast.Inspect(tp.f, func(n ast.Node) bool {
+			cl, ok := n.(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+			arg, la := doiSoMsgid(cl)
+			if !la {
+				return true
+			}
+			lit, ok := arg.(*ast.BasicLit)
+			if !ok || lit.Kind != token.STRING {
+				return true
+			}
+			msgid, err := strconv.Unquote(lit.Value)
+			if err != nil || !coChuHan(msgid) {
+				return true
+			}
+			soNeo++
+			bao(tp.rel, "i18n.F(…) nhúng thẳng", msgid)
+			return true
+		})
+
+		// Neo dạng HẰNG: tệp không gọi i18n.F/T thì hằng chữ Hán trong đó là dữ liệu
+		// mẫu, không phải msgid. Đây là toàn bộ cơ chế chống báo bừa của dạng này.
 		goiI18n := false
 		ast.Inspect(tp.f, func(n ast.Node) bool {
 			if cl, ok := n.(*ast.CallExpr); ok {
@@ -1337,7 +1623,8 @@ var iconOnly = map[string]struct {
 
 	// Đúng hai chỗ phải đỏ: hàm loi(), và ô .icon = "设定" trong bảng iconOnly.
 	// Ô .label = "完成" cùng bảng thì được miễn — đó là miễn trừ ở mức TRƯỜNG.
-	muon := []string{`fixture.go:6  [loi]  "章节已提交"`, `fixture.go:45  [iconOnly]  "设定"`}
+	// Nhãn ô .icon mang cả tên TRƯỜNG: đó là độ mịn mà bảng miễn trừ tra được.
+	muon := []string{`fixture.go:6  [loi]  "章节已提交"`, `fixture.go:45  [iconOnly.icon]  "设定"`}
 	sort.Strings(muon)
 	sort.Strings(viPham)
 	got := strings.Join(viPham, " | ")
@@ -1346,6 +1633,56 @@ var iconOnly = map[string]struct {
 	}
 	t.Logf("bản lỗi → đỏ đúng 2 chỗ: %s", got)
 	t.Logf("ba biến thể bọc-ở-chỗ-dùng → xanh (%d literal nhận qua mẫu, 0 mục miễn trừ tay)", tk.soGianTiep)
+}
+
+// TestMienTruTruongCoRang chứng minh miễn trừ độ mịn TRƯỜNG thật sự hẹp.
+//
+// Điều đáng canh không phải "hai mục hiện có còn hiệu lực" — mà là "một TRƯỜNG
+// MỚI mọc ra sẽ KHÔNG được miễn theo". Đó là toàn bộ lý do hạ độ mịn xuống trường;
+// nếu tính đó mất thì hai mục kia chỉ là bảng cũ viết dài hơn.
+func TestMienTruTruongCoRang(t *testing.T) {
+	const tep = "internal/stylestat/stylestat.go"
+
+	for _, truong := range []string{"name", "re"} {
+		if !laDuLieu(tep, "zhPatternDefs", truong) {
+			t.Errorf("zhPatternDefs.%s phải được miễn — bảng miễn trừ đã trôi khỏi nguồn", truong)
+		}
+	}
+	// Một trường thứ ba, chưa tồn tại: PHẢI KHÔNG được miễn.
+	if laDuLieu(tep, "zhPatternDefs", "hint") {
+		t.Fatal("zhPatternDefs.hint được miễn oan — miễn trừ đang rơi về độ mịn cả khai báo, " +
+			"tức một trường hiển thị mọc thêm sau này sẽ lọt lưới trong im lặng")
+	}
+	if laDuLieu(tep, "zhPatternDefs", "") {
+		t.Fatal("zhPatternDefs được miễn cả khai báo — mất đúng tính chất vừa dựng")
+	}
+
+	// Bản đồ trường phải giải được struct CÓ TÊN với phần tử KHÔNG khóa — hình dạng
+	// thật của zhPatternDefs. Không giải được thì mọi mục .name/.re trên vô hiệu và
+	// luật 1 sẽ đỏ, nên ca này chốt luôn cơ chế bangKieu/giaiKieu.
+	src := "package stylestat\n\nimport \"regexp\"\n\n" +
+		"type patternDef struct {\n\tname string\n\tre   *regexp.Regexp\n}\n\n" +
+		"var zhPatternDefs = []patternDef{\n" +
+		"\t{\"矫正句『不是…(而)是…』\", regexp.MustCompile(`不是[^。]{1,24}?是`)},\n}\n"
+
+	_, teps := napChuoi(t, "internal/stylestat/stylestat.go", src)
+	truongCua := banDoTruong(teps[0], bangKieu(teps))
+
+	thay := map[string]string{}
+	ast.Inspect(teps[0].f, func(n ast.Node) bool {
+		lit, ok := n.(*ast.BasicLit)
+		if !ok || lit.Kind != token.STRING {
+			return true
+		}
+		if s, err := strconv.Unquote(lit.Value); err == nil && coChuHan(s) {
+			thay[truongCua[lit.Pos()]] = s
+		}
+		return true
+	})
+	if len(thay) != 2 || thay["name"] == "" || thay["re"] == "" {
+		t.Fatalf("bản đồ trường không giải được patternDef (phần tử KHÔNG khóa của kiểu CÓ TÊN): %v", thay)
+	}
+	t.Logf("giải đúng trường của kiểu có tên, phần tử không khóa: name=%q re=%q", thay["name"], thay["re"])
 }
 
 // TestLuat3CoRang cho luật 3 ăn cả ba dạng: trả sai (phá ghim), không trả, và
@@ -1388,6 +1725,23 @@ func TestTraDungHang(t *testing.T) {
 	t.Cleanup(func() { _ = i18n.SetLocale(i18n.Chinese) })
 	_ = i18n.SetLocale(i18n.Vietnamese)
 }
+
+// (e) chỗ trả do phụ trợ đăng ký hộ, QUA HAI TẦNG — hình dạng mà bản một tầng
+//     báo bừa. datLocale → datLocaleStore → t.Cleanup.
+func datLocaleStore(t *testing.T, loc i18n.Locale) {
+	truoc := i18n.Active()
+	t.Cleanup(func() { _ = i18n.SetLocale(truoc) })
+	_ = i18n.SetLocale(loc)
+}
+
+func datLocale(t *testing.T, loc i18n.Locale) {
+	datLocaleStore(t, loc)
+}
+
+func TestQuaHaiTangPhuTro(t *testing.T) {
+	datLocale(t, i18n.Vietnamese)
+	_ = i18n.SetLocale(i18n.Vietnamese)
+}
 `
 	fset := token.NewFileSet()
 	var teps []tepGo
@@ -1406,8 +1760,9 @@ func TestTraDungHang(t *testing.T) {
 	if len(ghimThay) != 1 || ghimThay["internal/host"] != "Chinese" {
 		t.Fatalf("bộ nhận gói-được-ghim hỏng: %v — không gói nào đang được canh, bài kiểm rỗng nghĩa", ghimThay)
 	}
-	if soDoi != 4 {
-		t.Fatalf("phải thấy 4 chỗ đổi locale, thấy %d — mẩu nguồn đã trôi", soDoi)
+	// 4 hàm test + datLocaleStore đặt locale = 6 chỗ đổi (datLocale chỉ chuyển tiếp).
+	if soDoi != 6 {
+		t.Fatalf("phải thấy 6 chỗ đổi locale, thấy %d — mẩu nguồn đã trôi", soDoi)
 	}
 	if len(viPham) != 2 {
 		t.Fatalf("luật 3 phải cho đúng 2 vi phạm (trả sai + không trả), thấy %d:\n%s",
@@ -1417,9 +1772,13 @@ func TestTraDungHang(t *testing.T) {
 		!strings.Contains(strings.Join(viPham, "\n"), "TestKhongTra") {
 		t.Fatalf("bắt sai hàm — luật 3 không chỉ được đúng chỗ:\n%s", strings.Join(viPham, "\n"))
 	}
+	// TestQuaHaiTangPhuTro là ca chống-báo-bừa của phép lan truyền tới điểm bất
+	// động. Bản một tầng gắn cờ đúng hàm này.
 	for _, v := range viPham {
-		if strings.Contains(v, "TestDung") || strings.Contains(v, "TestTraDungHang") {
-			t.Fatalf("luật 3 BÁO BỪA vào cách viết đúng: %s", v)
+		for _, dung := range []string{"TestDung", "TestTraDungHang", "TestQuaHaiTangPhuTro", "datLocale"} {
+			if strings.Contains(v, dung) {
+				t.Fatalf("luật 3 BÁO BỪA vào cách viết đúng (%s): %s", dung, v)
+			}
 		}
 	}
 	t.Logf("bản lỗi → đỏ đúng 2 chỗ:\n  %s", strings.Join(viPham, "\n  "))
@@ -1471,7 +1830,7 @@ func dung() int { return dem(vanTrungSach) }
 	_, teps := napChuoi(t, "guard/neo_test.go", neo)
 	viPham, soNeo := quetMsgidNeo(teps, c, "vi.json")
 	if soNeo != 2 {
-		t.Fatalf("phải nhận 2 msgid được neo, thấy %d — bộ nhận đã hỏng, bài kiểm rỗng nghĩa", soNeo)
+		t.Fatalf("phải nhận 2 msgid được neo dạng HẰNG, thấy %d — bộ nhận đã hỏng, bài kiểm rỗng nghĩa", soNeo)
 	}
 	if len(viPham) != 1 {
 		t.Fatalf("luật 4 KHÔNG có răng: phải bắt đúng 1 msgid đã trôi, thấy %d\n%s",
@@ -1480,7 +1839,26 @@ func dung() int { return dem(vanTrungSach) }
 	if !strings.Contains(viPham[0], "msgDaTroi") {
 		t.Fatalf("bắt sai hằng — luật 4 không chỉ được đúng chỗ: %s", viPham[0])
 	}
-	t.Logf("msgid đã trôi → đỏ: %s", viPham[0])
+	t.Logf("neo dạng HẰNG, msgid đã trôi → đỏ: %s", viPham[0])
+
+	// Hình thức thứ hai: msgid NHÚNG THẲNG vào i18n.F. Đây là chỗ hở đã bịt —
+	// lỗi prune catalog thật thuộc đúng họ này, chỉ khác cách khai báo.
+	nhung := "package guard\n\n" +
+		"import \"github.com/voocel/ainovel-cli/internal/i18n\"\n\n" +
+		"func conTrongCatalog() string { return i18n.F(\"生成第 %d 卷卷摘要（save_volume_summary）\") }\n\n" +
+		"func daTroi() string { return i18n.F(\"生成第 %d 卷卷摘要（câu gốc đã đổi）\") }\n"
+
+	_, teps = napChuoi(t, "guard/nhung_test.go", nhung)
+	viPham, soNeo = quetMsgidNeo(teps, c, "vi.json")
+	if soNeo != 2 {
+		t.Fatalf("phải nhận 2 msgid nhúng thẳng, thấy %d — chân nhúng-thẳng đã hỏng, "+
+			"và nó hỏng thì 38 điểm neo trên repo thôi được canh mà không ai biết", soNeo)
+	}
+	if len(viPham) != 1 || !strings.Contains(viPham[0], "nhúng thẳng") {
+		t.Fatalf("luật 4 KHÔNG có răng ở dạng nhúng thẳng: phải bắt đúng 1, thấy %d\n%s",
+			len(viPham), strings.Join(viPham, "\n"))
+	}
+	t.Logf("neo NHÚNG THẲNG, msgid đã trôi → đỏ: %s", viPham[0])
 
 	_, teps = napChuoi(t, "rules/lint_locale_test.go", mau)
 	viPham, soNeo = quetMsgidNeo(teps, c, "vi.json")

@@ -57,14 +57,14 @@ func TestInterventionPromptsKeepScopeContract(t *testing.T) {
 	prompts := loadPrompts()
 	for _, phrase := range []string{"ngữ cảnh không đồng nghĩa với quyền sửa", "phạm vi tối thiểu đủ dùng", "phạm vi phân tích không đồng nghĩa phạm vi sửa"} {
 		if !strings.Contains(prompts.ArbiterIntervention, phrase) {
-			t.Fatalf("prompt can thiệp của Arbiter thiếu khế ước phạm vi %q", phrase)
+			t.Fatalf("prompt can thiệp của Arbiter thiếu hợp đồng phạm vi %q", phrase)
 		}
 	}
 	// "Can thiệp gốc của người dùng" phải khớp đúng nhãn mà
 	// internal/host.interventionDispatchTask đính vào task hạ nguồn.
 	for _, phrase := range []string{"Can thiệp gốc của người dùng", "phạm vi phân tích không đồng nghĩa phạm vi sửa", "tập chương tối thiểu đủ dùng"} {
 		if !strings.Contains(prompts.Editor, phrase) {
-			t.Fatalf("prompt Editor thiếu khế ước phạm vi %q", phrase)
+			t.Fatalf("prompt Editor thiếu hợp đồng phạm vi %q", phrase)
 		}
 	}
 }

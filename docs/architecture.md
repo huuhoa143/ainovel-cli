@@ -256,7 +256,7 @@ Bốn tầng ràng buộc bằng code (có hiệu lực đồng thời):
 | `next_step` nội tuyến trong tool | Trường trong giá trị trả về của từng tool | Mỗi sự thật tự mang theo "gợi ý bước sau", LLM thấy sự thật là biết bước tiếp |
 | Kiểm quyền sở hữu/tiền đề trong tool | `edit_chapter` `commit_chapter` v.v. | Chặn vật lý ở tầng dữ liệu: sửa chương đã hoàn thành mà chưa vào hàng đợi thì bị từ chối, nộp rỗng bị từ chối, `ConcurrencySafe=false` ngăn tranh chấp đồng thời |
 
-writer.md chỉ gánh: giao thức thi hành, mô hình nhận thức về việc chạy tiếp từ checkpoint, cách đọc hợp đồng chương; còn chuẩn viết thì nằm ở tầng văn phong (`{{VOICE}}` là chỗ giữ để lấp lại, người dùng ghi đè được, xem `docs/voice-layer.md`). **Đây chính là điều kiện tiên quyết để tầng văn phong dám mở cho người dùng: các bất biến sống ở tầng tool, prompt sửa bừa cũng không làm hỏng máy trạng thái.**
+writer.md chỉ gánh: giao thức thi hành, mô hình nhận thức về việc chạy tiếp từ checkpoint, cách đọc khế ước chương; còn chuẩn viết thì nằm ở tầng văn phong (`{{VOICE}}` là chỗ giữ để lấp lại, người dùng ghi đè được, xem `docs/voice-layer.md`). **Đây chính là điều kiện tiên quyết để tầng văn phong dám mở cho người dùng: các bất biến sống ở tầng tool, prompt sửa bừa cũng không làm hỏng máy trạng thái.**
 
 ### 6.4 Phụ thuộc agentcore
 

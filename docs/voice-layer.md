@@ -34,7 +34,7 @@ Kết luận: khả năng chỉnh và nguyên liệu đo lường của tầng m
 
 Mục chuẩn viết của writer.md nằm ở **giữa** tệp (sau giao thức thi hành, trước phần liên tục của nhân vật phụ), không thể nối đuôi đơn giản. Dùng phương án chỗ giữ:
 
-- `writer.md` (giao thức, nhúng): giữ giao thức thi hành / chạy tiếp từ checkpoint / viết lại và gia công / hợp đồng chương / phần giải thích cơ chế sở thích người dùng / **toàn bộ mục số từ (gồm cả gợi ý cách viết)** / phần liên tục của nhân vật phụ / tham số commit; vị trí mục chuẩn viết cũ được thay bằng **một** chỗ giữ `{{VOICE}}` duy nhất
+- `writer.md` (giao thức, nhúng): giữ giao thức thi hành / chạy tiếp từ checkpoint / viết lại và gia công / khế ước chương / phần giải thích cơ chế sở thích người dùng / **toàn bộ mục số từ (gồm cả gợi ý cách viết)** / phần liên tục của nhân vật phụ / tham số commit; vị trí mục chuẩn viết cũ được thay bằng **một** chỗ giữ `{{VOICE}}` duy nhất
 - `voice.md` (văn phong, ghi đè được): toàn bộ mục chuẩn viết (khử mùi AI / đa dạng mẫu câu / không kể lại tình tiết trước)
 
 Gợi ý cách viết về số từ được để lại tệp giao thức (duyệt 2026-07-12 chấp nhận): nó ghép rất chặt với việc thi hành hợp đồng số từ, tách ra thì cần chỗ giữ thứ hai, biến Voice thành định dạng nhiều mảnh — không đáng, chỉ vì một đoạn văn bản kỹ thuật mà rất ít người muốn ghi đè; sở thích của người dùng về số từ thì đi qua user_rules. Tên tệp giữ nguyên `writer.md`, không đổi (`OverridePrompt` của eval lấy tên tệp làm khóa, đổi tên chỉ thêm việc đấu dây).

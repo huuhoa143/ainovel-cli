@@ -36,21 +36,24 @@ func renderHelpText(width int) string {
 	hintStyle := lipgloss.NewStyle().Foreground(colorDim)
 
 	var b strings.Builder
-	b.WriteString(titleStyle.Render(i18n.F("命令帮助")))
-	b.WriteString("\n\n")
-
+	// KHÔNG viết tiêu đề vào thân: viền khung modal đã mang đúng tiêu đề này
+	// (renderHelpModal truyền i18n.F("命令帮助") làm title). Viết cả hai chỗ thì
+	// "Trợ giúp lệnh" hiện HAI LẦN liền nhau — ở tiếng Trung là 4 cột nên khó thấy,
+	// ở tiếng Việt là 13 cột và ăn hẳn dòng đầu của một khung đang phải cuộn.
 	for i, spec := range commandSpecs() {
 		if i > 0 {
 			b.WriteString("\n")
 		}
 		b.WriteString(nameStyle.Render("/" + spec.Name))
 		if len(spec.Aliases) > 0 {
-			b.WriteString(usageStyle.Render("  alias: /" + strings.Join(spec.Aliases, " /")))
+			// Khoảng cách giữ trong MÃ, nhãn giữ trong CATALOG: nhồi khoảng trắng vào
+			// msgid là cách làm cho hai khung cùng dùng một khe hint lại ra hai kiểu lề.
+			b.WriteString(usageStyle.Render("  " + i18n.F("别名：") + "/" + strings.Join(spec.Aliases, " /")))
 		}
 		b.WriteString("\n")
 		// Dòng Usage cũng phải ngắt: /import có usage dài hơn khung ở mọi bề rộng, và
 		// khung cắt cứng nên phần "[--guide=<...>]" mất luôn cả dấu đóng.
-		b.WriteString(usageStyle.Render(wrapText("Usage: "+spec.Usage, width)))
+		b.WriteString(usageStyle.Render(wrapText(i18n.F("用法：")+spec.Usage, width)))
 		b.WriteString("\n")
 		b.WriteString(descStyle.Render(wrapText(spec.Description, width)))
 		b.WriteString("\n")

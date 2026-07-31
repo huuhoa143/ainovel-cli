@@ -41,7 +41,7 @@ dù thật, cũng vào Việc tồn.
 - [ ] Ba endpoint `/style` `/cost` `/settings` có dữ liệu thật, có ca rỗng, curl chứng minh
 - [ ] Ba bề mặt Văn phong / Chi phí / Cài đặt dựng xong **hoặc** giữ nhãn "chưa dựng" kèm lý do thật
 - [ ] Sáu chỗ vỡ layout TUI (§4–§9, §11 của `docs/audit/ghep-chu-vi.md`)
-- [ ] `khế ước chương` nghiệm thu xuyên `vi.json` + `assets/prompts/` + README/DESIGN
+- [x] `khế ước chương` nghiệm thu xuyên `vi.json` + `assets/prompts/` + README/DESIGN — ĐO ĐƯỢC: `vi.json` 7 khế-ước / **0** hợp-đồng ở nghĩa B / 10 `contract` giữ ở nghĩa A; 4 dòng cực âm trong prompt còn nguyên
 - [ ] Ba chỗ hở của bộ quét i18n đã siết, mỗi luật chứng minh có răng
 - [ ] `web-visual.md` §4.5 — `ThanhTren.tsx:111` bỏ `id` của tác phẩm
 - [ ] Cổng: `go build`+`go vet` sạch · `go test -count=1 ./...` 30 gói / 0 FAIL · `tsc` sạch · `npm run build` exit 0

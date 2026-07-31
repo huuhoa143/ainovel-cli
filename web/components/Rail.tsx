@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 
 import type { Khu } from '@/lib/khu';
 import { CHU, GIAI_THICH } from '@/lib/nhan';
-import type { Profile, Snapshot } from '@/lib/types';
+import type { Profile, Snapshot, TinhTrangNguon } from '@/lib/types';
 
 /**
  * Rail trái: các khu vực sản xuất, kèm số đếm việc tồn.
@@ -25,18 +25,32 @@ import type { Profile, Snapshot } from '@/lib/types';
  * người vận hành kết luận tác phẩm không có dữ liệu chứ không phải studio chưa
  * dựng bề mặt.
  *
- * Ba mục còn ở loại 3 — Văn phong, Chi phí, Cài đặt — không ở đó vì giao diện
- * chưa kịp làm. Cả ba đều có dữ liệu trong store mà API chưa trả ra:
+ * Ba mục Văn phong / Chi phí / Cài đặt TỪNG ở loại 3 vì API không có endpoint.
+ * Giờ chúng đã có bề mặt và có endpoint (`/style`, `/cost`, `/settings`), nên
+ * chúng không còn là loại 3 một cách cố định — chúng đổi loại theo BẢN ENGINE
+ * ĐANG CHẠY, và đó là loại thứ tư:
  *
- *   Văn phong → meta/style_rules.json, không có endpoint
- *   Chi phí   → meta/usage.json có PerAgent/PerModel; Transport chỉ mang
- *               Overall.Cost, tức đúng hai con số đã hiện ở thanh dưới
- *   Cài đặt   → RunMeta không được trả; và serve là chỉ-đọc theo thiết kế
- *               (xem đầu internal/serve/serve.go), nên đây sẽ là bề mặt chỉ-đọc
+ *   4. có bề mặt, nhưng nguồn của nó chưa chắc có → xem `TinhTrangNguon`
  *
- * Vì thế mỗi mục mang lý do RIÊNG ở chú giải, không dùng một câu chung. Dựng một
- * bề mặt Chi phí chỉ để in lại hai con số của thanh transport là thêm một khu
- * không trả lời câu hỏi nào — trái Design Principle 3.
+ * Ba trạng thái, ba cách vẽ khác nhau, và sự khác nhau phải THẤY ĐƯỢC:
+ *
+ *   'thieu-endpoint' → bản engine đang chạy không có route (404). Vẫn là loại 3:
+ *                      chữ mờ, nhãn "chưa dựng". Bấm vào thì bề mặt chỉ hiện được
+ *                      một câu lỗi HTTP, và đó là một lời hứa hụt.
+ *   'co-route'       → route có, store chưa có dữ liệu. LÀ NÚT, kèm nhãn báo
+ *                      trước là sẽ rỗng. Bề mặt tự nói rõ rỗng vì sao — chưa chạy
+ *                      gì / tệp có mà rỗng / schema lệch — nên vào đó KHÔNG phải
+ *                      một bề mặt trống trơn, mà là một câu trả lời.
+ *   'co-nguon'       → nút thường.
+ *
+ * Vì sao không gate bằng ba cờ trong `capabilities`: cờ trả lời "store có dữ liệu
+ * không", không trả lời "engine này có route không". Với một binary engine cũ hơn
+ * bản web, cờ vắng mặt và mọi phép kiểm falsy trên nó sẽ dán nhãn sai lên cả ba
+ * mục. `Profile` hỏi thăm endpoint thật nên nó phân biệt được hai câu đó.
+ *
+ * Và khi CHƯA BIẾT (`hoSo` chưa về, hoặc lời hỏi thăm lỗi mạng) thì mục vẫn là
+ * NÚT. Chỉ hạ xuống "chưa dựng" khi biết chắc là thiếu endpoint: đoán theo hướng
+ * kia sẽ nháy một nhãn "chưa dựng" lên một bề mặt đã dựng, mỗi lần đổi tác phẩm.
  */
 export function Rail({
   snapshot,
@@ -183,7 +197,15 @@ export function Rail({
       />
       {/* Văn phong không có số đếm: store giữ nó là một bản mô tả, không phải
           danh sách đếm được. Không có nguồn thì không hiện ô số. */}
-      <MucChuaDung nhan={CHU.vanPhong} ky="✒" viSao={GIAI_THICH.chuaDungVanPhong} />
+      <MucNguon
+        nhan={CHU.vanPhong}
+        ky="✒"
+        di="van-phong"
+        khu={khu}
+        onChonKhu={onChonKhu}
+        nguon={hoSo?.vanPhong}
+        viSaoThieu={GIAI_THICH.thieuEndpointVanPhong}
+      />
 
       <div className="grp">{CHU.nhomXuong}</div>
       {/* Nhật ký phán quyết CÓ bề mặt — nó là một mục trong Dòng sản xuất. Nên
@@ -199,7 +221,15 @@ export function Rail({
         neo="nhat-ky-phan-quyet"
         phu
       />
-      <MucChuaDung nhan={CHU.chiPhi} ky="$" viSao={GIAI_THICH.chuaDungChiPhi} />
+      <MucNguon
+        nhan={CHU.chiPhi}
+        ky="$"
+        di="chi-phi"
+        khu={khu}
+        onChonKhu={onChonKhu}
+        nguon={hoSo?.chiPhi}
+        viSaoThieu={GIAI_THICH.thieuEndpointChiPhi}
+      />
       <MucDi
         nhan={CHU.toSanXuat}
         ky="☗"
@@ -207,7 +237,15 @@ export function Rail({
         khu={khu}
         onChonKhu={onChonKhu}
       />
-      <MucChuaDung nhan={CHU.caiDat} ky="⚙" viSao={GIAI_THICH.chuaDungCaiDat} />
+      <MucNguon
+        nhan={CHU.caiDat}
+        ky="⚙"
+        di="cai-dat"
+        khu={khu}
+        onChonKhu={onChonKhu}
+        nguon={hoSo?.caiDat}
+        viSaoThieu={GIAI_THICH.thieuEndpointCaiDat}
+      />
     </nav>
   );
 }
@@ -230,6 +268,7 @@ function MucDi({
   canhBao,
   neo,
   phu,
+  nhanPhu,
 }: {
   nhan: string;
   ky: string;
@@ -241,6 +280,14 @@ function MucDi({
   canhBao?: boolean;
   neo?: string;
   phu?: boolean;
+  /**
+   * Nhãn báo trước, cho mục VẪN BẤM ĐƯỢC mà biết trước là sẽ rỗng.
+   *
+   * Khác `MucChuaDung.tag` ở chỗ mục này là nút thật: nhãn ở đây nói "vào được,
+   * nhưng chưa có số liệu", không nói "chưa dựng". Trộn hai câu đó là đúng lỗi mà
+   * cả tệp này tồn tại để tránh.
+   */
+  nhanPhu?: string;
 }) {
   // `phu` = mục trỏ vào một phần của khu khác, nên nó KHÔNG sáng lên như mục
   // chính của khu đó; nếu không thì hai mục cùng sáng và không biết đang ở đâu.
@@ -270,7 +317,52 @@ function MucDi({
       {dem !== undefined ? (
         <span className={`n${canhBao ? ' warn' : ''}`}>{dem}</span>
       ) : null}
+      {nhanPhu ? <span className="tag mo">{nhanPhu}</span> : null}
     </button>
+  );
+}
+
+/**
+ * Mục có bề mặt ở tầng web, nhưng nguồn của nó tuỳ bản engine đang chạy.
+ *
+ * Chỉ `'thieu-endpoint'` hạ mục xuống dạng "chưa dựng". Mọi giá trị khác — kể cả
+ * `undefined`, tức chưa hỏi thăm xong hoặc hỏi thăm lỗi — đều cho ra NÚT.
+ *
+ * Hướng mặc định đó là có chủ ý: hai hướng sai không tương đương. Vẽ nút cho một
+ * endpoint thiếu thì người vận hành bấm vào và đọc được câu lỗi thật của server —
+ * bất tiện, nhưng vẫn là sự thật. Vẽ "chưa dựng" cho một bề mặt đã dựng thì họ
+ * không bao giờ bấm, và câu sai đó không có cách nào tự lộ ra.
+ */
+function MucNguon({
+  nhan,
+  ky,
+  di,
+  khu,
+  onChonKhu,
+  nguon,
+  viSaoThieu,
+}: {
+  nhan: string;
+  ky: string;
+  di: Khu;
+  khu: Khu;
+  onChonKhu: (k: Khu) => void;
+  nguon: TinhTrangNguon | undefined;
+  viSaoThieu: string;
+}) {
+  if (nguon === 'thieu-endpoint') {
+    return <MucChuaDung nhan={nhan} ky={ky} viSao={viSaoThieu} />;
+  }
+  return (
+    <MucDi
+      nhan={nhan}
+      ky={ky}
+      di={di}
+      khu={khu}
+      onChonKhu={onChonKhu}
+      chuGiai={nguon === 'co-route' ? GIAI_THICH.coRouteChuaCoNguon : undefined}
+      nhanPhu={nguon === 'co-route' ? CHU.chuaCoSoLieu : undefined}
+    />
   );
 }
 

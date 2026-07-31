@@ -24,7 +24,7 @@ import (
 // 『』 đúng nguyên văn upstream, còn nhãn vi dùng ( ) vì 『』 là dấu tiếng
 // Nhật/Trung, lạc trong chữ Việt. Nếu chỉ nhận một dấu thì bộ cắt trả về cả phần
 // ví dụ, và phép Contains bên dưới gần như luôn trượt — test đỏ oan hàng loạt và
-// khế ước này mất tác dụng.
+// hợp đồng này mất tác dụng.
 func TestAntiAIToneCoversEveryCountedPattern(t *testing.T) {
 	prev := i18n.Active()
 	if err := i18n.SetLocale(i18n.Vietnamese); err != nil {

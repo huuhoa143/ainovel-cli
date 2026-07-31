@@ -861,9 +861,17 @@ func renderModelConfigModal(width int, state *modelConfigState) string {
 		lines = append(lines, configHeading(heading))
 		lines = append(lines, renderProviderHubFields(state, contentW)...)
 		if state.snapshot.ConfigPath != "" {
-			advanced := i18n.F("高级配置（extra / extra_body / stream_idle_timeout）：") + state.snapshot.ConfigPath
+			// Nhãn và ĐƯỜNG DẪN phải ở HAI dòng riêng. Ghép chung một dòng thì nhãn
+			// tiếng Việt (62 cột; bản Hán chỉ 31) ăn gần hết bề rộng, còn lại ~8 cột
+			// cho đường dẫn nên bộ ngắt dòng xé nó làm hai — đo được trên màn thật:
+			// "/tmp/v" + "ihome/.ainovel/config.json". Đường dẫn bị xé thì không copy
+			// được, và người đọc nhanh tưởng đường dẫn chỉ là "/tmp/v". Đây là dòng
+			// duy nhất chỉ cho người dùng biết phải mở tệp nào để cấu hình nâng cao.
+			dim := lipgloss.NewStyle().Foreground(colorDim)
+			label := strings.TrimRight(i18n.F("高级配置（extra / extra_body / stream_idle_timeout）："), " ")
 			lines = append(lines, "")
-			lines = appendWrappedConfigText(lines, advanced, contentW, lipgloss.NewStyle().Foreground(colorDim))
+			lines = appendWrappedConfigText(lines, label, contentW, dim)
+			lines = appendWrappedConfigText(lines, state.snapshot.ConfigPath, contentW, dim)
 		}
 		if state.editingField != "" {
 			hint = i18n.F("输入 · Enter 确认 · Esc 取消")

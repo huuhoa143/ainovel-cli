@@ -190,10 +190,10 @@ func profile() *langProfile {
 
 // PatternNames trả về tên mọi lớp mẫu của ngôn ngữ đang hoạt động.
 //
-// Có để package assets kiểm được khế ước "mỗi lớp được đếm phải có một mục
+// Có để package assets kiểm được hợp đồng "mỗi lớp được đếm phải có một mục
 // trong references/anti-ai-tone.md". Không có hàm này thì test bên đó buộc phải
 // tự dựng corpus khởi đủ mọi lớp, mà corpus thì luôn lạc hậu: thêm một lớp mẫu
-// mới sẽ lọt lưới trong im lặng — đúng cái lỗi mà khế ước đó sinh ra để chặn.
+// mới sẽ lọt lưới trong im lặng — đúng cái lỗi mà hợp đồng đó sinh ra để chặn.
 func PatternNames() []string {
 	p := profile()
 	out := make([]string, 0, len(p.patterns))

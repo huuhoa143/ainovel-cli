@@ -45,13 +45,39 @@ const checkpointGap = 120 * time.Millisecond
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Fprintln(os.Stderr, "seed-demo: thiếu tham số thư mục tác phẩm")
-		fmt.Fprintln(os.Stderr, "dùng: go run ./cmd/seed-demo /duong/dan/thu-muc-tac-pham")
+		fmt.Fprintln(os.Stderr, "dùng: go run ./cmd/seed-demo [--trong] /duong/dan/thu-muc-tac-pham")
 		os.Exit(1)
 	}
-	dir := os.Args[1]
+	args := os.Args[1:]
+	trong := args[0] == "--trong"
+	if trong {
+		args = args[1:]
+		if len(args) == 0 {
+			fmt.Fprintln(os.Stderr, "seed-demo: --trong vẫn cần thư mục tác phẩm")
+			os.Exit(1)
+		}
+	}
+	dir := args[0]
 
 	st := store.NewStore(dir)
 	must(st.Init())
+
+	// --trong dừng ngay sau Progress.Init: đúng trạng thái một tác phẩm vừa được
+	// mở mà chưa chạy công đoạn nào — có meta/progress.json, chưa có gì khác.
+	//
+	// Cần một chế độ riêng chứ không phải một thư mục viết tay, vì đây là ca dễ vỡ
+	// nhất của mọi bề mặt VÀ là ca người dùng gặp đầu tiên: mỗi endpoint phải phân
+	// biệt được "thiếu tệp" (bình thường) với "lỗi đọc" (hỏng thật), và trả 500 cho
+	// ca đầu là biến lần mở sách đầu tiên thành một lỗi. Viết tay progress.json thì
+	// hình của nó sẽ trôi lệch khỏi Progress.Init, và lúc đó bài thử hết kiểm được
+	// thứ nó tưởng đang kiểm.
+	if trong {
+		must(st.Progress.Init("Sách mới chưa chạy gì", 0))
+		fmt.Println("đã dựng (rỗng):", dir)
+		fmt.Println("  chỉ có meta/progress.json — dùng để thử ca tác phẩm mới ở mọi bề mặt")
+		return
+	}
+
 	must(st.Progress.Init("Trấn Yêu Ký", 300))
 	must(st.Progress.SetLayered(true))
 	must(st.RunMeta.Init("tien_hiep", "google", "gemini-2.5-pro"))
@@ -107,6 +133,12 @@ func main() {
 
 	// ── dòng sự kiện runtime (tổ sản xuất / dòng sản xuất) ──
 	seedRuntimeQueue(st)
+
+	// ── ba bề mặt còn lại: văn phong / chi phí / cài đặt ──
+	must(st.World.SaveStyleRules(demoStyleRules()))
+	must(st.UserRules.Save(demoUserRules()))
+	must(st.Usage.Save(demoUsage()))
+	seedRunSettings(st)
 
 	fmt.Println("đã dựng:", dir)
 	fmt.Println("  volumes:", len(volumes), "· chương có hợp đồng:", len(domain.FlattenOutline(volumes)))
@@ -243,6 +275,49 @@ func seedRuntimeQueue(st *store.Store) {
 		_, err := st.Runtime.AppendQueue(item)
 		must(err)
 	}
+}
+
+// seedRunSettings làm đầy meta/run.json cho bề mặt Cài đặt.
+//
+// RunMeta.Init ở đầu main chỉ đặt StartedAt/Provider/Style/Model + AdvanceMode
+// mặc định là auto, tức bề mặt Cài đặt sẽ chỉ được thử với đúng đường thuận lợi.
+// Bốn lời gọi dưới đây đẩy nó sang trạng thái đầy đủ hơn, mỗi cái vì một ca cụ
+// thể mà giao diện phải hiện khác:
+//
+//   - PlanningTier long: bề mặt phân biệt truyện dài (có tập/cung) với truyện ngắn.
+//   - AdvanceMode review + GrantAdvancePermit: ca advance_permit_chapter KHÁC 0.
+//     Ở chế độ auto trường này BUỘC phải là 0
+//     (internal/store/run_meta.go:validateAdvanceControl), nên không đổi sang
+//     review thì ca "có giấy phép đang treo" không bao giờ gieo được.
+//   - SetAdvanceHold: ca advance_hold khác nil.
+//   - SetPendingSteer: chỉ thị can thiệp engine CHƯA xử lý — ca này quan trọng
+//     nhất vì nó là thứ duy nhất trên bề mặt Cài đặt đang chờ engine hành động.
+//
+// SetStartPrompt + SetPlanStart gieo phần "yêu cầu gốc" và "phán quyết khởi
+// động". Thứ tự KHÔNG được đảo với SetAdvanceMode: GrantAdvancePermit từ chối
+// chạy khi chế độ còn là auto.
+func seedRunSettings(st *store.Store) {
+	must(st.RunMeta.SetPlanningTier(domain.PlanningTierLong))
+	must(st.RunMeta.SetStartPrompt(
+		"Viết cho tôi một truyện tiên hiệp điều tra, nhịp chậm, lấy bối cảnh một trấn nhỏ " +
+			"dưới chân núi Hàn Sơn. Nhân vật chính là người gác cầu đá, mồ côi, được một " +
+			"trưởng lão trong trấn nuôi từ nhỏ. Tôi muốn cái hay nằm ở chỗ người đọc dần " +
+			"nhận ra ân nhân chính là kẻ giấu chân tướng, chứ không nằm ở đánh nhau."))
+	must(st.RunMeta.SetPlanStart(domain.PlanStartRecord{
+		RawPrompt:   "Viết cho tôi một truyện tiên hiệp điều tra, nhịp chậm...",
+		Planner:     "architect_long",
+		PlannerTask: "Dựng bộ khung nhiều tập rồi mở chi tiết cung đầu của tập một",
+		DecisionID:  "dec-20260731-0001",
+	}))
+	must(st.RunMeta.SetAdvanceMode(domain.ChapterAdvanceReview))
+	must(st.RunMeta.GrantAdvancePermit(8))
+	must(st.RunMeta.SetAdvanceHold(domain.AdvanceHold{
+		After: domain.AdvanceHoldAfterRewritesDrained,
+		Reason: "Dừng lại cho tôi đọc trước khi sang cung 'Cửu Tuyền Đường Mở Cổng' — " +
+			"muốn kiểm tuyến Bạch gia đã đủ dày chưa sau khi chương 4 viết lại xong",
+	}))
+	must(st.RunMeta.SetPendingSteer(
+		"Đừng để Diệp Tiểu Yến lộ chuyện được Bạch gia cài cắm ở cung này, đẩy sang cung sau"))
 }
 
 func must(err error) {
