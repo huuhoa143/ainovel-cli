@@ -435,7 +435,9 @@ func buildSelection(st *store.Store, chapter int) *Selection {
 	} else if r, err := st.World.LoadLastReview(chapter); err == nil && r != nil {
 		sel.Review = reviewFrom(r)
 	}
-	if text, words, err := st.Drafts.LoadChapterContent(chapter); err == nil {
+	// Cùng lý lẽ với handleChapter: chương đã nghiệm thu không còn tệp nháp, nên
+	// đọc thẳng LoadChapterContent làm số từ và đoạn trích của nó rỗng theo.
+	if text, words, _, err := noiDungChuong(st, chapter); err == nil {
 		sel.Words = words
 		sel.Excerpt = excerpt(text, 320)
 	}

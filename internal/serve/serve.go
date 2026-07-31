@@ -54,6 +54,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -211,6 +212,54 @@ func (s *server) handleStudio(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, snap)
 }
 
+// Nguồn văn bản của một chương, trả kèm trong JSON để giao diện gọi tên đúng thứ
+// nó đang hiện.
+const (
+	NguonNhap = "draft" // drafts/{NN}.draft.md — đang viết, chưa chốt
+	NguonChot = "final" // chapters/{NN}.md — đã nghiệm thu
+)
+
+// noiDungChuong đọc văn bản một chương: ưu tiên bản nháp, thiếu thì lấy bản chốt.
+//
+// # Vì sao phải có hàm này thay vì dùng thẳng LoadChapterContent
+//
+// LoadChapterContent CHỈ đọc drafts/{NN}.draft.md, và đó là hợp đồng đúng của nó:
+// năm điểm gọi trong internal/tools/ dựa vào nghĩa "có bản nháp hay chưa" để quyết
+// định luồng — rõ nhất là novel_context_builders.go:261 dùng `draftWords > 0`. Cho
+// nó ngã về bản chốt sẽ làm mọi chương đã nghiệm thu bị báo là "đang có nháp", tức
+// sửa một lỗi hiển thị bằng cách phá logic engine.
+//
+// Nên chỗ ngã về phải nằm ở đây, tại tầng đọc-để-hiện.
+//
+// # Lỗi mà nó sửa
+//
+// Trên MỘT màn hình, bảng chương ghi `● đã nghiệm thu · 2.901 từ` còn tab Bản thảo
+// cùng chương ghi "Chưa có bản thảo cho chương này". Đo được: chapters/01.md có
+// nội dung trên đĩa mà API trả text rỗng. Chương đã chốt và chương nhập từ nguồn
+// ngoài (host/imp ghi thẳng vào chapters/) không có tệp nháp nào cả.
+//
+// # Vì sao trả kèm nguồn
+//
+// Ngã về mà không nói là đổi một lỗi lấy một lỗi khác: giao diện đang gắn nhãn
+// "Bản thảo", nên trả bản chốt dưới nhãn đó là hết rỗng nhưng thành gọi sai tên.
+// Trường source để giao diện phân biệt được, và bỏ trống khi không có nội dung nào.
+func noiDungChuong(st *store.Store, n int) (text string, words int, nguon string, err error) {
+	if text, words, err = st.Drafts.LoadChapterContent(n); err != nil {
+		return "", 0, "", err
+	}
+	if text != "" {
+		return text, words, NguonNhap, nil
+	}
+	chot, err := st.Drafts.LoadChapterText(n)
+	if err != nil {
+		return "", 0, "", err
+	}
+	if chot == "" {
+		return "", 0, "", nil
+	}
+	return chot, domain.WordCount(chot), NguonChot, nil
+}
+
 func (s *server) handleChapter(w http.ResponseWriter, r *http.Request) {
 	st, err := s.openBook(r.PathValue("book"))
 	if err != nil {
@@ -223,7 +272,7 @@ func (s *server) handleChapter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	text, words, err := st.Drafts.LoadChapterContent(n)
+	text, words, nguon, err := noiDungChuong(st, n)
 	if err != nil {
 		writeErr(w, http.StatusNotFound, fmt.Errorf("chương %d chưa có nội dung", n))
 		return
@@ -233,9 +282,10 @@ func (s *server) handleChapter(w http.ResponseWriter, r *http.Request) {
 		Title    string    `json:"title,omitempty"`
 		Words    int       `json:"words"`
 		Text     string    `json:"text"`
+		Source   string    `json:"source,omitempty"`
 		Contract *Contract `json:"contract,omitempty"`
 		Review   *Review   `json:"review,omitempty"`
-	}{Chapter: n, Title: chapterTitle(st, n), Words: words, Text: text}
+	}{Chapter: n, Title: chapterTitle(st, n), Words: words, Text: text, Source: nguon}
 
 	if sel := buildSelection(st, n); sel != nil {
 		out.Contract, out.Review = sel.Contract, sel.Review

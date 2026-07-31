@@ -911,8 +911,9 @@ func (h *Host) runEnded() {
 		slog.Info(summary, "module", "host")
 		h.emitEvent(Event{Time: time.Now(), Category: "SYSTEM", Summary: summary, Level: "success"})
 		h.notifier.Send(notify.Notification{
+			// summary của completionSummary đã mở đầu bằng tên sách, không chèn lại.
 			Kind: notify.KindRunEnd, Level: "info", Title: i18n.F("ainovel: 创作完成"),
-			Body: h.runEndBody(progress.NovelName, summary),
+			Body: h.runEndBody(summary),
 		})
 	} else {
 		wasRunning := h.lifecycle == lifecycleRunning
@@ -930,9 +931,11 @@ func (h *Host) runEnded() {
 			summary := fmt.Sprintf(i18n.F("引擎停止 (已完成 %d 章)"), completed)
 			slog.Warn(summary, "module", "host")
 			h.emitEvent(Event{Time: time.Now(), Category: "SYSTEM", Summary: summary, Level: "warn"})
+			// Ở nhánh này summary KHÔNG chứa tên sách, nên chèn ở đây — thông báo
+			// "đã dừng" mà không nói dừng cuốn nào thì vô dụng khi chạy nhiều cuốn.
 			h.notifier.Send(notify.Notification{
 				Kind: notify.KindRunEnd, Level: "warn", Title: i18n.F("ainovel: 创作停止"),
-				Body: h.runEndBody(name, summary),
+				Body: h.runEndBody(bocTenSach(name, summary)),
 			})
 		}
 	}
@@ -943,11 +946,39 @@ func (h *Host) runEnded() {
 	}
 }
 
-// runEndBody 组装 run_end 通知正文：书名 + 进度摘要 + 累计花费。
-func (h *Host) runEndBody(novelName, summary string) string {
-	if name := strings.TrimSpace(novelName); name != "" {
-		summary = fmt.Sprintf(i18n.F("《%s》"), name) + summary
+// bocTenSach chèn tên sách vào đầu summary, bỏ qua nếu không có tên.
+//
+// Tách thành hàm riêng thay vì viết thẳng tại chỗ gọi để bất biến "nêu tên đúng
+// một lần" kiểm được: chỗ gọi nằm trong thân handleEngineStopped, không gọi trực
+// tiếp từ test được mà không dựng cả engine.
+func bocTenSach(novelName, summary string) string {
+	if n := strings.TrimSpace(novelName); n != "" {
+		return fmt.Sprintf(i18n.F("《%s》"), n) + summary
 	}
+	return summary
+}
+
+// runEndBody 组装 run_end 通知正文：进度摘要 + 累计花费。
+//
+// Không tự chèn tên sách — bên gọi chèn nếu summary của nó chưa có.
+//
+// # Vì sao đổi so với upstream
+//
+// Bản upstream nhận thêm novelName rồi luôn chèn vào đầu. Nhưng một trong hai bên
+// gọi truyền vào summary của completionSummary (engine.go:752), mà summary đó ĐÃ
+// mở đầu bằng chính tên sách — nên thông báo hoàn thành in ra tên hai lần:
+//
+//	zh: 《Vệt sáng》《Vệt sáng》创作完成: 共 6 章 …
+//	vi: "Vệt sáng""Vệt sáng" sáng tác hoàn tất: tổng 6 chương …
+//
+// Đây là lỗi của upstream, có ở CẢ hai locale, không do việc việt hóa sinh ra —
+// nhưng nó lộ ra thông báo người dùng đọc nên vẫn sửa. Sửa bằng cách bỏ việc chèn
+// ở đây thay vì bỏ tham số ở bên gọi: chèn tên là việc của bên biết summary của
+// mình có tên chưa, còn hàm này thì không biết. Giữ cách cũ và truyền chuỗi rỗng
+// sẽ che lỗi mà không sửa nguyên nhân.
+//
+// Đây là bản vá đáng đẩy lên upstream.
+func (h *Host) runEndBody(summary string) string {
 	cost, _, _, _, _ := h.usage.Totals()
 	if cost > 0 {
 		summary += fmt.Sprintf(i18n.F(" · 花费 $%.2f"), cost)
