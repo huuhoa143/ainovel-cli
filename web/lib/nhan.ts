@@ -1066,6 +1066,16 @@ export const GIAI_THICH = {
   vanPhongKhaiTepNguon: 'meta/user_rules.json',
   vanPhongKhaiKhiNao: 'khi sách được mở qua Host',
   /**
+   * CẢ HAI nguồn đều chưa có — câu riêng, không dùng `nguonChuaGhi` của một nguồn.
+   *
+   * Bề mặt có hai nguồn ghi ở hai thời điểm khác nhau, nên một câu chỉ nêu
+   * `style_rules.json` sẽ để người đọc tưởng nguồn kia đã có mà rỗng. Hai tệp thì
+   * kể tên hai tệp, và kể luôn hai mốc — vì hai mốc đó nói cho người vận hành biết
+   * phải chờ điều gì: một cái chờ mở sách, một cái chờ hết cung đầu.
+   */
+  vanPhongChuaCoNguonNao:
+    'Store chưa có nguồn nào cho bề mặt này. meta/user_rules.json được ghi khi sách được mở qua Host, còn meta/style_rules.json chỉ có sau khi Editor tóm tắt cung đầu tiên — tác phẩm này chưa qua bước nào trong hai bước đó. Bề mặt đã dựng; chưa có việc nào đã xảy ra để nó kể.',
+  /**
    * Hai nguồn ngược chiều nhân quả, và câu này là lý do bề mặt tách chúng.
    *
    * Người vận hành mở Văn phong thường để đối chiếu đúng hai chiều đó — "tôi dặn
@@ -1116,6 +1126,21 @@ export const GIAI_THICH = {
    */
   chiPhiSchemaCu:
     'Có số liệu trên đĩa nhưng nó thuộc bản schema cũ, nên bản engine đang chạy bỏ qua và cộng lại từ đầu. Đây KHÔNG phải "chưa tốn tiền" — tiền đã tốn, chỉ là con số cũ không đọc được ở bản này.',
+  /**
+   * Bảng rộng hơn màn hình — nói bằng CHỮ, không phó cho thanh cuộn.
+   *
+   * `.bangwrap` đã có thanh cuộn mảnh "thấy được" kèm lý lẽ đúng (globals.css:803),
+   * nhưng nó bị vô hiệu ở đúng ca cần nhất: Chrome trên thiết bị cảm ứng dùng thanh
+   * cuộn OVERLAY, tức vô hình cho tới khi người dùng đã cuộn. ĐO ĐƯỢC ở 390px với
+   * device emulation: bảng chi phí hiện 4 trong 8 cột, cắt gọn ở mép phải, không có
+   * dấu hiệu nào cho biết còn cột — người đọc kết luận đệm và tiết kiệm không tồn
+   * tại. Đúng lớp lỗi mà ghi chú ở transport đã cảnh báo ("tưởng con số bị mất").
+   *
+   * Một dòng chữ thì không phụ thuộc vào cách trình duyệt vẽ thanh cuộn, và nó còn
+   * đọc được cho cả trình đọc màn hình.
+   */
+  bangConCotBenPhai:
+    'Bảng rộng hơn màn hình: kéo ngang trong bảng để xem các cột đệm và tiết kiệm.',
   /** Cùng câu mà bảng chương đã nói, nhắc lại ở đây vì đây là chỗ người ta tới tìm. */
   chiPhiKhongTheoChuong:
     'Store cộng chi phí theo tác tử và theo model, không theo chương — nên không có cột chi phí cho từng chương ở bất cứ bề mặt nào. Con số duy nhất theo chương là giá thành trung bình, tức tổng chia số chương đã xong.',

@@ -66,13 +66,11 @@ export function VanPhong({ tacPham }: { tacPham: string | undefined }) {
           ) : null}
 
           {arc === null && khai === null ? (
+            // Cả hai nguồn đều vắng: câu RIÊNG kể tên cả hai tệp. Dùng
+            // `nguonChuaGhi` của một nguồn ở đây sẽ để người đọc tưởng nguồn kia đã
+            // có mà rỗng — hai ca đó dẫn tới hai chỗ khác nhau để đi xem.
             <section className="sect">
-              <p className="trongSect">
-                {GIAI_THICH.nguonChuaGhi(
-                  GIAI_THICH.vanPhongTepNguon,
-                  GIAI_THICH.vanPhongKhiNao,
-                )}
-              </p>
+              <p className="trongSect">{GIAI_THICH.vanPhongChuaCoNguonNao}</p>
             </section>
           ) : (
             <>

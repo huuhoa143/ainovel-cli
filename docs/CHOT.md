@@ -70,12 +70,12 @@ một nửa thì nó báo xanh cho cả phần nó không đo.
 ## Điều kiện xong — danh sách ĐÓNG
 
 - [x] Ba endpoint `/style` `/cost` `/settings` — curl cả ca có dữ liệu lẫn `sach-moi` rỗng (200, không 500), 4 trạng thái chi phí, hàng rào traversal cả 3 route
-- [ ] Ba bề mặt Văn phong / Chi phí / Cài đặt dựng xong **hoặc** giữ nhãn "chưa dựng" kèm lý do thật
+- [x] Ba bề mặt Văn phong / Chi phí / Cài đặt — dựng THẬT cả ba, không mục nào giữ nhãn giả. Tương phản 0 vi phạm AA (226 phần tử có chữ, thấp nhất 5,22:1), 0 tràn ngang ở 390px, 0 vi phạm danh sách CẤM
 - [x] Sáu chỗ vỡ layout TUI (§4–§9, §11) — kèm `wrapText` giờ ngắt Ở BIÊN TỪ thay vì giữa từ, có `TestWrapTextKhongXeGiuaTu` canh
 - [x] `khế ước chương` nghiệm thu xuyên `vi.json` + `assets/prompts/` + README/DESIGN — ĐO ĐƯỢC: `vi.json` 7 khế-ước / **0** hợp-đồng ở nghĩa B / 10 `contract` giữ ở nghĩa A; 4 dòng cực âm trong prompt còn nguyên
 - [x] Ba chỗ hở bộ quét i18n đã siết — điểm neo 7→45, miễn trừ xuống độ mịn TRƯỜNG, luật 3 lan tới điểm bất động; mỗi luật có bằng chứng hoàn nguyên
-- [ ] `web-visual.md` §4.5 — `ThanhTren.tsx:111` bỏ `id` của tác phẩm
-- [ ] Cổng: `go build`+`go vet` sạch · `go test -count=1 ./...` 30 gói / 0 FAIL · `tsc` sạch · `npm run build` exit 0
+- [x] `web-visual.md` §4.5 — sửa RỘNG hơn báo cáo: cả danh sách VÀ nút chọn đã đóng, vì cả ba tác phẩm mẫu cùng `name` nên nút đóng hiện y hệt nhau
+- [x] Cổng: `go build`+`go vet`+`gofmt` sạch · `go test -count=1 ./...` **30 gói / 0 FAIL** · `tsc` 0 lỗi · `npm run build` exit 0
 
 Xong **bảy** mục trên → commit, **dừng mọi agent**, bàn giao E2E cho người dùng.
 
@@ -104,7 +104,9 @@ Ghi ra để không ai tưởng bị bỏ sót, và để lần sau không đào
 | `stylestat/zhPatternDefs` miễn trừ ở mức ký hiệu thay vì mức trường | đã siết được thì tốt, nhưng ở locale vi `viProfile` được chọn nên có bảo vệ |
 | `web-visual.md` §4.1 `.ctxbar` còn `overflow: hidden` · §4.3 `Truc.tsx:357` còn `· {…}` · §4.4 `.benle` không sticky · §4.6 ô can thiệp chỉ có `aria-label` · §4.10 `.trangtrong` canh giữa | năm mục làm giao diện kém đẹp, không làm nó nói sai. Xem tiêu chí ở trên |
 | `web-visual.md` §4.7 — `DESIGN.md` chưa có câu cấm `--ink-3` trên bề mặt sáng hơn `--raised` | agent soát xếp đây là **rủi ro-âm-thầm cao nhất**: không sai hôm nay, nhưng là chỗ vỡ tương phản AA mà không ai hay. Là việc viết luật thiết kế, không phải sửa lỗi |
-| Đo lại tương phản + tràn ngang + danh sách CẤM cho ba bề mặt MỚI | ba bề mặt Văn phong/Chi phí/Cài đặt chưa đo lần nào. Thuộc người DỰNG chúng, không phải một lượt soát riêng |
+| `/cost` ở ca `stale_schema` trả `updated_at: ""` | `UsageStore.Load()` trả nil khi schema lệch, nên `buildCost` biết tệp TỒN TẠI (nó stat) mà không đọc được gì bên trong, kể cả mốc thời gian. Nên đúng ca cần bằng chứng nhất — "có chạy, chỉ không đọc được" — thì không có bằng chứng nào để hiện. Rẻ nhất: mang `mtime` của tệp ra. Nhánh render phía web đã có sẵn, tự bật khi Go có số |
+| `ToSanXuat.tsx:27-31` — comment "API chưa trả chi phí theo vai" giờ đã sai | `/cost` đã land. Cùng lớp "chú thích đúng lúc viết, thành sai vì code đổi bên dưới" |
+| Ảnh chụp ba bề mặt mới không ghi được ra tệp | MCP chặn ghi vào `docs/audit/screenshots/`. Ảnh nằm trong transcript của agent. Ghi ra để không ai tưởng có tệp |
 
 ## Ai sở hữu tệp nào
 

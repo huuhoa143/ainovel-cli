@@ -2929,11 +2929,13 @@ div:has(> .qcrow) {
 /* Ba bề mặt này có vùng chứa nhiều nhóm (lối kể / giọng nhân vật / điều cấm), nên
    cần một cấp tiêu đề nữa dưới `.sect > h2`. Cấp này nhạt hơn và nhỏ hơn h2 nhưng
    KHÔNG xuống tới `--ink-3`: nó là tiêu đề mang tin, không phải nhãn phụ. */
+/* Khoảng trên KHÔNG bỏ cho nhóm đầu tiên.
+   ĐO ĐƯỢC ở 1440px: khối "Luật đã khai" là `dl.kv` rồi tới nhóm "Cụm từ cấm", và
+   `:first-of-type { margin-top: 0 }` làm tiêu đề nhóm đó dính vào hàng giá trị
+   cuối của `dl` — đọc ra như thể "Cụm từ cấm" là một hàng nữa của danh sách
+   khoá-giá trị chứ không phải một nhóm mới. */
 .vpnhom {
   margin-top: 18px;
-}
-.vpnhom:first-of-type {
-  margin-top: 0;
 }
 .vpnhom > h3 {
   font: 500 12px/1.4 var(--ui);
@@ -2995,13 +2997,15 @@ div:has(> .qcrow) {
   border-radius: 3px;
   padding: 3px 8px;
 }
-/* Ký tự cấm phần lớn là dấu câu (— … " ). Mono và mỗi ký tự một chip riêng, vì
-   một danh sách nối bằng `·` sẽ không phân biệt được đâu là ký tự bị cấm và đâu
-   là dấu nối của giao diện. */
+/* Mono và mỗi mục một chip riêng, vì một danh sách nối bằng `·` sẽ không phân
+   biệt được đâu là thứ bị cấm và đâu là dấu nối của giao diện — mà phần lớn mục ở
+   đây LÀ dấu câu (`—`, `…`, `"`).
+   KHÔNG `min-width` + `text-align: center`: `rules.ForbiddenChars` được kiểm như
+   chuỗi con bất kỳ (internal/rules/checker.go:55), không phải một ký tự đơn — dữ
+   liệu thật có cả tên riêng nhiều chữ. Căn giữa một chuỗi dài trong chip trông như
+   nhãn bị lỗi, và `min-width` chỉ hợp với glyph đơn. */
 .vpthe.vpky li {
   font: 400 12.5px/1.72 var(--mono);
-  min-width: 26px;
-  text-align: center;
 }
 /* Mục chưa chắc chắn: nét đứt, vì đây đúng nghĩa "chưa chốt". */
 .vpthe.vpngo li {
@@ -3297,4 +3301,43 @@ div:has(> .qcrow) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Dòng "bảng còn cột bên phải" — chỉ ở bề rộng mà bảng chắc chắn không vừa.
+   Trên 700px thì `.bangcp` (min-width 660px) vừa khung, hoặc nếu còn cuộn thì
+   thanh cuộn của `.bangwrap` là thanh THẬT (không overlay) nên đã thấy được. Dưới
+   700px thì Chrome cảm ứng vẽ overlay và thanh đó vô hình cho tới khi đã cuộn —
+   đúng ca dòng chữ này tồn tại để cứu. */
+.bangkeongang {
+  display: none;
+}
+@media (max-width: 700px) {
+  .bangkeongang {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    margin: 8px 0 0;
+    font-size: 12px;
+    line-height: 1.72;
+    color: var(--ink-3);
+    max-width: 74ch;
+  }
+  .bangkeongang::before {
+    content: '→';
+    color: var(--ink-3);
+    flex: none;
+  }
+}
+
+/* `id` cạnh tên tác phẩm ở nút chọn đã đóng — xem ghi chú ở ThanhTren.tsx.
+   Mono + `--ink-3` + co lại trước tên: khi hết chỗ thì id bị cắt chứ không phải
+   tên, vì tên là phần mang tin còn id là phần phân biệt. Cả hai đều cần, nhưng nếu
+   phải hi sinh thì hi sinh id — người vận hành còn mở danh sách ra xem được. */
+.picker .ma {
+  font: 400 10.5px var(--mono);
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }

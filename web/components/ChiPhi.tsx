@@ -63,6 +63,7 @@ export function ChiPhi({
                 cotDau={CHU.colVai}
                 tepNguon={GIAI_THICH.chiPhiTepNguon}
                 muc="vai"
+                giaiTongChung
               />
               <BangGop
                 tieuDe={CHU.theoModel}
@@ -103,9 +104,16 @@ function ThieuNguon({ du }: { du: CostDoc }) {
   return (
     <section className="sect">
       <p className="trongSect">{cau}</p>
-      {/* Số liệu schema cũ vẫn có `updated_at` đọc được, và mốc đó là bằng chứng
-          duy nhất cho câu "có chạy, chỉ không đọc được". Bỏ nó đi thì câu trên
-          thành một khẳng định không có gì đỡ. */}
+      {/* Mốc cập nhật là bằng chứng cho câu "có chạy, chỉ không đọc được" — nên hiện
+          khi có.
+          Nhưng ĐO ĐƯỢC ở bản engine này: ca `stale_schema` trả `updated_at: ""`.
+          `UsageStore.Load()` trả nil khi schema lệch, nên `buildCost` biết tệp TỒN
+          TẠI (nó stat) mà không đọc được gì bên trong — kể cả mốc thời gian. Vậy ở
+          đúng ca cần bằng chứng nhất thì không có bằng chứng nào, và nhánh này hiện
+          không chạy.
+          Giữ lại có chủ ý: nó không sai, và nó bật lên ngay nếu tầng Go về sau mang
+          mtime của tệp ra. KHÔNG vẽ một hàng rỗng để lấp chỗ — một nhãn "Cập nhật"
+          với giá trị trống còn tệ hơn là không có hàng đó. */}
       {du.state === 'stale_schema' && du.updated_at ? (
         <dl className="kv kvcp">
           <dt>{CHU.capNhat}</dt>
@@ -131,6 +139,7 @@ function BangGop({
   maCotDau,
   tepNguon,
   muc,
+  giaiTongChung,
 }: {
   tieuDe: string;
   o: Record<string, UsageTotals> | null;
@@ -140,6 +149,14 @@ function BangGop({
   maCotDau?: boolean;
   tepNguon: string;
   muc: string;
+  /**
+   * Lời giải cho hàng `Tổng chung` — chỉ bật ở BẢNG ĐẦU.
+   *
+   * Hàng đó có ở cả hai bảng và lời giải đúng cho cả hai, nhưng in nguyên đoạn ba
+   * dòng hai lần trong cùng một bề mặt thì lần thứ hai không thêm tin nào — nó chỉ
+   * dạy người đọc bỏ qua đoạn văn giải thích, kể cả những đoạn có tin.
+   */
+  giaiTongChung?: boolean;
 }) {
   const hang = o ? Object.entries(o) : [];
 
@@ -204,11 +221,17 @@ function BangGop({
               </tfoot>
             </table>
           </div>
+          {/* Bảng tám cột không vừa màn hình hẹp, và ở đó thanh cuộn của
+              `.bangwrap` là overlay nên vô hình cho tới khi đã cuộn. Dòng này chỉ
+              hiện dưới 700px — ở bề rộng đó bảng LUÔN rộng hơn khung (min-width
+              660px so với ~354px chỗ thật), nên điều kiện là chắc chắn về mặt cấu
+              trúc và không cần đo bằng JS. */}
+          <p className="bangkeongang">{GIAI_THICH.bangConCotBenPhai}</p>
           {/* Tổng chung KHÔNG phải tổng các hàng trên, và giao diện cố ý không tự
               cộng lại để kiểm: một lượt gọi không gắn với vai nào vẫn vào tổng
               chung, nên hai con số lệch nhau là chuyện bình thường. Nói ra điều đó
               rẻ hơn và thật hơn việc khẳng định một nguyên nhân. */}
-          <p className="steerhint">{GIAI_THICH.chiPhiTongChung}</p>
+          {giaiTongChung ? <p className="steerhint">{GIAI_THICH.chiPhiTongChung}</p> : null}
         </>
       )}
     </section>

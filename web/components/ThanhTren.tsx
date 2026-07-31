@@ -66,7 +66,15 @@ export function ThanhTren({
             disabled={!nhieuHon1}
             onClick={() => setMo((v) => !v)}
           >
+            {/* `id` đi kèm tên cả ở NÚT ĐÃ ĐÓNG, không chỉ trong danh sách mở ra.
+                Danh sách chỉ giúp lúc đang chọn; thanh trên là chỗ người vận hành
+                ngó vào để biết "tôi đang ở tác phẩm nào", và đó là lúc họ KHÔNG mở
+                danh sách.
+                ĐO ĐƯỢC trên store mẫu: cả ba tác phẩm (`tran-yeu-ky`, `chay-thu`,
+                `thanh-van-lo`) đều mang `name` = "Trấn Yêu Ký", nên nút đóng hiện y
+                hệt nhau ở cả ba và không có cách nào biết mình đang mở cái nào. */}
             <b>{tenSach(dangXem)}</b>
+            {dangXem.name ? <span className="ma">{dangXem.id}</span> : null}
             <span className="meta">
               {tienDo(dangXem.completed_chapters, dangXem.total_chapters)}
             </span>
