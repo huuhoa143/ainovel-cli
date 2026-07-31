@@ -166,8 +166,25 @@ func (s *server) handleDongMay(w http.ResponseWriter, r *http.Request) {
 // `PayloadEvent` mà `web/lib/useStudio.ts` đã khai cho SSE. Đổi ở đây sẽ tạo ra hai quy
 // ước đặt tên trong cùng một giao diện.
 func (s *server) handleSong(w http.ResponseWriter, r *http.Request) {
+	// Engine CHƯA MỞ trả 200 kèm `open: false`, KHÔNG trả 409.
+	//
+	// "Engine có đang mở không" là một câu hỏi có câu trả lời phủ định hợp lệ, nên nó không
+	// phải lỗi. Bản đầu trả 409 và hệ quả đo được: giao diện dò `/live` mỗi 2 giây để biết
+	// engine có đang hỏi gì không, nên console đầy "Failed to load resource: 409" — 16 lần
+	// trong một lượt xem. Trình duyệt ghi log đó ở tầng mạng, giao diện không tắt được;
+	// cách duy nhất là đừng trả lỗi cho một câu hỏi không sai.
+	//
+	// Trường `Open` đã có từ bản đầu và luôn bằng true — tức nó là một trường chết. Giờ nó
+	// mang đúng nghĩa mà tên nó nói.
+	//
+	// 409 vẫn đúng cho các route HÀNH ĐỘNG (steer/abort/advance trên một engine đã đóng là
+	// xung đột thật), nên `maLoi` không đổi.
 	p, err := s.may.dangMo(r.PathValue("book"))
 	if err != nil {
+		if errors.Is(err, errChuaMoMay) {
+			writeJSON(w, map[string]any{"open": false})
+			return
+		}
 		writeErr(w, maLoi(err), err)
 		return
 	}

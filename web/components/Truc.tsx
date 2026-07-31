@@ -57,12 +57,12 @@ export function Truc({
             <div className="lane-lbl" id="lane-tap">
               {CHU.tap}
             </div>
-            <Lane blocks={timeline.volumes} tien="T" nhanLane="tập" />
+            <Lane blocks={timeline.volumes ?? []} tien="T" nhanLane="tập" />
 
             <div className="lane-lbl" id="lane-cung">
               {nhanLaneCung(timeline.volumes)}
             </div>
-            <Lane blocks={timeline.arcs} tien="C" nhanLane="cung" />
+            <Lane blocks={timeline.arcs ?? []} tien="C" nhanLane="cung" />
           </>
         ) : null}
 
@@ -80,8 +80,8 @@ export function Truc({
 }
 
 /** Nhãn lane cung nói rõ nó là cung của TẬP NÀO, không phải mọi cung. */
-function nhanLaneCung(volumes: LaneBlock[]): string {
-  const dangChay = volumes.find((v) => v.state === 'running');
+function nhanLaneCung(volumes: LaneBlock[] | null): string {
+  const dangChay = volumes?.find((v) => v.state === 'running');
   return dangChay ? `${CHU.cung}, tập ${dangChay.index}` : CHU.cung;
 }
 

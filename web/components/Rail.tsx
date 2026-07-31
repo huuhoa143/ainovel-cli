@@ -459,5 +459,7 @@ function MucChuaDung({
 function soKhoiDanY(snapshot: Snapshot | undefined): number | undefined {
   if (!snapshot) return undefined;
   if (!snapshot.capabilities.layered_outline) return undefined;
-  return snapshot.timeline.volumes.length;
+  // volumes null với cờ true là ca hợp lệ: khung tập đã có mà chưa mở tập nào. Trả
+  // undefined (không hiện số) chứ không trả 0 — 0 nói "đã dựng mà rỗng", khác "chưa dựng".
+  return snapshot.timeline.volumes?.length;
 }

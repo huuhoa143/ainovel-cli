@@ -126,11 +126,11 @@ function TabNut({
 function viTri(snapshot: Snapshot | undefined, chuong: number): string {
   const phan = [`${CHU.chuong} ${chuong}`];
   if (snapshot?.capabilities.layered_outline) {
-    const tap = snapshot.timeline.volumes.find(
+    const tap = snapshot.timeline.volumes?.find(
       (v) => v.from && v.to && chuong >= v.from && chuong <= v.to,
     );
     if (tap) phan.push(`tập ${tap.index}`);
-    const cung = snapshot.timeline.arcs.find(
+    const cung = snapshot.timeline.arcs?.find(
       (a) => a.from && a.to && chuong >= a.from && chuong <= a.to,
     );
     if (cung) phan.push(`cung ${cung.index}`);

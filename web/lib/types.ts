@@ -96,10 +96,30 @@ export interface ChapterMark {
   state: MarkState;
 }
 
+/**
+ * Trục sản xuất.
+ *
+ * # `volumes` và `arcs` CÓ THỂ null, và kiểu này từng nói dối về điều đó
+ *
+ * Với truyện không phân tầng (ngắn/vừa, không có tập/cung), server gửi
+ * `{"volumes": null, "arcs": null}` — slice nil của Go thành `null` trong JSON, không
+ * thành `[]`.
+ *
+ * Bản trước khai chúng là `LaneBlock[]` không cho null. Hệ quả KHÔNG phải một cảnh báo
+ * kiểu: nó là ngược lại — `tsc` XANH vì nó tin lời khai, nên `blocks.find(...)` được viết
+ * mà không ai chặn, và bề mặt Dòng sản xuất **làm sập renderer** với mọi truyện không phân
+ * tầng. Bề mặt đó là chỗ người dùng đáp xuống ở URL gốc.
+ *
+ * Lỗi sống lâu vì mọi fixture và mọi cuốn đem ra thử đều PHÂN TẦNG. Nó lộ ra ở cuốn không
+ * phân tầng đầu tiên — một cuốn 3 chương tạo từ web.
+ *
+ * Nên khai `| null` ở đây không phải để cho chặt hơn: nó là cái duy nhất bắt `tsc` từ chối
+ * `blocks.find` mà không kiểm null. Bảo đảm lúc biên dịch, mạnh hơn một bài kiểm.
+ */
 export interface Timeline {
-  volumes: LaneBlock[];
+  volumes: LaneBlock[] | null;
   /** Các cung trong tập hiện tại, không phải mọi cung của tác phẩm. */
-  arcs: LaneBlock[];
+  arcs: LaneBlock[] | null;
   chapters: ChapterMark[];
 }
 
@@ -674,12 +694,18 @@ export interface HoiDangCho {
   questions: HoiMotCau[];
 }
 
+/**
+ * Trạng thái sống của engine.
+ *
+ * `open: false` là câu trả lời HỢP LỆ (engine chưa mở), không phải lỗi — server trả 200
+ * cho ca đó. Nên mọi trường còn lại là tùy chọn: chúng chỉ có nghĩa khi engine đang mở.
+ */
 export interface TrangThaiSong {
   open: boolean;
-  stopped: boolean;
+  stopped?: boolean;
   last_error?: string;
   asking?: HoiDangCho;
-  snapshot: Record<string, unknown>;
+  snapshot?: Record<string, unknown>;
 }
 
 /* ── cùng dựng ──────────────────────────────────────────────────────────── */

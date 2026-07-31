@@ -375,8 +375,12 @@ function motTa(snap: Snapshot): string {
   const b = snap.book;
   const phan: string[] = [b.name || b.id, nhanPhase(b.phase)];
   if (b.total_chapters > 0) phan.push(`${so(b.total_chapters)} chương`);
-  if (snap.capabilities.layered_outline && snap.timeline.volumes.length > 0) {
-    phan.push(`${snap.timeline.volumes.length} tập`);
+  // `?? []` chứ không tin `layered_outline`: hai trường đến từ hai nhánh khác nhau phía
+  // server, nên một cuốn có cờ true mà volumes null là ca hợp lệ (dàn ý phân tầng đã có
+  // khung mà chưa mở tập nào).
+  const soTap = snap.timeline.volumes?.length ?? 0;
+  if (snap.capabilities.layered_outline && soTap > 0) {
+    phan.push(`${soTap} tập`);
   }
   if (b.total_words > 0) phan.push(`${so(b.total_words)} từ`);
   return phan.join(' · ');

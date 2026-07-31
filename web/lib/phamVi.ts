@@ -46,7 +46,13 @@ export interface PhamVi {
  * dây chuyền dừng lại, tức phạm vi người vận hành đang quan tâm. Khối chưa mở
  * không bao giờ được chọn vì nó không có from/to.
  */
-function khoiPhamVi(blocks: LaneBlock[]): LaneBlock | undefined {
+function khoiPhamVi(blocks: LaneBlock[] | null): LaneBlock | undefined {
+  // null = truyện không phân tầng (server gửi slice nil thành `null`). Đây là chỗ ĐÃ NỔ:
+  // `Canvas` khởi tạo mức xem là 'tap' rồi gọi `phamViCua` để BIẾT phạm vi có rõ không —
+  // tức lời gọi xảy ra TRƯỚC phép kiểm `capabilities.layered_outline`, nên nó không được
+  // dựa vào phép kiểm đó. Trả undefined thì `phamViCua` báo `khongRo` và Canvas rơi về
+  // mức 'chuong', đúng cái nó vẫn định làm.
+  if (!blocks) return undefined;
   const chay = blocks.find((b) => b.state === 'running' && b.from && b.to);
   if (chay) return chay;
   const daMo = blocks.filter((b) => b.from && b.to);
