@@ -373,14 +373,17 @@ export interface CharacterVoice {
 }
 
 /**
- * GET /api/books/{book}/style — `domain.WritingStyleRules`.
+ * Quy tắc Editor chưng ra từ chương đã viết — `meta/style_rules.json`.
  *
- * `volume`/`arc` là CỬA SỔ của cả tệp, không phải nhãn trang trí: Editor chưng
+ * `volume`/`arc` là CỬA SỔ của cả khối, không phải nhãn trang trí: Editor chưng
  * quy tắc ở ranh giới cung, nên bộ quy tắc này mô tả cung VỪA ĐÓNG. Dây chuyền
  * đã đi sang cung sau thì nó vẫn là bộ quy tắc mới nhất, nhưng không phải bộ
  * quy tắc của chương đang viết — và người vận hành phải đọc được điều đó.
+ *
+ * `volume`/`arc` KHÔNG optional: `0` nghĩa là "chưa gắn được tập/cung" và đó là
+ * tin thật, không phải khóa vắng (internal/serve/model.go:272).
  */
-export interface StyleDoc {
+export interface ArcStyle {
   volume: number;
   arc: number;
   /** 3–5 quy tắc lối kể. null = chưa có tệp / chưa chưng lần nào. */
@@ -388,7 +391,56 @@ export interface StyleDoc {
   dialogue: CharacterVoice[] | null;
   /** Danh sách cấm. */
   taboos: string[] | null;
-  updated_at?: string;
+  updated_at: string;
+}
+
+/**
+ * Quy tắc người dùng KHAI, đã chuẩn hóa — `meta/user_rules.json`.
+ *
+ * Ngược chiều nhân quả với `ArcStyle`: đây là CHỈ THỊ ("hãy viết thế này"), còn
+ * `ArcStyle` là MÔ TẢ ("văn hóa ra đang thế này"). Xem ghi chú ở `StyleDoc`.
+ */
+export interface UserStyle {
+  /**
+   * ready | degraded — `degraded` nghĩa là ít nhất một nguồn chuẩn hóa thất bại
+   * và đã bị hạ thành `preferences` thô. Phải hiện ra: phần luật máy-kiểm-được
+   * của nguồn đó KHÔNG còn được máy cưỡng chế nữa, chỉ mô hình đọc.
+   */
+  status: string;
+  genre: string;
+  forbidden_phrases: string[] | null;
+  forbidden_chars: string[] | null;
+  /** "từ → tối đa mấy lần MỖI CHƯƠNG". Hạn mức, KHÔNG phải danh sách cấm. */
+  fatigue_words: Record<string, number> | null;
+  preferences: string;
+  /** Nhãn nguồn đã góp vào bản chuẩn hóa: `system_defaults`, `global:<tệp>`… */
+  declared_by: string[] | null;
+  uncertain: string[] | null;
+}
+
+/**
+ * GET /api/books/{book}/style — `internal/serve/model.go:259`.
+ *
+ * HAI NGUỒN độc lập, và tách chúng ra là điểm chính của hợp đồng này. Chênh lệch
+ * thời điểm mới là lý do: `style_rules.json` chỉ tồn tại SAU biên cung đầu tiên,
+ * còn `user_rules.json` đã có ngay từ lúc mở sách. Một bề mặt chỉ đọc tệp thứ
+ * nhất sẽ rỗng trơn suốt cả cung đầu của mọi tác phẩm — rỗng đúng lúc người vận
+ * hành cần nó nhất, khi họ vừa dặn xong và muốn biết engine có nghe không.
+ */
+export interface StyleDoc {
+  /** null = chưa có meta/style_rules.json (chưa qua biên cung nào). */
+  arc_style: ArcStyle | null;
+  /** null = chưa có meta/user_rules.json (chưa mở sách qua Host). */
+  user_rules: UserStyle | null;
+  /**
+   * Nguồn nào đọc được mà HỎNG. Một tệp hỏng không làm trắng cả bề mặt khi nguồn
+   * còn lại vẫn đọc được — nhưng cũng không được nuốt: "rỗng vì chưa có" và "rỗng
+   * vì hỏng" là hai tin vận hành khác nhau.
+   *
+   * Nên ca "đọc được mà hỏng" tới ở HTTP 200, KHÔNG qua nhánh lỗi fetch. Chỉ bắt
+   * lỗi fetch thì nó biến mất không dấu vết.
+   */
+  warnings: string[] | null;
 }
 
 /* ── chi phí: cộng dồn theo tác tử và theo model ────────────────────────── */
@@ -413,13 +465,43 @@ export interface UsageTotals {
   saved_usd: number;
   /** false → model không hỗ trợ đệm, nên hai cột đệm là "không áp dụng", không phải 0. */
   cache_capable: boolean;
-  /** Số lần chuỗi đệm bị đứt. Chỉ đếm ở đường chạy trực tiếp, không phát lại. */
-  cache_breaks?: number;
+  /**
+   * Số lần chuỗi đệm bị đứt. Chỉ đếm ở đường chạy trực tiếp, không phát lại — nên
+   * nó cũng là một con số SÀN.
+   *
+   * KHÔNG optional: server khai `int` không omitempty, nên `0` ("đã đo, không đứt
+   * lần nào") luôn có mặt và phân biệt được với vắng.
+   */
+  cache_breaks: number;
 }
 
-/** GET /api/books/{book}/cost — `domain.UsageState`. */
+/**
+ * Bốn trạng thái nguồn chi phí — `internal/serve/model.go:315`.
+ *
+ * `stale_schema` là trạng thái thứ tư và nó tồn tại vì `UsageStore.Load()` trả
+ * `(nil, nil)` cho HAI ca khác nhau: thiếu tệp, và tệp có mà `Schema` không khớp
+ * bản engine đang chạy (internal/store/usage.go:25). Gộp lại thì một tác phẩm CÓ
+ * số liệu cũ bị báo là "chưa chạy gì" — sai theo đúng hướng nguy hiểm nhất, vì nó
+ * làm người vận hành tưởng mình chưa tốn tiền.
+ */
+export type TinhTrangChiPhi = 'ready' | 'no_file' | 'empty' | 'stale_schema';
+
+/** GET /api/books/{book}/cost — `internal/serve/model.go:339`. */
 export interface CostDoc {
-  updated_at?: string;
+  state: TinhTrangChiPhi;
+  /** Rỗng khi chưa có số liệu; server không omitempty nên khóa luôn có mặt. */
+  updated_at: string;
+  /**
+   * MẪU SỐ, không phải tiêu đề.
+   *
+   * `cost_usd` ở đây trùng `transport.cost_usd` LÀ CỐ Ý, và nó chỉ được dùng để
+   * chia — "Writer chiếm 62% chi phí". In lại nó thành một con số lớn ở đầu bề mặt
+   * là hero-metric, thứ PRODUCT.md:43 cấm, và là cách hai bản của một con số bắt
+   * đầu lệch nhau. Việc in tổng là của thanh dưới.
+   *
+   * Vẫn phải có ở đây vì tổng TOKEN và `saved_usd` không tồn tại ở bất cứ đâu
+   * khác trong API.
+   */
   overall: UsageTotals;
   /** null = chưa có tệp. `{}` = có tệp mà chưa vai nào được cộng. */
   per_agent: Record<string, UsageTotals> | null;
@@ -434,31 +516,63 @@ export interface CostDoc {
 
 /* ── cài đặt phiên chạy ─────────────────────────────────────────────────── */
 
+/** Ý định tạm dừng một lần, do can thiệp ký. */
+export interface AdvanceHold {
+  /** boundary | rewrites_drained */
+  after: string;
+  reason: string;
+}
+
+/** Phán quyết khởi động đã落盘 (server lược `raw_prompt` vì nó lặp `start_prompt`). */
+export interface PlanStart {
+  planner: string;
+  planner_task: string;
+  decision_id: string;
+}
+
 /**
- * GET /api/books/{book}/settings — phần công khai được của `domain.RunMeta`.
+ * GET /api/books/{book}/settings — `internal/serve/model.go:412`.
  *
- * KHÔNG có `start_prompt`, `pending_steer`, `plan_start`: yêu cầu gốc của người
- * dùng và ý kiến can thiệp chưa xử lý không phải cấu hình, và bề mặt này là bề
- * mặt cấu hình.
+ * Khóa API và cấu hình provider CỐ Ý không có ở đây, và sẽ không bao giờ có:
+ * chúng không nằm trong store. Đưa khóa vào một payload HTTP là biến một rò rỉ
+ * tiềm năng thành một rò rỉ có sẵn.
  */
 export interface SettingsDoc {
-  started_at?: string;
-  provider?: string;
+  /**
+   * ready | no_file. Cần vì đây là OBJECT, không có `null` của mảng để dựa vào —
+   * "chưa có meta/run.json" và "có tệp mà mọi trường rỗng" sẽ đọc ra y hệt nhau
+   * nếu không có trường này.
+   */
+  state: 'ready' | 'no_file';
+  /**
+   * Luôn `false` ở bản chỉ-đọc. ĐỌC TỪ ĐÂY, đừng hard-code phía web: ngày engine
+   * nhận lệnh ghi, server đổi một chỗ và giao diện mở ô nhập theo.
+   */
+  writable: boolean;
+  started_at: string;
+  provider: string;
+  model: string;
   /** Kiểu văn chọn lúc khởi động — KHÁC quy tắc văn phong Editor chưng ra sau. */
-  style?: string;
-  model?: string;
+  style: string;
   /** short / mid / long */
-  planning_tier?: string;
+  planning_tier: string;
   /** auto / review */
-  advance_mode?: string;
+  advance_mode: string;
   /**
    * Chương được cấp phép đi tiếp ở chế độ `review`.
    *
-   * `0` là giá trị THẬT ("chưa cấp phép chương nào"), không phải vắng — nên nếu
-   * server đặt `omitempty` lên nó thì ca đáng quan tâm nhất của chế độ review
-   * biến mất khỏi JSON. Giao diện kiểm `!= null`.
+   * `0` là giá trị THẬT ("chưa cấp phép chương nào") và ở chế độ review đó là câu
+   * trả lời cho "vì sao dây chuyền đứng yên" — tức ca ĐÁNG HIỆN NHẤT. Kiểm
+   * `!= null`, không kiểm falsy: kiểm falsy thì đúng ca đó biến mất.
    */
-  advance_permit_chapter?: number;
+  advance_permit_chapter: number;
+  /** null = không có ý định tạm dừng nào đang treo. */
+  advance_hold: AdvanceHold | null;
+  /** Chỉ thị can thiệp engine CHƯA xử lý. Rỗng là ca thường. */
+  pending_steer: string;
+  start_prompt: string;
+  /** null = chưa có phán quyết khởi động nào落盘. */
+  plan_start: PlanStart | null;
 }
 
 /** Một sự kiện SSE — khung ở internal/serve/events.go:sseEvent. */

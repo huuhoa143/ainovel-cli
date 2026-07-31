@@ -199,10 +199,31 @@ async function hoiTham<T>(
   }
 }
 
-const coVanPhong = (d: StyleDoc): boolean =>
-  (d.prose?.length ?? 0) > 0 ||
-  (d.dialogue?.length ?? 0) > 0 ||
-  (d.taboos?.length ?? 0) > 0;
+/**
+ * Văn phong "có nguồn" khi có ít nhất một luật thật ở MỘT TRONG HAI nguồn.
+ *
+ * Phải đọc qua `arc_style`/`user_rules`, không đọc phẳng: bản trước viết
+ * `d.prose` — một trường KHÔNG tồn tại trên payload, nên hàm luôn trả `false` và
+ * rail báo "chưa có nguồn" cả khi store có đủ luật. TypeScript không bắt được vì
+ * `StyleDoc` khi đó cũng mô tả sai hình dạng, nên hai cái sai khớp nhau.
+ *
+ * Kiểm cả hai nguồn, không chỉ `arc_style`: `user_rules` có ngay từ lúc mở sách
+ * còn `arc_style` chỉ có sau biên cung đầu tiên. Chỉ kiểm nguồn thứ nhất là dán
+ * nhãn "chưa có số liệu" lên suốt cả cung đầu của mọi tác phẩm.
+ */
+const coVanPhong = (d: StyleDoc): boolean => {
+  const a = d.arc_style;
+  const u = d.user_rules;
+  return (
+    (a?.prose?.length ?? 0) > 0 ||
+    (a?.dialogue?.length ?? 0) > 0 ||
+    (a?.taboos?.length ?? 0) > 0 ||
+    (u?.forbidden_phrases?.length ?? 0) > 0 ||
+    (u?.forbidden_chars?.length ?? 0) > 0 ||
+    Object.keys(u?.fatigue_words ?? {}).length > 0 ||
+    !!u?.preferences
+  );
+};
 
 /**
  * Chi phí "có nguồn" khi store đã cộng được một lượt gọi nào.
@@ -313,9 +334,28 @@ async function mockXuong<T>(
   const chuaGhi = MOCK === 'empty' || book === 'bien-ky';
   switch (ten) {
     case 'style':
-      return (chuaGhi
-        ? { volume: 0, arc: 0, prose: null, dialogue: null, taboos: null }
-        : { volume: 1, arc: 1, prose: [], dialogue: [], taboos: [], updated_at: '2026-07-29T20:14:52Z' }) as T;
+      // Hai nguồn tách riêng, và ca `chuaGhi` để CẢ HAI null. Ca còn lại dựng
+      // đúng hình hay gặp nhất trong thực tế: `user_rules` đã có (sách đã mở qua
+      // Host) mà `arc_style` chưa (chưa qua biên cung nào) — tức bề mặt phải hiện
+      // được nửa này và nói rõ nửa kia chưa tới lượt.
+      return (
+        chuaGhi
+          ? { arc_style: null, user_rules: null, warnings: null }
+          : {
+              arc_style: null,
+              user_rules: {
+                status: 'ready',
+                genre: '',
+                forbidden_phrases: [],
+                forbidden_chars: [],
+                fatigue_words: null,
+                preferences: '',
+                declared_by: ['system_defaults'],
+                uncertain: null,
+              },
+              warnings: null,
+            }
+      ) as T;
     case 'cost': {
       const khong = {
         input: 0,
@@ -325,21 +365,62 @@ async function mockXuong<T>(
         cost_usd: 0,
         saved_usd: 0,
         cache_capable: false,
+        cache_breaks: 0,
       };
-      return (chuaGhi
-        ? { overall: khong, per_agent: null, per_model: null, missing_assistant_usage: 0 }
-        : {
-            overall: khong,
-            per_agent: {},
-            per_model: {},
-            missing_assistant_usage: 0,
-            updated_at: '2026-07-29T20:14:52Z',
-          }) as T;
+      return (
+        chuaGhi
+          ? {
+              state: 'no_file',
+              updated_at: '',
+              overall: khong,
+              per_agent: null,
+              per_model: null,
+              missing_assistant_usage: 0,
+            }
+          : {
+              state: 'empty',
+              updated_at: '2026-07-29T20:14:52Z',
+              overall: khong,
+              per_agent: {},
+              per_model: {},
+              missing_assistant_usage: 0,
+            }
+      ) as T;
     }
     default:
-      return (chuaGhi
-        ? {}
-        : { started_at: '2026-07-29T18:02:11Z', advance_mode: 'auto' }) as T;
+      return (
+        chuaGhi
+          ? {
+              state: 'no_file',
+              writable: false,
+              started_at: '',
+              provider: '',
+              model: '',
+              style: '',
+              planning_tier: '',
+              advance_mode: '',
+              advance_permit_chapter: 0,
+              advance_hold: null,
+              pending_steer: '',
+              start_prompt: '',
+              plan_start: null,
+            }
+          : {
+              state: 'ready',
+              writable: false,
+              started_at: '2026-07-29T18:02:11Z',
+              provider: '',
+              model: '',
+              style: '',
+              planning_tier: '',
+              advance_mode: 'auto',
+              advance_permit_chapter: 0,
+              advance_hold: null,
+              pending_steer: '',
+              start_prompt: '',
+              plan_start: null,
+            }
+      ) as T;
   }
 }
 

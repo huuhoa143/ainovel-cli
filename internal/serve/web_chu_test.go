@@ -102,7 +102,7 @@ func TestNhanDlPhaiQuaTuDien(t *testing.T) {
 // laComment cho biết dòng này là một dòng comment.
 //
 // Cần thiết, không phải cho gọn: chính bài kiểm này đã báo bừa một lần vào đúng
-// comment giải thích lỗi mà nó canh — câu ``nhãn `<dt>` viết cứng`` trong
+// comment giải thích lỗi mà nó canh — câu “nhãn `<dt>` viết cứng“ trong
 // BanDuyet.tsx. Đó là lớp báo bừa đã gặp ở phía Go với dấu nối `、`: bộ canh quét
 // theo dòng nên nó không phân biệt được chữ trong mã và chữ trong lời giải thích
 // VỀ mã.

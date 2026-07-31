@@ -2872,3 +2872,401 @@ div:has(> .qcrow) {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* ══ ba bề mặt xưởng: văn phong · chi phí · cài đặt ═══════════════════ */
+
+/* Ba bề mặt này là BẢN GHI CỦA ENGINE VỀ tác phẩm, viết cho người vận hành đọc.
+   Nên `--ui` toàn bộ, không một chỗ nào `--serif` — kể cả `preferences` của luật
+   người dùng và `start_prompt` của phiên chạy, hai khối dài và trông rất giống
+   chỗ đáng cho serif. Phép thử ở DESIGN.md:64 hỏi "chữ này có nằm trong bộ truyện
+   xuất bản không"; câu người vận hành dặn engine thì không, và người đọc truyện
+   không bao giờ thấy nó. Cho chúng serif là làm loãng tín hiệu serif đúng chỗ nó
+   cần sắc nhất. */
+
+/* ── nhãn báo trước ở rail: "vào được, nhưng chưa có số liệu" ── */
+
+/* Mục này VẪN là nút, khác `.chuadung`. Nhưng nó phải mượn đúng bố cục hai hàng
+   của `.chuadung`, và lý do là một phép đo đã ghi ở đó: rail rộng 194px, đặt nhãn
+   cùng hàng với tên khu thì nhãn ăn hết chỗ và cắt mất chính TÊN khu
+   ("Văn pho..."). Nhãn ở đây còn dài hơn "chưa dựng", nên nếu để inline trong
+   `display: flex` của `.mucdi` thì lỗi đó tái diễn nguyên vẹn.
+   `:has()` đã là thành ngữ sẵn trong tệp này (xem `div:has(> .qcrow)`). */
+.rail .mucdi:has(.tag.mo) {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  grid-template-areas:
+    'g nhan n'
+    'x tag tag';
+  gap: 3px 9px;
+  align-items: center;
+}
+.rail .mucdi:has(.tag.mo) .g {
+  grid-area: g;
+}
+.rail .mucdi:has(.tag.mo) .nhan {
+  grid-area: nhan;
+}
+.rail .mucdi:has(.tag.mo) .n {
+  grid-area: n;
+  margin-left: 0;
+}
+/* Viền LIỀN, không đứt — và đó là chỗ nhãn này tự phân biệt với `.chuadung`.
+   Nét đứt trong hệ này nghĩa là "chưa có, đừng chờ" (xem `.mucxem button:disabled`
+   và `.nguoi .hang.h-secondary`). Ở đây bề mặt CÓ và bấm được; chỉ nguồn là rỗng.
+   Hai câu khác nhau nên hai nét khác nhau. */
+.rail .mucdi:has(.tag.mo) .tag.mo {
+  grid-area: tag;
+  justify-self: start;
+  font: 400 9.5px/1 var(--ui);
+  color: var(--ink-3);
+  border: 1px solid var(--line-2);
+  border-radius: 3px;
+  padding: 3px 5px;
+}
+
+/* ── nhóm con trong một vùng ── */
+
+/* Ba bề mặt này có vùng chứa nhiều nhóm (lối kể / giọng nhân vật / điều cấm), nên
+   cần một cấp tiêu đề nữa dưới `.sect > h2`. Cấp này nhạt hơn và nhỏ hơn h2 nhưng
+   KHÔNG xuống tới `--ink-3`: nó là tiêu đề mang tin, không phải nhãn phụ. */
+.vpnhom {
+  margin-top: 18px;
+}
+.vpnhom:first-of-type {
+  margin-top: 0;
+}
+.vpnhom > h3 {
+  font: 500 12px/1.4 var(--ui);
+  color: var(--ink-2);
+  margin: 0 0 8px;
+}
+.vpnhom > .steerhint {
+  margin-top: -2px;
+  margin-bottom: 9px;
+}
+
+/* ── danh sách luật có số thứ tự ── */
+
+/* Lối kể được Editor chắt ra thành 3–5 mục có thứ tự, và thứ tự đó là của dữ
+   liệu — nên `<ol>` chứ không `<ul>`. Số đặt ngoài lề bằng mono để nó không trôi
+   theo độ dài dòng. */
+.vpluat {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: vpl;
+  max-width: 78ch;
+  display: grid;
+  gap: 9px;
+}
+.vpluat li {
+  counter-increment: vpl;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  font-size: 13px;
+  /* 1.78: đây là khổ đọc dài (một luật lối kể dài tới ~50 chữ), và DESIGN.md:84
+     đặt sàn 1.78 cho khổ đọc dài bất kể họ chữ. */
+  line-height: 1.78;
+  color: var(--ink);
+}
+.vpluat li::before {
+  content: counter(vpl) '.';
+  font: 400 11.5px/1.78 var(--mono);
+  color: var(--ink-3);
+  text-align: right;
+}
+
+/* ── chip: cụm từ cấm, ký tự cấm, mục chưa chắc chắn ── */
+
+.vpthe {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 7px;
+}
+.vpthe li {
+  font: 400 12px/1.72 var(--ui);
+  color: var(--ink-2);
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: 3px;
+  padding: 3px 8px;
+}
+/* Ký tự cấm phần lớn là dấu câu (— … " ). Mono và mỗi ký tự một chip riêng, vì
+   một danh sách nối bằng `·` sẽ không phân biệt được đâu là ký tự bị cấm và đâu
+   là dấu nối của giao diện. */
+.vpthe.vpky li {
+  font: 400 12.5px/1.72 var(--mono);
+  min-width: 26px;
+  text-align: center;
+}
+/* Mục chưa chắc chắn: nét đứt, vì đây đúng nghĩa "chưa chốt". */
+.vpthe.vpngo li {
+  border-style: dashed;
+  color: var(--ink-3);
+}
+
+/* ── từ mỏi: từ + hạn mức mỗi chương ── */
+
+/* Không phải danh sách cấm mà là HẠN MỨC, nên mỗi hàng phải mang con số của nó.
+   Xếp cùng kiểu chip với cụm từ cấm rồi để người đọc tự suy là cách một hạn mức
+   bị đọc thành một lệnh cấm. */
+.vpmoi {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 5px;
+  max-width: 52ch;
+}
+.vpmoi li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line-2);
+  font-size: 12.5px;
+  line-height: 1.72;
+}
+.vpmoi li:last-child {
+  border-bottom: 0;
+}
+.vpmoi .tu {
+  color: var(--ink);
+}
+.vpmoi .han {
+  margin-left: auto;
+  font: 400 11.5px var(--mono);
+  color: var(--amber);
+  white-space: nowrap;
+  flex: none;
+}
+
+/* ── giọng từng nhân vật ── */
+.vpgiong {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 14px;
+  max-width: 78ch;
+}
+.vpgiong > li > h4 {
+  font: 500 12.5px/1.3 var(--ui);
+  color: var(--ink);
+  margin: 0 0 5px;
+}
+.vpgiong > li > ul {
+  margin: 0;
+  padding-left: 16px;
+  display: grid;
+  gap: 4px;
+}
+.vpgiong > li > ul li {
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--ink-2);
+}
+
+/* ── điều cấm ── */
+
+/* `--amber` (cần chú ý), KHÔNG `--red`. Đỏ trong hệ này là LỖI đã xảy ra
+   (DESIGN.md:48); điều cấm là một ràng buộc đang có hiệu lực và bình thường. Tô
+   đỏ một danh sách luật thường trực làm màu lỗi mất nghĩa ở chỗ khác. */
+.vpcam {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 7px;
+  max-width: 78ch;
+}
+.vpcam li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--amber);
+}
+.vpcam li .ky {
+  font-size: 9px;
+  flex: none;
+}
+
+/* ── dòng hạ cấp / cảnh báo trong vùng ── */
+
+/* Dùng cho ba chỗ cùng một loại tin: luật người dùng bị hạ cấp, lượt gọi thiếu
+   số liệu usage, và ý định tạm dừng đang treo. Cả ba là "sự thật này làm những
+   con số/luật ở trên yếu đi", nên chúng dùng chung một hình.
+   Ba kênh, không chỉ màu: ký hiệu ■, tông amber, và chữ đậm ở mệnh đề đầu. */
+.vphacap {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 11px;
+  padding: 8px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-left: 2px solid var(--amber);
+  border-radius: var(--r);
+  font-size: 12.5px;
+  /* 1.72 là sàn của DESIGN.md:84, và ở đây nó không thương lượng được: `reason`
+     của một ý định tạm dừng do mô hình sinh ra, nên không biết trước nó mang dấu
+     gì — đúng lý do sàn tồn tại. */
+  line-height: 1.72;
+  color: var(--ink-2);
+  max-width: 82ch;
+}
+.vphacap .ky {
+  font-size: 9px;
+  color: var(--amber);
+  flex: none;
+}
+.vphacap strong {
+  color: var(--amber);
+  font-weight: 500;
+}
+
+/* ── cửa sổ của bộ luật văn phong ── */
+
+/* "Bộ luật này mô tả cung VỪA ĐÓNG" là một cửa sổ, không một chú thích — nếu
+   người vận hành đọc nó thành luật của chương đang viết thì mọi kết luận sau đó
+   sai. Nên nó nằm trên bề mặt, không trong `title`: một cửa sổ mà phải hover mới
+   biết thì phần lớn người đọc sẽ không biết (cùng lập luận đã viết cho đầu cột
+   của bảng Tổ sản xuất). */
+.vpcuaso {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.72;
+  color: var(--ink-3);
+  max-width: 78ch;
+}
+.vpcuaso .ky {
+  font-size: 8px;
+  color: var(--teal);
+  flex: none;
+}
+
+/* ── khối văn dài: preferences, start_prompt, pending_steer ── */
+.vpvan,
+.cdvan {
+  margin: 0;
+  max-width: 74ch;
+  /* `--ui`, không `--serif` — xem ghi chú ở đầu khối này. 1.78 vì đây là khổ đọc
+     dài, giữ nguyên sàn của khổ đọc dài bất kể họ chữ. */
+  font: 400 13px/1.78 var(--ui);
+  color: var(--ink-2);
+  text-wrap: pretty;
+  white-space: pre-wrap;
+}
+
+/* ── bảng chi phí ── */
+
+/* Tám cột, và bảng cuộn ngang trong `.bangwrap` khi hẹp thay vì nén cột — cùng
+   cách bảng Tổ sản xuất làm. Nén tám cột số vào 390px sẽ xé từng con số xuống
+   nhiều dòng, và một con số bị xé thì đọc ra sai. */
+.bangcp {
+  min-width: 660px;
+}
+/* Hàng KHÔNG bấm được ở bảng này: `.bang tbody tr` mặc định là `cursor: pointer`
+   vì bảng chương bấm được. Con trỏ bàn tay trên một hàng không làm gì là một lời
+   hứa hụt nhỏ nhưng có thật.
+   Giữ `hover` lại, và nó không phải trang trí: tám cột thì mắt cần một dải sáng
+   để đọc ngang mà không nhảy hàng. */
+.bangcp tbody tr {
+  cursor: default;
+}
+.bangcp td.vai {
+  font-weight: 500;
+  white-space: nowrap;
+}
+.bangcp td.num {
+  font: 400 12px var(--mono);
+  text-align: right;
+  white-space: nowrap;
+}
+/* Tên model không bao giờ ngắt giữa token — cùng luật đã viết cho `.bangto`:
+   "gemini-2.5-pro" xé thành "gemini-2.5-" / "pro" đọc ra như hai model khác nhau,
+   và dấu gạch là chỗ trình duyệt tự cho phép ngắt. */
+.bangcp td.model .ma {
+  font: 400 11.5px var(--mono);
+  color: var(--violet);
+  white-space: nowrap;
+}
+/* Chân bảng là MẪU SỐ của cột "Tỉ trọng" ngay trên nó, nên nó phải đọc ra là một
+   hàng khác loại: viền trên đặc hơn, chữ sáng hơn thân bảng. Đây là chỗ duy nhất
+   tổng chi phí được in ở bề mặt này — cố ý không phải một con số lớn ở đầu trang,
+   vì đó là hero-metric và PRODUCT.md:43 cấm. */
+.bangcp tfoot td {
+  padding: 9px 10px 0;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: 500;
+}
+.bangcp tfoot td.num {
+  font: 500 12px var(--mono);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ── danh sách khoá-giá trị của ba bề mặt ── */
+
+/* Cột nhãn rộng hơn `.kv` mặc định (104px), theo đúng luật 2 của DESIGN.md:85 —
+   nhãn tiếng Việt dài hơn phản xạ 20–30%.
+   ĐO ĐƯỢC ở 104px: "Chương được cấp phép" ngắt ba dòng, "Phán quyết khởi động"
+   ngắt hai, "Lượt thiếu số liệu" ngắt hai. 150px cho cả ba đi một dòng. */
+.kvvp,
+.kvcp,
+.kvcd {
+  grid-template-columns: 150px 1fr;
+}
+/* Chú thích cửa sổ đi kèm một giá trị: cùng hàng khi còn chỗ, xuống dòng khi
+   hết — nó là phần định nghĩa con số, nên không được biến mất, nhưng cũng không
+   được đẩy con số ra khỏi tầm mắt. */
+.kvcp dd .cua,
+.kvcd dd .cua {
+  margin-left: 8px;
+  font: 400 11.5px/1.72 var(--ui);
+  color: var(--ink-3);
+}
+/* "chưa cấp phép" là một sự thật, không một giá trị vắng — nên nó KHÔNG dùng
+   `.trong` (gạch ngang của giá trị không có nguồn). Ở chế độ review đây chính là
+   câu trả lời cho "vì sao dây chuyền đứng yên". */
+.kvcd dd .chuacap {
+  font: 400 12.5px/1.72 var(--ui);
+  color: var(--amber);
+}
+
+@media (max-width: 700px) {
+  /* Cột nhãn 150px trên 390px để lại 200px cho giá trị, và một `decision_id` hay
+     một dòng `declared_by` sẽ xé thành bốn dòng trong cái khe đó. Xếp dọc thì
+     nhãn được cả bề rộng và giá trị cũng vậy. */
+  .kvvp,
+  .kvcp,
+  .kvcd {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px 0;
+  }
+  .kvvp dt,
+  .kvcp dt,
+  .kvcd dt {
+    margin-top: 7px;
+  }
+  .kvvp dt:first-child,
+  .kvcp dt:first-child,
+  .kvcd dt:first-child {
+    margin-top: 0;
+  }
+  .kvcp dd .cua,
+  .kvcd dd .cua {
+    margin-left: 0;
+    display: block;
+  }
+}

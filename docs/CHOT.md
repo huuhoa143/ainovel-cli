@@ -17,6 +17,15 @@ rồi sống lại.
 báo, không tự ghi. Agent báo "failed" thì **kiểm tệp trên đĩa trước khi dựng lại** —
 lỗi mạng khác với chết thật.
 
+**Sổ ở mức tệp CHƯA đủ.** Hai agent cùng gói viết `style_test.go` và `cost_test.go`
+với hàm trợ giúp trùng tên `ghiTho` và hai tên test trùng nhau → **vỡ build** một
+lần. Tệp khác nhau mà cùng gói thì Go vẫn coi là một không gian tên. Nên khi hai
+người phải cùng viết test trong MỘT gói, phân vai ở mức **tên test** (tiền tố định
+danh riêng), không chỉ ở mức tệp.
+
+Chuyện này xảy ra hai lần vì tôi dựng bản thay thế cho một agent báo "failed" mà
+thật ra còn sống — cả `websurface`/`websurface2` lẫn `apisurface`/`apisurface2`.
+
 ### 2. "Agent rảnh" bị dùng làm tín hiệu tìm việc mới → vòng lặp không đáy
 
 Mỗi lần một agent xong, tôi tìm cho nó việc tiếp. Luôn còn một thứ để soát, nên vòng
@@ -38,11 +47,11 @@ dù thật, cũng vào Việc tồn.
 
 ## Điều kiện xong — danh sách ĐÓNG
 
-- [ ] Ba endpoint `/style` `/cost` `/settings` có dữ liệu thật, có ca rỗng, curl chứng minh
+- [x] Ba endpoint `/style` `/cost` `/settings` — curl cả ca có dữ liệu lẫn `sach-moi` rỗng (200, không 500), 4 trạng thái chi phí, hàng rào traversal cả 3 route
 - [ ] Ba bề mặt Văn phong / Chi phí / Cài đặt dựng xong **hoặc** giữ nhãn "chưa dựng" kèm lý do thật
 - [ ] Sáu chỗ vỡ layout TUI (§4–§9, §11 của `docs/audit/ghep-chu-vi.md`)
 - [x] `khế ước chương` nghiệm thu xuyên `vi.json` + `assets/prompts/` + README/DESIGN — ĐO ĐƯỢC: `vi.json` 7 khế-ước / **0** hợp-đồng ở nghĩa B / 10 `contract` giữ ở nghĩa A; 4 dòng cực âm trong prompt còn nguyên
-- [ ] Ba chỗ hở của bộ quét i18n đã siết, mỗi luật chứng minh có răng
+- [x] Ba chỗ hở bộ quét i18n đã siết — điểm neo 7→45, miễn trừ xuống độ mịn TRƯỜNG, luật 3 lan tới điểm bất động; mỗi luật có bằng chứng hoàn nguyên
 - [ ] `web-visual.md` §4.5 — `ThanhTren.tsx:111` bỏ `id` của tác phẩm
 - [ ] Cổng: `go build`+`go vet` sạch · `go test -count=1 ./...` 30 gói / 0 FAIL · `tsc` sạch · `npm run build` exit 0
 

@@ -400,3 +400,88 @@ func TestSidebarKhongConChuHanKhiLocaleVi(t *testing.T) {
 		}
 	}
 }
+
+// TestWrapTextKhongXeGiuaTu chốt bất biến: wrapText ngắt Ở BIÊN TỪ, không giữa từ.
+//
+// Lớp lỗi này đo được trên màn thật trước khi sửa: khung /help ở 120 cột hiện
+// "[--guide=<hướng dẫn cắt chư" / "ơng>]" và "--guide dù" / "ng lời văn tự nhiên" —
+// "chương" xé thành "chư"+"ơng", "dùng" xé thành "dù"+"ng". Cả hai nửa đều đọc được
+// (và "dù" là một từ tiếng Việt thật) nên người dùng báo là LỖI CHÍNH TẢ, không ai
+// nghĩ tới layout. Tiếng Trung không gặp: mỗi chữ Hán là một đơn vị đứng riêng.
+//
+// Bất biến chọn là "dãy từ được bảo toàn" chứ không phải "so từng dòng": nó bắt được
+// mọi kiểu xé (thêm mảnh, mất mảnh) mà không phụ thuộc chỗ ngắt cụ thể.
+func TestWrapTextKhongXeGiuaTu(t *testing.T) {
+	// Đúng hai chuỗi đã hỏng trên màn, lấy từ mô tả lệnh thật.
+	inputs := []string{
+		"Nhập truyện ngoài theo ngữ nghĩa (không tham số thì khôi phục lần nhập chưa xong; --guide dùng lời văn tự nhiên để chỉnh cách cắt)",
+		"Mở lại sách đã hoàn thành để sáng tác tiếp (hướng được phán quyết nạp vào trước, rồi tự chạy tiếp)",
+		"Không dùng được phán quyết thất bại, đã tạm dừng chờ người can thiệp xử lý",
+	}
+	for _, in := range inputs {
+		want := strings.Fields(in)
+		for _, w := range []int{20, 33, 47, 61, 76, 94} {
+			got := strings.Fields(wrapText(in, w))
+			if !slices.Equal(got, want) {
+				t.Errorf("wrapText(%d) xé giữa từ — dãy từ đổi\n input: %q\n   got: %q\n  want: %q",
+					w, in, got, want)
+				break
+			}
+			for i, line := range strings.Split(wrapText(in, w), "\n") {
+				if lw := lipgloss.Width(line); lw > w {
+					t.Errorf("wrapText(%d) dòng %d rộng %d — vượt bề rộng, viewport sẽ cắt cứng: %q", w, i, lw, line)
+				}
+			}
+		}
+	}
+}
+
+// TestWrapTextVanNgatCungChuHan giữ đường tiếng Trung: một mạch chữ Hán KHÔNG có
+// khoảng trắng nào thì ngắt theo biên từ là bất khả, phải ngắt cứng. Nếu bản sửa
+// "ưu tiên biên từ" làm chuỗi Hán không còn ngắt nữa thì nó dôi ra và bị cắt cứng.
+func TestWrapTextVanNgatCungChuHan(t *testing.T) {
+	in := strings.Repeat("宽", 30) // 60 cột, không có khoảng trắng
+	out := wrapText(in, 20)
+	lines := strings.Split(out, "\n")
+	if len(lines) < 2 {
+		t.Fatalf("chuỗi Hán 60 cột ở bề rộng 20 phải ngắt thành nhiều dòng, được %d: %q", len(lines), out)
+	}
+	for i, line := range lines {
+		if lw := lipgloss.Width(line); lw > 20 {
+			t.Errorf("dòng %d rộng %d vượt 20: %q", i, lw, line)
+		}
+	}
+	if n := strings.Count(ansi.Strip(out), "宽"); n != 30 {
+		t.Errorf("ngắt cứng làm mất chữ: còn %d/30 chữ 宽", n)
+	}
+}
+
+// TestSidebarDongTiepPhaiThutVao chốt §8: khi một trường sidebar phải xuống dòng,
+// dòng tiếp phải THỤT VÀO. Không thụt thì nó bắt đầu ở đúng cột của NHÃN, nên trên
+// màn thật "Trạng thái chạy Đã tạm dừng" hiện thành "Trạng thái chạy Đã" / "tạm dừng"
+// và "tạm dừng" đọc ra như một nhãn mới.
+//
+// Đo được 9/27 nhãn sidebar vượt cột nhãn 10 khi dịch sang tiếng Việt (nhãn Hán chỉ
+// 4–8 cột, bản Việt tới 19), nên đây là lớp lỗi chung của sidebar.
+func TestSidebarDongTiepPhaiThutVao(t *testing.T) {
+	const width = 27
+	body := renderFieldLabel("Trạng thái") + "Đã tạm dừng giữa chừng chờ người can thiệp"
+	out := fitSidebarBody(strings.TrimRight(body, "\n"), width)
+	lines := strings.Split(out, "\n")
+	if len(lines) < 2 {
+		t.Fatalf("giá trị dài phải xuống dòng ở bề rộng %d, được %d dòng: %q", width, len(lines), out)
+	}
+	limit := sidebarBodyWidth(width)
+	for i, line := range lines {
+		if lw := lipgloss.Width(line); lw > limit {
+			t.Errorf("dòng %d rộng %d vượt thân thẻ %d — viewport cắt cứng, mất chữ: %q", i, lw, limit, line)
+		}
+		if i > 0 && !strings.HasPrefix(ansi.Strip(line), sidebarContIndent) {
+			t.Errorf("dòng tiếp %d không thụt vào nên đọc ra như NHÃN: %q", i, line)
+		}
+	}
+	// Và không được mất chữ nào.
+	if got, want := strings.Fields(ansi.Strip(out)), strings.Fields(ansi.Strip(body)); !slices.Equal(got, want) {
+		t.Errorf("xuống dòng làm đổi dãy từ\n got: %q\nwant: %q", got, want)
+	}
+}
