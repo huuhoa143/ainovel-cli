@@ -79,10 +79,15 @@ func decodeSource(raw []byte) (decoded, error) {
 	// Thông báo phải nói được ba điều để người dùng tự sửa được: file không phải
 	// UTF-8, thứ đã thử, và việc cần làm tiếp. Nói "không đọc được file" thì người
 	// dùng chỉ còn cách đoán.
+	// Ba mảnh phải dịch RỜI rồi mới nối. Bản trước nối trước rồi bọc một lần ở
+	// ngoài, nên đối số của i18n.F là chuỗi ghép lúc chạy: mảnh đầu (tiếng Trung)
+	// + hai mảnh đã dịch. Khóa đó không thể có trong catalog, F trả nguyên đối số,
+	// và người dùng nhận một câu nửa Trung nửa Việt. Đây là lớp lỗi mà bọc-lồng
+	// luôn tạo ra: F ngoài cùng tra một khóa do chính F trong tạo ra.
 	if text := string(out); !utils.LooksLikeChinese(text) {
-		return decoded{}, fmt.Errorf("%w: "+i18n.F("文件不是 UTF-8；按 GB18030 解码后仅 %.0f%% 是汉字，"+
+		return decoded{}, fmt.Errorf("%w: "+i18n.F("文件不是 UTF-8；按 GB18030 解码后仅 %.0f%% 是汉字，")+
 			i18n.F("判定为编码猜测错误而非中文原文（很可能是 Windows-1258/TCVN3 越南语文本或被截断的 UTF-8）。")+
-			i18n.F("请先转换为 UTF-8 再导入，例如：iconv -f WINDOWS-1258 -t UTF-8 原文件 > 新文件")),
+			i18n.F("请先转换为 UTF-8 再导入，例如：iconv -f WINDOWS-1258 -t UTF-8 原文件 > 新文件"),
 			ErrEncodingUnreliable, utils.HanRatio(text)*100)
 	}
 	return decoded{text: string(out), encoding: encodingGB18030}, nil

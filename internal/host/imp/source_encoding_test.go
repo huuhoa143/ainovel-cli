@@ -2,10 +2,13 @@ package imp
 
 import (
 	"errors"
+	"strings"
 	"testing"
 	"unicode/utf8"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
+
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 const zhSourceSample = "第三章 风起青云\n\n他不是愤怒，而是恐惧。沉默了几息，她眼中闪过慌乱，心头一紧。" +
@@ -52,6 +55,55 @@ func TestDecodeSourceRejectsVietnameseLegacyEncoding(t *testing.T) {
 	}
 	if !errors.Is(err, ErrEncodingUnreliable) {
 		t.Errorf("lỗi phải bọc ErrEncodingUnreliable để chỗ gọi phân loại được, có %v", err)
+	}
+}
+
+// TestThongBaoSaiBangMaDichTronVen chốt rằng thông báo dài nhất của decodeSource
+// được dịch TRỌN VẸN, không còn mảnh tiếng Trung nào.
+//
+// Ca này sinh ra từ một lỗi thật: ba mảnh của thông báo được nối TRƯỚC rồi mới
+// bọc một lần bằng i18n.F ở ngoài cùng. Đối số của F khi đó là chuỗi ghép lúc
+// chạy (mảnh đầu tiếng Trung + hai mảnh đã dịch), nên khóa tra cứu không thể có
+// trong catalog, F trả nguyên đối số, và người dùng nhận một câu nửa Trung nửa
+// Việt. Cả ba msgid đều đã có bản dịch — nên mọi phép đo dựa trên catalog đều báo
+// "đã phủ". Chỉ khẳng định trên CHUỖI ĐẦU RA mới thấy được lớp lỗi này.
+//
+// Kiểm trên toàn dải chữ Hán thay vì so đúng một câu: so nguyên văn thì mỗi lần
+// biên tập lại bản dịch là một lần phải sửa test, và test hay bị sửa thành test bị tắt.
+func TestThongBaoSaiBangMaDichTronVen(t *testing.T) {
+	// Hoàn nguyên về locale ĐANG hoạt động, không phải DefaultLocale: package này
+	// được i18n_locale_pin_test.go ghim về zh, nên trả về vi sẽ phá ghim cho mọi
+	// test chạy sau (đã làm đỏ 3 test khi thử cách kia). Ca này là ngoại lệ có chủ
+	// ý của cái ghim đó — chính comment của ghim nói nó KHÔNG kiểm đường tiếng Việt
+	// trong imp, và đây đúng là chỗ trống đó.
+	truoc := i18n.Active()
+	t.Cleanup(func() { _ = i18n.SetLocale(truoc) })
+	if err := i18n.SetLocale(i18n.Vietnamese); err != nil {
+		t.Fatalf("SetLocale: %v", err)
+	}
+
+	// Dùng zeroFFFDSource, KHÔNG dùng viLegacySource: file 8-bit tiếng Việt dừng
+	// sớm ở hàng rào U+FFFD (thông báo một mảnh), nên nó không đi qua nhánh ghép
+	// ba mảnh. Chính khẳng định tiền đề dưới đây đã phát hiện việc chọn sai fixture.
+	_, err := decodeSource([]byte(zeroFFFDSource))
+	if err == nil {
+		t.Fatal("tiền đề sai: rác không U+FFFD phải bị từ chối")
+	}
+	msg := err.Error()
+
+	// Tiền đề: phải là đúng nhánh "giải mã được nhưng không giống tiếng Trung",
+	// nhánh duy nhất ghép ba mảnh. Các nhánh khác chỉ có một mảnh nên không chứng
+	// minh được gì.
+	if !strings.Contains(msg, "%") && !strings.Contains(msg, "iconv") {
+		t.Fatalf("tiền đề sai: không phải nhánh thông báo ba mảnh\n  có: %s", msg)
+	}
+
+	for _, r := range msg {
+		if (r >= 0x3400 && r <= 0x4DBF) || (r >= 0x4E00 && r <= 0x9FFF) {
+			t.Errorf("thông báo còn chữ Hán %q — một mảnh không đi qua i18n.F (rất có thể do bọc LỒNG: F ngoài tra khóa do F trong sinh ra)\n  thông báo: %s",
+				r, msg)
+			break
+		}
 	}
 }
 

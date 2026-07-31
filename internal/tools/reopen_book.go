@@ -94,6 +94,6 @@ func (t *ReopenBookTool) Execute(_ context.Context, args json.RawMessage) (json.
 		"reopened":         true,
 		"phase":            string(domain.PhaseWriting),
 		"pending_rewrites": a.Chapters,
-		"next_step":        "已重新打开并把目标章入队。请等待 Host 指令派 writer 逐章返工；全部改完后会自动重新完结。",
+		"next_step":        i18n.F("已重新打开并把目标章入队。请等待 Host 指令派 writer 逐章返工；全部改完后会自动重新完结。"),
 	})
 }

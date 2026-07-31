@@ -158,7 +158,7 @@ func (t *ReadChapterTool) Execute(_ context.Context, args json.RawMessage) (json
 			"chapter": a.Chapter,
 			"source":  a.Source,
 			"exists":  false,
-			"hint":    "请求的来源中没有该章节；如需读取另一来源，请明确指定 source",
+			"hint":    i18n.F("请求的来源中没有该章节；如需读取另一来源，请明确指定 source"),
 		})
 	}
 

@@ -37,7 +37,7 @@ func (t *SaveFoundationTool) Schema() map[string]any {
 	return schema.Object(
 		schema.Property("type", schema.Enum(i18n.F("设定类型"), "premise", "outline", "layered_outline", "characters", "world_rules", "expand_arc", "append_volume", "update_compass", "complete_book")).Required(),
 		schema.Property("content", map[string]any{
-			"description": "内容。premise 传 Markdown 字符串；其他类型直接传 JSON 数组或对象即可，也兼容传 JSON 字符串。expand_arc 时传 {title, goal, chapters}，title/goal 是结合已完成事实校准后的目标弧规划。",
+			"description": i18n.F("内容。premise 传 Markdown 字符串；其他类型直接传 JSON 数组或对象即可，也兼容传 JSON 字符串。expand_arc 时传 {title, goal, chapters}，title/goal 是结合已完成事实校准后的目标弧规划。"),
 		}).Required(),
 		schema.Property("scale", schema.Enum(i18n.F("规划级别"), "short", "mid", "long")),
 		schema.Property("volume", schema.Int(i18n.F("目标卷序号（仅 expand_arc 时必传）"))),

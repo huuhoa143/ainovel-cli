@@ -350,7 +350,7 @@ func (r *runner) run(ctx context.Context) {
 			return
 		}
 		if previous != nil && facts == *previous {
-			r.fail("导入停滞", fmt.Errorf(i18n.F("动作执行后事实没有变化，下一动作仍为 %q"), NextAction(facts)))
+			r.fail(i18n.F("导入停滞"), fmt.Errorf(i18n.F("动作执行后事实没有变化，下一动作仍为 %q"), NextAction(facts)))
 			return
 		}
 		snapshot := facts
