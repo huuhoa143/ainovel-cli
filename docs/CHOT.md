@@ -71,7 +71,7 @@ một nửa thì nó báo xanh cho cả phần nó không đo.
 
 - [x] Ba endpoint `/style` `/cost` `/settings` — curl cả ca có dữ liệu lẫn `sach-moi` rỗng (200, không 500), 4 trạng thái chi phí, hàng rào traversal cả 3 route
 - [ ] Ba bề mặt Văn phong / Chi phí / Cài đặt dựng xong **hoặc** giữ nhãn "chưa dựng" kèm lý do thật
-- [ ] Sáu chỗ vỡ layout TUI (§4–§9, §11 của `docs/audit/ghep-chu-vi.md`)
+- [x] Sáu chỗ vỡ layout TUI (§4–§9, §11) — kèm `wrapText` giờ ngắt Ở BIÊN TỪ thay vì giữa từ, có `TestWrapTextKhongXeGiuaTu` canh
 - [x] `khế ước chương` nghiệm thu xuyên `vi.json` + `assets/prompts/` + README/DESIGN — ĐO ĐƯỢC: `vi.json` 7 khế-ước / **0** hợp-đồng ở nghĩa B / 10 `contract` giữ ở nghĩa A; 4 dòng cực âm trong prompt còn nguyên
 - [x] Ba chỗ hở bộ quét i18n đã siết — điểm neo 7→45, miễn trừ xuống độ mịn TRƯỜNG, luật 3 lan tới điểm bất động; mỗi luật có bằng chứng hoàn nguyên
 - [ ] `web-visual.md` §4.5 — `ThanhTren.tsx:111` bỏ `id` của tác phẩm

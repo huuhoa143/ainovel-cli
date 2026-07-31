@@ -174,8 +174,11 @@ func TestHelpNgatDongLaiKhiDoiBeRong(t *testing.T) {
 	if longest == "" {
 		t.Fatal("không tìm được mô tả lệnh nào")
 	}
-	// Ghép liền, bỏ mọi khoảng trắng/xuống dòng: wrapText có thể ngắt GIỮA từ
-	// ("dùng" → "dù" + "ng") nên so theo dòng sẽ báo động giả.
+	// Ghép liền, bỏ mọi khoảng trắng/xuống dòng: bài kiểm này chỉ hỏi "có mất chữ
+	// không", nên nó cố ý KHÔNG phụ thuộc chỗ ngắt.
+	//
+	// Trước đây wrapText ngắt theo ký tự nên còn xé GIỮA từ ("dùng" → "dù" + "ng");
+	// giờ đã ngắt ở biên từ, và chính bất biến đó do TestWrapTextKhongXeGiuaTu canh.
 	body := strings.Join(strings.Fields(renderHelpText(paddedModalContentWidth(
 		func() int { w, _ := reportModalSize(resizeW, 40); return w }()))), "")
 	for _, word := range strings.Fields(longest) {
