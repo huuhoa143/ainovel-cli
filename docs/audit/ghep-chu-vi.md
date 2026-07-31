@@ -10,6 +10,60 @@ chỗ nào trùng thì nói rõ là **xác nhận sống** hay **phát hiện m�
 
 ---
 
+---
+
+## TRẠNG THÁI SỬA (cập nhật 2026-07-31, lượt sửa sau lượt đo)
+
+| Mục | Trạng thái | Sửa ở đâu |
+|---|---|---|
+| §1 mất chữ ở mối ngắt dòng | **ĐÃ SỬA** (lead, `d3a8c02`) — bề rộng gom về một hàm `eventContentWidth()`; nghiệm thu bằng phép GHÉP LẠI, hoàn nguyên thì 5/7 bề rộng đỏ | `model.go` |
+| §2 `Khôi phục sáng tác: Khôi phục:` | **ĐÃ SỬA** (lead) — `恢复创作: ` → `Tiếp tục sáng tác — ` | `vi.json` |
+| §3 `hàng đợi Gia công` hoa giữa câu | **ĐÃ SỬA** (lead, `dd51053`) — dịch CẢ CÂU cho từng luồng | `vi.json` |
+| §4 `Chờ khôi phục Chờ khôi phục:` | **ĐÃ SỬA** — bỏ tiền tố trùng nhãn khỏi 2 giá trị `待恢复：…`; thêm hạn mức 2 dòng nên giá trị không còn bị cắt `...` | `vi.json`, `panels_sidebar.go` |
+| §5 tiêu đề `Trợ giúp lệnh` hai lần | **ĐÃ SỬA** — bỏ tiêu đề trong thân, giữ ở viền khung | `command_help.go` |
+| §6 ngắt giữa âm tiết + chỗ giữ hai ngôn ngữ | **ĐÃ SỬA** — `wrapText` ngắt ở BIÊN TỪ (lớp fix, không phải ca lẻ); chỗ giữ về một token: `<guide>`, `[direction]` | `report.go`, `vi.json` |
+| §7 `Usage:` / `alias:` tiếng Anh hardcode | **ĐÃ SỬA** — `i18n.F("用法：")` / `i18n.F("别名：")` theo đúng quy ước `用法：` repo đã có | `command_help.go`, `command_palette.go`, `vi.json` |
+| §8 cột giá trị so le + tràn vào cột nhãn | **ĐÃ SỬA** — dòng tiếp THỤT VÀO (lớp fix cho cả 9/27 nhãn vượt cột); `运行态` → `Trạng thái` (10 cột, thẳng hàng) | `panels_sidebar.go`, `vi.json` |
+| §9 đường dẫn bị xé hai dòng | **ĐÃ SỬA** — nhãn và đường dẫn ở hai dòng riêng | `command_config.go` |
+| §10 lớp 4 (văn dịch: `thời gian thực`/`tiêm`/`nhập bất kỳ`…) | **CHƯA SỬA** — không nằm trong phạm vi lượt sửa này, để nguyên có chủ đích | — |
+| §11 lớp 1 + 6 | **SỬA MỘT PHẦN** — xem bảng chi tiết dưới | |
+| §12 bề rộng tối thiểu | **KHÔNG SỬA, theo yêu cầu** — đây là quyết định sản phẩm. Đo lại: xem dưới | — |
+
+### §11 chi tiết
+
+| Mục | Trạng thái |
+|---|---|
+| a. `eval` hoa / `serve` thường trong cùng `--help` | **ĐÃ SỬA** — hạ 8 mô tả cờ `eval` về chữ thường (đúng quy ước Go, và khớp `serve` vốn không sửa được vì thuộc agent khác) |
+| b. `Test kết nối` | **ĐÃ SỬA** → `Thử kết nối` (11 cột, vẫn thẳng cột giá trị 14) |
+| c. `Esc xóa input` | **ĐÃ SỬA** → `Esc xóa ô nhập` (3 msgid) |
+| d. `Provider` / `model` hoa-thường | **KHÔNG SỬA — đo rồi quyết định không sửa.** Đếm toàn catalog: `Provider` 12 / `provider` 15, `Model` 19 / `model` 51. Lệch trải trên ~97 chỗ và **nhiều chỗ hoa là hoa ĐẦU CÂU, đúng**. Chuẩn hóa mù sẽ tạo lỗi mới; cần một lượt soát từng chỗ, là việc riêng |
+| e. `AI-Powered Novel Creation Engine` | **KHÔNG SỬA** — câu tagline dưới logo, thuộc nhận diện sản phẩm. Cùng loại quyết định với §12, để lead quyết |
+| f. `vui lòng` → `hãy` | **ĐÃ SỬA** 2 chỗ đã bắt được trên màn (cổng bề rộng terminal; lỗi headless). 14 chỗ `vui lòng` còn lại chưa soát từng chỗ |
+| g. `Usage of serve:` / `flag provided but not defined:` / `(default -1)` | **KHÔNG SỬA ĐƯỢC** — chuỗi của Go stdlib, không thuộc catalog |
+
+### §12 đo lại ở bề rộng tối thiểu (100 cột), sau khi sửa
+
+| Dòng | Rộng | Dư |
+|---|---|---|
+| `<> Can thiệp thời gian thực  Điều chỉnh hướng đi cốt truyện bất kỳ lúc nào trong quá trình sáng tác` | 99 | **1 cột** |
+| `Tab chuyển chế độ · Chế độ bắt đầu nhanh nhấn Enter để sáng tác · Chế độ đồng sáng tác nhấn Enter để` | 100 | **0 cột** (đã xuống dòng) |
+
+Bản Trung của dòng đầu (`<> 实时干预  创作过程中随时调整剧情走向`) chỉ **39 cột** → tỉ lệ **2,54×**, cao nhất đo được
+trong repo. **Đề xuất cho lead** (không tự làm): hoặc nâng cổng bề rộng tối thiểu 100 → 104, hoặc rút bản dịch
+(`Can thiệp thời gian thực` → `Can thiệp tức thời`, bớt 8 cột). Thêm một chữ vào một trong hai msgid của dòng đó
+là dòng bị cắt ở đúng bề rộng mà app tự cho phép.
+
+### Cửa kiểm sau khi sửa
+
+`go build ./...` sạch · `go vet ./...` sạch · `go test -count=1 ./...` = **30 gói ok, 0 FAIL** (y như mốc trước khi sửa).
+
+Hai bản sửa lớp (§6, §8) đều có hồi quy **và đã kiểm chiều đỏ**: hoàn nguyên `wrapText` về ngắt-theo-ký-tự →
+`TestWrapTextKhongXeGiuaTu` đỏ; bỏ phần thụt dòng tiếp → `TestSidebarDongTiepPhaiThutVao` đỏ, báo đúng hai dòng
+bị hiểu thành nhãn. `TestWrapTextVanNgatCungChuHan` giữ đường tiếng Trung (không có khoảng trắng → vẫn ngắt cứng,
+không mất chữ).
+
+---
+
 ## 0. Số liệu thu được — con số quyết định giá trị báo cáo
 
 | Đường thu | Thực hiện | Chuỗi ghép thu được (đoạn phân biệt) |

@@ -71,6 +71,50 @@ export function tinhTrangHoSo<T>(tai: TaiVe<T>): React.ReactNode | null {
 }
 
 /**
+ * Trạng thái tải cho ba bề mặt đọc-một-endpoint (Văn phong / Chi phí / Cài đặt).
+ *
+ * Khác `tinhTrangHoSo` ở đúng hai chỗ, và cả hai đều là chỗ nói thật:
+ *
+ *  1. Ca lỗi mang TIÊU ĐỀ và LỜI GIẢI, không chỉ một dòng đỏ. Câu của server nói
+ *     được "chuyện gì" nhưng không nói được "điều này KHÔNG có nghĩa là tác phẩm
+ *     chưa có dữ liệu" — mà đó đúng là kết luận sai mà người vận hành sẽ tự rút
+ *     ra. Ba bề mặt này rỗng-vì-chưa-chạy nhiều hơn hẳn các bề mặt khác, nên hai
+ *     ca đó phải tách nhau rõ hơn.
+ *
+ *  2. `!du` KHÔNG gộp vào "đang tải". `tinhTrangHoSo` trả câu "đang tải" cho cả
+ *     hai, nên khi `du` vắng mà không có lời gọi nào đang bay — chưa chọn tác
+ *     phẩm — bề mặt quay vòng vĩnh viễn. Một khoảng chờ không bao giờ kết thúc là
+ *     lỗi, cùng hạng với bề mặt trống trơn: cả hai đều làm người dùng chờ một thứ
+ *     sẽ không tới.
+ */
+export function tinhTrangNguon<T>(tai: TaiVe<T>): React.ReactNode | null {
+  if (tai.loi) {
+    return (
+      <section className="sect">
+        <h2>{GIAI_THICH.nguonKhongDocDuocTieuDe}</h2>
+        <p className="trongSect">{GIAI_THICH.nguonKhongDocDuoc}</p>
+        <p className="loiDoc">{tai.loi}</p>
+      </section>
+    );
+  }
+  if (tai.dangTai) {
+    return (
+      <section className="sect">
+        <p className="trongSect">{CHU.dangTai}</p>
+      </section>
+    );
+  }
+  if (!tai.du) {
+    return (
+      <section className="sect">
+        <p className="trongSect">{GIAI_THICH.chuaChonTacPham}</p>
+      </section>
+    );
+  }
+  return null;
+}
+
+/**
  * Câu cho một mục rỗng, phân biệt `null` với `[]`.
  *
  * `muc` là danh từ ghép vào câu: "nhân vật nào", "luật thế giới nào".

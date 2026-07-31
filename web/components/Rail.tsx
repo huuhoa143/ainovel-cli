@@ -204,6 +204,7 @@ export function Rail({
         khu={khu}
         onChonKhu={onChonKhu}
         nguon={hoSo?.vanPhong}
+        chuGiai={GIAI_THICH.railVanPhong}
         viSaoThieu={GIAI_THICH.thieuEndpointVanPhong}
       />
 
@@ -228,6 +229,7 @@ export function Rail({
         khu={khu}
         onChonKhu={onChonKhu}
         nguon={hoSo?.chiPhi}
+        chuGiai={GIAI_THICH.railChiPhi}
         viSaoThieu={GIAI_THICH.thieuEndpointChiPhi}
       />
       <MucDi
@@ -244,6 +246,7 @@ export function Rail({
         khu={khu}
         onChonKhu={onChonKhu}
         nguon={hoSo?.caiDat}
+        chuGiai={GIAI_THICH.railCaiDat}
         viSaoThieu={GIAI_THICH.thieuEndpointCaiDat}
       />
     </nav>
@@ -340,6 +343,7 @@ function MucNguon({
   khu,
   onChonKhu,
   nguon,
+  chuGiai,
   viSaoThieu,
 }: {
   nhan: string;
@@ -348,11 +352,14 @@ function MucNguon({
   khu: Khu;
   onChonKhu: (k: Khu) => void;
   nguon: TinhTrangNguon | undefined;
+  /** Phạm vi của bề mặt — điều không đọc được từ tên mục. */
+  chuGiai: string;
   viSaoThieu: string;
 }) {
   if (nguon === 'thieu-endpoint') {
     return <MucChuaDung nhan={nhan} ky={ky} viSao={viSaoThieu} />;
   }
+  const trong = nguon === 'co-route';
   return (
     <MucDi
       nhan={nhan}
@@ -360,8 +367,11 @@ function MucNguon({
       di={di}
       khu={khu}
       onChonKhu={onChonKhu}
-      chuGiai={nguon === 'co-route' ? GIAI_THICH.coRouteChuaCoNguon : undefined}
-      nhanPhu={nguon === 'co-route' ? CHU.chuaCoSoLieu : undefined}
+      // Ca rỗng ghép HAI câu: phạm vi bề mặt vẫn cần đọc được, và lời báo trước
+      // thêm vào chứ không thay thế. Thay thế thì người vận hành mất cách biết khu
+      // này để làm gì, đúng lúc họ đang cân nhắc có nên vào hay không.
+      chuGiai={trong ? `${chuGiai} — ${GIAI_THICH.coRouteChuaCoNguon}` : chuGiai}
+      nhanPhu={trong ? CHU.chuaCoSoLieu : undefined}
     />
   );
 }

@@ -107,8 +107,23 @@ export function ThanhTren({
                           {tt.ky}
                         </span>
                       </span>
+                      {/* `id` hiện LUÔN, kể cả khi tác phẩm đã có tên.
+                          Bản trước là `b.name ? b.name : <em>{b.id}</em>` — bỏ hẳn
+                          id khi có tên. Hai tác phẩm ở hai thư mục khác nhau mà
+                          trùng tên khi đó hiện y hệt nhau, và người vận hành mở sai
+                          tác phẩm mà không có cách nào biết.
+                          `id` là tên thư mục và cũng là khoá trong URL (`?tp=`),
+                          nên nó là thứ duy nhất phân biệt được hai dòng — đây là
+                          lỗi về DỮ LIỆU, không phải về hình. */}
                       <span className="ten">
-                        {b.name ? b.name : <em>{b.id}</em>}
+                        {b.name ? (
+                          <>
+                            <span className="nb">{b.name}</span>
+                            <span className="ma">{b.id}</span>
+                          </>
+                        ) : (
+                          <em>{b.id}</em>
+                        )}
                       </span>
                       <span className="sl">
                         {tienDo(b.completed_chapters, b.total_chapters)}

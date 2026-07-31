@@ -3270,3 +3270,31 @@ div:has(> .qcrow) {
     display: block;
   }
 }
+
+/* ── bộ chọn tác phẩm: tên + id, hai dòng ── */
+
+/* `id` hiện cùng tên thay vì thay cho tên — xem ghi chú tại ThanhTren.tsx.
+   Hai DÒNG, không cùng hàng: `.picklist .ten` đang `white-space: nowrap` +
+   `ellipsis`, nên nhồi thêm id vào cùng hàng sẽ cắt mất phần cuối của TÊN để chừa
+   chỗ cho id — tức hi sinh phần mang tin để hiện phần phân biệt. Xuống dòng thì cả
+   hai đọc được, và id là thứ ngắn nên nó không đẩy hàng cao thêm bao nhiêu. */
+.picklist .ten {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.picklist .ten .nb {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Mono và `--ink-3`: id là khoá để đối chiếu, không phải chữ để đọc. Cùng cách
+   `.bangcp td.model .ma` và `.anhchup .m` đã làm với mã máy. */
+.picklist .ten .ma {
+  font: 400 10.5px/1.4 var(--mono);
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -2,38 +2,43 @@
 
 import { layVanPhong } from '@/lib/api';
 import { CHU, GIAI_THICH, nhanTinhTrangLuat } from '@/lib/nhan';
-import type { ArcStyle, CharacterVoice, UserRules } from '@/lib/types';
+import type { ArcStyle, CharacterVoice, UserStyle } from '@/lib/types';
 import { useHoSo } from '@/lib/useHoSo';
 
-import { HoSoKhung, tinhTrangHoSo } from './HoSoKhung';
+import { HoSoKhung, tinhTrangNguon } from './HoSoKhung';
 
 /**
  * Văn phong: engine đang viết theo luật gì.
  *
  * # Bề mặt này có HAI NGUỒN, và trộn chúng lại là lỗi nặng nhất có thể mắc ở đây
  *
- * `meta/style_rules.json` — Editor CHẮT RA từ chương đã viết, ở biên cung
- * (internal/tools/save_arc_summary.go). Nó là MÔ TẢ: "văn của cuốn này hoá ra
- * đang như thế này".
+ * `meta/user_rules.json` — người dùng KHAI, có ngay từ lúc mở sách. Là CHỈ THỊ:
+ * "hãy viết như thế này".
  *
- * `meta/user_rules.json` — người dùng KHAI, có ngay từ lúc mở sách
- * (internal/userrules/service.go). Nó là CHỈ THỊ: "hãy viết như thế này".
+ * `meta/style_rules.json` — Editor CHƯNG RA từ chương đã viết, ở ranh giới cung.
+ * Là MÔ TẢ: "văn của cuốn này hoá ra đang như thế này".
  *
- * Hai thứ đối nhau về chiều nhân quả, và người vận hành mở bề mặt này thường là
- * để đối chiếu đúng hai chiều đó — "tôi dặn thế, nó viết ra thế, lệch ở đâu".
- * Gộp thành một danh sách luật thì câu hỏi đó không còn đặt được. Nên hai nguồn
- * là hai khối, mỗi khối nói rõ mình là loại nào.
+ * Hai thứ ngược chiều nhân quả, và người vận hành mở bề mặt này thường là để đối
+ * chiếu đúng hai chiều đó — "tôi dặn thế, nó viết ra thế, lệch ở đâu". Gộp thành
+ * một danh sách luật thì câu hỏi ấy không còn đặt được, mà đó là câu hỏi duy nhất
+ * chỉ bề mặt này trả lời được.
  *
  * # Vì sao không bọc thẳng `WritingStyleRules` như thiết kế đầu
  *
- * Vì `style_rules.json` chỉ tồn tại SAU biên cung đầu tiên. Một bề mặt chỉ đọc
- * tệp đó sẽ rỗng trơn suốt cả cung đầu của mọi tác phẩm — tức rỗng đúng lúc
- * người vận hành cần nhất, khi họ vừa dặn xong và muốn biết engine có nghe không.
- * Nguồn thứ hai lấp đúng khoảng đó.
+ * Vì `style_rules.json` chỉ tồn tại SAU ranh giới cung đầu tiên. Một bề mặt chỉ
+ * đọc tệp đó sẽ rỗng trơn suốt cả cung đầu của mọi tác phẩm — rỗng đúng lúc người
+ * vận hành cần nhất, khi họ vừa dặn xong và muốn biết engine có nghe không. Nguồn
+ * thứ hai lấp đúng khoảng đó.
+ *
+ * # Thứ tự hai khối, và vì sao chỉ thị đứng trước
+ *
+ * Chỉ thị có trước theo thời gian, tồn tại ở mọi tác phẩm kể cả tác phẩm chưa viết
+ * chương nào, và nó là mặt người vận hành sửa được. Khối mô tả đứng sau để đọc như
+ * một câu trả lời cho khối trên.
  */
 export function VanPhong({ tacPham }: { tacPham: string | undefined }) {
   const tai = useHoSo(tacPham, layVanPhong);
-  const tt = tinhTrangHoSo(tai);
+  const tt = tinhTrangNguon(tai);
 
   const arc = tai.du?.arc_style ?? null;
   const khai = tai.du?.user_rules ?? null;
@@ -47,10 +52,10 @@ export function VanPhong({ tacPham }: { tacPham: string | undefined }) {
               `warnings` — nên ca "đọc được mà hỏng" KHÔNG đi qua nhánh lỗi fetch,
               và nếu chỉ bắt lỗi fetch thì nó biến mất không dấu vết. */}
           {canhBao && canhBao.length > 0 ? (
-            <section className="canhbao" aria-label={GIAI_THICH.vpNguonHong}>
+            <section className="canhbao" aria-label={GIAI_THICH.nguonKhongDocDuocTieuDe}>
               <h2>
                 <span aria-hidden="true">■</span>
-                {GIAI_THICH.vpNguonHong} · {canhBao.length}
+                {GIAI_THICH.nguonKhongDocDuocTieuDe} · {canhBao.length}
               </h2>
               <ul>
                 {canhBao.map((c, i) => (
@@ -62,12 +67,20 @@ export function VanPhong({ tacPham }: { tacPham: string | undefined }) {
 
           {arc === null && khai === null ? (
             <section className="sect">
-              <p className="trongSect">{GIAI_THICH.vpChuaCoNguonNao}</p>
+              <p className="trongSect">
+                {GIAI_THICH.nguonChuaGhi(
+                  GIAI_THICH.vanPhongTepNguon,
+                  GIAI_THICH.vanPhongKhiNao,
+                )}
+              </p>
             </section>
           ) : (
             <>
+              <section className="sect">
+                <p className="trongSect">{GIAI_THICH.vanPhongHaiNguon}</p>
+              </section>
               <KhoiKhai khai={khai} />
-              <KhoiArc arc={arc} />
+              <KhoiChung arc={arc} />
             </>
           )}
         </>
@@ -76,19 +89,18 @@ export function VanPhong({ tacPham }: { tacPham: string | undefined }) {
   );
 }
 
-/**
- * Luật người dùng khai — CHỈ THỊ.
- *
- * Đặt TRƯỚC khối Editor chắt ra, và thứ tự đó có lý: chỉ thị có trước theo thời
- * gian, tồn tại ở mọi tác phẩm kể cả tác phẩm chưa viết chương nào, và nó là mặt
- * mà người vận hành sửa được. Khối mô tả đứng sau để đọc như một câu trả lời.
- */
-function KhoiKhai({ khai }: { khai: UserRules | null }) {
+/** Luật người dùng khai — CHỈ THỊ. */
+function KhoiKhai({ khai }: { khai: UserStyle | null }) {
   if (khai === null) {
     return (
       <section className="sect">
-        <h2>{CHU.vpLuatKhai}</h2>
-        <p className="trongSect">{GIAI_THICH.vpChuaMoQuaHost}</p>
+        <h2>{CHU.luatDaKhai}</h2>
+        <p className="trongSect">
+          {GIAI_THICH.nguonChuaGhi(
+            GIAI_THICH.vanPhongKhaiTepNguon,
+            GIAI_THICH.vanPhongKhaiKhiNao,
+          )}
+        </p>
       </section>
     );
   }
@@ -98,127 +110,144 @@ function KhoiKhai({ khai }: { khai: UserRules | null }) {
   const tuMoi = khai.fatigue_words ? Object.entries(khai.fatigue_words) : [];
   const khaiTu = khai.declared_by ?? [];
   const chuaChac = khai.uncertain ?? [];
+  const rong =
+    cumCam.length === 0 &&
+    kyCam.length === 0 &&
+    tuMoi.length === 0 &&
+    chuaChac.length === 0 &&
+    !khai.preferences &&
+    !khai.genre;
 
   return (
     <section className="sect">
       <h2>
-        {CHU.vpLuatKhai} · <span className="phu">{CHU.vpChiThi}</span>
+        {CHU.luatDaKhai} · <span className="phu">{CHU.chiThi}</span>
       </h2>
-      <p className="steerhint">{GIAI_THICH.vpNguonKhai}</p>
+      <p className="steerhint">{GIAI_THICH.vanPhongNguonKhai}</p>
 
-      {/* `degraded` là tin vận hành thật, không phải chi tiết nội bộ: một nguồn
-          chuẩn hoá thất bại và đã bị hạ thành `preferences` thô, nên phần luật
-          máy-kiểm-được của nó KHÔNG còn được máy kiểm — chỉ mô hình đọc. Người
-          vận hành đọc "đã khai cụm từ cấm" mà engine không cưỡng chế nó nữa thì
-          họ cần biết. */}
+      {/* `degraded` là tin vận hành thật: phần luật máy-kiểm-được của một nguồn
+          KHÔNG còn được cưỡng chế nữa. Người vận hành đọc "đã khai cụm từ cấm" mà
+          engine không chặn thì họ cần biết vì sao. */}
       {khai.status === 'degraded' ? (
         <p className="vphacap">
           <span className="ky" aria-hidden="true">
             ■
           </span>
           <span>
-            <strong>{nhanTinhTrangLuat(khai.status)}.</strong> {GIAI_THICH.vpHaCap}
+            <strong>{nhanTinhTrangLuat(khai.status)}.</strong> {GIAI_THICH.vanPhongHaCap}
           </span>
         </p>
       ) : null}
 
-      <dl className="kv kvvp">
-        {khai.genre ? (
-          <>
-            <dt>{CHU.vpTheLoai}</dt>
-            <dd>{khai.genre}</dd>
-          </>
-        ) : null}
-        {khaiTu.length > 0 ? (
-          <>
-            <dt title={GIAI_THICH.vpKhaiTuDay}>{CHU.vpKhaiTu}</dt>
-            <dd className="m">{khaiTu.join(' · ')}</dd>
-          </>
-        ) : null}
-      </dl>
+      {rong ? (
+        <p className="trongSect">
+          {GIAI_THICH.nguonCoMaRong(GIAI_THICH.vanPhongKhaiTepNguon, 'luật')}
+        </p>
+      ) : (
+        <>
+          <dl className="kv kvvp">
+            {khai.genre ? (
+              <>
+                <dt>{CHU.theLoai}</dt>
+                <dd>{khai.genre}</dd>
+              </>
+            ) : null}
+            {khaiTu.length > 0 ? (
+              <>
+                <dt title={GIAI_THICH.vanPhongKhaiTuDay}>{CHU.khaiTu}</dt>
+                <dd className="m">{khaiTu.join(' · ')}</dd>
+              </>
+            ) : null}
+          </dl>
 
-      {cumCam.length > 0 ? (
-        <div className="vpnhom">
-          <h3>{CHU.vpCumTuCam}</h3>
-          <ul className="vpthe">
-            {cumCam.map((c, i) => (
-              <li key={i}>{c}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+          {cumCam.length > 0 ? (
+            <div className="vpnhom">
+              <h3>{CHU.cumTuCam}</h3>
+              <ul className="vpthe">
+                {cumCam.map((c, i) => (
+                  <li key={i}>{c}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
-      {/* Ký tự cấm hiện dưới dạng mono và tách rời nhau: phần lớn là dấu câu
-          (`—`, `…`, `"`) và một danh sách nối bằng `·` sẽ không phân biệt được
-          đâu là ký tự bị cấm, đâu là dấu nối của giao diện. */}
-      {kyCam.length > 0 ? (
-        <div className="vpnhom">
-          <h3>{CHU.vpKyTuCam}</h3>
-          <ul className="vpthe vpky">
-            {kyCam.map((c, i) => (
-              <li key={i}>{c}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+          {/* Mỗi ký tự một chip mono riêng: phần lớn là dấu câu (— … " ) và một
+              danh sách nối bằng `·` sẽ không phân biệt được đâu là ký tự bị cấm,
+              đâu là dấu nối của giao diện. */}
+          {kyCam.length > 0 ? (
+            <div className="vpnhom">
+              <h3>{CHU.kyTuCam}</h3>
+              <ul className="vpthe vpky">
+                {kyCam.map((c, i) => (
+                  <li key={i}>{c}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
-      {/* Từ mỏi KHÔNG phải danh sách cấm, và nhãn phải nói ra điều đó: nó là
-          hạn mức "tối đa mấy lần MỖI CHƯƠNG". Xếp chung với cụm từ cấm rồi để
-          người đọc tự suy là cách một hạn mức bị đọc thành một lệnh cấm. */}
-      {tuMoi.length > 0 ? (
-        <div className="vpnhom">
-          <h3>{CHU.vpTuMoi}</h3>
-          <p className="steerhint">{GIAI_THICH.vpTuMoiGiai}</p>
-          <ul className="vpmoi">
-            {tuMoi.map(([tu, hanMuc]) => (
-              <li key={tu}>
-                <span className="tu">{tu}</span>
-                <span className="han">{CHU.vpToiDaMoiChuong(hanMuc)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+          {/* Từ mỏi KHÔNG phải danh sách cấm, và nhãn phải nói ra điều đó: nó là
+              hạn mức mỗi chương. Xếp chung với cụm từ cấm rồi để người đọc tự suy
+              là cách một hạn mức bị đọc thành một lệnh cấm. */}
+          {tuMoi.length > 0 ? (
+            <div className="vpnhom">
+              <h3>{CHU.tuMoi}</h3>
+              <p className="steerhint">{GIAI_THICH.vanPhongTuMoi}</p>
+              <ul className="vpmoi">
+                {tuMoi.map(([tu, hanMuc]) => (
+                  <li key={tu}>
+                    <span className="tu">{tu}</span>
+                    <span className="han">{CHU.toiDaMoiChuong(hanMuc)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
-      {/* `--ui`, không serif: đây là chữ người vận hành viết cho engine, không
-          phải văn nằm trong bộ truyện xuất bản. Phép thử ở DESIGN.md:64. */}
-      {khai.preferences ? (
-        <div className="vpnhom">
-          <h3>{CHU.vpUaThich}</h3>
-          <p className="vpvan">{khai.preferences}</p>
-        </div>
-      ) : null}
+          {/* `--ui`, không serif: đây là chữ người vận hành viết cho engine, không
+              phải văn nằm trong bộ truyện xuất bản. Phép thử ở DESIGN.md:64. */}
+          {khai.preferences ? (
+            <div className="vpnhom">
+              <h3>{CHU.uaThich}</h3>
+              <p className="vpvan">{khai.preferences}</p>
+            </div>
+          ) : null}
 
-      {chuaChac.length > 0 ? (
-        <div className="vpnhom">
-          <h3>{CHU.vpChuaChacChan}</h3>
-          <p className="steerhint">{GIAI_THICH.vpChuaChacGiai}</p>
-          <ul className="vpthe vpngo">
-            {chuaChac.map((c, i) => (
-              <li key={i}>{c}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+          {chuaChac.length > 0 ? (
+            <div className="vpnhom">
+              <h3>{CHU.chuaChacChan}</h3>
+              <p className="steerhint">{GIAI_THICH.vanPhongChuaChac}</p>
+              <ul className="vpthe vpngo">
+                {chuaChac.map((c, i) => (
+                  <li key={i}>{c}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </>
+      )}
     </section>
   );
 }
 
 /**
- * Luật Editor chắt ra ở biên cung — MÔ TẢ.
+ * Luật Editor chưng ra ở ranh giới cung — MÔ TẢ.
  *
  * `volume`/`arc` không phải nhãn trang trí mà là CỬA SỔ của cả khối: bộ luật này
- * mô tả cung vừa ĐÓNG. Dây chuyền đã sang cung sau thì nó vẫn là bộ mới nhất
- * nhưng không phải bộ của chương đang viết, và câu đó phải đọc được ngay trên bề
- * mặt — không nhét vào `title`, vì một cửa sổ mà phải hover mới biết thì phần lớn
- * người đọc sẽ không biết.
+ * mô tả cung vừa ĐÓNG. Câu đó phải đọc được ngay trên bề mặt, không nhét vào
+ * `title` — một cửa sổ mà phải trỏ chuột mới biết thì phần lớn người đọc sẽ không
+ * biết (cùng lập luận đã viết cho đầu cột của bảng Tổ sản xuất).
  */
-function KhoiArc({ arc }: { arc: ArcStyle | null }) {
+function KhoiChung({ arc }: { arc: ArcStyle | null }) {
   if (arc === null) {
     return (
       <section className="sect">
-        <h2>{CHU.vpEditorChatRa}</h2>
-        <p className="trongSect">{GIAI_THICH.vpChuaQuaBienCung}</p>
+        <h2>{CHU.editorChungRa}</h2>
+        <p className="trongSect">
+          {GIAI_THICH.nguonChuaGhi(
+            GIAI_THICH.vanPhongTepNguon,
+            GIAI_THICH.vanPhongKhiNao,
+          )}
+        </p>
       </section>
     );
   }
@@ -231,25 +260,36 @@ function KhoiArc({ arc }: { arc: ArcStyle | null }) {
   return (
     <section className="sect">
       <h2>
-        {CHU.vpEditorChatRa} · <span className="phu">{CHU.vpMoTa}</span>
+        {CHU.editorChungRa} · <span className="phu">{CHU.moTa}</span>
+        {/* `volume === 0` nghĩa là chưa gắn được tập/cung, nên nhãn phẳng chỉ có
+            cung. Kiểm `> 0`, không kiểm falsy — cùng luật, chỉ khác chỗ: ở đây 0
+            THẬT SỰ là "không biết", và server đã nói vậy ở model.go:272. */}
+        <span className="phu">
+          {arc.volume > 0
+            ? CHU.chotOCung(arc.volume, arc.arc)
+            : CHU.chotOCungPhang(arc.arc)}
+        </span>
       </h2>
-      <p className="steerhint">{GIAI_THICH.vpNguonArc}</p>
+      <p className="steerhint">{GIAI_THICH.vanPhongNguonChung}</p>
       <p className="vpcuaso">
         <span className="ky" aria-hidden="true">
           ◆
         </span>
-        <span>{GIAI_THICH.vpCuaSoArc(arc.volume, arc.arc)}</span>
+        <span>{GIAI_THICH.vanPhongCuaSo}</span>
       </p>
 
-      {/* Tệp có mà chưa chắt được luật nào KHÁC với chưa có tệp — và ở đây ta
+      {/* Tệp CÓ mà chưa chưng được luật nào KHÁC với chưa có tệp — và ở đây ta
           BIẾT là có tệp, vì `arc_style` không null. Nói đúng ca đó. */}
       {rong ? (
-        <p className="trongSect">{GIAI_THICH.vpDaGhiMaRong}</p>
+        <p className="trongSect">
+          {GIAI_THICH.nguonCoMaRong(GIAI_THICH.vanPhongTepNguon, 'quy tắc')}
+        </p>
       ) : (
         <>
           {loiKe.length > 0 ? (
             <div className="vpnhom">
-              <h3>{CHU.vpLoiKe}</h3>
+              <h3>{CHU.loiKe}</h3>
+              <p className="steerhint">{GIAI_THICH.vanPhongLoiKe}</p>
               <ol className="vpluat">
                 {loiKe.map((l, i) => (
                   <li key={i}>{l}</li>
@@ -260,7 +300,7 @@ function KhoiArc({ arc }: { arc: ArcStyle | null }) {
 
           {giong.length > 0 ? (
             <div className="vpnhom">
-              <h3>{CHU.vpGiongNhanVat}</h3>
+              <h3>{CHU.giongNhanVat}</h3>
               <ul className="vpgiong">
                 {giong.map((g) => (
                   <MotGiong key={g.name} g={g} />
@@ -269,12 +309,13 @@ function KhoiArc({ arc }: { arc: ArcStyle | null }) {
             </div>
           ) : null}
 
-          {/* Điều cấm mang `--amber` chứ không `--red`: đỏ trong hệ này là LỖI
-              đã xảy ra (DESIGN.md:48), còn đây là một ràng buộc đang có hiệu lực.
-              Tô đỏ một danh sách luật bình thường làm màu lỗi mất nghĩa. */}
+          {/* Danh sách cấm mang `--amber`, KHÔNG `--red`: đỏ trong hệ này là LỖI
+              đã xảy ra (DESIGN.md:48), còn đây là ràng buộc đang có hiệu lực. Tô
+              đỏ một danh sách luật thường trực làm màu lỗi mất nghĩa chỗ khác. */}
           {cam.length > 0 ? (
             <div className="vpnhom">
-              <h3>{CHU.vpDieuCam}</h3>
+              <h3>{CHU.danhSachCam}</h3>
+              <p className="steerhint">{GIAI_THICH.vanPhongCam}</p>
               <ul className="vpcam">
                 {cam.map((c, i) => (
                   <li key={i}>
@@ -305,7 +346,7 @@ function MotGiong({ g }: { g: CharacterVoice }) {
           ))}
         </ul>
       ) : (
-        <p className="trongSect">{GIAI_THICH.vpGiongRong}</p>
+        <p className="trongSect">{GIAI_THICH.vanPhongGiongRong}</p>
       )}
     </li>
   );
@@ -314,20 +355,23 @@ function MotGiong({ g }: { g: CharacterVoice }) {
 /**
  * Dòng mô tả — chỉ đếm điều đếm được, và nói rõ số nào thuộc nguồn nào.
  *
- * Không gộp thành một tổng "12 luật": hai nguồn khác bản chất nên một tổng chung
- * là một con số không trả lời câu hỏi nào.
+ * Không gộp thành một tổng "12 quy tắc": hai nguồn khác bản chất nên một tổng
+ * chung là con số không trả lời câu hỏi nào.
  */
-function motTa(arc: ArcStyle | null, khai: UserRules | null): string | undefined {
+function motTa(arc: ArcStyle | null, khai: UserStyle | null): string | undefined {
   const phan: string[] = [];
   if (khai) {
     const n =
       (khai.forbidden_phrases?.length ?? 0) +
       (khai.forbidden_chars?.length ?? 0) +
       Object.keys(khai.fatigue_words ?? {}).length;
-    phan.push(CHU.vpDemKhai(n));
+    if (n > 0) phan.push(CHU.demLuatKhai(n));
   }
   if (arc) {
-    phan.push(CHU.vpDemChatRa(arc.prose?.length ?? 0, arc.dialogue?.length ?? 0));
+    const n = arc.prose?.length ?? 0;
+    if (n > 0) phan.push(CHU.demQuyTac(n));
+    const g = arc.dialogue?.length ?? 0;
+    if (g > 0) phan.push(CHU.demNhanVatCoGiong(g));
   }
   return phan.length > 0 ? phan.join(' · ') : undefined;
 }

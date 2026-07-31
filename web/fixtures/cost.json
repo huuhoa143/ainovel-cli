@@ -1,0 +1,89 @@
+{
+  "state": "ready",
+  "updated_at": "2026-07-30T23:12:44Z",
+  "overall": {
+    "input": 1389000,
+    "output": 301000,
+    "cache_read": 860000,
+    "cache_write": 81000,
+    "cost_usd": 12.44,
+    "saved_usd": 4.13,
+    "cache_capable": true,
+    "cache_breaks": 4
+  },
+  "per_agent": {
+    "architect": {
+      "input": 120000,
+      "output": 18000,
+      "cache_read": 40000,
+      "cache_write": 12000,
+      "cost_usd": 1.42,
+      "saved_usd": 0.31,
+      "cache_capable": true,
+      "cache_breaks": 1
+    },
+    "writer": {
+      "input": 890000,
+      "output": 210000,
+      "cache_read": 640000,
+      "cache_write": 48000,
+      "cost_usd": 7.86,
+      "saved_usd": 2.94,
+      "cache_capable": true,
+      "cache_breaks": 3
+    },
+    "editor": {
+      "input": 310000,
+      "output": 62000,
+      "cache_read": 180000,
+      "cache_write": 21000,
+      "cost_usd": 2.71,
+      "saved_usd": 0.88,
+      "cache_capable": true,
+      "cache_breaks": 0
+    },
+    "arbiter": {
+      "input": 42000,
+      "output": 5200,
+      "cache_read": 0,
+      "cache_write": 0,
+      "cost_usd": 0.19,
+      "saved_usd": 0,
+      "cache_capable": false,
+      "cache_breaks": 0
+    }
+  },
+  "per_model": {
+    "gemini-2.5-pro": {
+      "input": 1010000,
+      "output": 248000,
+      "cache_read": 720000,
+      "cache_write": 62000,
+      "cost_usd": 10.98,
+      "saved_usd": 3.61,
+      "cache_capable": true,
+      "cache_breaks": 3
+    },
+    "gemini-2.5-flash": {
+      "input": 337000,
+      "output": 47800,
+      "cache_read": 140000,
+      "cache_write": 19000,
+      "cost_usd": 1.46,
+      "saved_usd": 0.52,
+      "cache_capable": true,
+      "cache_breaks": 1
+    },
+    "local-qwen3-32b": {
+      "input": 42000,
+      "output": 5200,
+      "cache_read": 0,
+      "cache_write": 0,
+      "cost_usd": 0,
+      "saved_usd": 0,
+      "cache_capable": false,
+      "cache_breaks": 0
+    }
+  },
+  "missing_assistant_usage": 7
+}

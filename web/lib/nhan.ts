@@ -240,6 +240,40 @@ export function nhanMucQuyHoach(tier: string | undefined): string | undefined {
   return MUC_QUY_HOACH[tier.toLowerCase().trim()] ?? tier;
 }
 
+/**
+ * `domain.AdvanceHoldAfter`: boundary / rewrites_drained
+ * (internal/domain/runtime.go:257–260).
+ *
+ * Nhãn nói MỐC, không dịch chữ: "boundary" trần trụi không cho biết ranh giới của
+ * cái gì, và ở mô hình cuốn-vòng-cung hai tầng thì đó là câu hỏi thật.
+ */
+const MOC_TAM_DUNG: Record<string, string> = {
+  boundary: 'ở ranh giới cung hoặc tập kế tiếp',
+  rewrites_drained: 'khi hàng chờ viết lại rút hết',
+};
+
+export function nhanMocTamDung(after: string | undefined): string | undefined {
+  if (!after) return undefined;
+  return MOC_TAM_DUNG[after.toLowerCase().trim()] ?? after;
+}
+
+/**
+ * `rules.Status`: ready / degraded.
+ *
+ * `degraded` KHÔNG dịch thành "lỗi": nguồn vẫn tới được mô hình, chỉ mất phần
+ * máy-cưỡng-chế-được. Gọi nó là lỗi thì người vận hành đi sửa tệp; gọi đúng thì
+ * họ biết luật vẫn có hiệu lực mềm.
+ */
+const TINH_TRANG_LUAT: Record<string, string> = {
+  ready: 'đã chuẩn hoá',
+  degraded: 'đã hạ cấp thành văn thô',
+};
+
+export function nhanTinhTrangLuat(status: string | undefined): string | undefined {
+  if (!status) return undefined;
+  return TINH_TRANG_LUAT[status.toLowerCase().trim()] ?? status;
+}
+
 /* ── kết luận của Editor trong bản duyệt ──────────────────────────────── */
 
 /**
@@ -649,6 +683,29 @@ export const CHU = {
   loiKe: 'Lối kể',
   giongNhanVat: 'Giọng nhân vật',
   danhSachCam: 'Danh sách cấm',
+  /**
+   * Hai nguồn của bề mặt Văn phong, và hai nhãn phân loại chúng.
+   *
+   * `mô tả` / `chỉ thị` là chỗ nhãn làm việc nặng nhất trên cả bề mặt: hai khối
+   * trông giống nhau (đều là danh sách luật) nhưng ngược chiều nhân quả. Không
+   * gọi tên chiều đó thì người vận hành không đối chiếu được "tôi dặn thế, nó
+   * viết ra thế".
+   */
+  luatDaKhai: 'Luật đã khai',
+  editorChungRa: 'Editor chưng ra',
+  moTa: 'mô tả',
+  chiThi: 'chỉ thị',
+  theLoai: 'Thể loại',
+  cumTuCam: 'Cụm từ cấm',
+  kyTuCam: 'Ký tự cấm',
+  tuMoi: 'Từ mỏi',
+  uaThich: 'Ưa thích',
+  khaiTu: 'Khai từ',
+  chuaChacChan: 'Chưa chắc chắn',
+  /** Hạn mức mỗi chương, KHÔNG phải lệnh cấm — dấu ≤ nói ra điều đó. */
+  toiDaMoiChuong: (n: number) => `≤ ${n}/chương`,
+  demLuatKhai: (n: number) => `${n} luật đã khai`,
+  luatHaCap: 'đã hạ cấp',
   // "chốt ở" chứ không "của": bộ quy tắc được chưng ra ở RANH GIỚI cung đó, và
   // nó vẫn là bộ mới nhất sau khi dây chuyền đi sang cung sau.
   chotOCung: (tap: number, cung: number) => `chốt ở tập ${tap} · cung ${cung}`,
@@ -666,6 +723,14 @@ export const CHU = {
   colTietKiem: 'Tiết kiệm',
   colChiPhi: 'Chi phí',
   tongChung: 'Tổng chung',
+  colTiTrong: 'Tỉ trọng',
+  doTinSoLieu: 'Độ tin của số liệu',
+  luotThieuUsage: 'Lượt thiếu usage',
+  dutDem: 'Đứt đệm',
+  giaThanhChuong: 'Giá thành mỗi chương',
+  capNhat: 'Cập nhật',
+  /** Mẫu số của giá thành, đứng cạnh nó — không phải một chú thích rời. */
+  cuaSoGiaThanh: (chuong: number) => `trên ${chuong} chương đã xong`,
   // Tổng in kèm MẪU SỐ. Một con số tiền trơ không nói được nó cộng trên bao
   // nhiêu chương, và người vận hành sẽ so nó với con số của một tác phẩm khác.
   tongTrenChuong: (tien: string, chuong: number) =>
@@ -686,6 +751,17 @@ export const CHU = {
   chuongDuocCapPhep: 'Đã cấp phép',
   chuaCapPhepChuongNao: 'chưa cấp phép chương nào',
   chiDoc: 'chỉ đọc',
+  /** Nhãn báo trước ở rail: mục vào được, chỉ là chưa có gì bên trong. */
+  chuaCoSoLieu: 'chưa có số liệu',
+  yeuCauKhoiTao: 'Yêu cầu khởi tạo',
+  canThiepConTon: 'Can thiệp còn tồn',
+  phanQuyetKhoiDong: 'Phán quyết khởi động',
+  nguoiQuyHoach: 'Người quy hoạch',
+  viecQuyHoach: 'Việc quy hoạch',
+  maPhanQuyet: 'Mã phán quyết',
+  /** Mốc engine sẽ dừng, không phải "đã dừng" — ý định này còn chưa tiêu thụ. */
+  tamDungSauKhi: (moc: string) => `Sẽ tạm dừng ${moc}`,
+  khoiDongLuc: (luc: string) => `khởi động ${luc}`,
 
   // transport
   congDoan: 'công đoạn',
@@ -956,6 +1032,15 @@ export const GIAI_THICH = {
     `Store chưa có ${tep}. Engine ghi tệp này ${khiNao}, nên tác phẩm chưa qua bước đó thì chưa có gì để đọc. Bề mặt đã dựng — chưa có việc nào đã xảy ra để nó kể.`,
   nguonCoMaRong: (tep: string, muc: string) =>
     `Đã có ${tep} nhưng trong đó chưa có ${muc} nào. Tệp được ghi rồi mà rỗng là một sự thật khác với chưa ghi lần nào, và hai ca đó dẫn tới hai chỗ khác nhau để đi xem.`,
+  /**
+   * Ca thứ tư, và nó là một LỖI của giao diện nếu người dùng thấy nó lâu.
+   *
+   * "Đang tải" mãi mãi là một lời nói dối kiên nhẫn: nó hứa dữ liệu đang trên
+   * đường trong khi không có lời gọi nào đang bay. Ca này chỉ tới được khi chưa
+   * có tác phẩm nào được chọn, nên nó phải nói đúng điều đó thay vì quay vòng.
+   */
+  chuaChonTacPham:
+    'Chưa chọn tác phẩm nào, nên chưa có gì để đọc. Chọn một tác phẩm ở thanh trên.',
   nguonKhongDocDuocTieuDe: 'Không đọc được nguồn của bề mặt này',
   nguonKhongDocDuoc:
     'Câu dưới đây là của server, không phải của giao diện. Engine và studio là hai tiến trình rời nhau: endpoint có thể không có ở bản engine đang chạy, hoặc store đọc lỗi. Đây KHÔNG phải "tác phẩm chưa có dữ liệu" — điều đó chưa biết được.',
@@ -977,6 +1062,39 @@ export const GIAI_THICH = {
   /** Quy tắc chốt ở một cung, dây chuyền đã sang cung khác. */
   vanPhongLechCung: (cungQuyTac: string, cungHienTai: string) =>
     `Quy tắc chốt ở ${cungQuyTac}, dây chuyền hiện ở ${cungHienTai} — bộ này vẫn là bộ đang có hiệu lực, nhưng nó chưa thấy cung đang chạy.`,
+  /* Nguồn thứ hai của bề mặt Văn phong — người dùng KHAI, không phải Editor chưng. */
+  vanPhongKhaiTepNguon: 'meta/user_rules.json',
+  vanPhongKhaiKhiNao: 'khi sách được mở qua Host',
+  /**
+   * Hai nguồn ngược chiều nhân quả, và câu này là lý do bề mặt tách chúng.
+   *
+   * Người vận hành mở Văn phong thường để đối chiếu đúng hai chiều đó — "tôi dặn
+   * thế, nó viết ra thế, lệch ở đâu". Gộp thành một danh sách luật thì câu hỏi ấy
+   * không còn đặt được, và đó là câu hỏi duy nhất mà chỉ bề mặt này trả lời được.
+   */
+  vanPhongHaiNguon:
+    'Hai nguồn ngược chiều nhau: luật đã khai là chỉ thị người vận hành đặt ra trước khi có chữ nào, còn quy tắc Editor chưng ra là mô tả rút từ các chương đã viết. Đọc cạnh nhau để thấy chỗ engine đi lệch khỏi điều đã dặn.',
+  vanPhongNguonKhai:
+    'Người vận hành khai, đã chuẩn hoá. Có ngay từ lúc mở sách, không chờ dây chuyền chạy.',
+  vanPhongNguonChung:
+    'Editor rút ra từ chương đã viết. Chỉ có sau khi dây chuyền đi qua ranh giới cung đầu tiên.',
+  /**
+   * `degraded` không phải chi tiết nội bộ.
+   *
+   * Nó nghĩa là một nguồn chuẩn hoá thất bại và đã bị hạ thành `preferences` thô,
+   * nên phần luật máy-kiểm-được của nguồn đó KHÔNG còn được cưỡng chế — chỉ mô
+   * hình đọc. Người vận hành thấy "đã khai cụm từ cấm" mà engine không chặn nữa
+   * thì họ cần biết vì sao.
+   */
+  vanPhongHaCap:
+    'Một nguồn khai không chuẩn hoá được và đã bị hạ thành văn thô. Phần luật ở nguồn đó không còn được máy cưỡng chế nữa — chỉ mô hình đọc và tự tuân, nên đừng tin nó chặn được như cụm từ cấm bên trên.',
+  /** Hạn mức, KHÔNG phải danh sách cấm — hai thứ khác nhau về hệ quả. */
+  vanPhongTuMoi:
+    'Hạn mức số lần mỗi từ được dùng trong MỘT chương, không phải lệnh cấm. Vượt hạn mức là một vi phạm bị bộ kiểm bắt, còn dùng trong hạn mức thì hợp lệ.',
+  vanPhongChuaChac:
+    'Điều người vận hành dặn mà không quy được thành luật máy kiểm. Chúng vẫn tới mô hình dưới dạng văn, nhưng không có bộ kiểm nào bắt được nếu bị bỏ qua.',
+  vanPhongKhaiTuDay:
+    'Các nguồn đã góp vào bản chuẩn hoá này, theo thứ tự ghi đè: mặc định hệ thống, tệp toàn cục, tệp của dự án, rồi yêu cầu lúc khởi động.',
   vanPhongLoiKe: 'Quy tắc lối kể áp cho toàn bộ văn thuật, không riêng nhân vật nào.',
   vanPhongCam:
     'Những gì Writer không được dùng lại. Editor nêu danh sách này từ chính chỗ đã lặp trong các chương đã viết.',
@@ -986,6 +1104,21 @@ export const GIAI_THICH = {
 
   chiPhiTepNguon: 'meta/usage.json',
   chiPhiKhiNao: 'sau lượt gọi model đầu tiên',
+  /**
+   * Trạng thái thứ TƯ, và nó là trạng thái duy nhất trong bốn cái không được đọc
+   * thành "chưa tốn tiền".
+   *
+   * `UsageStore.Load()` trả `(nil, nil)` cho cả thiếu tệp lẫn schema lệch, nên nếu
+   * server không stat tệp thì hai ca này đọc ra y hệt nhau. Ca này có số liệu THẬT
+   * trên đĩa — chỉ là bản engine đang chạy không đọc được nó — và báo nó thành
+   * "chưa chạy gì" là sai theo đúng hướng nguy hiểm: người vận hành tưởng mình
+   * chưa tốn gì.
+   */
+  chiPhiSchemaCu:
+    'Có số liệu trên đĩa nhưng nó thuộc bản schema cũ, nên bản engine đang chạy bỏ qua và cộng lại từ đầu. Đây KHÔNG phải "chưa tốn tiền" — tiền đã tốn, chỉ là con số cũ không đọc được ở bản này.',
+  /** Cùng câu mà bảng chương đã nói, nhắc lại ở đây vì đây là chỗ người ta tới tìm. */
+  chiPhiKhongTheoChuong:
+    'Store cộng chi phí theo tác tử và theo model, không theo chương — nên không có cột chi phí cho từng chương ở bất cứ bề mặt nào. Con số duy nhất theo chương là giá thành trung bình, tức tổng chia số chương đã xong.',
   /**
    * Vì sao bề mặt này KHÔNG có một con số lớn ở giữa.
    *
@@ -1031,11 +1164,50 @@ export const GIAI_THICH = {
     'Ở chế độ chờ cấp phép, engine dừng trước mỗi chương mới cho tới khi được cấp phép đúng một chương. Số 0 nghĩa là chưa cấp phép chương nào — dây chuyền đang đứng chờ, không phải đang chạy.',
   caiDatCapPhepAuto:
     'Ở chế độ tự động, engine không cần cấp phép từng chương, nên trường này không mang tin gì.',
+  /**
+   * Ý định tạm dừng CHƯA tiêu thụ — tin sắp-xảy-ra, không phải tin đã-xảy-ra.
+   *
+   * Nên câu dùng thể tương lai ("sẽ dừng"). Viết ở thể quá khứ thì người vận hành
+   * đọc thành "dây chuyền đã dừng rồi" và đi tìm nguyên nhân sai chỗ.
+   */
+  caiDatTamDung:
+    'Một ý định tạm dừng đã được ký và engine chưa tiêu thụ. Nó sẽ dừng dây chuyền ở mốc ghi bên dưới, đúng một lần.',
+  caiDatCanThiepConTon:
+    'Ý kiến can thiệp đã ký mà engine chưa xử lý. Nó còn nằm trong store, nên nó sẽ được nạp lại nếu phiên bị ngắt và khởi động lại.',
+  caiDatYeuCau:
+    'Câu người vận hành dặn lúc mở sách. Arbiter dựa vào chính nó để ra phán quyết khởi động, nên đây là sự thật gốc của cả tác phẩm — không phải một ghi chú.',
+  /** Nói ra điều CỐ Ý không có, để không ai đi tìm. */
+  caiDatKhongCoKhoa:
+    'Khoá API và cấu hình nhà cung cấp không nằm trong store nên không có ở đây, và sẽ không được thêm vào: đưa khoá vào một payload HTTP là biến một rò rỉ tiềm năng thành một rò rỉ có sẵn.',
 
-  chuaDungVanPhong:
-    'Chưa dựng vì thiếu nguồn: store giữ văn phong ở meta/style_rules.json (lối kể, giọng từng nhân vật, danh sách cấm) nhưng API chưa có endpoint trả nó.',
-  chuaDungChiPhi:
-    'Chưa dựng vì thiếu nguồn: API chỉ trả tổng chi phí và giá thành trung bình mỗi chương, cả hai đã có ở thanh dưới. Phân tích theo tác tử và theo model nằm trong meta/usage.json, chưa có endpoint trả.',
-  chuaDungCaiDat:
-    'Chưa dựng vì thiếu nguồn: API chưa trả cấu hình phiên chạy. Và studio chỉ đọc store, nên cài đặt sẽ là bề mặt chỉ-đọc cho tới khi engine hợp tác nhận lệnh ghi.',
+  /* ── ba mục rail khi bản engine đang chạy KHÔNG có endpoint ─────────── */
+
+  /**
+   * Ba câu này thay ba câu `chuaDung*` cũ, và chúng nói một điều KHÁC.
+   *
+   * Câu cũ đúng vào lúc nó được viết: bề mặt chưa dựng vì API chưa có endpoint.
+   * Giờ cả ba bề mặt đã dựng và cả ba endpoint đã có, nên chỗ tắc duy nhất còn lại
+   * là BẢN ENGINE ĐANG CHẠY cũ hơn bản web — route trả 404. Giữ câu cũ ở đây sẽ
+   * dạy người vận hành đi chờ tầng web, tức đúng lớp sai mà `MucChuaDung` tồn tại
+   * để tránh, chỉ là lệch sang hướng khác.
+   *
+   * Nên mỗi câu nói cùng ba việc: bề mặt ĐÃ dựng, chỗ tắc nằm ở binary engine, và
+   * việc phải làm là cập nhật engine — không phải chờ ai làm giao diện.
+   */
+  thieuEndpointVanPhong:
+    'Bề mặt đã dựng, nhưng bản engine đang chạy không có endpoint /style (trả 404). Dữ liệu vẫn nằm trong store ở meta/style_rules.json và meta/user_rules.json — cần bản engine mới hơn để đọc ra.',
+  thieuEndpointChiPhi:
+    'Bề mặt đã dựng, nhưng bản engine đang chạy không có endpoint /cost (trả 404). Phân tích theo tác tử và theo model vẫn nằm trong meta/usage.json; tổng và giá thành mỗi chương thì thanh dưới vẫn đọc được.',
+  thieuEndpointCaiDat:
+    'Bề mặt đã dựng, nhưng bản engine đang chạy không có endpoint /settings (trả 404). Cấu hình phiên vẫn nằm trong meta/run.json — cần bản engine mới hơn để đọc ra.',
+
+  /**
+   * Chú giải cho mục VẪN BẤM ĐƯỢC mà biết trước là rỗng.
+   *
+   * Phải nói rõ "vào được", vì nhãn đi kèm nó ("chưa có số liệu") một mình rất dễ
+   * bị đọc thành "đừng bấm". Vào được là điểm chính: bề mặt biết nó rỗng vì sao và
+   * nói ra ba ca khác nhau, còn rail thì không phân biệt được ba ca đó.
+   */
+  coRouteChuaCoNguon:
+    'Endpoint có, nhưng store chưa có dữ liệu cho bề mặt này. Vẫn vào được — bề mặt nói rõ rỗng vì chưa chạy tới đó, vì tệp có mà rỗng, hay vì số liệu thuộc bản cũ.',
 } as const;

@@ -1,0 +1,70 @@
+{
+  "arc_style": {
+    "volume": 3,
+    "arc": 2,
+    "prose": [
+      "Kể sát vai Lâm Thanh; chỉ rời điểm nhìn khi cảnh đổi hẳn địa điểm.",
+      "Cảnh đánh viết theo nhịp ngắn, câu dưới mười hai chữ, không tả đường kiếm bằng tính từ.",
+      "Mỗi chương mở bằng một chi tiết vật chất cụ thể, không mở bằng tổng kết tình hình.",
+      "Nội tâm để lộ qua hành động và vật thể, không viết thẳng tên cảm xúc."
+    ],
+    "dialogue": [
+      {
+        "name": "Lâm Thanh",
+        "rules": [
+          "Câu ngắn, hay bỏ lửng nửa sau khi nói về quá khứ.",
+          "Không bao giờ tự gọi mình là đệ tử Thương Vân."
+        ]
+      },
+      {
+        "name": "Tô Mộ Vân",
+        "rules": [
+          "Nói bằng câu hỏi khi thật ra đang ra lệnh.",
+          "Dùng cách nói của y quán: chẩn, mạch, hoãn."
+        ]
+      },
+      {
+        "name": "Hoắc Liệt",
+        "rules": ["Chửi thề bằng từ vùng biên, không dùng tiếng phổ thông."]
+      },
+      { "name": "Trưởng lão Tạ", "rules": null }
+    ],
+    "taboos": [
+      "\"khí tức bạo phát\" — đã dùng bốn lần trong cung này",
+      "\"trong lòng dâng lên một cảm giác kỳ lạ\"",
+      "Mở chương bằng \"Đêm đó\"",
+      "So sánh ánh mắt với dao, kiếm hoặc băng"
+    ],
+    "updated_at": "2026-07-30T22:41:07Z"
+  },
+  "user_rules": {
+    "status": "degraded",
+    "genre": "tiên hiệp, nhịp chậm, thiên về quan hệ nhân vật",
+    "forbidden_phrases": [
+      "ở một mức độ nào đó",
+      "không thể phủ nhận rằng",
+      "đáng chú ý là",
+      "khẽ nhíu mày"
+    ],
+    "forbidden_chars": ["—", "…", "“", "”", "!"],
+    "fatigue_words": {
+      "bỗng nhiên": 2,
+      "khẽ": 3,
+      "một thoáng": 1,
+      "quả nhiên": 2,
+      "tuy nhiên": 2
+    },
+    "preferences": "Mỗi chương 1500–1800 từ. Nhân vật chính điềm tĩnh kìm nén, không gào thét nội tâm. Tỉ lệ đối thoại cao hơn trung bình một chút — khoảng bốn phần mười. Tiêu đề chương chỉ dùng tiếng Việt, không chêm chữ Hán. Đừng giải thích hệ thống tu luyện bằng đoạn thuyết minh; để nó lộ ra qua việc nhân vật dùng nó.",
+    "declared_by": [
+      "system_defaults",
+      "global:~/.ainovel/rules.md",
+      "project:rules.md",
+      "startup_prompt"
+    ],
+    "uncertain": [
+      "\"nhịp chậm\" — chưa quy được thành luật máy kiểm, để mô hình đọc",
+      "\"không gào thét nội tâm\" — giữ ở dạng văn, không thành từ cấm"
+    ]
+  },
+  "warnings": null
+}

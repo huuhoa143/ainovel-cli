@@ -1,0 +1,22 @@
+{
+  "state": "ready",
+  "writable": false,
+  "started_at": "2026-07-29T18:02:11Z",
+  "provider": "google",
+  "model": "gemini-2.5-pro",
+  "style": "tiên hiệp cổ điển",
+  "planning_tier": "long",
+  "advance_mode": "review",
+  "advance_permit_chapter": 0,
+  "advance_hold": {
+    "after": "rewrites_drained",
+    "reason": "Người vận hành muốn đọc lại cung 2 trước khi engine mở cung 3."
+  },
+  "pending_steer": "Lâm Thanh nên do dự lâu hơn trước khi rút kiếm ở chương 48 — hiện tại quyết định quá nhanh so với tính cách đã dựng.",
+  "start_prompt": "Viết một bộ tiên hiệp dài khoảng 300 chương. Nhân vật chính là Lâm Thanh, một đệ tử ngoại môn bị đuổi khỏi Thương Vân sau khi bị vu oan đánh cắp đan phương. Trọng tâm không phải leo cảnh giới mà là quan hệ giữa Lâm Thanh và ba người từng đứng về phía mình rồi lần lượt rời đi vì những lý do chính đáng. Nhịp chậm, ưu tiên cảnh đối thoại hơn cảnh đánh.",
+  "plan_start": {
+    "planner": "architect",
+    "planner_task": "dựng dàn ý phân tầng 6 tập · chốt cung 1 tập 1",
+    "decision_id": "dec_01JQ8F2K7M3P9XRTVW4Z6B"
+  }
+}
