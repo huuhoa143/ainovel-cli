@@ -619,7 +619,14 @@ button {
 }
 .canhbao li {
   font-size: 12.5px;
-  line-height: 1.6;
+  /* 1.72, sàn của DESIGN.md:84. Câu cảnh báo do engine/mô hình sinh ra nên không
+     kiểm soát được nó mang dấu gì — đúng lý do sàn tồn tại.
+     ĐO ĐƯỢC bằng TextMetrics của Inter đang render, ở 12.5px: ca xấu nhất
+     (`…ộng` / `Ầ`) để lại khe mực 3,49px ở 1.6 và 4,99px ở 1.72. Nói cho đúng:
+     3,49px KHÔNG phải ca chạm dấu như nhãn phụ 10.5px (0,31px) — đây là chỗ lệch
+     chuẩn, sửa để một sàn đã viết ra thì được thi hành ở mọi nơi, không phải để
+     cứu một va chạm sắp xảy ra. */
+  line-height: 1.72;
   color: var(--ink-2);
 }
 
@@ -1518,6 +1525,17 @@ div:has(> .qcrow) {
   display: none;
 }
 @media (max-width: 1240px) {
+  /* ⚠ Phần thanh cuộn dưới đây ĐANG NGỦ và cố ý giữ lại. Từ khi transport
+     `flex-wrap: wrap` ở mọi bề rộng, `scrollWidth === clientWidth` nên không có
+     thanh cuộn nào hiện ra — đã đo ở 365/390/901/1024/1240/1359/1440px, tràn 0px
+     ở tất cả.
+     GIỮ vì còn đúng MỘT ca xuống dòng không cứu được: một ô đơn lẻ rộng hơn cả
+     khung (ví dụ khung rất hẹp mà `.cell.buoc` đã ở mức chặn 216px). Lúc đó phải
+     THẤY được là còn nội dung bên phải, nếu không người dùng tưởng con số bị mất.
+     ĐỪNG đọc khối này thành "đường cuộn còn hoạt động", và cũng đừng dọn nó đi vì
+     "không bao giờ chạy" — nó là lưới an toàn, không phải mã chết.
+     Ngược lại, `.trans .token { display: none }` ở cuối khối thì KHÔNG ngủ: nó
+     vẫn chạy và vẫn cần. */
   .trans {
     scrollbar-width: thin;
     scrollbar-color: var(--line) transparent;
@@ -1579,6 +1597,32 @@ div:has(> .qcrow) {
   }
 }
 .trans .cell.buoc .m {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Ô `tổ` chặn theo ĐÚNG luật của `.cell.buoc` ở trên — 300px / 216px dưới 1240px.
+   Trước đây nó là ô duy nhất còn `max-width: none` trong khi `.cell.buoc` đã bị
+   chặn vì cùng một lý do, tức hai ô cùng thanh chạy hai luật khác nhau.
+   ĐO ĐƯỢC: `tổ gemini-2.5-pro` 122px · `tổ Writer · gemini-2.5-pro` 172px ·
+   `tổ Writer · gemini-2.5-flash-thinking` 229px. Nên 216px cho ca thường đi qua
+   nguyên vẹn và chỉ cắt tên model dài; 300px ở màn hình rộng vì ở đó có chỗ và
+   chặn 216px sẽ cắt cả những tên vừa đủ dài mà không cần thiết — cùng lập luận
+   đã viết cho `.cell.buoc`.
+   Giờ transport xuống dòng nên tên model dài không còn cắt mất con số nào; nó chỉ
+   đẩy thêm một hàng vì một lý do thuần trang trí, và `title` giữ lại câu đầy đủ. */
+.trans .cell.to {
+  max-width: 300px;
+  min-width: 0;
+}
+@media (max-width: 1240px) {
+  .trans .cell.to {
+    max-width: 216px;
+  }
+}
+.trans .cell.to .model {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2198,7 +2242,11 @@ div:has(> .qcrow) {
   margin: 7px 0 0;
   padding: 7px 10px;
   font-size: 12px;
-  line-height: 1.66;
+  /* 1.72, sàn của DESIGN.md:84 — cùng lý lẽ như `.canhbao li`: chữ ở đây do mô
+     hình sinh ra nên không biết trước nó mang dấu gì.
+     ĐO ĐƯỢC ở 12px: ca xấu nhất (`…ộng` / `Ầ`) để lại 4,07px ở 1.66 và 4,79px ở
+     1.72. Cũng như trên, 4,07px không phải ca chạm dấu — chỉ là lệch chuẩn. */
+  line-height: 1.72;
   color: var(--ink-3);
   border: 1px solid var(--line-2);
   border-radius: var(--r);

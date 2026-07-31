@@ -218,7 +218,7 @@ export interface Profile {
  * Gộp hai ca lại thành "chưa có gì" là nói dối một trong hai.
  */
 
-/** Một chương trong dàn ý — cũng là hợp đồng chương khi đã mở. */
+/** Một chương trong dàn ý — cũng là khế ước chương khi đã mở. */
 export interface OutlineEntry {
   chapter: number;
   title: string;

@@ -54,6 +54,9 @@ export function Transport({
   const giai = song ? undefined : giaiCongDoan(transport.last_step);
 
   const vai = song?.vai ?? transport.agent;
+  /* Câu đầy đủ của ô `tổ` cho `title` — ô bị chặn bề rộng nên tên model dài sẽ
+     bị cắt trên màn hình, và đây là chỗ tra lại được. */
+  const toDayDu = [vai ? nhanVai(vai) : null, transport.model].filter(Boolean).join(' · ');
   const nc = nguCanhMoiNhat(suKien);
   const nangSuatSo = nangSuat(transport.chapters_per_hour);
   const donGiaSo = donGia(transport.cost_per_chapter);
@@ -86,11 +89,17 @@ export function Transport({
         )}
       </div>
 
-      <div className="cell">
+      {/* Tên model không có giới hạn trên — `gemini-2.5-pro` ăn 122px nhưng
+          `Writer · gemini-2.5-flash-thinking` ăn 229px. Ô này vì thế bị chặn bề
+          rộng giống `.cell.buoc`, và câu đầy đủ vào `title`. Chỉ tên MODEL bị
+          cắt bằng ellipsis, không phải tên vai: vai là tập đóng (Architect /
+          Writer / Editor / Arbiter / Engine) nên nó không bao giờ là thứ làm
+          tràn, và cắt nó đi là mất phần mang tin mà không cần thiết. */}
+      <div className="cell to" title={toDayDu || undefined}>
         <span className="lbl">{CHU.to}</span>
         {vai ? <span>{nhanVai(vai)}</span> : null}
         {vai && transport.model ? <span className="lbl">·</span> : null}
-        {transport.model ? <span>{transport.model}</span> : null}
+        {transport.model ? <span className="model">{transport.model}</span> : null}
         {!vai && !transport.model ? <span className="trong">{CHU.khongCo}</span> : null}
       </div>
 

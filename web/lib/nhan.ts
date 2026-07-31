@@ -151,7 +151,7 @@ export function nhanPhanQuyet(kind: string): { giai: string; mau: Tone } {
  * không nói gì hơn là đoán sai một công đoạn.
  */
 const CONG_DOAN: Record<string, string> = {
-  plan: 'lập hợp đồng chương',
+  plan: 'lập khế ước chương',
   draft: 'soạn bản thảo',
   consistency_check: 'soát nhất quán',
   commit: 'chốt bản thảo',
@@ -244,24 +244,24 @@ export function nhanKetLuan(verdict: string | undefined): { nhan: string; mau: T
   return KET_LUAN[verdict.toLowerCase().trim()] ?? { nhan: verdict, mau: 'muted' };
 }
 
-/* ── độ hoàn thành hợp đồng chương ────────────────────────────────────── */
+/* ── độ hoàn thành khế ước chương ─────────────────────────────────────── */
 
 /**
  * Enum kín, server tự kiểm (internal/tools/save_review.go:148 chỉ nhận met /
  * partial / missed), nên ba giá trị này dịch được chắc chắn. Giá trị lạ hiện
  * nguyên văn thay vì đoán.
  */
-const HOP_DONG: Record<string, { nhan: string; mau: Tone }> = {
+const KHE_UOC: Record<string, { nhan: string; mau: Tone }> = {
   met: { nhan: 'đạt', mau: 'teal' },
   partial: { nhan: 'đạt một phần', mau: 'amber' },
   missed: { nhan: 'không đạt', mau: 'red' },
 };
 
-export function nhanHopDong(
+export function nhanKheUoc(
   status: string | undefined,
 ): { nhan: string; mau: Tone } | undefined {
   if (!status) return undefined;
-  return HOP_DONG[status.toLowerCase().trim()] ?? { nhan: status, mau: 'muted' };
+  return KHE_UOC[status.toLowerCase().trim()] ?? { nhan: status, mau: 'muted' };
 }
 
 /* ── mức nghiêm trọng của vấn đề Editor nêu ───────────────────────────── */
@@ -301,7 +301,7 @@ export function nhanMuc(severity: string | undefined): { nhan: string; mau: Tone
 /* ── bảy chiều kiểm định của Editor ───────────────────────────────────── */
 
 /**
- * Tên chiều là chuỗi tự do trong hợp đồng (`schema.Property("dimension", ...)`
+ * Tên chiều là chuỗi tự do trong khế ước (`schema.Property("dimension", ...)`
  * không phải Enum), nhưng bảy chiều NỀN được prompt chốt tên:
  *
  *   "Duyệt nền thường bao trọn consistency / character / pacing / continuity /
@@ -331,6 +331,16 @@ const CHIEU: Record<string, string> = {
   foreshadowing: 'phục bút',
   prose: 'chất văn',
   style: 'văn phong',
+
+  // Chiều "khế ước chương" do MÔ HÌNH tự đặt tên, nên store thật mang cả hai
+  // cách gọi: bản duyệt viết trước lượt đổi thuật ngữ ghi "hợp đồng chương"
+  // (kiểm chứng trong output/*/reviews/01.json), bản sau ghi "khế ước chương".
+  // Giữ NGUYÊN giá trị đã xuống đĩa và chỉ ánh xạ ở tầng hiển thị — đổi giá trị
+  // đã lưu là bỏ mồ côi bản ghi cũ, cùng lý lẽ với việc giữ tên rule
+  // `non_cjk_fragments`. Khóa buộc phải dùng `_`: nhanChieu chuẩn hoá khoảng
+  // trắng thành `_` trước khi tra, nên khóa có dấu cách sẽ không bao giờ khớp.
+  'hợp_đồng_chương': 'khế ước chương',
+  'khế_ước_chương': 'khế ước chương',
 };
 
 export function nhanChieu(name: string): string {
@@ -472,7 +482,7 @@ export const CHU = {
   chuaDatTieuDe: 'chưa đặt tiêu đề',
 
   // inspector
-  tabHopDong: 'Hợp đồng',
+  tabKheUoc: 'Khế ước',
   tabKiemDinh: 'Kiểm định',
   tabBanThao: 'Bản thảo',
   yeuCauChuong: 'Yêu cầu chương',
@@ -489,7 +499,7 @@ export const CHU = {
   vanDeNeuRa: 'Vấn đề nêu ra',
   danChung: 'Dẫn chứng',
   deXuat: 'Đề xuất',
-  hopDongThieu: 'Hợp đồng còn thiếu',
+  kheUocThieu: 'Khế ước còn thiếu',
   trichDoan: 'Trích đoạn',
   /**
    * Nhãn của nút đọc toàn văn, ba trạng thái.
@@ -515,7 +525,7 @@ export const CHU = {
   chuongTruoc: 'Chương trước',
   chuongSau: 'Chương sau',
   banDuyetEditor: 'Bản duyệt của Editor',
-  hopDongChuong: 'Hợp đồng chương',
+  kheUocChuong: 'Khế ước chương',
   chonChuongDeDoc: 'Chọn chương để đọc',
 
   // dàn ý phân tầng
@@ -561,7 +571,7 @@ export const CHU = {
   banDuyet: 'Bản duyệt',
   ketLuan: 'Kết luận',
   phamVi: 'Phạm vi',
-  hopDong: 'Hợp đồng',
+  kheUoc: 'Khế ước',
   // Thang điểm là 0–100, do save_review.go:271 chặn (`score < 0 || score > 100`).
   // In kèm mẫu số vì một con số trơ ("68") không nói được nó trên thang nào, và
   // người vận hành sẽ đọc 68 như 68% hoặc như 6,8/10 tùy phản xạ.
@@ -673,11 +683,12 @@ export const GIAI_THICH = {
    */
   chuaChonChuongTieuDe: 'Chưa chọn chương',
   chuaChonChuong:
-    'Bấm một hàng trong bảng chương để xem hợp đồng, bản duyệt và bản thảo của chương đó.',
+    'Bấm một hàng trong bảng chương để xem khế ước, bản duyệt và bản thảo của chương đó.',
   tabChuaChonChuong: 'chưa chọn chương nên chưa có gì để mở',
 
   chuongChuaCoDuLieu: 'Chương này chưa có dữ liệu trong store.',
-  chuaCoHopDong: 'Chương này chưa có hợp đồng — Writer lập hợp đồng ở bước plan.',
+  chuaCoKheUoc:
+    'Chương này chưa có khế ước — Writer lập khế ước ở bước plan. Khế ước chương là định nghĩa hoàn thành của chương này.',
   chuaCoDuyet: 'Chưa có bản duyệt cho chương này.',
   chuaCoBanThao: 'Chưa có bản thảo cho chương này.',
   /**

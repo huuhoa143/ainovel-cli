@@ -11,10 +11,10 @@ import type { ChapterDetail, Contract, Review, Selection, Snapshot } from '@/lib
 import { BanDuyet } from './BanDuyet';
 import { TrangThai } from './TrangThai';
 
-type Tab = 'hopdong' | 'kiemdinh' | 'banthao';
+type Tab = 'kheuoc' | 'kiemdinh' | 'banthao';
 
 /**
- * Inspector: chi tiết chương đang chọn, ba tab Hợp đồng / Kiểm định / Bản thảo.
+ * Inspector: chi tiết chương đang chọn, ba tab Khế ước / Kiểm định / Bản thảo.
  *
  * Nội dung KHÔNG bị gate sau animation và tab không dùng transition ẩn/hiện:
  * panel bị treo transition trên tab ẩn sẽ làm mất trắng cả khối khi render
@@ -30,7 +30,7 @@ export function Inspector({
   tacPham: string | undefined;
   chuongChon: number | undefined;
 }) {
-  const [tab, setTab] = useState<Tab>('hopdong');
+  const [tab, setTab] = useState<Tab>('kheuoc');
   const sel = snapshot?.selected;
 
   return (
@@ -58,10 +58,10 @@ export function Inspector({
           cũng ra cùng một câu là một lời hứa hụt nhỏ, lặp ba lần. */}
       <div className="tabs" role="tablist" aria-label="Mặt của chương">
         <TabNut
-          tab="hopdong"
+          tab="kheuoc"
           hienTai={tab}
           onChon={setTab}
-          nhan={CHU.tabHopDong}
+          nhan={CHU.tabKheUoc}
           tat={!chuongChon}
         />
         <TabNut
@@ -84,8 +84,8 @@ export function Inspector({
         <div className="ibody">
           <p className="trong">{GIAI_THICH.chuaChonChuong}</p>
         </div>
-      ) : tab === 'hopdong' ? (
-        <TabHopDong contract={sel?.contract} sel={sel} />
+      ) : tab === 'kheuoc' ? (
+        <TabKheUoc contract={sel?.contract} sel={sel} />
       ) : tab === 'kiemdinh' ? (
         <TabKiemDinh review={sel?.review} />
       ) : (
@@ -152,9 +152,9 @@ function TrangThaiChuong({
   return <TrangThai tt={TRANG_THAI_CHUONG[row.stage]} dap={mayDangChay(snapshot)} />;
 }
 
-/* ── tab Hợp đồng ─────────────────────────────────────────────────────── */
+/* ── tab Khế ước ──────────────────────────────────────────────────────── */
 
-function TabHopDong({
+function TabKheUoc({
   contract,
   sel,
 }: {
@@ -164,7 +164,7 @@ function TabHopDong({
   if (!contract) {
     return (
       <div className="ibody">
-        <p className="trong">{GIAI_THICH.chuaCoHopDong}</p>
+        <p className="trong">{GIAI_THICH.chuaCoKheUoc}</p>
         {sel?.words ? <SoTuDaViet words={sel.words} /> : null}
       </div>
     );

@@ -6,7 +6,7 @@ import {
   GIAI_THICH,
   kyTheoTone,
   nhanChieu,
-  nhanHopDong,
+  nhanKheUoc,
   nhanKetLuan,
   nhanMuc,
   nhanPhamViDuyet,
@@ -50,7 +50,7 @@ export function BanDuyet({
   tieuDe?: boolean;
 }) {
   const kl = nhanKetLuan(review.verdict);
-  const hopDong = nhanHopDong(review.contract_status);
+  const kheUoc = nhanKheUoc(review.contract_status);
   const lopKv = le ? 'kv kvle' : 'kv';
   const lopCanh = le ? 'canh canhle' : 'canh';
 
@@ -73,15 +73,15 @@ export function BanDuyet({
         </dd>
         <dt>{CHU.phamVi.toLowerCase()}</dt>
         <dd>{nhanPhamViDuyet(review.scope)}</dd>
-        {hopDong ? (
+        {kheUoc ? (
           <>
-            <dt>{CHU.hopDong.toLowerCase()}</dt>
+            <dt>{CHU.kheUoc.toLowerCase()}</dt>
             <dd>
-              <span className={`st ${hopDong.mau}`}>
+              <span className={`st ${kheUoc.mau}`}>
                 <span className="ky" aria-hidden="true">
-                  {kyTheoTone(hopDong.mau)}
+                  {kyTheoTone(kheUoc.mau)}
                 </span>
-                {hopDong.nhan}
+                {kheUoc.nhan}
               </span>
             </dd>
           </>
@@ -90,14 +90,14 @@ export function BanDuyet({
 
       {review.summary ? <p className="qcnote">{review.summary}</p> : null}
 
-      {/* Hợp đồng thiếu đứng TRƯỚC các chiều, không phải sau.
+      {/* Khế ước thiếu đứng TRƯỚC các chiều, không phải sau.
           Nó là câu trả lời cho "chương này có làm đúng việc đã hứa không" —
           cụ thể và làm được ngay. Điểm từng chiều là chẩn đoán, đọc sau. Cùng
-          một lý lẽ với việc `BenLe` đặt hợp đồng trên bản duyệt: hợp đồng là
+          một lý lẽ với việc `BenLe` đặt khế ước trên bản duyệt: khế ước là
           thước, phán xét chỉ có nghĩa khi đã biết thước. */}
       {review.contract_misses && review.contract_misses.length > 0 ? (
         <>
-          <h3>{CHU.hopDongThieu}</h3>
+          <h3>{CHU.kheUocThieu}</h3>
           <ul className={lopCanh}>
             {review.contract_misses.map((m, i) => (
               <li key={i}>{m}</li>

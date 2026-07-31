@@ -20,6 +20,14 @@ type Capabilities struct {
 	PerChapterCost     bool `json:"per_chapter_cost"`
 	LayeredOutline     bool `json:"layered_outline"`
 	Steer              bool `json:"steer"`
+	// Ba cờ dưới đây phục vụ ba bề mặt ở Rail. Chúng được suy từ CHÍNH builder mà
+	// endpoint tương ứng dùng (buildStyle/buildCost/buildSettings), không từ một
+	// phép kiểm riêng — đúng bài học của LayeredOutline: hai đường suy luận song
+	// song về cùng một dữ liệu sẽ có lúc lệch nhau, và khi lệch thì giao diện ẩn
+	// một bề mặt vẫn còn đủ dữ liệu để vẽ.
+	StyleRules    bool `json:"style_rules"`
+	CostBreakdown bool `json:"cost_breakdown"`
+	RunSettings   bool `json:"run_settings"`
 }
 
 // Book là một tác phẩm trong xưởng, dùng cho bộ chọn ở thanh trên.

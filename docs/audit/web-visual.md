@@ -55,7 +55,33 @@ mkdir -p /tmp/ainovel-empty
 go run ./cmd/ainovel-cli serve --web web/out --addr 127.0.0.1:8421 --root /tmp/ainovel-empty
 ```
 
+### ⚠ Bẫy đo bề rộng hẹp: `resize_page` KHÔNG xuống được 390px
+
+Đọc trước khi kiểm bất kỳ bề rộng nào dưới ~500px. Bẫy này làm **cả một lượt kiểm thành vô nghĩa mà không có dấu hiệu gì**.
+
+Cửa sổ Chrome trên macOS không thu nhỏ dưới **~500px**. Gọi `resize_page` với `width: 390` thì lệnh **báo thành công**, nhưng `window.innerWidth` thật vẫn là `500`. Ở 500px thanh transport vừa đủ chỗ hơn, nên phép đo trả về "hết tràn" — một kết luận **SAI mà trông như đã kiểm**. Đo được tận tay: cùng một trang, `resize_page 390` cho `innerWidth 500` và transport `scrollWidth 500 === clientWidth`, trong khi device emulation cho `innerWidth 390` và transport thật sự tràn `555px`.
+
+Phải dùng **device emulation**, nó đặt viewport độc lập với cửa sổ:
+
+```
+emulate  viewport: "390x844x2,mobile,touch"
+```
+
+Và luôn **khẳng định lại bề rộng thật trong chính phép đo** thay vì tin tham số đã truyền:
+
+```js
+// mọi script đo bố cục nên trả về con số này để đối chiếu
+return { beRong: window.innerWidth, /* … */ };
+```
+
+Hai điều kèm theo, cùng loại bẫy:
+
+- `emulate` với cờ `mobile` **nạp lại trang**, nên mọi biến gắn vào `window` ở lượt `evaluate_script` trước sẽ mất. Đừng cài hàm trợ giúp dùng lại giữa các bề rộng — nhúng thẳng script đo vào từng lần gọi.
+- Dưới emulation di động, `100dvh` phân giải theo chiều cao đã yêu cầu còn `window.innerHeight` báo chiều cao *visual viewport* — hai số lệch nhau (đo được: `dvh` 780 vs `innerHeight` 890). Nên kiểm "transport có sát đáy khung" bằng cách so với `.khung`, **không** so với `window.innerHeight`, nếu không nó báo sai là thanh bị đẩy khỏi màn hình.
+
 ### Dữ liệu mẫu phải thêm tay để thấy được 5 bề mặt
+
+> **⚠ Mục này đã LỖI THỜI (cập nhật 2026-07-31).** `cmd/seed-demo` đã được mở rộng đúng như đề nghị ở cuối mục: chạy `go run ./cmd/seed-demo <đường-dẫn>` giờ in ra `nhân vật: 5 (đủ 4 hạng) · luật thế giới: 5 · phục bút: 3` và gieo cả bản duyệt, hàng chờ viết lại, bản nháp. **Không cần ghi fixture tay nữa.** Bảng dưới giữ lại để biết tệp nào mở ra bề mặt nào, không phải để làm theo.
 
 `seed-demo` **không** ghi nhân vật, luật thế giới, phục bút, quan hệ, bản duyệt, hàng chờ viết lại. Năm bề mặt rail vì thế luôn rỗng nếu chỉ chạy seed-demo. Tôi ghi thêm fixture trực tiếp vào store (`output/` đã nằm trong `.gitignore`, không có gì bị commit):
 
@@ -347,6 +373,14 @@ Nhưng `--ink-3` trên `--raised` (theo `DESIGN.md:26` là "nút bật, nền th
 | `globals.css:603` | `.canhbao li` | 1.6 | *chưa đo* | không dựng được trạng thái cảnh báo trong đợt này |
 
 `.title` nên lên 1.72 cùng lúc với §3.3 (cùng một loại nội dung: tiêu đề chương do mô hình đặt).
+
+> **✔ ĐÃ XỬ LÝ (cập nhật 2026-07-31).** Cả ba hàng trên đều đã được đóng, nhưng không hàng nào đóng theo đúng cách bảng mô tả — nên đọc ghi chú này trước khi tin bảng:
+>
+> - **`.chuamoNoi` → `1.72`.** Đo lại ở 12px: khe xấu nhất (`…ộng` / `Ầ`) **4,07px → 4,79px**. Xác nhận trên bề mặt Dàn ý ở 390px: 2 dòng thật, bước dòng 20,63px khớp `line-height` 20,64px, hộp không bị cắt.
+> - **`.canhbao li` → `1.72`.** Con số "*chưa đo*" giờ đã có: ở 12.5px khe xấu nhất **3,49px → 4,99px**. `seed-demo` vẫn không sinh cảnh báo nhất quán nào, nên rule được kiểm bằng **DOM bơm tay** vào đầu canvas — 3 dòng thật, bước dòng 21,5px. Nói rõ vì đây không phải trạng thái thật của engine.
+> - **`.title`** — hàng này **đã lỗi thời**: `td.title` không còn khai báo `line-height` riêng nữa (nay kế thừa), nên không còn chỗ nào ở `1.5` để sửa.
+>
+> Lưu ý về mức độ: 4,07px và 3,49px **không phải ca chạm dấu** như nhãn phụ 10.5px của §3.2 (0,31px). Hai chỗ này được nâng để một sàn đã viết ra thì được thi hành ở mọi nơi, không phải để cứu một va chạm sắp xảy ra — bảng gọi đúng chúng là "chưa tới mức nguy hiểm".
 
 ### 4.9 Sáu cảnh báo preload font — vô hại, ghi ra để lần sau không phải điều tra lại
 

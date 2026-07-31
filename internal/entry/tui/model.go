@@ -246,13 +246,12 @@ func (m *Model) flushStreamIfDirty() bool {
 
 // refreshEventViewport 重新渲染事件流内容并设置 viewport。
 func (m *Model) refreshEventViewport() {
-	centerW := m.eventFlowWidth()
-	content := renderEventContent(m.events, centerW, m.toolSpinnerIdx)
+	content := renderEventContent(m.events, m.eventContentWidth(), m.toolSpinnerIdx)
 	snap := m.snapshot
 	if m.starting {
 		snap.IsRunning = true
 	}
-	if activity := renderEventActivity(snap, m.spinnerIdx, centerW); activity != "" {
+	if activity := renderEventActivity(snap, m.spinnerIdx, m.eventContentWidth()); activity != "" {
 		if strings.TrimSpace(content) != "" {
 			content += "\n" + activity
 		} else {
@@ -293,13 +292,12 @@ func (m *Model) refreshStateViewport() {
 
 // updateViewportSize 根据当前窗口尺寸更新 viewport 大小。
 func (m *Model) updateViewportSize() {
-	centerW := m.eventFlowWidth()
 	rightW := m.detailWidth()
 	bodyH := m.bodyHeight()
 	eventH, streamH := m.splitHeights(bodyH)
-	m.viewport.Width = centerW - 2
+	m.viewport.Width = m.eventContentWidth()
 	m.viewport.Height = eventH - 1 // -1 为 event panel header 行
-	m.streamVP.Width = centerW - 2
+	m.streamVP.Width = m.eventContentWidth()
 	m.streamVP.Height = streamH - 1 // -1 为 stream panel header 行
 	m.detailVP.Width = rightW - 2
 	m.detailVP.Height = bodyH
@@ -519,6 +517,39 @@ func (m *Model) eventFlowWidth() int {
 	return m.width - leftW - rightW
 }
 
+// eventContentWidth là bề rộng LÒNG của khung luồng sự kiện — chỗ chữ thật sự nằm.
+//
+// # Vì sao phải có hàm này chứ không viết `centerW - 2` tại chỗ
+//
+// Số 2 là viền + đệm của khung; viewport bên trong luôn hẹp hơn khung đúng 2 cột
+// (xem detailVP cũng dùng `rightW - 2`). Nhưng bề rộng đó từng được viết ở SÁU chỗ
+// theo HAI công thức: bốn chỗ đặt viewport dùng `centerW - 2`, còn hai chỗ dàn nội
+// dung dùng `centerW`. Nội dung được dàn cho khung rộng rồi nhồi vào viewport hẹp.
+//
+// Hậu quả là MẤT DỮ LIỆU, không phải chữ bị cắt cho đẹp. Nhánh ERROR tính
+// `maxSumW = width - 12` với tiền tố đúng 12 cột, nên dòng đầu chiếm trọn bề rộng
+// khung — vượt viewport 2 cột, phần vượt bị cắt. Và vì ký tự bị cắt là ký tự CUỐI
+// dòng đầu của một câu đang ngắt tiếp, chỗ mất nằm GIỮA TỪ:
+//
+//	"chế độ nghiệm thu"  →  "chế độ nghim thu"     (mất `ệ`)
+//	"không có trong hàng đợi"  →  "không có rong hàng đợi"  (mất `t`)
+//
+// Ca thứ hai là ca tệ nhất: `rong` là một từ tiếng Việt thật, nên câu vẫn đọc được
+// và chỉ sai nghĩa. Người dùng sẽ báo đây là lỗi chính tả, không ai nghĩ tới layout.
+//
+// # Vì sao nó là lỗi do việt hóa đánh thức
+//
+// Khuyết điểm có sẵn từ trước nhưng nằm im ở tiếng Trung: đo được trên chính các
+// chuỗi đã bắt lỗi, đường zh dài 45 cột trong khung 61–76 cột nên gần như không bao
+// giờ chạm mốc ngắt, còn đường vi dài 75–99 cột nên chạm thường xuyên. Cùng họ với
+// những lỗi khác của lượt việt hóa này: không phải dịch sai, mà là dịch xong thì
+// một khuyết điểm cũ mới có điều kiện nổ.
+//
+// Trả về từ MỘT chỗ để bên dàn và bên render không thể lệch nhau lần nữa.
+func (m *Model) eventContentWidth() int {
+	return m.eventFlowWidth() - 2
+}
+
 func (m *Model) sidebarWidth() int {
 	if m.width == 0 {
 		return 32
@@ -664,12 +695,12 @@ func (m Model) View() string {
 		centerW := m.width - leftW - rightW
 		eventH, streamH := m.splitHeights(bodyH)
 
-		if m.viewport.Width != centerW-2 || m.viewport.Height != eventH-1 {
-			m.viewport.Width = centerW - 2
+		if m.viewport.Width != m.eventContentWidth() || m.viewport.Height != eventH-1 {
+			m.viewport.Width = m.eventContentWidth()
 			m.viewport.Height = eventH - 1 // -1 为 event panel header 行
 		}
-		if m.streamVP.Width != centerW-2 || m.streamVP.Height != streamH-1 {
-			m.streamVP.Width = centerW - 2
+		if m.streamVP.Width != m.eventContentWidth() || m.streamVP.Height != streamH-1 {
+			m.streamVP.Width = m.eventContentWidth()
 			m.streamVP.Height = streamH - 1 // -1 为 stream panel header 行
 		}
 

@@ -79,7 +79,7 @@ Writer hoàn tất mỗi chương theo thứ tự cố định (nội dung viế
 
 1. `novel_context` — nạp ngữ cảnh (tóm tắt tình tiết trước, phục bút, trạng thái nhân vật, luật văn phong, gợi ý chương liên quan)
 2. `read_chapter` — đọc lại phía trước để tìm lại giọng và nhịp
-3. `plan_chapter` — cấu tứ mục tiêu, xung đột, đường cong cảm xúc của chương này
+3. `plan_chapter` — cấu tứ mục tiêu, xung đột, đường cong cảm xúc của chương này; kết quả là **khế ước chương**, tức định nghĩa hoàn thành của chương này, và cũng là bản mà Editor đối chiếu khi nghiệm thu
 4. `draft_chapter` — viết trọn phần chính văn của chương
 5. `check_consistency` — đối chiếu dữ liệu trạng thái để kiểm tính nhất quán (buộc phải sau draft)
 6. `commit_chapter` — nộp bản cuối, ghi xuống đĩa các trường sự thật (`arc_end` / `next_chapter` / bể phản hồi v.v.); bước kế tiếp do Engine suy ra theo bảng quyết định Route

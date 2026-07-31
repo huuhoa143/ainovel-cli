@@ -673,7 +673,7 @@ func TestKhongBocLong(t *testing.T) {
 		t.Errorf("i18n.F/T nhận đối số dựng LÚC CHẠY — khóa đó không thể có trong catalog (%d chỗ / %d lời gọi):\n  %s",
 			len(viPham), soGoiI18n, strings.Join(viPham, "\n  "))
 	}
-	t.Logf("%d tệp, %d lời gọi i18n.F/T, 0 bọc lồng", len(teps), soGoiI18n)
+	t.Logf("%d tệp, %d lời gọi i18n.F/T, %d bọc lồng", len(teps), soGoiI18n, len(viPham))
 }
 
 func quetBocLong(fset *token.FileSet, teps []tepGo) ([]string, int) {
@@ -1425,33 +1425,68 @@ func TestTraDungHang(t *testing.T) {
 	t.Logf("bản lỗi → đỏ đúng 2 chỗ:\n  %s", strings.Join(viPham, "\n  "))
 }
 
-// TestLuat4CoRang cho luật 4 ăn một catalog mà bản dịch đã đánh mất tên tool.
+// TestLuat4CoRang kiểm cả hai chiều của luật 4: bắt msgid đã trôi, và im với văn
+// bản mẫu.
+//
+// Chiều thứ hai là chiều dễ mất: nếu bộ nhận "tệp có gọi i18n.F/T" hỏng thì luật
+// này báo bừa vào 4 hằng văn truyện tiếng Trung ở internal/rules và internal/e2e —
+// và cách sửa nhanh nhất khi đó là dựng một bảng miễn trừ 4 mục cho một luật chỉ
+// canh 4 mục, tức bảng dài bằng cái nó canh.
 func TestLuat4CoRang(t *testing.T) {
-	const msgid = "生成第 %d 卷第 %d 弧摘要（save_arc_summary）"
-	const manh = "save_arc_summary"
+	// (a) Tệp CÓ gọi i18n.F/T → hằng chữ Hán là msgid được neo.
+	neo := `package guard
 
-	// Bản dịch HỎNG: người dịch thấy dấu ngoặc kỹ thuật cuối câu là rườm rà và bỏ
-	// đi. Câu vẫn đọc tự nhiên, catalog vẫn phủ 100%, guard thì thôi gác.
-	hong := catalog{msgid: "Tạo tóm tắt cung %d của tập %d"}
-	if strings.Contains(hong[msgid], manh) {
-		t.Fatal("mẩu dữ liệu sai: bản dịch 'hỏng' vẫn còn mảnh, bài kiểm này rỗng nghĩa")
-	}
+import "github.com/voocel/ainovel-cli/internal/i18n"
 
-	// Bản dịch THẬT hiện tại, lấy từ catalog đang dùng.
+const (
+	msgConTrongCatalog = "生成第 %d 卷卷摘要（save_volume_summary）"
+	msgDaTroi          = "生成第 %d 卷卷摘要（đã trôi vì upstream sửa câu gốc）"
+)
+
+func dung(m string) string { return i18n.F(m) }
+`
+	// (b) Tệp KHÔNG gọi i18n.F/T → hằng chữ Hán là văn bản mẫu, không phải msgid.
+	//     Nguyên hình dạng của internal/rules/lint_locale_test.go.
+	mau := `package rules
+
+const vanTrungSach = "青石渡口在河湾处，水色由青转浊。"
+
+func dem(s string) int { return len(s) }
+
+func dung() int { return dem(vanTrungSach) }
+`
+	// Catalog thật, để phép kiểm neo vào dữ liệu đang dùng chứ không vào giả định.
 	raw, err := localeFS.ReadFile("locales/vi.json")
 	if err != nil {
 		t.Fatalf("đọc vi.json: %v", err)
 	}
-	var that catalog
-	if err := unmarshalCatalog(raw, &that); err != nil {
+	var c catalog
+	if err := unmarshalCatalog(raw, &c); err != nil {
 		t.Fatalf("phân tích vi.json: %v", err)
 	}
-	if that[msgid] == "" {
-		t.Fatalf("msgid không còn trong vi.json — hợp đồng đã trôi, bài kiểm rỗng nghĩa: %s", msgid)
+	if _, co := c["生成第 %d 卷卷摘要（save_volume_summary）"]; !co {
+		t.Fatal("msgid mốc không còn trong vi.json — mẩu nguồn đã trôi, bài kiểm này rỗng nghĩa")
 	}
-	if !strings.Contains(that[msgid], manh) {
-		t.Fatalf("bản dịch thật đã MẤT mảnh %q: %q", manh, that[msgid])
+
+	_, teps := napChuoi(t, "guard/neo_test.go", neo)
+	viPham, soNeo := quetMsgidNeo(teps, c, "vi.json")
+	if soNeo != 2 {
+		t.Fatalf("phải nhận 2 msgid được neo, thấy %d — bộ nhận đã hỏng, bài kiểm rỗng nghĩa", soNeo)
 	}
-	t.Logf("bản dịch hỏng → mất mảnh %q: %q", manh, hong[msgid])
-	t.Logf("bản dịch thật → còn mảnh %q: %q", manh, that[msgid])
+	if len(viPham) != 1 {
+		t.Fatalf("luật 4 KHÔNG có răng: phải bắt đúng 1 msgid đã trôi, thấy %d\n%s",
+			len(viPham), strings.Join(viPham, "\n"))
+	}
+	if !strings.Contains(viPham[0], "msgDaTroi") {
+		t.Fatalf("bắt sai hằng — luật 4 không chỉ được đúng chỗ: %s", viPham[0])
+	}
+	t.Logf("msgid đã trôi → đỏ: %s", viPham[0])
+
+	_, teps = napChuoi(t, "rules/lint_locale_test.go", mau)
+	viPham, soNeo = quetMsgidNeo(teps, c, "vi.json")
+	if soNeo != 0 || len(viPham) != 0 {
+		t.Fatalf("luật 4 BÁO BỪA vào văn bản mẫu: %d neo, %d vi phạm\n%s",
+			soNeo, len(viPham), strings.Join(viPham, "\n"))
+	}
+	t.Logf("văn bản mẫu (tệp không gọi i18n.F/T) → không tính là msgid neo, 0 vi phạm")
 }

@@ -306,10 +306,10 @@ function ChiSoChuong({ words, review }: { words: number; review: Review | undefi
 }
 
 /**
- * Khu lề: hợp đồng chương rồi tới bản duyệt.
+ * Khu lề: khế ước chương rồi tới bản duyệt.
  *
  * Thứ tự đó không tùy tiện — bản duyệt là phán xét việc chương có làm đúng
- * hợp đồng hay không, nên đọc hợp đồng trước thì bản duyệt mới có nghĩa.
+ * khế ước hay không, nên đọc khế ước trước thì bản duyệt mới có nghĩa.
  */
 function BenLe({
   contract,
@@ -320,7 +320,7 @@ function BenLe({
 }) {
   return (
     <aside className="benle" aria-label={CHU.banDuyetEditor}>
-      {contract ? <HopDong contract={contract} /> : null}
+      {contract ? <KheUoc contract={contract} /> : null}
 
       <h3>{CHU.banDuyetEditor}</h3>
       {/* `tieuDe={false}`: tiêu đề đã có ngay trên. `le`: cột này 296px, đúng
@@ -334,10 +334,10 @@ function BenLe({
   );
 }
 
-function HopDong({ contract }: { contract: Contract }) {
+function KheUoc({ contract }: { contract: Contract }) {
   return (
     <>
-      <h3>{CHU.hopDongChuong}</h3>
+      <h3>{CHU.kheUocChuong}</h3>
       <dl className="kv kvle">
         {contract.core_event ? (
           <>
