@@ -156,7 +156,7 @@ Tóm tắt cung phải lưu các sự kiện then chốt, trạng thái hiện t
 
 - prose mô tả cách viết cụ thể, ví dụ "miêu tả môi trường ưu tiên xúc giác và mùi, hạn chế dồn đống thị giác", đừng viết những câu rỗng kiểu "văn hay".
 - dialogue thì quy nạp đặc trưng ngôn ngữ riêng cho từng nhân vật cốt lõi, không bịa ra giọng điệu vốn không có trong nguyên văn.
-- taboos chỉ ghi những điều kỵ thẩm mỹ không thể máy móc hóa; ngưỡng từ mỏi vẫn do `user_rules.structured` quản.
+- taboos chỉ ghi những điều kỵ thẩm mỹ không thể máy móc hóa; ngưỡng từ mỏi vẫn do `user_rules.structured` quản. Ba ví dụ, cố ý khác hình dạng nhau: "tránh độc thoại cuối chương quá 200 từ" (ngưỡng độ dài), "tránh đổi góc nhìn lộn xộn trong một chương" (lỗi kỹ thuật kể), "cấm mở chương bằng thời tiết" (lệnh cấm mở đầu).
 
 ## Chế độ duyệt cấp tập (truyện dài)
 
