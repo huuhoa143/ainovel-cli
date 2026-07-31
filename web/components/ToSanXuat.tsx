@@ -99,8 +99,13 @@ export function ToSanXuat({ snapshot }: { snapshot: Snapshot }) {
                   <tr key={v.ma}>
                     <td className="vai">
                       {nhanVai(v.ma)}
+                      {/* `dap` ở đây là đúng và không cần cổng thêm: nhãn này
+                          chỉ được vẽ khi `dangChay` có giá trị, mà `dangChay`
+                          chỉ có giá trị khi `transport.state === 'running'` —
+                          tức chính sự thật liveness, không phải một công đoạn
+                          đã ghi vào store. */}
                       {dangChay === v.ma ? (
-                        <TrangThai tt={TRANG_THAI_MAY.running} />
+                        <TrangThai tt={TRANG_THAI_MAY.running} dap />
                       ) : null}
                     </td>
                     <td className="num">

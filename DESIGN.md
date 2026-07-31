@@ -57,9 +57,13 @@ Ba họ chữ, mỗi họ một nhiệm vụ rõ ràng — ghép theo trục tư
 |---|---|---|
 | `--ui` | Inter | toàn bộ giao diện. Hỗ trợ tiếng Việt đầy đủ |
 | `--mono` | JetBrains Mono | mọi số liệu, tên tool, mã step. Canh phải trong bảng |
-| `--serif` | Noto Serif | **chỉ** dùng cho văn bản tiểu thuyết — trích đoạn, bản thảo, dẫn chứng của Editor |
+| `--serif` | Noto Serif | **chỉ** dùng cho văn bản tiểu thuyết — trích đoạn, bản thảo, tiêu đề chương, dẫn chứng của Editor |
 
 Serif là dấu hiệu ngữ nghĩa: thấy serif là thấy văn của tác phẩm, không phải chữ của công cụ.
+
+**Phép thử khi gặp một loại chữ mới:** chữ này có nằm trong bộ truyện xuất bản không? Có thì serif, không thì `--ui`. Danh sách bốn mục trên là kết quả của phép thử, không phải một bảng trắng để tra — trích đoạn và bản thảo là văn đó, tiêu đề chương được in cùng nó, và dẫn chứng của Editor mang serif vì nó *trích lại* văn đó chứ không vì Editor viết ra nó.
+
+Phép thử này loại hẳn một loại dễ nhầm: **mô tả trong hồ sơ tác phẩm** — mô tả nhân vật, mô tả phục bút, ghi chú luật thế giới. Chúng là bản ghi của engine *về* tác phẩm, viết cho người vận hành, và người đọc truyện không bao giờ thấy chúng; cùng loại với `core_event` của hợp đồng hay `comment` của bản duyệt. Cho chúng serif thì mỗi hồ sơ đọc như một trang truyện và tín hiệu serif loãng đi đúng chỗ nó cần sắc nhất. Chúng dùng `--ui`, vẫn giữ `line-height` và `max-width` của khổ đọc dài.
 
 ### Thang cỡ
 

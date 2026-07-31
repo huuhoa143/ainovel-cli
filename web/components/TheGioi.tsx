@@ -174,6 +174,14 @@ function MotPhucBut({ f }: { f: ForeshadowEntry }) {
   return (
     <li>
       <div className="pbdau">
+        {/* KHÔNG `dap` ở đây, và đó là chủ ý cần ghi lại. `advanced` → "đã đẩy
+            thêm" mang tông `gold` (nhan.ts:353), nên bản trước — khi nhịp đập
+            bám vào tông màu — làm mọi phục bút đang đẩy dở đập 2.2s vô hạn. ĐO
+            ĐƯỢC: bề mặt này có một `.st.gold` với `dapnhip:running` trong khi
+            transport ghi "đang nghỉ".
+            Trạng thái phục bút là một mục trong sổ, không phải liveness: nó
+            không đổi khi engine tắt. Không có sự thật nào ở đây bật được nhịp
+            đập, nên không có `dap`. */}
         <span className={`st ${tt.mau}`}>
           <span className="ky" aria-hidden="true">
             {tt.ky}

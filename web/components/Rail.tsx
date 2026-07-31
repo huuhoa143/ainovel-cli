@@ -73,13 +73,28 @@ export function Rail({
     }
   }, [khu]);
 
-  const marks = snapshot?.timeline.chapters ?? [];
   const rows = snapshot?.chapters ?? [];
 
   // Bản thảo = số chương đã có bản thảo chốt. Lấy từ book, là số store ghi.
   const banThao = snapshot?.book.completed_chapters;
-  // Kiểm định = số cửa kiểm định trên trục.
-  const cuaKiemDinh = marks.filter((m) => m.state === 'gate').length;
+  // Kiểm định đếm từ BẢNG CHƯƠNG, không từ vạch `gate` trên trục — cùng cái bẫy
+  // như `vietLai` ngay dưới, nhưng ca này tệ hơn vì hai con số lệch tới mức trái
+  // dấu nhau.
+  // ĐO ĐƯỢC ở bản trước: trục có 0 vạch `gate` (vạch đó chỉ tồn tại khi một
+  // chương đang đứng đúng ở cửa, tức một cửa sổ hẹp trong đời chương) trong khi
+  // bề mặt Kiểm định ghi "3 chương có dấu vết sản xuất · 1 đã nghiệm thu" và mở
+  // ra bản duyệt 7 chiều của chương 1 với một vấn đề severity `error`. Rail ghi
+  // `Kiểm định 0`, người vận hành đọc "không có gì để kiểm" rồi đi qua — mất câu
+  // hỏi số 2 của PRODUCT.md ("chất lượng có tuột không").
+  // Một nhãn thì một mẫu số: bề mặt liệt kê `snapshot.chapters` (KiemDinh.tsx:43)
+  // nên rail đếm đúng cái đó.
+  //
+  // Và con số này KHÔNG mang `canhBao`. Amber nghĩa là "cần chú ý", còn "có chương
+  // để kiểm" là trạng thái thường trực của mọi tác phẩm đang chạy. Bản trước bật
+  // amber theo `cuaKiemDinh > 0` — một điều kiện gần như không bao giờ đúng, nên
+  // chưa ai thấy nó sai. Báo động chất lượng thật nằm ở Hàng chờ viết lại ngay
+  // dưới, và mục đó có amber.
+  const kiemDinh = rows.length;
   // Hàng chờ viết lại đếm từ BẢNG CHƯƠNG, không từ vạch trên trục — vì bề mặt
   // hàng chờ cũng đọc từ đó. Lane chương chỉ trải từ 1 tới `total_chapters` nên
   // một chương chờ viết lại ngoài khoảng đó không có vạch: rail sẽ báo 2 rồi bề
@@ -119,8 +134,8 @@ export function Rail({
         di="kiem-dinh"
         khu={khu}
         onChonKhu={onChonKhu}
-        dem={cuaKiemDinh}
-        canhBao={cuaKiemDinh > 0}
+        dem={kiemDinh}
+        chuGiai={GIAI_THICH.railKiemDinhDem}
       />
       <MucDi
         nhan={CHU.hangChoVietLai}

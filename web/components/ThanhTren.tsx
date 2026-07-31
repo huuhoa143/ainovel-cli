@@ -93,7 +93,16 @@ export function ThanhTren({
                         if (b.id !== dangXem.id) onChon(b.id);
                       }}
                     >
-                      <span className={`st ${tt.mau}`} title={tt.nhan}>
+                      {/* `dap` theo activity của TỪNG tác phẩm, không theo tác
+                          phẩm đang xem: danh sách này tồn tại để trả lời "còn
+                          cái nào đang chạy không", nên nhịp đập phải nằm đúng ở
+                          dòng của tác phẩm còn chạy. `activity` là sự thật
+                          liveness thật (server tính từ checkpoint mới nhất),
+                          khác với công đoạn đã ghi của một chương. */}
+                      <span
+                        className={`st ${tt.mau}${b.activity === 'running' ? ' dap' : ''}`}
+                        title={tt.nhan}
+                      >
                         <span className="ky" aria-hidden="true">
                           {tt.ky}
                         </span>

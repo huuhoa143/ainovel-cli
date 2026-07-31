@@ -491,6 +491,17 @@ export const CHU = {
   deXuat: 'Đề xuất',
   hopDongThieu: 'Hợp đồng còn thiếu',
   trichDoan: 'Trích đoạn',
+  /**
+   * Nhãn của nút đọc toàn văn, ba trạng thái.
+   *
+   * Ở đây chứ không viết thẳng trong component vì nút này được vẽ ở HAI nhánh
+   * của cùng một tab (có trích đoạn, và đã tải về rỗng). Hai bản chép tay của
+   * cùng một nhãn sẽ lệch nhau ngay lần đổi đầu tiên, và lúc đó cùng một nút mang
+   * hai tên tùy theo chuyện gì vừa xảy ra.
+   */
+  docToanVan: 'Đọc toàn văn chương',
+  docLai: 'Đọc lại',
+  dangDoc: 'đang đọc…',
 
   // trục sản xuất — cửa sổ của lane chương
   cuaSo: (from: number, to: number, tong: number) => `${from}–${to} / ${tong}`,
@@ -669,6 +680,20 @@ export const GIAI_THICH = {
   chuaCoHopDong: 'Chương này chưa có hợp đồng — Writer lập hợp đồng ở bước plan.',
   chuaCoDuyet: 'Chưa có bản duyệt cho chương này.',
   chuaCoBanThao: 'Chưa có bản thảo cho chương này.',
+  /**
+   * Đã gọi /chapters/{n} và nhận về rỗng — KHÁC với `chuaCoBanThao`, là câu nói
+   * lúc chưa gọi (chỉ dựa vào `excerpt` vắng trong snapshot).
+   *
+   * Phải là hai câu vì trạng thái sau khi bấm nút và trạng thái chưa bấm bao giờ
+   * trông y hệt nhau nếu dùng cùng một câu, và người vận hành mất tín hiệu duy
+   * nhất cho biết yêu cầu đã đi và đã về.
+   *
+   * Câu này KHÔNG nêu tên tệp nào. Nó phải còn đúng sau khi tầng Go ngã về bản
+   * chốt (`chapters/{NN}.md`) chứ không chỉ đọc bản nháp: lúc đó "chưa có bản
+   * nháp" thôi không còn là lý do, mà "chương chưa được viết" thì vẫn là.
+   */
+  docVeRong:
+    'Đã đọc từ store và nhận về rỗng — chương này chưa có nội dung nào được ghi.',
   chuaCoPhanQuyet: 'Chưa có phán quyết nào được ghi.',
   chuaCoChuong: 'Chưa có chương nào có dấu vết sản xuất.',
   duLieuLech: 'Dữ liệu store lệch',
@@ -710,8 +735,19 @@ export const GIAI_THICH = {
   /** Bề mặt đọc truyện */
   docChuaChonChuong:
     'Chọn một chương trong danh sách bên trái để đọc bản thảo của nó.',
+  /**
+   * KHÔNG nêu tên tệp trong câu này.
+   *
+   * Bản trước viết "nội dung chương chỉ được đọc từ bản nháp (drafts/); chương đã
+   * chốt mà không còn bản nháp thì không có gì để đọc ở đây" — câu đó chẩn đoán
+   * đúng một KHUYẾT ĐIỂM của tầng đọc, không phải một sự thật của thiết kế. Khi
+   * tầng Go ngã về bản chốt thì nó thành một câu sai đứng sẵn trong giao diện,
+   * và loại sai đó không ai đi kiểm lại.
+   * Ca rỗng vẫn còn thật sau bản sửa đó (chương chưa được viết), nên câu ở đây
+   * nói đúng phần còn đúng: bề mặt đã hỏi store, store không có gì để trả.
+   */
   chuongTrongStore:
-    'Chương có dấu vết sản xuất nhưng store trả về bản thảo rỗng. Nội dung chương chỉ được đọc từ bản nháp (drafts/); chương đã chốt mà không còn bản nháp thì không có gì để đọc ở đây.',
+    'Chương có dấu vết sản xuất nhưng store trả về bản thảo rỗng — chương chưa được viết, hoặc nội dung của nó chưa được ghi vào store.',
   banDuyetChuaCo:
     'Chương này chưa có bản duyệt. Editor duyệt sau khi bản thảo được chốt.',
 
@@ -726,6 +762,17 @@ export const GIAI_THICH = {
    * danh sách bên trái là CÔNG ĐOẠN của chương chứ không phải kết luận duyệt.
    * Vẽ một cột "kết luận" rồi điền công đoạn vào là đổi tên một sự thật khác.
    */
+  /**
+   * Chú giải của số đếm ở rail. Nói ra MẪU SỐ, không chỉ con số.
+   *
+   * Bản trước rail đếm vạch `gate` trên trục còn bề mặt liệt kê chương có dấu vết
+   * sản xuất: cùng một nhãn, hai mẫu số, và chúng lệch tới mức rail ghi 0 trong
+   * khi bề mặt có đủ bản duyệt 7 chiều. Giờ hai bên đếm cùng một thứ, và câu này
+   * để người vận hành đọc được nó là thứ gì mà không phải mở bề mặt ra đối chiếu.
+   */
+  railKiemDinhDem:
+    'Số chương có dấu vết sản xuất, tức số chương mở được bản duyệt. Bản duyệt của từng chương đọc ở bề mặt Kiểm định.',
+
   kiemDinhMotChuong:
     'Store ghi bản duyệt theo từng chương, và API trả bản duyệt của đúng chương đang chọn. Chưa có danh sách kết luận duyệt cho cả sách, nên danh sách bên trái hiện công đoạn của chương — không phải kết luận duyệt của nó.',
   chuaChonChuongDuyet:

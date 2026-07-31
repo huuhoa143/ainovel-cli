@@ -24,12 +24,21 @@ export function BangChuong({
   capabilities,
   chuongChon,
   onChon,
+  dangChay,
   khiTrong,
 }: {
   rows: ChapterRow[];
   capabilities: Capabilities;
   chuongChon: number | undefined;
   onChon: (n: number) => void;
+  /**
+   * Máy còn đang chạy không. Chỉ dùng để bật nhịp đập của đốm trạng thái, và nó
+   * là THAM SỐ chứ không suy từ `rows`: `stage === 'drafting'` là công đoạn đã
+   * ghi vào store, nên một chương chết dở giữa lúc soạn cũng mang giá trị đó.
+   * Bắt buộc, không optional — bỏ quên nó thì nhịp đập tắt im lặng, và một hàng
+   * đang chạy mà không đập là nói dối theo hướng ngược lại.
+   */
+  dangChay: boolean;
   /**
    * Câu thay thế khi không có hàng nào. Cần vì bảng rỗng có hai nghĩa khác nhau:
    * store chưa có chương nào, hay phép lọc mức xem đã loại hết. Nói sai một
@@ -88,7 +97,7 @@ export function BangChuong({
                 {r.title ? r.title : <span className="draft">{CHU.chuaDatTieuDe}</span>}
               </td>
               <td>
-                <TrangThai tt={tt} />
+                <TrangThai tt={tt} dap={dangChay} />
               </td>
               <td className="who">{vai || <span className="trong">{CHU.khongCo}</span>}</td>
               <td className="num">{tu ?? <span className="trong">{CHU.khongCo}</span>}</td>

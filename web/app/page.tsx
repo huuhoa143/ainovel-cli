@@ -30,6 +30,7 @@ import {
   soHangAn,
   vieccTonBiAn,
 } from '@/lib/phamVi';
+import { mayDangChay } from '@/lib/song';
 import type { Snapshot } from '@/lib/types';
 import { useStudio } from '@/lib/useStudio';
 
@@ -236,6 +237,7 @@ function Canvas({
           capabilities={snapshot.capabilities}
           chuongChon={chuongChon}
           onChon={onChonChuong}
+          dangChay={mayDangChay(snapshot)}
           khiTrong={
             snapshot.chapters.length > 0 ? GIAI_THICH.bangTrongPhamVi : undefined
           }

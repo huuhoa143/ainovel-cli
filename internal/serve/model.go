@@ -91,8 +91,26 @@ type ChapterRow struct {
 
 // Dimension là một chiều trong bản duyệt của Editor.
 type Dimension struct {
-	Name    string `json:"name"`
-	Score   int    `json:"score,omitempty"`
+	Name string `json:"name"`
+	// Con trỏ, không phải int: điểm 0 và điểm VẮNG là hai chuyện khác nhau. 0/100
+	// là điểm Editor thật sự chấm — điểm tệ nhất có thể — còn vắng là chiều không
+	// được chấm.
+	//
+	// `int` cộng `omitempty` gộp hai chuyện đó lại: 0 là zero-value nên omitempty
+	// bỏ luôn khóa, và client nhận đúng thứ mà một chiều chưa chấm nhận được. Đo
+	// được trên bản mẫu: chiều foreshadow chấm 0 ra JSON KHÔNG có khóa "score",
+	// trong khi các chiều cùng bản duyệt có "score": 88 bình thường.
+	//
+	// Đáng ghi lại vì phía web ĐÃ phòng đúng ca này (`d.score != null` trong
+	// BanDuyet.tsx, kèm comment giải thích) nhưng phòng vô ích: server đã làm rụng
+	// dữ liệu trước khi tới client. Một lớp phòng ở đúng chỗ vẫn không cứu được khi
+	// tầng dưới đã mất thông tin.
+	//
+	// Bỏ omitempty là đủ, không cần con trỏ: domain.DimensionScore.Score là `int`
+	// với thẻ `json:"score"` không omitempty, nên store LUÔN có một con số. "Vắng"
+	// không phải trạng thái biểu diễn được ở tầng dưới, nên dựng con trỏ ở đây chỉ
+	// là máy móc dư cho một ca không tồn tại.
+	Score   int    `json:"score"`
 	Verdict string `json:"verdict,omitempty"`
 	Comment string `json:"comment,omitempty"`
 }

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { layChuong } from '@/lib/api';
 import { soTu } from '@/lib/dinhdang';
 import { CHU, GIAI_THICH, TRANG_THAI_CHUONG } from '@/lib/nhan';
+import { mayDangChay } from '@/lib/song';
 import type { ChapterDetail, Contract, Review, Selection, Snapshot } from '@/lib/types';
 
 import { BanDuyet } from './BanDuyet';
@@ -146,7 +147,9 @@ function TrangThaiChuong({
 }) {
   const row = snapshot?.chapters.find((r) => r.chapter === chuong);
   if (!row) return null;
-  return <TrangThai tt={TRANG_THAI_CHUONG[row.stage]} />;
+  // Cùng một sự thật liveness với bảng chương và thanh transport — nếu ba chỗ
+  // này suy khác nhau thì một màn hình lại nói ba điều, đúng lỗi đã sửa.
+  return <TrangThai tt={TRANG_THAI_CHUONG[row.stage]} dap={mayDangChay(snapshot)} />;
 }
 
 /* ── tab Hợp đồng ─────────────────────────────────────────────────────── */
@@ -281,10 +284,25 @@ function TabBanThao({
       .map((d) => d.trim())
       .filter(Boolean);
 
+    // Đã tải xong mà không có đoạn nào: GIỮ tiêu đề và GIỮ nút.
+    //
+    // Bản trước bỏ cả hai, và hệ quả đo được là một ngõ cụt: sau khi bấm, panel
+    // trông y hệt lúc chưa bấm bao giờ — chỉ khác là nút không còn. Người vận
+    // hành không có tín hiệu nào cho biết yêu cầu đã đi và đã về, và không bấm
+    // lại được, vì `useEffect` ở trên chỉ reset theo `[tacPham, chuong]` nên
+    // đường duy nhất là đổi tab rồi quay lại.
+    //
+    // Câu giải thích cũng phải khác câu lúc chưa bấm (`chuaCoBanThao`), nếu không
+    // hai trạng thái khác nhau lại nói cùng một điều — chính cái làm ngõ cụt này
+    // vô hình.
     if (doan.length === 0) {
       return (
         <div className="ibody">
-          <p className="trong">{GIAI_THICH.chuaCoBanThao}</p>
+          <h3>{CHU.trichDoan}</h3>
+          <p className="trong">{GIAI_THICH.docVeRong}</p>
+          <button type="button" className="docthem" onClick={doc} disabled={dangTai}>
+            {dangTai ? CHU.dangDoc : CHU.docLai}
+          </button>
         </div>
       );
     }
@@ -318,7 +336,7 @@ function TabBanThao({
       )}
       {loi ? <p className="trong">{loi}</p> : null}
       <button type="button" className="docthem" onClick={doc} disabled={dangTai}>
-        {dangTai ? 'đang đọc…' : 'Đọc toàn văn chương'}
+        {dangTai ? CHU.dangDoc : CHU.docToanVan}
       </button>
     </div>
   );
