@@ -246,21 +246,72 @@ const (
 // Ngã về mà không nói là đổi một lỗi lấy một lỗi khác: giao diện đang gắn nhãn
 // "Bản thảo", nên trả bản chốt dưới nhãn đó là hết rỗng nhưng thành gọi sai tên.
 // Trường source để giao diện phân biệt được, và bỏ trống khi không có nội dung nào.
-func noiDungChuong(st *store.Store, n int) (text string, words int, nguon string, err error) {
-	if text, words, err = st.Drafts.LoadChapterContent(n); err != nil {
-		return "", 0, "", err
-	}
-	if text != "" {
-		return text, words, NguonNhap, nil
-	}
-	chot, err := st.Drafts.LoadChapterText(n)
+func noiDungChuong(st *store.Store, n int) (noiDung, error) {
+	tho, _, err := st.Drafts.LoadChapterContent(n)
 	if err != nil {
-		return "", 0, "", err
+		return noiDung{}, err
 	}
-	if chot == "" {
-		return "", 0, "", nil
+	nguon := NguonNhap
+	if tho == "" {
+		if tho, err = st.Drafts.LoadChapterText(n); err != nil {
+			return noiDung{}, err
+		}
+		if tho == "" {
+			return noiDung{}, nil
+		}
+		nguon = NguonChot
 	}
-	return chot, domain.WordCount(chot), NguonChot, nil
+	tieuDe, than := tachTieuDeH1(tho)
+	return noiDung{Text: than, Words: domain.WordCount(than), Nguon: nguon, TieuDe: tieuDe}, nil
+}
+
+// noiDung là nội dung một chương đã tách khỏi lớp trình bày markdown.
+//
+// Gói lại thành struct thay vì trả bốn giá trị rời vì cả hai bên đọc đều cần cùng
+// một phép biến đổi (tách H1, rồi đếm từ TRÊN phần đã tách). Bốn giá trị rời thì
+// mỗi bên tự ghép, và bản sửa gần nhất trong repo này đúng là một lỗi kiểu đó:
+// bề rộng khung sự kiện TUI được tính ở sáu chỗ theo hai công thức, nên một chỗ
+// cắt mất chữ giữa từ.
+type noiDung struct {
+	Text  string // thân chương, ĐÃ tách dòng `# tiêu đề` mở đầu
+	Words int    // đếm trên thân — không tính dòng tiêu đề
+	Nguon string
+	// TieuDe là tiêu đề đọc từ H1. Chỉ dùng khi dàn ý không có, xem handleChapter.
+	TieuDe string
+}
+
+// tachTieuDeH1 tách dòng tiêu đề markdown mở đầu ra khỏi thân chương.
+//
+// # Lỗi mà nó sửa
+//
+// Tệp chương do engine ghi luôn mở bằng `# <tiêu đề>` — cùng quy ước mà
+// internal/domain/runtime.go:101 dùng để đọc tên tác phẩm. Trước bản sửa này API
+// trả tiêu đề HAI LẦN: một lần ở trường `title`, một lần nằm nguyên trong `text`.
+// Giao diện đọc dựng `<h2>` từ `title` rồi in `text` thành từng đoạn, nên đoạn đầu
+// của MỌI chương hiện ra là `# Hòm gỗ ở bến bắc`.
+//
+// Không chỉ là xấu. Cùng một dòng thừa làm sai thêm hai chỗ đo được:
+//
+//   - `words` đếm cả dòng tiêu đề, nên số từ mọi chương đều lệch lên vài từ. Bảng
+//     chương và thanh dưới đều lấy từ số này.
+//   - `excerpt` mở đầu bằng dấu thăng thay vì bằng văn.
+//
+// # Vì sao TRẢ tiêu đề ra chứ không bỏ đi
+//
+// `chapterTitle` lấy tiêu đề từ DÀN Ý, và dàn ý có thể không có mục cho chương này
+// (chương nhập từ ngoài, dàn ý sửa tay, chương viết chen). Khi đó H1 là chỗ duy
+// nhất còn tiêu đề — cắt mà không trả lại là đổi một lỗi trình bày lấy một lỗi mất
+// dữ liệu.
+func tachTieuDeH1(text string) (tieuDe, than string) {
+	dauVan := strings.TrimLeft(text, " \t\r\n")
+	if !strings.HasPrefix(dauVan, "# ") {
+		return "", text
+	}
+	dong, con, _ := strings.Cut(dauVan, "\n")
+	// Bỏ `《》` và dấu nháy y như runtime.go làm với tên tác phẩm: mô hình có lúc
+	// bọc tiêu đề trong ngoặc kép hoặc ngoặc sách.
+	tieuDe = strings.Trim(strings.TrimSpace(strings.TrimPrefix(dong, "# ")), "《》\"")
+	return tieuDe, strings.TrimLeft(con, " \t\r\n")
 }
 
 func (s *server) handleChapter(w http.ResponseWriter, r *http.Request) {
@@ -275,10 +326,16 @@ func (s *server) handleChapter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	text, words, nguon, err := noiDungChuong(st, n)
+	nd, err := noiDungChuong(st, n)
 	if err != nil {
 		writeErr(w, http.StatusNotFound, fmt.Errorf("chương %d chưa có nội dung", n))
 		return
+	}
+	// Dàn ý là nguồn tiêu đề chính; H1 trong tệp chỉ là lưới đỡ. Không ngã về thì
+	// chương nào không có mục dàn ý sẽ hiện "chưa đặt tiêu đề" dù tệp có tiêu đề.
+	tieuDe := chapterTitle(st, n)
+	if tieuDe == "" {
+		tieuDe = nd.TieuDe
 	}
 	out := struct {
 		Chapter  int       `json:"chapter"`
@@ -288,7 +345,7 @@ func (s *server) handleChapter(w http.ResponseWriter, r *http.Request) {
 		Source   string    `json:"source,omitempty"`
 		Contract *Contract `json:"contract,omitempty"`
 		Review   *Review   `json:"review,omitempty"`
-	}{Chapter: n, Title: chapterTitle(st, n), Words: words, Text: text, Source: nguon}
+	}{Chapter: n, Title: tieuDe, Words: nd.Words, Text: nd.Text, Source: nd.Nguon}
 
 	if sel := buildSelection(st, n); sel != nil {
 		out.Contract, out.Review = sel.Contract, sel.Review

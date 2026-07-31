@@ -36,10 +36,11 @@ func TestChuongDaChotVanDocDuocToanVan(t *testing.T) {
 		t.Fatalf("ca kiểm này đòi KHÔNG có tệp nháp, nhưng Stat cho %v", err)
 	}
 
-	text, words, nguon, err := noiDungChuong(st, 1)
+	nd, err := noiDungChuong(st, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
+	text, words, nguon := nd.Text, nd.Words, nd.Nguon
 	if text == "" {
 		t.Fatal("chương đã chốt trả về văn bản rỗng — đúng lỗi mà bản sửa này nhằm vào")
 	}
@@ -73,15 +74,15 @@ func TestBanNhapThangBanChot(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	text, _, nguon, err := noiDungChuong(st, 1)
+	nd, err := noiDungChuong(st, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(text, "đang viết lại") {
-		t.Errorf("phải trả bản nháp, được: %q", text)
+	if !strings.Contains(nd.Text, "đang viết lại") {
+		t.Errorf("phải trả bản nháp, được: %q", nd.Text)
 	}
-	if nguon != NguonNhap {
-		t.Errorf("nguồn = %q, phải là %q", nguon, NguonNhap)
+	if nd.Nguon != NguonNhap {
+		t.Errorf("nguồn = %q, phải là %q", nd.Nguon, NguonNhap)
 	}
 }
 
@@ -96,12 +97,12 @@ func TestChuongChuaVietTraRong(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	text, words, nguon, err := noiDungChuong(st, 7)
+	nd, err := noiDungChuong(st, 7)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if text != "" || words != 0 || nguon != "" {
-		t.Errorf("chương chưa viết phải rỗng hoàn toàn, được text=%q words=%d nguồn=%q",
-			text, words, nguon)
+	if nd.Text != "" || nd.Words != 0 || nd.Nguon != "" || nd.TieuDe != "" {
+		t.Errorf("chương chưa viết phải rỗng hoàn toàn, được text=%q words=%d nguồn=%q tiêu đề=%q",
+			nd.Text, nd.Words, nd.Nguon, nd.TieuDe)
 	}
 }

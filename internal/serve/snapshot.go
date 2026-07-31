@@ -466,9 +466,9 @@ func buildSelection(st *store.Store, chapter int) *Selection {
 	}
 	// Cùng lý lẽ với handleChapter: chương đã nghiệm thu không còn tệp nháp, nên
 	// đọc thẳng LoadChapterContent làm số từ và đoạn trích của nó rỗng theo.
-	if text, words, _, err := noiDungChuong(st, chapter); err == nil {
-		sel.Words = words
-		sel.Excerpt = excerpt(text, 320)
+	if nd, err := noiDungChuong(st, chapter); err == nil {
+		sel.Words = nd.Words
+		sel.Excerpt = excerpt(nd.Text, 320)
 	}
 	return sel
 }

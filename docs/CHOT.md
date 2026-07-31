@@ -107,6 +107,7 @@ Ghi ra để không ai tưởng bị bỏ sót, và để lần sau không đào
 | `/cost` ở ca `stale_schema` trả `updated_at: ""` | `UsageStore.Load()` trả nil khi schema lệch, nên `buildCost` biết tệp TỒN TẠI (nó stat) mà không đọc được gì bên trong, kể cả mốc thời gian. Nên đúng ca cần bằng chứng nhất — "có chạy, chỉ không đọc được" — thì không có bằng chứng nào để hiện. Rẻ nhất: mang `mtime` của tệp ra. Nhánh render phía web đã có sẵn, tự bật khi Go có số |
 | `ToSanXuat.tsx:27-31` — comment "API chưa trả chi phí theo vai" giờ đã sai | `/cost` đã land. Cùng lớp "chú thích đúng lúc viết, thành sai vì code đổi bên dưới" |
 | Ảnh chụp ba bề mặt mới không ghi được ra tệp | MCP chặn ghi vào `docs/audit/screenshots/`. Ảnh nằm trong transcript của agent. Ghi ra để không ai tưởng có tệp |
+| `p.ChapterWordCounts` đếm cả dòng `# tiêu đề`, nên bảng chương lệch lên vài từ mỗi chương | ĐO ĐƯỢC trên sách thật: chương 7 bảng ghi 2.532, bề mặt Đọc ghi 2.527 — đúng 5 từ của tiêu đề. Số đúng là 2.527. Nhưng nguồn sai nằm ở ENGINE (chỗ ghi progress), không ở `serve`, và `ChapterWordCounts`/`TotalWordCount` còn được engine dùng để xét độ dài chương. Sửa 5 từ ở đó là đổi ngưỡng của đường viết để lấy một sai số 0,2% mà không ai đọc được bằng mắt. Chênh này do bản sửa `tachTieuDeH1` LÀM LỘ RA, không phải làm ra: trước đó cả hai bề mặt cùng lệch +5 nên cùng sai mà khớp nhau |
 
 ## Ai sở hữu tệp nào
 
