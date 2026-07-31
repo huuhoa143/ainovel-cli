@@ -490,11 +490,28 @@ func (s *ProgressStore) ValidateChapterWork(chapter int) error {
 		return nil
 	}
 
-	verb := i18n.F("重写")
+	// Dịch CẢ CÂU cho từng luồng, không ghép một từ đã dịch vào một câu đã dịch.
+	//
+	// Bản trước lấy `verb := i18n.F("重写")` rồi chèn vào `待%s队列`. Vấn đề là msgid
+	// `重写` cũng được dùng làm NHÃN đứng riêng (entry/tui/panels_sidebar.go:335),
+	// nên bản dịch của nó phải hoa đầu — "Viết lại". Chèn vào giữa câu thì ra
+	// "hàng đợi Viết lại", sai chính tả.
+	//
+	// Không thể tách bằng cách cho msgid hai bản dịch: msgid là khóa, một khóa một
+	// giá trị. Nên chỗ ghép mới là chỗ sai, không phải bản dịch.
+	//
+	// Đây là lớp lỗi tiếng Trung KHÔNG BAO GIỜ gặp — chữ Hán không có hoa/thường —
+	// nên nó do chính việc việt hóa sinh ra, và không phép đo nào trên catalog thấy
+	// được: cả hai mảnh đều "đã dịch", chỉ có câu ghép ra là sai.
+	//
+	// Ba chỗ khác dùng cùng mẫu nhưng ĐÚNG, đừng "sửa" chúng: resume.go:46 đặt từ
+	// đó ở ĐẦU câu, và panels_sidebar.go:335 dùng nó làm nhãn đứng riêng — cả hai
+	// cần hoa đầu.
+	msg := i18n.F("第 %d 章不在待重写队列中，当前队列：%v。请先处理队列内章节，再动新章节: %w")
 	if p.Flow == domain.FlowPolishing {
-		verb = i18n.F("打磨")
+		msg = i18n.F("第 %d 章不在待打磨队列中，当前队列：%v。请先处理队列内章节，再动新章节: %w")
 	}
-	return fmt.Errorf(i18n.F("第 %d 章不在待%s队列中，当前队列：%v。请先处理队列内章节，再动新章节: %w"), chapter, verb, p.PendingRewrites, errs.ErrToolConflict)
+	return fmt.Errorf(msg, chapter, p.PendingRewrites, errs.ErrToolConflict)
 }
 
 func normalizePendingRewrites(chapters, completed []int) ([]int, error) {

@@ -516,12 +516,32 @@ func (t *CommitChapterTool) validateRewriteDraft(chapter int, title string, prog
 	if changed {
 		return content, nil
 	}
-	mode := i18n.F("重写")
+	return "", loiKhongCoThayDoi(chapter, progress)
+}
+
+// loiKhongCoThayDoi dựng lỗi "lượt gia công/viết lại không đổi gì", dịch CẢ CÂU
+// theo từng luồng.
+//
+// Hai lý do tách thành hàm, và lý do thứ hai mới là lý do chính:
+//
+//  1. Câu này trước đây được chép ở HAI chỗ trong cùng tệp (rewriteChanged và
+//     nhánh kiểm sau đó). Hai bản chép của cùng một câu sẽ lệch nhau ngay lần
+//     đổi từ ngữ đầu tiên.
+//  2. Bản trước lấy `mode := i18n.F("重写")` rồi chèn vào `未检测到%s改动`. Nhưng
+//     msgid `重写` cũng là NHÃN đứng riêng ở entry/tui/panels_sidebar.go:335 nên
+//     bản dịch phải hoa đầu — "Viết lại". Chèn giữa câu thì ra "không thấy thay
+//     đổi Viết lại nào", sai chính tả. Một msgid không thể có hai bản dịch, nên
+//     chỗ ghép mới là chỗ sai.
+//
+// Lớp lỗi này tiếng Trung không bao giờ gặp vì chữ Hán không có hoa/thường, và
+// không phép đo nào trên catalog thấy được: cả hai mảnh đều đã dịch, chỉ câu ghép
+// ra là sai.
+func loiKhongCoThayDoi(chapter int, progress *domain.Progress) error {
+	msg := i18n.F("第 %d 章正文和标题均未发生变化，未检测到重写改动: %w")
 	if progress != nil && progress.Flow == domain.FlowPolishing {
-		mode = i18n.F("打磨")
+		msg = i18n.F("第 %d 章正文和标题均未发生变化，未检测到打磨改动: %w")
 	}
-	return "", fmt.Errorf(i18n.F("第 %d 章正文和标题均未发生变化，未检测到%s改动: %w"),
-		chapter, mode, errs.ErrToolPrecondition)
+	return fmt.Errorf(msg, chapter, errs.ErrToolPrecondition)
 }
 
 func (t *CommitChapterTool) rewriteChanged(chapter int, content, title string) (bool, error) {
@@ -578,12 +598,7 @@ func (t *CommitChapterTool) executeRewriteCommit(a commitArgs, progress *domain.
 			return nil, err
 		}
 		if !changed {
-			mode := i18n.F("重写")
-			if progress != nil && progress.Flow == domain.FlowPolishing {
-				mode = i18n.F("打磨")
-			}
-			return nil, fmt.Errorf(i18n.F("第 %d 章正文和标题均未发生变化，未检测到%s改动: %w"),
-				chapter, mode, errs.ErrToolPrecondition)
+			return nil, loiKhongCoThayDoi(chapter, progress)
 		}
 	}
 
