@@ -80,6 +80,27 @@ export function TacPhamMoi({
 
       <p className="steerhint">{GIAI_THICH.taoSachGiaiThich}</p>
 
+      {/* Ba bước nói TRƯỚC, không phải sau. Người dùng bấm "Bắt đầu viết" rồi không biết làm
+          gì tiếp; một phần vì họ chưa bao giờ được cho biết cái gì sẽ xảy ra. */}
+      <section className="sect">
+        <h2>{CHU.sauKhiBamGi}</h2>
+        <ol className="baBuoc">
+          <li>
+            <span className="vai">Arbiter</span>
+            {CHU.buocArbiter}
+          </li>
+          <li>
+            <span className="vai">Architect</span>
+            {CHU.buocArchitect}
+          </li>
+          <li>
+            <span className="vai">Writer</span>
+            {CHU.buocWriter}
+          </li>
+        </ol>
+        <p className="steerhint">{GIAI_THICH.batDauRoiKhongPhaiLamGi}</p>
+      </section>
+
       <section className="sect">
         <form
           className="bieuMau"
@@ -96,6 +117,7 @@ export function TacPhamMoi({
               onBlur={goiTen}
               rows={6}
               required
+              disabled={dangGui}
               placeholder="Viết truyện trinh thám điều tra dài, nhịp chậm. Nhân vật chính là một chấp pháp trẻ điều tra chuỗi mất tích ở một trấn ven sông. Giọng tiết chế, mỗi chương khép bằng một hình ảnh cụ thể."
             />
           </label>
@@ -108,6 +130,7 @@ export function TacPhamMoi({
               placeholder="tran-tham-ven-song"
               pattern="[a-z0-9][a-z0-9_\-]{0,63}"
               required
+              disabled={dangGui}
             />
           </label>
           <p className="steerhint">{GIAI_THICH.taoSachTenThuMuc}</p>
@@ -132,6 +155,20 @@ export function TacPhamMoi({
               {dangGui ? CHU.dangGui : CHU.batDauViet}
             </button>
           </div>
+
+          {/* Lượt chờ này DÀI: `POST /books` gọi `startup.PrepareQuick` ngay trong request,
+              tức một lượt Arbiter thật — nhật ký phán quyết của hai cuốn đã tạo ghi 10,6s và
+              14,5s. Một nút đổi chữ thành "Đang gửi…" trong mười lăm giây là bề mặt im lặng
+              đúng vào lúc người dùng cần biết nhất, và họ đọc nó thành treo.
+              Nói ra ai đang làm, làm gì, và mất khoảng bao lâu. */}
+          {dangGui ? (
+            <p className="dangCho" role="status">
+              <span className="q" aria-hidden="true" />
+              <span>
+                <b>{CHU.arbiterDangDoc}</b> {GIAI_THICH.arbiterDangDocLau}
+              </span>
+            </p>
+          ) : null}
         </form>
       </section>
 

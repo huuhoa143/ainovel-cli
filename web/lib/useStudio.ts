@@ -108,6 +108,10 @@ export interface Studio {
   chonTacPham: (id: string) => void;
   chonChuong: (n: number) => void;
   chonKhu: (k: Khu) => void;
+  /** Mở tác phẩm vừa tạo: đổi tác phẩm + về bề mặt mặc định, một lần ghi URL. */
+  moTacPhamVuaTao: (id: string) => void;
+  /** Mở một chương để đọc: chọn chương + sang bề mặt đọc, một lần ghi URL. */
+  docChuong: (n: number) => void;
   taiLai: () => void;
 }
 
@@ -334,6 +338,56 @@ export function useStudio(): Studio {
     if (id) ghiUrl(id, chuongRef.current, k);
   }, []);
 
+  /**
+   * Mở một tác phẩm VỪA TẠO: đổi tác phẩm và đổi khu trong MỘT hành động.
+   *
+   * # Vì sao không gọi `chonTacPham` rồi `chonKhu`
+   *
+   * Ba dòng `xxxRef.current = xxx` ở trên chạy trong lúc RENDER. Gọi hai hành động liền nhau
+   * trong cùng một event handler thì React gộp hai lần đặt state và KHÔNG render ở giữa, nên
+   * `tacPhamRef.current` bên trong `chonKhu` vẫn là cuốn CŨ. Hệ quả đo được: `ghiUrl` ghi
+   * `?tp=<cuốn cũ>` đè lên cuốn mới, và `?ch=` mang theo số chương của cuốn cũ — tải lại
+   * trang là quay về cuốn trước, đọc một chương không thuộc cuốn đang xem.
+   *
+   * Đây đúng cái bẫy mà chú thích của `ghiUrl` đã cảnh báo ("có hai chỗ ghi thì chỗ nào chạy
+   * sau sẽ xóa tham số của chỗ kia"), chỉ là lần này hai chỗ ghi nằm trong hai hành động
+   * chạy trong cùng một nhịp. Nên hành động này ghi URL đúng một lần, với cả ba mảnh.
+   */
+  /**
+   * Mở một chương ĐỂ ĐỌC: chọn chương và sang bề mặt đọc trong một hành động.
+   *
+   * Cùng lý do như `moTacPhamVuaTao` — và lần này lỗi đã ĐO ĐƯỢC: dải việc tiếp theo gọi
+   * `chonChuong(1)` rồi `chonKhu('ban-thao')`, và URL kết quả là `?tp=…&khu=ban-thao`,
+   * MẤT `ch=1`. Vì `chonKhu` đọc `chuongRef.current` mà ref đó chỉ được đặt lại lúc render,
+   * nên nó vẫn thấy "chưa chọn chương" và ghi URL không có chương.
+   *
+   * Hư hại không thấy ngay vì bề mặt đọc tự chọn chương khi vào mà chưa có (DocTruyen.tsx):
+   * mở chương 7 rồi tải lại trang thì nó im lặng đưa về chương 1. Tức URL — thứ được thiết
+   * kế để giữ đúng chỗ đang xem — nói sai, và cơ chế cứu ở tầng trên che mất chuyện đó.
+   */
+  const docChuong = useCallback(
+    (n: number) => {
+      setChuongChon(n);
+      setKhu('ban-thao');
+      const id = tacPhamRef.current;
+      if (!id) return;
+      ghiUrl(id, n, 'ban-thao');
+      void napSnapshot(id, n).catch((e: unknown) => {
+        setLoi(e instanceof Error ? e.message : String(e));
+      });
+    },
+    [napSnapshot],
+  );
+
+  const moTacPhamVuaTao = useCallback((id: string) => {
+    setChuongChon(undefined);
+    setSnapshot(undefined);
+    setHoSo(undefined);
+    setTacPham(id);
+    setKhu(KHU_MAC_DINH);
+    ghiUrl(id, undefined, KHU_MAC_DINH);
+  }, []);
+
   const taiLai = useCallback(() => setLanTai((n) => n + 1), []);
 
   return useMemo(
@@ -352,6 +406,8 @@ export function useStudio(): Studio {
       chonTacPham,
       chonChuong,
       chonKhu,
+      moTacPhamVuaTao,
+      docChuong,
       taiLai,
     }),
     [
@@ -369,6 +425,8 @@ export function useStudio(): Studio {
       chonTacPham,
       chonChuong,
       chonKhu,
+      moTacPhamVuaTao,
+      docChuong,
       taiLai,
     ],
   );

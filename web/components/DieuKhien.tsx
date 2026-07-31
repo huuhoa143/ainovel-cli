@@ -95,17 +95,41 @@ export function DieuKhien({
       ) : null}
 
       {maMoy === false ? (
-        // Chưa mở máy: chỉ hiện MỘT nút. Hiện cả Chạy/Dừng/Cho đi tiếp lúc này là bốn nút
-        // sẽ thất bại với cùng một lỗi "chưa mở engine".
-        <button
-          type="button"
-          className="dkNut"
-          disabled={khoa}
-          title={GIAI_THICH.vongDoiCanMoMay}
-          onClick={() => goi('mo', () => moMay(tacPham))}
-        >
-          {dangGui === 'mo' ? CHU.dangGui : CHU.moMay}
-        </button>
+        // Chưa mở máy: CHẠY vẫn là nút hạng nhất, và "Mở máy" hạ xuống hàng phụ.
+        //
+        // Bản trước chỉ hiện đúng một nút "Mở máy cho tác phẩm này", và đó là một ngõ chết
+        // đọc bằng tiếng của người dựng máy: người dùng muốn viết tiếp thì phải học rằng có
+        // một bước tên "mở máy" đứng trước. Người dùng nói nguyên văn: "không biết luồng
+        // chạy như nào… rời rạc".
+        //
+        // Điều làm nó thành ngõ chết KHÔNG cần thiết: `boMay.chay` (engine.go:242) tự gọi
+        // `mo(id)` trước khi Resume, nên `POST /run` trên một engine đang đóng vẫn chạy
+        // được. Bức tường hai bước là do giao diện tự dựng, không do server đòi.
+        //
+        // "Mở máy" vẫn còn vì lý do nó ra đời: gắn engine KHÔNG gọi model lần nào, nên đó là
+        // đường sửa model theo vai mà không tiêu tiền. Nó chỉ thôi làm nút duy nhất.
+        <>
+          <button
+            type="button"
+            className="dkNut dkChay"
+            disabled={khoa}
+            title={GIAI_THICH.taoSachSeTieuTien}
+            onClick={() =>
+              goi('chay', () => chaySach(tacPham).then(() => datMoMay(true)))
+            }
+          >
+            {dangGui === 'chay' ? CHU.dangGui : `▶ ${CHU.chay}`}
+          </button>
+          <button
+            type="button"
+            className="dkNut dkPhu"
+            disabled={khoa}
+            title={GIAI_THICH.vongDoiCanMoMay}
+            onClick={() => goi('mo', () => moMay(tacPham).then(() => datMoMay(true)))}
+          >
+            {dangGui === 'mo' ? CHU.dangGui : CHU.moMay}
+          </button>
+        </>
       ) : (
         <>
           {/* Chạy và Dừng loại trừ nhau theo trạng thái thật, không phải hai nút luôn

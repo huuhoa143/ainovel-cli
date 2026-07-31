@@ -2,8 +2,9 @@
 
 import { soTu } from '@/lib/dinhdang';
 import type { Khu } from '@/lib/khu';
-import { CHU, GIAI_THICH } from '@/lib/nhan';
+import { CHU, GIAI_THICH, giaiCongDoan, nhanVai } from '@/lib/nhan';
 import type { Snapshot } from '@/lib/types';
+import type { CongDoanSong } from '@/lib/useStudio';
 
 /**
  * Dải VIỆC TIẾP THEO — dòng đầu tiên của bề mặt mặc định.
@@ -30,18 +31,30 @@ import type { Snapshot } from '@/lib/types';
  * `DocTruyen` với `chuongChon` rỗng hiện "chưa chọn chương" — tức một bề mặt đọc không có
  * gì để đọc. Đường cũ là ba bước: đổi khu, hiểu rằng danh sách bên trái bấm được, bấm một
  * dòng. Đây là đúng chỗ người dùng rơi ra, vì thành quả — thứ duy nhất họ thật sự muốn —
- * nằm sau ba bước không ai dẫn. Nên nút này chọn chương RỒI đổi khu.
+ * nằm sau ba bước không ai dẫn.
+ *
+ * Nên nút này mở chương bằng MỘT hành động (`docChuong`), không phải "chọn chương rồi đổi
+ * khu". Bản đầu làm đúng kiểu ghép đó và URL mất `ch=`: React gộp hai lần đặt state nên
+ * hành động thứ hai còn đọc ref của nhịp cũ. Chi tiết ở lib/useStudio.ts.
  */
 export function ViecTiepTheo({
   snapshot,
   dangChay,
+  song,
   onChonKhu,
-  onChonChuong,
+  onDocChuong,
 }: {
   snapshot: Snapshot;
   dangChay: boolean;
+  /** Công đoạn suy từ dòng SSE — chỉ dùng khi máy đang chạy. */
+  song: CongDoanSong | undefined;
   onChonKhu: (k: Khu) => void;
-  onChonChuong: (n: number) => void;
+  /**
+   * Mở một chương để đọc — MỘT hành động, không phải chọn chương rồi đổi khu.
+   *
+   * Ghép hai hành động ở đây làm URL mất `ch=` (xem `docChuong` trong lib/useStudio.ts).
+   */
+  onDocChuong: (n: number) => void;
 }) {
   const b = snapshot.book;
   const xong = b.completed_chapters;
@@ -50,11 +63,6 @@ export function ViecTiepTheo({
   // Chương mới nhất CÓ BẢN THẢO, không phải chương có số lớn nhất: một chương đang soạn
   // chưa có tệp nào để đọc, nên mở nó ra là mở một khổ đọc trống.
   const chuongDoc = chuongDocDuoc(snapshot);
-
-  const doc = (n: number) => {
-    onChonChuong(n);
-    onChonKhu('ban-thao');
-  };
 
   const tt = trangThai(snapshot, dangChay);
 
@@ -65,6 +73,7 @@ export function ViecTiepTheo({
       <div className="vttChu">
         <p className="vttCau">{tt.cau}</p>
         <p className="vttHint">{tt.hint}</p>
+        {dangChay ? <DangLam snapshot={snapshot} song={song} /> : null}
       </div>
 
       <div className="vttNut">
@@ -84,7 +93,11 @@ export function ViecTiepTheo({
         ) : null}
 
         {chuongDoc !== undefined ? (
-          <button type="button" className="vttChinh" onClick={() => doc(chuongDoc.so)}>
+          <button
+            type="button"
+            className="vttChinh"
+            onClick={() => onDocChuong(chuongDoc.so)}
+          >
             {chuongDoc.nhan}
           </button>
         ) : null}
@@ -103,6 +116,73 @@ export function ViecTiepTheo({
         ) : null}
       </div>
     </section>
+  );
+}
+
+/**
+ * Dòng "đang làm gì" — ai, bước nào, chương nào — kèm đường tới dòng sự kiện.
+ *
+ * # Vì sao dòng này cần thiết dù transport đã có
+ *
+ * TUI gốc không có bề mặt nào cả: cột trái liệt kê vai đang chạy, cột giữa chảy sự kiện và
+ * văn model đang sinh ra. Người dùng nhìn một chỗ là biết máy đang làm gì. Web xé việc đó
+ * làm hai — trạng thái ở thanh dưới cùng, dòng sự kiện ở section thứ tư phải cuộn mới tới —
+ * và người dùng nói nguyên văn: "không có sự kết nối và rời rạc".
+ *
+ * Dòng này đặt câu trả lời ngay cạnh câu trạng thái, và cho một đường đi tới dòng sự kiện
+ * thay vì bắt tự tìm.
+ *
+ * # Vì sao dùng cùng một LUẬT với transport chứ không tự suy
+ *
+ * `transport.last_step` là bước VỪA XONG, không phải bước đang chạy — observer cố ý không
+ * ghi sự kiện "bắt đầu" vào runtime queue. Suy khác transport một chút là hai chỗ trên cùng
+ * một trang nói hai điều về cùng một engine, và đó là lớp lỗi tệ hơn im lặng.
+ */
+function DangLam({
+  snapshot,
+  song,
+}: {
+  snapshot: Snapshot;
+  song: CongDoanSong | undefined;
+}) {
+  const t = snapshot.transport;
+  const buoc = song?.buoc ?? t?.last_step;
+  const vai = song?.vai ?? t?.agent;
+  const dangBuoc = song?.dangChay ?? false;
+  // Chương đang soạn lấy từ bảng chương, không từ `book.completed_chapters + 1`: bảng có lỗ
+  // và chương đang soạn có thể là một chương bị trả về viết lại ở giữa cuốn.
+  const soan = snapshot.chapters.find((r) => r.stage === 'drafting')?.chapter;
+
+  if (!buoc && !vai && soan === undefined) return null;
+
+  return (
+    <p className="vttLive">
+      {vai ? <b>{nhanVai(vai)}</b> : null}
+      {buoc ? (
+        <span className="b" title={giaiCongDoan(buoc) ?? undefined}>
+          {buoc}
+        </span>
+      ) : null}
+      <span className="tt">
+        {dangBuoc ? CHU.buocDangChayNgan : CHU.congDoanVuaXong}
+        {/* Số chương chỉ thêm khi tên bước CHƯA mang nó.
+            ĐO ĐƯỢC trên cuốn đang chạy: engine phát `draft_chapter(chương 2)`, nên nối thêm
+            " · chương 2" cho ra "draft_chapter(chương 2) vừa xong · chương 2" — cùng một số
+            nói hai lần, và người đọc phải kiểm xem hai số đó có khác nhau không. */}
+        {soan !== undefined && !buoc?.includes(String(soan))
+          ? ` · ${CHU.chuong.toLowerCase()} ${soan}`
+          : ''}
+      </span>
+      <button
+        type="button"
+        className="vttNeo"
+        onClick={() =>
+          document.getElementById('dong-su-kien')?.scrollIntoView({ block: 'start' })
+        }
+      >
+        {CHU.xemDongSuKien}
+      </button>
+    </p>
   );
 }
 

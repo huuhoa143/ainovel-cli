@@ -42,6 +42,7 @@ import {
 } from '@/lib/phamVi';
 import { mayDangChay } from '@/lib/song';
 import { useMay } from '@/lib/useMay';
+import type { CongDoanSong } from '@/lib/useStudio';
 import type { Snapshot } from '@/lib/types';
 import { useStudio } from '@/lib/useStudio';
 
@@ -60,6 +61,19 @@ export default function Trang() {
 
   const sachDangXem = s.workshop?.books.find((b) => b.id === s.tacPham);
   const xuongTrong = s.workshop && s.workshop.books.length === 0;
+
+  /**
+   * Tạo xong thì ĐI THẲNG tới bề mặt sản xuất.
+   *
+   * `chonTacPham` giữ nguyên khu đang xem (`khuRef.current`), nên bản trước đứng lại ở
+   * chính biểu mẫu Tác phẩm mới — với một biểu mẫu trắng. Người dùng nói nguyên văn: "tôi
+   * bấm bắt đầu viết xong chả biết làm gì nữa luôn". Đúng: dấu hiệu duy nhất cho biết đã
+   * có gì xảy ra là tên tác phẩm trên thanh trên đổi.
+   *
+   * Đây là chỗ TUI gốc không thể sai được, vì nó không có điều hướng: xong phần cài đặt là
+   * bạn đang ở màn hình sống, thấy dòng sự kiện chạy. Web có điều hướng nên nó phải TỰ đi.
+   */
+  const xongTaoSach = s.moTacPhamVuaTao;
 
   // Cột inspector chỉ tồn tại ở khu dùng nó. Các bề mặt khác tự mang chi tiết
   // của mình, nên giữ lại 292px trống ở đó là lấy mất 1/5 bề rộng để hiện một
@@ -107,7 +121,7 @@ export default function Trang() {
         // Xưởng rỗng + ghi được → dẫn thẳng vào tạo tác phẩm. Hiện một trang trống kèm
         // một lệnh CLI là câu trả lời của bản chỉ-đọc; giờ studio tạo được nên để người
         // dùng tự đi tìm chỗ tạo là bắt họ đoán.
-        <TacPhamMoi onXong={s.chonTacPham} />
+        <TacPhamMoi onXong={xongTaoSach} />
       ) : xuongTrong ? (
         <XuongTrong root={s.workshop?.root} />
       ) : s.loi && !s.snapshot ? (
@@ -129,10 +143,13 @@ export default function Trang() {
             chuongChon={s.chuongChon}
             onChonChuong={s.chonChuong}
             onChonKhu={s.chonKhu}
+            onDocChuong={s.docChuong}
             onChonTacPham={s.chonTacPham}
+            onXongTaoSach={xongTaoSach}
             onChotCungDung={chotCungDung}
             nhapSan={nhapTuCungDung}
             suKien={s.suKien}
+            song={s.song}
             dangChay={mayDangChay(s.snapshot)}
           />
           {coInsp ? (
@@ -185,10 +202,13 @@ function Khu({
   chuongChon,
   onChonChuong,
   onChonKhu,
+  onDocChuong,
   onChonTacPham,
+  onXongTaoSach,
   onChotCungDung,
   nhapSan,
   suKien,
+  song,
   dangChay,
 }: {
   khu: KhuMa;
@@ -197,10 +217,14 @@ function Khu({
   chuongChon: number | undefined;
   onChonChuong: (n: number) => void;
   onChonKhu: (k: KhuMa) => void;
+  onDocChuong: (n: number) => void;
   onChonTacPham: (id: string) => void;
+  /** Tạo tác phẩm xong: đổi tác phẩm VÀ đổi khu — xem lý do ở `xongTaoSach`. */
+  onXongTaoSach: (id: string) => void;
   onChotCungDung: (banNhap: string) => void;
   nhapSan: string;
   suKien: Parameters<typeof DongSuKien>[0]['suKien'];
+  song: CongDoanSong | undefined;
   dangChay: boolean;
 }) {
   switch (khu) {
@@ -248,7 +272,7 @@ function Khu({
     case 'cau-hinh':
       return <CauHinhXuong />;
     case 'tac-pham-moi':
-      return <TacPhamMoi onXong={onChonTacPham} nhapSan={nhapSan} />;
+      return <TacPhamMoi onXong={onXongTaoSach} nhapSan={nhapSan} />;
     // Cùng dựng giai đoạn cần tác phẩm; cùng dựng mở sách thì không. Một khu cho cả hai,
     // chế độ suy từ việc có tác phẩm đang xem hay không.
     case 'cung-dung':
@@ -275,7 +299,9 @@ function Khu({
           chuongChon={chuongChon}
           onChonChuong={onChonChuong}
           onChonKhu={onChonKhu}
+          onDocChuong={onDocChuong}
           suKien={suKien}
+          song={song}
           dangChay={dangChay}
         />
       );
@@ -288,7 +314,9 @@ function Canvas({
   chuongChon,
   onChonChuong,
   onChonKhu,
+  onDocChuong,
   suKien,
+  song,
   dangChay,
 }: {
   snapshot: Snapshot;
@@ -296,7 +324,9 @@ function Canvas({
   chuongChon: number | undefined;
   onChonChuong: (n: number) => void;
   onChonKhu: (k: KhuMa) => void;
+  onDocChuong: (n: number) => void;
   suKien: Parameters<typeof DongSuKien>[0]['suKien'];
+  song: CongDoanSong | undefined;
   dangChay: boolean;
 }) {
   const canhBao = snapshot.warnings ?? [];
@@ -331,8 +361,9 @@ function Canvas({
       <ViecTiepTheo
         snapshot={snapshot}
         dangChay={dangChay}
+        song={song}
         onChonKhu={onChonKhu}
-        onChonChuong={onChonChuong}
+        onDocChuong={onDocChuong}
       />
 
       {/* Dữ liệu lệch là tin vận hành, không phải chi tiết nội bộ — hiện ngay
@@ -384,7 +415,8 @@ function Canvas({
         <NhatKy decisions={snapshot.decisions} />
       </section>
 
-      <section className="sect">
+      {/* `id` để dải việc tiếp theo cuộn tới được — xem `DangLam` trong ViecTiepTheo.tsx. */}
+      <section className="sect" id="dong-su-kien">
         <h2>
           Dòng sự kiện · <span className="phu">trực tiếp từ engine</span>
         </h2>

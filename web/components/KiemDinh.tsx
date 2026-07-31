@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+
 import { CHU, GIAI_THICH, TRANG_THAI_CHUONG } from '@/lib/nhan';
 import type { ChapterRow, Snapshot } from '@/lib/types';
 
@@ -42,6 +44,17 @@ export function KiemDinh({
 }) {
   const hang = snapshot.chapters;
   const sel = snapshot.selected;
+
+  // Cùng luật với bề mặt đọc (xem DocTruyen.tsx): vào mà chưa chọn chương thì tự chọn chương
+  // đầu tiên có dấu vết sản xuất, thay vì hiện một bề mặt hai cột với cột phải rỗng. Ở đây
+  // KHÔNG lọc theo `done`: bản duyệt tồn tại cho cả chương bị trả về viết lại, và đó chính
+  // là chương đáng đọc bản duyệt nhất.
+  useEffect(() => {
+    if (chuongChon !== undefined) return;
+    const dau = hang[0];
+    if (dau) onChonChuong(dau.chapter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chuongChon]);
   // Bản duyệt phải thuộc ĐÚNG chương đang chọn. Trong lúc snapshot mới còn trên
   // đường về, `selected` vẫn là của chương trước — hiện nó dưới tiêu đề chương
   // mới là gán bản duyệt của chương này cho chương khác.

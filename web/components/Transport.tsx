@@ -59,7 +59,7 @@ export function Transport({
   const may = TRANG_THAI_MAY[transport.state];
   const buoc = song?.buoc ?? transport.last_step;
   const dangChay = song?.dangChay ?? false;
-  const nhanBuoc = dangChay ? 'đang chạy' : CHU.congDoanVuaXong;
+  const nhanBuoc = dangChay ? CHU.buocDangChayNgan : CHU.congDoanVuaXong;
   const chuGiaiBuoc = dangChay ? GIAI_THICH.buocDangChay : GIAI_THICH.buocVuaXong;
   const giai = song ? undefined : giaiCongDoan(transport.last_step);
 

@@ -574,7 +574,11 @@ export const CHU = {
   datRieng: 'đặt riêng',
   caiLanDau: 'Cài đặt lần đầu',
   batDauDung: 'Bắt đầu dùng',
-  moMay: 'Mở máy cho tác phẩm này',
+  /* "(không chạy)" nằm trong NHÃN, không chỉ trong chú giải.
+     Nút này giờ đứng cạnh nút Chạy, và điều duy nhất phân biệt chúng — cái này không gọi
+     model, không tiêu tiền — là điều người dùng phải biết TRƯỚC khi bấm. Một chú giải chỉ
+     hiện khi trỏ chuột thì trên cảm ứng nó không tồn tại. */
+  moMay: 'Mở máy (không chạy)',
   viDuCanThiep: 'ví dụ: Lâm Thanh nên do dự lâu hơn trước khi rút kiếm',
   dangGui: 'Đang gửi…',
   tiemVaoLuotDangChay: 'Tiêm vào lượt đang chạy',
@@ -636,6 +640,24 @@ export const CHU = {
    * tới, nên nó phải giữ nguyên khi trạng thái đổi.
    */
   vttVung: 'Việc tiếp theo',
+
+  /* ── luồng tạo tác phẩm: nói ra ba bước TRƯỚC khi bấm ─────────────────────
+   *
+   * Người dùng: "thật sự không biết luồng chạy như nào… tôi bấm bắt đầu viết xong chả biết
+   * làm gì nữa luôn". Ba bước này là chính cái mà TUI gốc không cần nói vì nó CHO THẤY:
+   * cột trái của TUI liệt kê vai đang chạy, cột giữa chảy sự kiện. Web thì bấm xong là
+   * đứng lại ở một biểu mẫu, nên nó phải nói bằng chữ.
+   */
+  sauKhiBamGi: 'Bấm xong thì máy làm gì',
+  buocArbiter: ' đọc câu yêu cầu, chọn số chương và mức quy hoạch — khoảng 10–20 giây.',
+  buocArchitect: ' dựng nền: nhân vật, luật thế giới, dàn ý — thường một hai phút.',
+  buocWriter: ' viết chương 1, rồi tự đi tiếp từng chương cho tới khi xong hoặc bạn dừng.',
+  arbiterDangDoc: 'Arbiter đang đọc câu yêu cầu…',
+  /* `đang chạy` dùng ở CẢ transport và dải việc tiếp theo. Một khóa cho cả hai chỗ vì hai
+     chỗ đó nói về cùng một công đoạn của cùng một engine: để mỗi nơi một chuỗi viết cứng là
+     mời chúng trôi lệch nhau, và lúc đó không có cách nào biết chỗ nào đúng. */
+  buocDangChayNgan: 'đang chạy',
+  xemDongSuKien: 'Xem dòng sự kiện',
   ttDangDungNen: 'Máy đang dựng nền tác phẩm',
   ttDangViet: (xong: number, tong: number) =>
     tong > 0
@@ -1015,6 +1037,11 @@ export const GIAI_THICH = {
     'Máy đang nghỉ. Bấm ▶ Chạy ở thanh dưới cùng để nó viết tiếp — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước, việc mở máy không gọi model lần nào.',
   chuaChayLanNao:
     'Tác phẩm đã tạo nhưng chưa viết chương nào. Bấm ▶ Chạy ở thanh dưới cùng để máy bắt đầu — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước.',
+  /* ── luồng tạo tác phẩm ──────────────────────────────────────────────── */
+  batDauRoiKhongPhaiLamGi:
+    'Sau khi bấm, bạn KHÔNG phải làm gì thêm: máy tự đi tiếp từng chương. Việc của bạn là xem nó chạy và nói vào ô can thiệp nếu muốn đổi hướng.',
+  arbiterDangDocLau:
+    'Lượt này gọi model thật nên thường mất 10–20 giây, và trang đứng im trong lúc đó là bình thường. Xong là nó tự chuyển sang bề mặt sản xuất, chỗ thấy dòng sự kiện chạy.',
   xongCoTheXuat:
     'Truyện đã viết hết số chương đã quy hoạch. Đọc lại được, và xuất thành một tệp mang về máy được.',
   cungDungGiaiDoanTamDung:

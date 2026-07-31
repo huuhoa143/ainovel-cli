@@ -769,6 +769,40 @@ button {
   max-width: 82ch;
 }
 
+/* Dòng "đang làm gì": vai · bước · tình trạng · đường tới dòng sự kiện.
+   Mono cho tên bước vì đó là mã của engine (`draft_chapter`), không phải chữ để đọc — cùng
+   quy ước với ô `công đoạn` ở transport và với `.picklist .ma`. */
+.vttLive {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 6px 0 0;
+  font: 400 11.5px/1.6 var(--ui);
+  color: var(--ink-3);
+}
+.vttLive b {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.vttLive .b {
+  font: 400 11px var(--mono);
+  color: var(--gold);
+}
+.vttNeo {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--ink-2);
+  font: 400 11.5px var(--ui);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.vttNeo:hover {
+  color: var(--ink);
+}
+
 .vttNut {
   display: flex;
   align-items: center;
@@ -3772,6 +3806,74 @@ div:has(> .qcrow) {
   gap: 8px;
   flex-wrap: wrap;
   margin-top: 10px;
+}
+
+/* ── ba bước của luồng tạo tác phẩm ─────────────────────────────────────────
+   Số bước là số THẬT của engine (Arbiter → Architect → Writer), nên nó dùng `<ol>` và
+   counter của trình duyệt: một danh sách đánh số bằng chữ viết tay sẽ lệch nếu ai thêm bước.
+   Tên vai dùng mono + vàng như mọi chỗ khác gọi tên tác tử. */
+.baBuoc {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: buoc;
+  display: grid;
+  gap: 7px;
+  max-width: 74ch;
+}
+.baBuoc li {
+  counter-increment: buoc;
+  display: grid;
+  grid-template-columns: 18px auto 1fr;
+  align-items: baseline;
+  gap: 8px;
+  font: 400 12.5px/1.72 var(--ui);
+  color: var(--ink-2);
+}
+.baBuoc li::before {
+  content: counter(buoc) '.';
+  color: var(--ink-3);
+  font: 400 11.5px var(--mono);
+}
+.baBuoc .vai {
+  font: 500 12px var(--mono);
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+/* Dòng chờ trong lúc `POST /books` gọi Arbiter — xem TacPhamMoi.tsx cho vì sao nó phải nói
+   ra thời lượng. Đốm đập là chuyển động DUY NHẤT mang tin ở bề mặt này: nó phân biệt "đang
+   chờ" với "đứng hình", đúng thứ người dùng đang không phân biệt được. */
+.dangCho {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  max-width: 74ch;
+  background: color-mix(in oklch, var(--gold) 8%, var(--panel));
+  border: 1px solid color-mix(in oklch, var(--gold) 30%, var(--line));
+  border-radius: var(--r);
+  font: 400 12.5px/1.72 var(--ui);
+  color: var(--ink-2);
+}
+.dangCho b {
+  color: var(--ink);
+  font-weight: 500;
+}
+.dangCho .q {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex: none;
+  align-self: center;
+  animation: dapnhip 2.2s var(--ease) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dangCho .q {
+    animation: none;
+  }
 }
 
 /* ── dải kênh model theo vai ────────────────────────────────────────────── */

@@ -48,6 +48,26 @@ export function DocTruyen({
 }) {
   const hang = snapshot.chapters;
 
+  /**
+   * Vào bề mặt đọc mà chưa chọn chương thì TỰ chọn chương đọc được đầu tiên.
+   *
+   * Bản trước hiện "chưa chọn chương" cộng hai nút điều hướng bị vô hiệu — tức bấm "Bản
+   * thảo" trong rail xong không thấy truyện, và hai nút duy nhất trên bề mặt thì bấm không
+   * ra gì. Người dùng đọc đó là "nút chết", và họ đúng theo nghĩa họ thấy.
+   *
+   * Ưu tiên `done` rồi `rewrite`: đó là hai công đoạn chắc chắn có tệp bản thảo. Nếu không
+   * có chương nào như thế thì KHÔNG chọn gì — lúc đó câu "chưa có chương nào" là sự thật,
+   * và tự mở một chương chưa viết ra là dựng một khổ đọc trống.
+   */
+  useEffect(() => {
+    if (chuongChon !== undefined) return;
+    const doc =
+      hang.find((r) => r.stage === 'done') ?? hang.find((r) => r.stage === 'rewrite');
+    if (doc) onChonChuong(doc.chapter);
+    // `hang` đổi mỗi nhịp làm mới snapshot; chỉ `chuongChon` mới là điều kiện thật ở đây.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chuongChon]);
+
   return (
     <main className="canvas khudoc" id="doc-ban-thao">
       <div className="head">
