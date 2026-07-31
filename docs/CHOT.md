@@ -43,6 +43,28 @@ trị mỗi vòng đang giảm, và vòng không tự đóng.
 **Luật**: danh sách dưới đây là danh sách ĐÓNG. Xong hết là chốt. Phát hiện mới,
 dù thật, cũng vào Việc tồn.
 
+### 4. `git add -A` quét trạng thái nửa vời của agent đang viết → BA lần
+
+Người điều phối là người duy nhất được commit, và ba lần đã commit thứ chưa xong:
+
+| Commit | Quét vào cái gì |
+|---|---|
+| `a8cd1d2` | bản nháp đầu của `web-visual.md`, số dòng còn sai |
+| `8b3046b` | ba cờ `Capabilities` không ai gán + chú thích trỏ tới hàm không tồn tại |
+| `8b3046b` | ba component web trỏ tới khóa `nhan.ts` chưa thêm → **HEAD tsc đỏ** |
+
+Nguyên nhân chung: `git add -A` không phân biệt "agent đã xong" với "agent đang gõ".
+Và cổng của tôi chỉ chạy `go test`, nên mọi lần trạng thái dở nằm ở `web/` thì nó
+lọt hết.
+
+**Luật**: trước khi commit, cổng phải chạy **cả hai** phía tương ứng với tệp trong
+commit — có tệp `web/` thì phải `npx tsc --noEmit` sạch, không chỉ `go test`. Và
+KHÔNG `git add -A` khi còn agent đang viết trong vùng đó; liệt tệp tường minh.
+
+Hướng sai của lỗi này đáng chú ý: nó KHÔNG làm ai đỏ ngay. `go test` vẫn 30/30 nên
+tôi vẫn báo "cây xanh" trong lúc HEAD thực ra không dựng được web. Một cổng chỉ đo
+một nửa thì nó báo xanh cho cả phần nó không đo.
+
 ---
 
 ## Điều kiện xong — danh sách ĐÓNG
