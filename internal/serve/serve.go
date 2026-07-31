@@ -1,14 +1,28 @@
-// Package serve cung cấp HTTP API chỉ-đọc trên store, làm nền cho web studio.
+// Package serve cung cấp HTTP API cho web studio: đọc store, và CHẠY engine.
 //
-// # Vì sao chỉ đọc
+// # Vì sao nó không còn chỉ đọc
 //
-// Engine là process riêng (TUI hoặc headless) và nó SỞ HỮU trạng thái ghi. Nếu
-// `serve` cũng ghi thì hai process cùng sửa meta/run_meta.json: engine đọc
-// PendingSteer, xử lý, rồi ClearPendingSteer — một lượt ghi chen vào giữa sẽ mất
-// trắng ý kiến can thiệp, không lỗi, không dấu vết. Store không có khóa liên
-// tiến-trình, và runtime queue không phải kênh lệnh (engine chỉ đọc nó để dựng
-// lại giao diện, xem host.go:1432). Nên can thiệp qua web cần engine hợp tác
-// trước; đến lúc đó Capabilities.Steer vẫn là false và giao diện tự ẩn ô nhập.
+// Bản trước của chú thích này giải thích vì sao `serve` chỉ đọc, và lý lẽ đó đúng
+// với tiền đề của nó: engine là process riêng, nên hai process cùng sửa
+// meta/run_meta.json sẽ mất trắng ý kiến can thiệp — engine đọc PendingSteer, xử
+// lý, rồi ClearPendingSteer, và một lượt ghi chen vào giữa không để lại dấu vết.
+// Store không có khóa liên tiến-trình.
+//
+// Tiền đề đã đổi: engine giờ chạy TRONG process này (internal/serve/engine.go).
+// Nên không còn hai process ghi — studio LÀ người ghi duy nhất, và phản biện cũ
+// được giải quyết tận gốc chứ không bị đi vòng. Mọi lệnh ghi đi qua `*host.Host`,
+// không qua RunMetaStore trực tiếp, nên chúng dùng đúng những giao dịch mà engine
+// dùng cho chính nó.
+//
+// Hai thứ được thêm để chuyện đó an toàn:
+//
+//   - `store.Khoa()` trong `host.New` — khóa mức TỆP, chặn TUI/headless mở cùng
+//     một cuốn. Nó cần thiết vì `IO.WithWriteLock` chỉ là mutex trong process.
+//   - `raoGhi` + hàng rào địa chỉ trong `rao.go` — studio giờ giữ khóa API và tiêu
+//     được tiền, nên nó phải từ chối lệnh ghi từ mọi nguồn không phải chính nó.
+//
+// Nhóm route ghi chỉ được mắc khi địa chỉ lắng nghe là loopback. Chạy ra ngoài
+// loopback thì package này lui về đúng hành vi chỉ-đọc cũ.
 //
 // # Vì sao tail queue thay vì hook vào engine
 //
@@ -170,11 +184,18 @@ func (s *server) routes() *http.ServeMux {
 	if s.choGhi && s.may != nil {
 		mux.HandleFunc("GET /api/engine", s.handleMay)
 		mux.HandleFunc("POST /api/books", raoGhi(s.handleTaoSach))
+		mux.HandleFunc("POST /api/books/{book}/open", raoGhi(s.handleMoMay))
 		mux.HandleFunc("POST /api/books/{book}/run", raoGhi(s.handleChay))
 		mux.HandleFunc("POST /api/books/{book}/steer", raoGhi(s.handleCanThiep))
 		mux.HandleFunc("POST /api/books/{book}/abort", raoGhi(s.handleDung))
 		mux.HandleFunc("POST /api/books/{book}/close", raoGhi(s.handleDongMay))
 		mux.HandleFunc("GET /api/books/{book}/live", s.handleSong)
+
+		// Cấu hình: GET không qua `raoGhi` vì nó chỉ đọc (và đã che khóa), PUT thì qua.
+		mux.HandleFunc("GET /api/config", s.handleDocCauHinh)
+		mux.HandleFunc("PUT /api/config", raoGhi(s.handleGhiCauHinh))
+		mux.HandleFunc("GET /api/books/{book}/models", s.handleDocVaiModel)
+		mux.HandleFunc("PUT /api/books/{book}/models", raoGhi(s.handleGhiVaiModel))
 	}
 
 	if s.webDir != "" {

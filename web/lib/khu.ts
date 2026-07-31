@@ -30,7 +30,8 @@ export type Khu =
   | 'van-phong'
   | 'to-san-xuat'
   | 'chi-phi'
-  | 'cai-dat';
+  | 'cai-dat'
+  | 'cau-hinh';
 
 export const KHU: readonly Khu[] = [
   'dong-san-xuat',
@@ -45,12 +46,26 @@ export const KHU: readonly Khu[] = [
   'to-san-xuat',
   'chi-phi',
   'cai-dat',
+  'cau-hinh',
 ] as const;
 
 export const KHU_MAC_DINH: Khu = 'dong-san-xuat';
 
 export function laKhu(v: string | null | undefined): v is Khu {
   return !!v && (KHU as readonly string[]).includes(v);
+}
+
+/**
+ * `cau-hinh` là khu mức MÁY, không mức tác phẩm.
+ *
+ * Nó nằm trong `Khu` để dùng chung một mô hình điều hướng (rail + `?khu=`), nhưng bề mặt
+ * của nó không đọc `tacPham` và nội dung không đổi khi người dùng chuyển tác phẩm. Rail
+ * đặt nó trong nhóm riêng tên "Máy" để sự khác cấp đó nhìn thấy được — nếu nó nằm lẫn
+ * trong nhóm "Xưởng" thì người vận hành sẽ đọc nó là cấu hình của cuốn đang mở, đúng
+ * kiểu nhầm mà bề mặt Cài đặt đã phải tách ra để tránh.
+ */
+export function laKhuMucMay(khu: Khu): boolean {
+  return khu === 'cau-hinh';
 }
 
 /**

@@ -3341,3 +3341,287 @@ div:has(> .qcrow) {
   white-space: nowrap;
   min-width: 0;
 }
+
+/* ── cấu hình máy: biểu mẫu + dải kênh vai ──────────────────────────────── */
+
+/*
+ * Tiếng Việt là ràng buộc bố cục, không phải bản dịch (PRODUCT.md nguyên tắc 4).
+ * Nhãn ở đây dài hơn tiếng Anh 20–30% ("Nhà cung cấp", "Địa chỉ gốc", "Độ suy luận"),
+ * nên cột nhãn 132px chứ không phải 96px như phản xạ, và line-height 1.72 là SÀN vì dấu
+ * tiếng Việt xếp hai tầng.
+ */
+.bieuMau {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 620px;
+}
+
+.oNhap {
+  display: grid;
+  grid-template-columns: 132px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.oNhap > span {
+  font: 400 12px/1.72 var(--ui);
+  color: var(--ink-2);
+}
+
+.oNhap input,
+.oNhap select {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 7px 9px;
+  color: var(--ink);
+  font: 400 12.5px/1.5 var(--ui);
+  min-width: 0;
+}
+
+/* Ô nhập chữ mono cho thứ ĐỐI CHIẾU được: khóa, địa chỉ, tên model. Chúng là định
+   danh chứ không phải văn, và mono làm sai một ký tự nhìn ra được. */
+.oNhap input[type='password'],
+.oNhap input[list] {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.oNhap input:focus-visible,
+.oNhap select:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.oNhap input:read-only {
+  color: var(--ink-2);
+  background: var(--panel);
+}
+
+@media (max-width: 560px) {
+  /* Dưới 560px, cột nhãn 132px + ô nhập không còn đủ chỗ cho một địa chỉ gốc dài, và
+     ô nhập bị bóp là lỗi tệ hơn nhãn xuống dòng. */
+  .oNhap {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+.nutChinh,
+.nutPhu {
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 7px 13px;
+  font: 500 12px/1 var(--ui);
+  cursor: pointer;
+}
+
+.nutChinh {
+  background: var(--gold);
+  border-color: var(--gold);
+  /* Chữ tối trên vàng: --gold ở L 0.805 nên chữ sáng sẽ không đạt AA. */
+  color: oklch(0.19 0.02 74);
+}
+
+.nutPhu {
+  background: var(--raised);
+  color: var(--ink);
+}
+
+.nutPhu.nguyHiem {
+  color: var(--red);
+}
+
+.nutChinh:disabled,
+.nutPhu:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.nutChinh:hover:not(:disabled) {
+  background: oklch(0.855 0.128 80);
+}
+
+.nutPhu:hover:not(:disabled) {
+  border-color: var(--ink-3);
+}
+
+/* ── danh sách nhà cung cấp ─────────────────────────────────────────────── */
+
+.nccList {
+  list-style: none;
+  margin: 10px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Viền ĐỦ BỐN PHÍA, không phải border-left màu: dải cạnh là điều bị cấm thẳng trong
+   quy ước thiết kế của dự án. */
+.nccMuc {
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  padding: 11px 13px;
+  background: var(--panel);
+}
+
+.nccMuc.dangSua {
+  background: var(--panel-2);
+  border-color: var(--line);
+}
+
+.nccDau {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.nccTen {
+  font: 600 13px/1.5 var(--mono);
+  color: var(--ink);
+}
+
+.nccMd {
+  font: 500 10.5px/1 var(--ui);
+  letter-spacing: 0.02em;
+  color: oklch(0.19 0.02 74);
+  background: var(--gold);
+  border-radius: 2px;
+  padding: 3px 6px;
+}
+
+.nccKhoa {
+  font: 400 11.5px/1.5 var(--mono);
+  color: var(--teal);
+}
+
+/* Thiếu khóa là tin vận hành, không phải chi tiết: provider không có khóa sẽ làm mọi
+   lượt chạy hỏng, nên nó mang tông cảnh báo chứ không phải tông chữ mờ. */
+.nccKhoa.thieu {
+  color: var(--amber);
+}
+
+.nccNut {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+/* ── dải kênh model theo vai ────────────────────────────────────────────── */
+
+/*
+ * Bốn kênh nằm CẠNH nhau, không xếp dọc: việc đáng làm ở đây là so vai này với vai kia
+ * theo cột (channel strip của bàn trộn), và xếp dọc thì mất đúng phép so sánh đó.
+ *
+ * auto-fit + minmax để không cần breakpoint: 4 cột trên màn rộng, 2 rồi 1 khi hẹp.
+ */
+.kenhDai {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(236px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.kenh {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  padding: 11px 12px;
+  background: var(--panel);
+  max-width: none;
+}
+
+/* Vai đã đặt riêng khác vai thừa hưởng — và khác bằng NỀN, không bằng dải cạnh. */
+.kenh.rieng {
+  background: var(--panel-2);
+  border-color: var(--line);
+}
+
+.kenhDau {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kenhTen {
+  font: 600 12.5px/1.5 var(--ui);
+  color: var(--ink);
+}
+
+.kenhNguon {
+  font: 400 10.5px/1.5 var(--ui);
+  color: var(--ink-3);
+}
+
+/* Trong kênh, cột nhãn hẹp lại vì khung chỉ 236px — nhưng vẫn xếp dọc thay vì bóp ô
+   nhập, vì tên model là thứ phải đọc được trọn. */
+.kenh .oNhap {
+  grid-template-columns: 1fr;
+  gap: 3px;
+}
+
+.kenh .nutChinh {
+  align-self: flex-start;
+}
+
+/* ── thanh trên ở khung hẹp ─────────────────────────────────────────────── */
+
+/*
+ * Sửa tràn ngang ĐO ĐƯỢC ở 390px: thanh trên rộng 466px, nên khối `.right` chứa nhãn
+ * "dòng sự kiện" nằm ngoài màn hình 76px và không bấm tới được.
+ *
+ * Nguyên nhân không phải `max-width` của picker mà là mặc định của flexbox:
+ * `min-width: auto` trên flex item khiến `.picker` không co xuống dưới bề rộng nội dung,
+ * nên `text-overflow: ellipsis` đã khai ở `.picker b` KHÔNG BAO GIỜ chạy. Ellipsis chỉ
+ * có tác dụng khi phần tử được phép hẹp hơn chữ của nó.
+ *
+ * Vì sao các lượt soát trước không thấy: chúng đo BỀ MẶT (`.canvas`) chứ không đo vỏ, và
+ * tên tác phẩm trong fixture ngắn hơn tên thật ("Dấu Nước Dưới Cầu Đá" — 20 ký tự). Cùng
+ * lớp với hai lỗi đã sống nhờ fixture giàu hơn đường thật.
+ */
+.bar .right {
+  /* Tình trạng dòng sự kiện là câu trả lời cho "dây chuyền còn sống không" — nó không
+     được là thứ bị đẩy ra ngoài trước tiên. */
+  flex-shrink: 0;
+}
+
+.picker,
+.pickwrap {
+  min-width: 0;
+}
+
+.picker b {
+  min-width: 0;
+}
+
+/* `.pickwrap` là block, nên `.picker` bên trong KHÔNG bị nó chặn: một block con có
+   min-content lớn hơn cha sẽ tràn ra ngoài cha và đè phần tử bên cạnh. Đo được: khung bọc
+   150px mà picker 237px, tràn 88px và phủ lên nhãn "dòng sự kiện".
+   `max-width: 100%` là vế còn thiếu — `min-width: 0` chỉ cho phép co, `max-width` mới buộc. */
+.picker {
+  max-width: 100%;
+}
+
+@media (max-width: 700px) {
+  .picker {
+    max-width: 100%;
+  }
+  /* Mã tác phẩm (`novel`) lặp lại thông tin của tên ngay bên cạnh. Ở khung hẹp thì tên
+     đáng chỗ hơn mã, và bỏ mã là cách duy nhất để tên còn đọc được trọn. */
+  .picker .ma {
+    display: none;
+  }
+  /* Đốm + "1 tác phẩm · 0 đang chạy" lặp lại điều mà picker và transport đã nói. Ở khung
+     hẹp thì chỗ đó đáng dành cho tên tác phẩm và tình trạng dòng sự kiện. */
+  .slate {
+    display: none;
+  }
+}

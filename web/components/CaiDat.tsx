@@ -13,6 +13,7 @@ import type { SettingsDoc } from '@/lib/types';
 import { useHoSo } from '@/lib/useHoSo';
 
 import { HoSoKhung, tinhTrangNguon } from './HoSoKhung';
+import { KenhVai } from './KenhVai';
 
 /**
  * Cài đặt: phiên chạy này được khởi động với cấu hình gì.
@@ -67,6 +68,10 @@ export function CaiDat({ tacPham }: { tacPham: string | undefined }) {
           ) : (
             <>
               <PhienChay du={du} />
+              {/* Dải kênh model đứng ngay sau Phiên chạy vì nó là thứ DUY NHẤT trên bề
+                  mặt này đổi được, và nó đổi đúng cái vừa hiện phía trên (model). Đặt
+                  nó dưới cùng sẽ tách hành động khỏi con số mà hành động ấy sửa. */}
+              <KenhVai tacPham={tacPham} />
               <TienChuong du={du} />
               <YeuCauKhoiTao du={du} />
               <CanThiepConTon du={du} />

@@ -17,6 +17,7 @@
 import type {
   CastDoc,
   ChapterDetail,
+  CauHinhDoc,
   CostDoc,
   OutlineDoc,
   Profile,
@@ -25,6 +26,7 @@ import type {
   StreamEvent,
   StyleDoc,
   TinhTrangNguon,
+  VaiModelDoc,
   Workshop,
   WorldDoc,
 } from './types';
@@ -491,4 +493,128 @@ export class DongGia {
     this.dong = true;
     if (this.hen) clearTimeout(this.hen);
   }
+}
+
+/* ── đường GHI ─────────────────────────────────────────────────────────── */
+
+/**
+ * Header rào mà MỌI yêu cầu ghi phải mang.
+ *
+ * Server đòi nó (`tenHeaderRao` trong internal/serve/rao.go) và đó là hàng rào chống
+ * CSRF sang localhost: form HTML không đặt được header tùy ý, và `fetch` khác gốc mang
+ * header lạ sẽ bị trình duyệt buộc preflight rồi tự chặn.
+ *
+ * Đặt ở ĐÂY, một chỗ. Rải nó vào từng component là bảo đảm sẽ có một chỗ quên, và chỗ
+ * quên đó hỏng theo kiểu khó tìm: 403 với một câu lỗi nói về bảo mật trong khi người
+ * dùng chỉ vừa bấm Lưu.
+ */
+const HEADER_RAO = { 'X-Ainovel-Studio': '1', 'Content-Type': 'application/json' };
+
+async function ghi<T>(duong: string, method: 'POST' | 'PUT', than?: unknown): Promise<T> {
+  const res = await fetch(`${GOC}${duong}`, {
+    method,
+    headers: HEADER_RAO,
+    body: than === undefined ? '{}' : JSON.stringify(than),
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    let thongDiep = `HTTP ${res.status}`;
+    try {
+      const b = (await res.json()) as { error?: string };
+      if (b?.error) thongDiep = b.error;
+    } catch {
+      /* thân không phải JSON */
+    }
+    throw new LoiApi(thongDiep, res.status);
+  }
+  return (await res.json()) as T;
+}
+
+/* ── cấu hình ứng dụng ─────────────────────────────────────────────────── */
+
+/**
+ * Đọc cấu hình. Mock trả một hình dạng ĐÃ CÀI để bố cục dựng được mà không cần engine;
+ * ca `needs_setup` dựng bằng engine thật (xóa config rồi mở web), vì bịa nó ở mock sẽ
+ * làm chế độ mock không vào được studio.
+ */
+export function layCauHinh(): Promise<CauHinhDoc> {
+  if (LA_MOCK) {
+    return Promise.resolve({
+      needs_setup: false,
+      path: '~/.ainovel/config.json',
+      provider: 'openrouter',
+      model: 'gemini-2.5-pro',
+      reasoning_effort: 'medium',
+      style: 'default',
+      styles: ['default', 'fantasy', 'romance', 'suspense'],
+      role_names: ['default', 'architect', 'writer', 'editor'],
+      providers: [
+        {
+          name: 'openrouter',
+          type: 'openai',
+          base_url: 'https://openrouter.ai/api/v1',
+          api_key_set: true,
+          api_key_masked: 'sk-o…9f2',
+          models: [{ name: 'gemini-2.5-pro', context_window: 1000000 }],
+        },
+      ],
+      presets: [{ name: 'openrouter', label: 'OpenRouter', type: 'openai' }],
+      engine_open: [],
+    });
+  }
+  return doc<CauHinhDoc>('/api/config');
+}
+
+/** Thân PUT /api/config. Trường vắng = KHÔNG đổi; xem chú thích `thanCauHinh` phía Go. */
+export interface SuaCauHinh {
+  provider?: string;
+  model?: string;
+  reasoning_effort?: string;
+  style?: string;
+  provider_config?: {
+    name: string;
+    type?: string;
+    base_url?: string;
+    /** Vắng = giữ khóa cũ. Chuỗi rỗng = xóa khóa. Hai nghĩa khác nhau. */
+    api_key?: string;
+    models?: { name: string; context_window?: number }[];
+  };
+  remove_provider?: string;
+}
+
+export function luuCauHinh(
+  sua: SuaCauHinh,
+): Promise<{ saved: boolean; path: string; reopen_to_apply: string[] }> {
+  return ghi('/api/config', 'PUT', sua);
+}
+
+/* ── model theo vai ────────────────────────────────────────────────────── */
+
+export function layVaiModel(book: string): Promise<VaiModelDoc> {
+  return doc<VaiModelDoc>(`/api/books/${encodeURIComponent(book)}/models`);
+}
+
+export function doiVaiModel(
+  book: string,
+  sua: { role: string; provider?: string; model?: string; thinking?: string },
+): Promise<{ applied: string[] }> {
+  return ghi(`/api/books/${encodeURIComponent(book)}/models`, 'PUT', sua);
+}
+
+/* ── vòng đời engine ───────────────────────────────────────────────────── */
+
+/**
+ * Mở engine cho một cuốn mà KHÔNG chạy.
+ *
+ * Tách khỏi `chaySach` có chủ đích: gắn engine không gọi LLM lần nào (chỉ dựng model set,
+ * đọc store, lấy khóa tệp), còn chạy thì tiêu tiền thật. Gộp hai việc lại thì mọi thao tác
+ * đòi engine đang mở — đổi model theo vai, cấp phép chương — đều phải trả giá một lượt
+ * chạy, và với cuốn đang đứng ở biên cung thì "chạy tiếp" nghĩa là mở cả một cung.
+ */
+export function moMay(book: string): Promise<{ book: string; dir: string; running: boolean }> {
+  return ghi(`/api/books/${encodeURIComponent(book)}/open`, 'POST');
+}
+
+export function dongMay(book: string): Promise<{ closed: boolean }> {
+  return ghi(`/api/books/${encodeURIComponent(book)}/close`, 'POST');
 }

@@ -531,6 +531,42 @@ export const CHU = {
   nhatKyPhanQuyet: 'Nhật ký phán quyết',
   caiDat: 'Cài đặt',
 
+  /* cấu hình máy — mức MÁY, không phải mức tác phẩm */
+  cauHinh: 'Cấu hình máy',
+  may: 'Máy',
+  nhaCungCapVaKhoa: 'Nhà cung cấp và khóa',
+  macDinh: 'Mặc định',
+  kieuVanMacDinh: 'Kiểu văn mặc định',
+  doSuyLuan: 'Độ suy luận',
+  themNhaCungCap: 'Thêm nhà cung cấp',
+  ten: 'Tên',
+  loaiGiaoThuc: 'Giao thức',
+  diaChiGoc: 'Địa chỉ gốc',
+  khoaApi: 'Khóa API',
+  danhSachModel: 'Model',
+  luu: 'Lưu',
+  dangLuu: 'Đang lưu…',
+  daLuu: 'Đã lưu',
+  huy: 'Hủy',
+  xoa: 'Xóa',
+  sua: 'Sửa',
+  dungLamMacDinh: 'Dùng làm mặc định',
+  daDatKhoa: 'đã đặt khóa',
+  chuaDatKhoa: 'chưa có khóa',
+  giuKhoaCu: 'để trống = giữ khóa hiện tại',
+  tepCauHinh: 'Tệp cấu hình',
+  kenhVai: 'Model theo vai',
+  vaiMacDinh: 'Mặc định',
+  vaiArchitect: 'Kiến trúc',
+  vaiWriter: 'Chấp bút',
+  vaiEditor: 'Biên tập',
+  thuaHuong: 'thừa hưởng mặc định',
+  datRieng: 'đặt riêng',
+  caiLanDau: 'Cài đặt lần đầu',
+  batDauDung: 'Bắt đầu dùng',
+  moMay: 'Mở máy cho tác phẩm này',
+  dongMay: 'Đóng máy',
+
   // canvas
   trucSanXuat: 'Trục sản xuất',
   mucXem: 'Mức xem',
@@ -788,6 +824,32 @@ export const CHU = {
 /* ── câu giải thích dài, giọng điềm tĩnh của PRODUCT.md ───────────────── */
 
 export const GIAI_THICH = {
+  /* cấu hình máy */
+  cauHinhLaMucMay:
+    'Đây là cấu hình của MÁY, không phải của một tác phẩm. Nó áp cho mọi lượt chạy sau — ' +
+    'tác phẩm đang chạy vẫn giữ cấu hình từ lúc nó được mở.',
+  cauHinhKhoaMotChieu:
+    'Studio không bao giờ đọc lại khóa đã lưu, nên ô khóa luôn trống. Để trống khi lưu ' +
+    'nghĩa là giữ nguyên khóa hiện tại.',
+  /**
+   * Câu riêng cho lần đầu: lúc đó CHƯA có khóa nào, nên "để trống = giữ khóa hiện tại"
+   * nói về một thứ không tồn tại và người dùng sẽ đọc nó thành "có thể bỏ trống".
+   */
+  cauHinhKhoaLanDau:
+    'Khóa được ghi vào tệp cấu hình và không bao giờ được trả về giao diện — sau khi lưu, ' +
+    'ô này sẽ luôn trống và chỗ nào cần hiện thì chỉ hiện dạng che.',
+  cauHinhKieuVanLa: (k: string, cothat: string[]) =>
+    `Cấu hình đang đặt kiểu văn "${k}", nhưng engine chỉ nhận ${cothat.join(', ')} — ` +
+    'giá trị lạ bị bỏ qua âm thầm, tức tác phẩm chạy không có tham chiếu thể loại nào.',
+  cauHinhCanMoLai: (sach: string[]) =>
+    `Đã lưu. ${sach.join(', ')} đang mở engine nên vẫn dùng cấu hình cũ; đóng rồi mở lại để áp.`,
+  cauHinhLanDau:
+    'Chưa có tệp cấu hình. Nhập nhà cung cấp và khóa API để bắt đầu — không cần mở terminal.',
+  kenhVaiCanMayMo:
+    'Đổi model theo vai tác động lên engine ĐANG MỞ, nên nó chỉ hiện khi tác phẩm này ' +
+    'đang mở máy. Muốn đổi mặc định cho mọi lượt sau thì sửa ở Cấu hình máy.',
+  kenhVaiThuaHuong:
+    'Vai chưa đặt riêng thì dùng model mặc định. Đổi mặc định sẽ đổi luôn các vai này.',
   /** capabilities.steer === false */
   canThiepTat:
     'Engine sở hữu quyền ghi vào store. Nếu studio cũng ghi thì hai process cùng sửa một tệp và ý kiến can thiệp sẽ mất trắng — không lỗi, không dấu vết. Can thiệp qua web cần engine hợp tác trước; hiện tại dùng TUI.',
@@ -1180,8 +1242,17 @@ export const GIAI_THICH = {
    * Cùng một lý do của ô can thiệp: engine sở hữu quyền ghi. Nói ra ở đây vì đây
    * là bề mặt mà người vận hành sẽ thử sửa trước tiên — nó tên là Cài đặt.
    */
+  /**
+   * Vì sao BẢN GHI này chỉ đọc — lý do đã ĐỔI, và câu cũ giờ sai.
+   *
+   * Câu cũ nói "engine sở hữu quyền ghi, studio ghi vào là hai tiến trình cùng sửa một
+   * chỗ". Tiền đề đó không còn: engine giờ chạy TRONG process studio, nên studio là
+   * người ghi duy nhất. Nhưng kết luận vẫn đúng vì một lý do KHÁC hẳn: những gì hiện ở
+   * đây là bản ghi phiên chạy đã khởi động với gì. Không sửa được quá khứ của một cuốn
+   * đang chạy — muốn đổi thì đóng máy, sửa Cấu hình máy, rồi mở lại.
+   */
   caiDatChiDoc:
-    'Bề mặt này chỉ đọc. Engine sở hữu quyền ghi vào store; studio ghi vào cùng tệp thì hai tiến trình cùng sửa một chỗ và thay đổi sẽ mất trắng, không lỗi, không dấu vết. Đổi cấu hình bằng TUI hoặc bằng tham số lúc khởi động.',
+    'Bản ghi này chỉ đọc: nó ghi lại tác phẩm được KHỞI ĐỘNG với cấu hình gì, nên nó là quá khứ chứ không phải một ô cài đặt. Muốn đổi cho lượt sau thì sửa ở Cấu hình máy rồi đóng và mở lại máy của tác phẩm này.',
   /** `RunMeta.Style` KHÁC `meta/style_rules.json`. */
   caiDatKieuVanKhac:
     'Kiểu văn chọn lúc khởi động phiên. Khác với quy tắc ở bề mặt Văn phong: quy tắc đó do Editor chưng ra từ các chương đã viết, còn đây là lựa chọn ban đầu của người vận hành.',
@@ -1202,8 +1273,14 @@ export const GIAI_THICH = {
   caiDatYeuCau:
     'Câu người vận hành dặn lúc mở sách. Arbiter dựa vào chính nó để ra phán quyết khởi động, nên đây là sự thật gốc của cả tác phẩm — không phải một ghi chú.',
   /** Nói ra điều CỐ Ý không có, để không ai đi tìm. */
+  /**
+   * Câu cũ ở đây nói khóa API "sẽ không được thêm vào" vì đưa khóa vào payload HTTP là
+   * biến rò rỉ tiềm năng thành rò rỉ có sẵn. Nó đã bị chính việc dựng Cấu hình máy phản
+   * chứng — nhưng lo ngại của nó thì đúng, nên nó được GIẢI QUYẾT chứ không bị bỏ qua:
+   * khóa đi vào được, không bao giờ đi ra.
+   */
   caiDatKhongCoKhoa:
-    'Khoá API và cấu hình nhà cung cấp không nằm trong store nên không có ở đây, và sẽ không được thêm vào: đưa khoá vào một payload HTTP là biến một rò rỉ tiềm năng thành một rò rỉ có sẵn.',
+    'Khóa API không nằm trong store nên không có ở bản ghi này. Nó đặt được ở Cấu hình máy, và đi MỘT CHIỀU: studio nhận khóa để ghi vào tệp cấu hình, nhưng không bao giờ trả nó về giao diện — chỗ nào cần hiện thì chỉ hiện dạng che.',
 
   /* ── ba mục rail khi bản engine đang chạy KHÔNG có endpoint ─────────── */
 

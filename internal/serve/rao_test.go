@@ -138,6 +138,7 @@ func TestCheDoChiDocKhongMacRouteGhi(t *testing.T) {
 		method, path string
 	}{
 		{"POST", "/api/books"},
+		{"POST", "/api/books/sach/open"},
 		{"POST", "/api/books/sach/run"},
 		{"POST", "/api/books/sach/steer"},
 		{"POST", "/api/books/sach/abort"},

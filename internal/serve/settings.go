@@ -11,14 +11,21 @@ import (
 //
 // # Vì sao chỉ đọc
 //
-// Engine SỞ HỮU quyền ghi tệp này. RunMetaStore có đủ hàm ghi
-// (SetAdvanceMode, GrantAdvancePermit, SetPendingSteer…) và việc gọi chúng từ đây
-// là khả thi về mặt mã — nhưng sai về mặt đúng đắn: engine đọc PendingSteer, xử
-// lý, rồi ClearPendingSteer, và một lượt ghi chen vào giữa sẽ mất trắng ý kiến
-// can thiệp, không lỗi, không dấu vết. Store không có khóa liên tiến-trình. Xem
-// chú thích đầu package serve.
+// SettingsDoc.Writable là false, nhưng LÝ DO đã đổi — và lý do cũ giờ sai.
 //
-// Nên SettingsDoc.Writable là false, và bề mặt khoá mọi ô nhập theo nó.
+// Bản trước nói: engine sở hữu quyền ghi tệp này, gọi RunMetaStore từ đây là hai tiến
+// trình cùng sửa một chỗ và ý kiến can thiệp sẽ mất trắng. Tiền đề đó không còn: engine
+// chạy TRONG process này (xem internal/serve/engine.go), nên studio là người ghi duy
+// nhất, và các hàm ghi ĐƯỢC gọi thật — qua Host, không qua RunMetaStore trực tiếp.
+//
+// Writable vẫn false vì một lý do khác hẳn, và lý do mới thuộc về sản phẩm chứ không
+// phải kỹ thuật: những gì bề mặt này hiện là bản ghi tác phẩm ĐÃ KHỞI ĐỘNG với cấu hình
+// gì. Đó là quá khứ. Không có phép sửa nào áp lên nó cho có nghĩa — muốn đổi thì sửa
+// cấu hình máy rồi đóng và mở lại engine của tác phẩm.
+//
+// Những thứ ĐỔI ĐƯỢC lúc chạy không nằm trong tệp này: model theo vai đi qua
+// Host.SwitchModel (bề mặt KenhVai), chế độ đi tiếp và cấp phép chương đi qua
+// Host.SetAdvanceMode/AdvanceOneChapter.
 //
 // # Hai trạng thái
 //

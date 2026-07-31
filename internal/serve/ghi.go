@@ -77,6 +77,29 @@ func (s *server) handleTaoSach(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleMoMay — POST /api/books/{book}/open
+//
+// Mở engine mà KHÔNG chạy.
+//
+// # Vì sao cần route riêng
+//
+// Bản đầu chỉ có `/run`, và nó gộp hai việc: gắn engine vào cuốn sách, rồi khôi phục
+// lượt chạy. Hệ quả đo được: muốn đổi model theo vai (đòi engine đang mở) thì phải bấm
+// Chạy — tức tiêu tiền API để sửa một ô cấu hình. Với cuốn đang đứng ở biên cung, "chạy
+// tiếp" còn nghĩa là mở cả một cung 68 chương.
+//
+// Gắn engine tự nó không gọi LLM lần nào: `host.New` chỉ dựng model set, đọc store và
+// lấy khóa tệp. Nên hai việc tách được, và phải tách.
+func (s *server) handleMoMay(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("book")
+	p, err := s.may.mo(id)
+	if err != nil {
+		writeErr(w, maLoi(err), err)
+		return
+	}
+	writeJSON(w, map[string]any{"book": id, "dir": p.eng.Dir(), "running": p.eng.Snapshot().IsRunning})
+}
+
 // handleChay — POST /api/books/{book}/run
 func (s *server) handleChay(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("book")

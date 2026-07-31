@@ -590,3 +590,70 @@ export interface StreamEvent {
 export interface ApiError {
   error: string;
 }
+
+/* ── cấu hình ứng dụng (mức MÁY, không phải mức tác phẩm) ───────────────── */
+
+/**
+ * Một nhà cung cấp trong cấu hình.
+ *
+ * KHÔNG có trường khóa thật, và đó là khế ước chứ không phải sơ suất: server chỉ
+ * trả `api_key_set` + `api_key_masked` (xem `cheKhoa` trong internal/serve/rao.go).
+ * Nên biểu mẫu không bao giờ có khóa để gửi lại, và PUT phải hiểu "vắng khóa" là
+ * "giữ khóa cũ".
+ */
+export interface NhaCungCap {
+  name: string;
+  type?: string;
+  base_url?: string;
+  api_key_set: boolean;
+  api_key_masked?: string;
+  models?: { name: string; context_window?: number }[];
+}
+
+export interface MauNhaCungCap {
+  name: string;
+  label: string;
+  type?: string;
+  base_url?: string;
+}
+
+/** GET /api/config — cấu hình đang CÓ HIỆU LỰC (đã trộn global + project). */
+export interface CauHinhDoc {
+  needs_setup: boolean;
+  /** Tệp mà mọi lượt ghi sẽ vào. Hiện ra để người dùng biết mình đang sửa cái gì. */
+  path: string;
+  provider: string;
+  model: string;
+  reasoning_effort?: string;
+  style: string;
+  /**
+   * Danh sách kiểu văn CÓ TÁC DỤNG THẬT.
+   *
+   * `style` hiện tại có thể KHÔNG nằm trong danh sách này — engine bỏ qua giá trị lạ
+   * một cách âm thầm (không lỗi, không cảnh báo). Bề mặt phải nói ra điều đó thay vì
+   * hiện một ô chọn im lặng bỏ giá trị đang có.
+   */
+  styles: string[];
+  role_names: string[];
+  providers: NhaCungCap[];
+  presets: MauNhaCungCap[];
+  /** Cuốn đang mở engine — đổi cấu hình KHÔNG ăn vào chúng cho tới lần mở lại. */
+  engine_open: string[];
+}
+
+/** Một kênh model theo vai — GET /api/books/{b}/models. */
+export interface KenhVaiMuc {
+  role: string;
+  provider: string;
+  model: string;
+  /** false = đang thừa hưởng mặc định, chưa đặt riêng cho vai này. */
+  explicit: boolean;
+  thinking: string;
+  thinking_options: string[];
+}
+
+export interface VaiModelDoc {
+  channels: KenhVaiMuc[];
+  providers: string[];
+  models_by_provider: Record<string, string[] | null>;
+}

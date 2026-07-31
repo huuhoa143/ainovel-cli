@@ -393,19 +393,22 @@ const (
 //
 // # Vì sao chỉ đọc, và vì sao nói ra điều đó trong payload
 //
-// Engine sở hữu quyền ghi meta/run.json; hai process cùng sửa nó sẽ mất trắng ý
-// kiến can thiệp, không lỗi, không dấu vết (xem chú thích đầu package serve).
-// Nên Writable là false ở bản này, và nó nằm TRONG payload thay vì chỉ suy từ
-// Capabilities.Steer: bề mặt cài đặt cần biết mình có được phép ghi hay không mà
-// không phải gọi thêm /studio, và Steer nói về đúng một ô nhập can thiệp chứ
-// không phải về toàn bộ cấu hình.
+// Writable là false vì đây là BẢN GHI: nó nói tác phẩm đã khởi động với cấu hình
+// gì. Quá khứ không sửa được, nên một ô nhập ở đây sẽ hứa một việc không tồn tại.
+// Nó nằm TRONG payload thay vì chỉ suy từ Capabilities.Steer vì Steer nói về đúng
+// một ô can thiệp, không nói về toàn bộ cấu hình.
+//
+// Lý do CŨ ghi ở đây ("engine sở hữu quyền ghi, hai process cùng sửa sẽ mất trắng
+// ý kiến can thiệp") không còn đúng: engine chạy trong process này nên studio là
+// người ghi duy nhất. Giữ lại vế kết luận, đổi vế lý do — xem settings.go.
 //
 // # Cái gì CỐ Ý không có ở đây
 //
 // Khoá API và cấu hình provider KHÔNG nằm trong store (chúng ở config của người
-// dùng, xem config.example.jsonc) và không được thêm vào đây. Server này mặc định
-// chỉ lắng nghe localhost đúng vì store đã đủ nhạy cảm; đưa khoá vào một payload
-// HTTP là biến một rò rỉ tiềm năng thành một rò rỉ có sẵn.
+// dùng) nên không có ở payload này. Chúng ĐẶT ĐƯỢC qua PUT /api/config, và lo ngại
+// cũ — "đưa khoá vào một payload HTTP là biến rò rỉ tiềm năng thành rò rỉ có sẵn"
+// — được giải quyết bằng cách cho khoá đi MỘT CHIỀU: vào được, không bao giờ ra.
+// Xem cheKhoa trong rao.go và TestCauHinhKhoaDiMotChieu.
 //
 // PlanStart.RawPrompt cũng bị lược: nó lặp lại StartPrompt gần như nguyên văn,
 // và một trường lặp là một trường sẽ lệch.

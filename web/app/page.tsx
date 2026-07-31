@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { BangChuong, GhiChuChiPhi } from '@/components/BangChuong';
 import { CaiDat } from '@/components/CaiDat';
+import { CauHinhXuong } from '@/components/CauHinhXuong';
 import { ChiPhi } from '@/components/ChiPhi';
 import { DanY } from '@/components/DanY';
 import { DocTruyen } from '@/components/DocTruyen';
@@ -34,11 +35,13 @@ import {
   vieccTonBiAn,
 } from '@/lib/phamVi';
 import { mayDangChay } from '@/lib/song';
+import { useMay } from '@/lib/useMay';
 import type { Snapshot } from '@/lib/types';
 import { useStudio } from '@/lib/useStudio';
 
 export default function Trang() {
   const s = useStudio();
+  const may = useMay();
 
   const sachDangXem = s.workshop?.books.find((b) => b.id === s.tacPham);
   const xuongTrong = s.workshop && s.workshop.books.length === 0;
@@ -59,7 +62,13 @@ export default function Trang() {
         onChon={s.chonTacPham}
       />
 
-      {xuongTrong ? (
+      {/* Chưa có tệp cấu hình thì dẫn THẲNG vào cài đặt, không hiện studio trống.
+          Một studio không có khóa API không làm được gì cả, nên hiện nó ra rồi để người
+          dùng tự đi tìm chỗ nhập khóa là bắt họ đoán. Đây là trạng thái "rỗng lần đầu"
+          của brief thiết kế, và nó đứng TRƯỚC mọi nhánh khác vì nó chặn tất cả. */
+      may.canCaiDat ? (
+        <CauHinhXuong lanDau />
+      ) : xuongTrong ? (
         <XuongTrong root={s.workshop?.root} />
       ) : s.loi && !s.snapshot ? (
         <KhongTaiDuoc loi={s.loi} onThuLai={s.taiLai} />
@@ -161,6 +170,10 @@ function Khu({
       return <ChiPhi tacPham={tacPham} snapshot={snapshot} />;
     case 'cai-dat':
       return <CaiDat tacPham={tacPham} />;
+    // Khu mức MÁY: cố ý KHÔNG nhận `tacPham`. Truyền vào sẽ mời người sau dùng nó rồi
+    // biến một bề mặt toàn cục thành nửa-theo-tác-phẩm.
+    case 'cau-hinh':
+      return <CauHinhXuong />;
     case 'dan-y':
       return <DanY snapshot={snapshot} tacPham={tacPham} />;
     case 'nhan-vat':

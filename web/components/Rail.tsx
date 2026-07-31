@@ -249,6 +249,21 @@ export function Rail({
         chuGiai={GIAI_THICH.railCaiDat}
         viSaoThieu={GIAI_THICH.thieuEndpointCaiDat}
       />
+
+      {/* Nhóm MÁY, tách khỏi nhóm Xưởng có chủ ý.
+          Cấu hình máy sửa ~/.ainovel/config.json — nó áp cho mọi tác phẩm và mọi lượt
+          chạy sau, không thuộc cuốn đang mở. Để nó lẫn trong nhóm Xưởng là mời đúng cái
+          nhầm mà bề mặt Cài đặt đã phải tách ra để tránh: người vận hành đọc nó thành
+          "cấu hình của cuốn này". */}
+      <div className="grp">{CHU.may}</div>
+      <MucDi
+        nhan={CHU.cauHinh}
+        ky="⌸"
+        di="cau-hinh"
+        khu={khu}
+        onChonKhu={onChonKhu}
+        chuGiai={GIAI_THICH.cauHinhLaMucMay}
+      />
     </nav>
   );
 }
