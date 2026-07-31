@@ -46,7 +46,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -87,11 +86,30 @@ func Command(argv []string) int {
 		fmt.Fprintf(os.Stderr, "serve: %v\n", err)
 	}
 
-	srv := &server{root: *root, onlyBook: *book, webDir: *webDir}
+	// Đường GHI chỉ bật trên loopback, và đây là TỪ CHỐI chứ không phải cảnh báo.
+	//
+	// Từ khi studio ghi được, một yêu cầu từ người lạ không chỉ đọc được bản thảo mà còn
+	// khởi động được engine (đốt tiền API thật) và đặt được khóa API. Người dùng đã chọn
+	// không có mật khẩu, nên hàng rào địa chỉ chính là thứ thay cho việc xác thực —
+	// không thể để nó là một dòng cảnh báo rồi vẫn chạy.
+	choGhi := laDiaChiCucBo(*addr)
+
+	srv := &server{root: *root, onlyBook: *book, webDir: *webDir, choGhi: choGhi}
+	if choGhi {
+		srv.may = newBoMay(*root)
+		defer srv.may.dongTatCa()
+	}
 	mux := srv.routes()
 
 	fmt.Fprintf(os.Stdout, "ainovel studio đang chạy tại http://%s\n", *addr)
 	fmt.Fprintf(os.Stdout, "  thư mục gốc: %s\n", *root)
+	if choGhi {
+		fmt.Fprintln(os.Stdout, "  chế độ: đầy đủ — tạo, chạy, can thiệp được từ giao diện")
+	} else {
+		fmt.Fprintf(os.Stderr,
+			"  chế độ: CHỈ ĐỌC — %s không phải loopback nên đường ghi bị tắt.\n"+
+				"          Muốn dùng đầy đủ thì chạy với --addr 127.0.0.1:8420.\n", *addr)
+	}
 	if *webDir == "" {
 		fmt.Fprintln(os.Stdout, "  chế độ: chỉ API (dùng --web để phục vụ giao diện đã build)")
 	}
@@ -110,13 +128,13 @@ func Command(argv []string) int {
 	return 0
 }
 
+// warnIfPublic cảnh báo khi lắng nghe ra ngoài loopback.
+//
+// Dùng chung `laDiaChiCucBo` thay vì tự so chuỗi. Bản cũ liệt kê tay `case "", "127.0.0.1",
+// "localhost", "::1"` và vì thế IM LẶNG với `--addr :8420` — dạng viết tắt của 0.0.0.0,
+// tức nghe mọi giao diện. Đúng cái nó tồn tại để cảnh báo thì nó bỏ qua.
 func warnIfPublic(addr string) error {
-	host, _, err := net.SplitHostPort(addr)
-	if err != nil {
-		return nil
-	}
-	switch host {
-	case "", "127.0.0.1", "localhost", "::1":
+	if laDiaChiCucBo(addr) {
 		return nil
 	}
 	return fmt.Errorf("đang lắng nghe %s — store chứa toàn văn chưa phát hành, đừng mở ra mạng công cộng", addr)
@@ -126,6 +144,11 @@ type server struct {
 	root     string
 	onlyBook string
 	webDir   string
+
+	// choGhi bật nhóm route ghi. Tách khỏi `may != nil` để `routes()` đọc được ý định một
+	// cách tường minh, và để test dựng được ca "chỉ đọc" mà không phải mò.
+	choGhi bool
+	may    *boMay
 }
 
 func (s *server) routes() *http.ServeMux {
@@ -140,6 +163,19 @@ func (s *server) routes() *http.ServeMux {
 	mux.HandleFunc("GET /api/books/{book}/cost", s.handleCost)
 	mux.HandleFunc("GET /api/books/{book}/settings", s.handleSettings)
 	mux.HandleFunc("GET /api/books/{book}/events", s.handleEvents)
+
+	// Nhóm GHI. Không mắc vào mux khi không cho ghi — trả 404 thay vì 403 là có chủ ý:
+	// route không tồn tại thì không có gì để dò, và giao diện đã có `/api/engine` để hỏi
+	// trạng thái nên nó không cần đoán từ mã lỗi.
+	if s.choGhi && s.may != nil {
+		mux.HandleFunc("GET /api/engine", s.handleMay)
+		mux.HandleFunc("POST /api/books", raoGhi(s.handleTaoSach))
+		mux.HandleFunc("POST /api/books/{book}/run", raoGhi(s.handleChay))
+		mux.HandleFunc("POST /api/books/{book}/steer", raoGhi(s.handleCanThiep))
+		mux.HandleFunc("POST /api/books/{book}/abort", raoGhi(s.handleDung))
+		mux.HandleFunc("POST /api/books/{book}/close", raoGhi(s.handleDongMay))
+		mux.HandleFunc("GET /api/books/{book}/live", s.handleSong)
+	}
 
 	if s.webDir != "" {
 		mux.Handle("/", http.FileServer(http.Dir(s.webDir)))

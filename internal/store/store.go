@@ -17,6 +17,10 @@ import (
 type Store struct {
 	dir string
 
+	// khoa là khóa tệp chống hai process cùng ghi. Chỉ engine thật lấy nó (xem khoa.go);
+	// bài kiểm dựng store trực tiếp thì không, nên không rải tệp khóa mồ côi.
+	khoa *khoa
+
 	Progress    *ProgressStore
 	Outline     *OutlineStore
 	Drafts      *DraftStore

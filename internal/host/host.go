@@ -101,6 +101,22 @@ func New(cfg bootstrap.Config, bundle assets.Bundle) (*Host, error) {
 	if err := store.Init(); err != nil {
 		return nil, fmt.Errorf("init store: %w", err)
 	}
+	// 文件级写锁：store 的 WithWriteLock 只是进程内 mutex，跨进程零保护。
+	// 现在有三条写入路径同时存在（TUI / headless / web studio），两个进程同时写
+	// meta/run_meta.json 会静默丢数据——无错误、无日志。这里是五个 host.New 调用点
+	// 都必经的唯一位置，所以锁放在这里而不是各入口。Close 里释放。
+	if err := store.Khoa(); err != nil {
+		return nil, err
+	}
+	// 后续任一步失败都要还锁：否则一次配置错误就让目录被一个已经不存在的 Host 锁住，
+	// 用户下次启动看到的是"被 PID xxx 占用"而那个 PID 就是刚刚失败的自己。
+	// 用 defer + 哨兵而不是在每个 return 前手写解锁——将来新增的错误分支自动覆盖。
+	locked := true
+	defer func() {
+		if locked {
+			_ = store.MoKhoa()
+		}
+	}()
 	// RunMeta 是所有控制语义的事实源，必须在构造模型/后台任务之前完成校验。
 	// 未知 advance mode 直接返回结构化错误；禁止猜测降级后继续写盘。
 	if err := store.RunMeta.Init(cfg.Style, cfg.Provider, cfg.ModelName); err != nil {
@@ -239,6 +255,8 @@ func New(cfg bootstrap.Config, bundle assets.Bundle) (*Host, error) {
 		onDone:  h.runEnded,
 	}
 
+	// 构造成功，锁的所有权交给 Host，由 Close 释放。
+	locked = false
 	return h, nil
 }
 
@@ -879,6 +897,11 @@ func (h *Host) Close() {
 		close(h.done)
 		close(h.events)
 		close(h.streamCh)
+
+		// 文件锁最后释放：上面还在 SaveNow 落盘，提前放锁等于把写窗口交给别的进程。
+		if err := h.store.MoKhoa(); err != nil {
+			slog.Warn(i18n.F("释放目录写锁失败"), "module", "store", "err", err)
+		}
 	})
 }
 
