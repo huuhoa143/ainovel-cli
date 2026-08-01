@@ -1,7 +1,9 @@
 package serve
 
 import (
+	"bufio"
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -145,4 +147,144 @@ func TestNhipDoUiEventKhongDoi(t *testing.T) {
 func contextVoiHanVan(t *testing.T, d time.Duration) (context.Context, context.CancelFunc) {
 	t.Helper()
 	return context.WithTimeout(context.Background(), d)
+}
+
+// TestSSEVanSongChayTrongLucDangNoi canh ĐƯỜNG CHẢY THẬT của tính năng này.
+//
+// # Vì sao bài kiểm này phải có
+//
+// Ba bài kiểm trên đều nạp chữ TRƯỚC khi mở kết nối, nên mọi thứ đi qua nhánh "gửi cả lượt
+// hiện tại lúc nối" và hàm `bomVan` không bao giờ phát gì. ĐO ĐƯỢC bằng phép thử đột biến:
+// ba đột biến vào `bomVan` — cho delta mang `id:`, nhét chữ vào `summary` thay vì `data.text`,
+// và đảo thứ tự đăng-ký-chờ với đọc — đều XANH, không bài nào bắt.
+//
+// Mà `bomVan` mới là đường mà chữ đi khi engine đang viết: người dùng mở trang rồi NGỒI XEM,
+// và mọi mẩu sau đó đều qua đường này. Bộ kiểm cũ canh đúng cái không quan trọng.
+//
+// # Vì sao chạy handler trong goroutine
+//
+// Handler SSE chạy tới khi client đi, nên nó phải ở goroutine khác để bài kiểm còn đẩy được
+// chữ vào giữa chừng. Chỉ đọc `rec.Body` SAU khi handler đã về (chờ `xong`) — đọc trong lúc
+// nó còn ghi là một cuộc đua dữ liệu, và `-race` sẽ bắt đúng bài kiểm này chứ không bắt lỗi
+// thật.
+func TestSSEVanSongChayTrongLucDangNoi(t *testing.T) {
+	goc := t.TempDir()
+	newBook(t, goc, "sach", nil)
+
+	may := newBoMay(goc)
+	van := &dongVan{}
+	may.dang["sach"] = &phienMay{id: "sach", van: van, moLuc: mocBayGio()}
+
+	srv := &server{root: goc, choGhi: true, may: may}
+	rec := httptest.NewRecorder()
+	ctx, huy := contextVoiHanVan(t, 700*time.Millisecond)
+	defer huy()
+
+	xong := make(chan struct{})
+	go func() {
+		srv.routes().ServeHTTP(rec,
+			httptest.NewRequest("GET", "/api/books/sach/events", nil).WithContext(ctx))
+		close(xong)
+	}()
+
+	// Chờ handler vào vòng chờ rồi mới đẩy: đẩy quá sớm thì mẩu rơi vào nhánh "lúc nối" và
+	// bài kiểm lại canh nhầm nhánh, đúng lỗi mà nó sinh ra để vá.
+	time.Sleep(120 * time.Millisecond)
+	van.them("mẩu đến ")
+	time.Sleep(60 * time.Millisecond)
+	van.them("khi đang nối")
+	<-xong
+
+	than := rec.Body.String()
+	if !strings.Contains(than, `"text":"mẩu đến "`) || !strings.Contains(than, `"text":"khi đang nối"`) {
+		t.Fatalf("mẩu đẩy trong lúc đang nối không tới được client:\n%s", than)
+	}
+	if strings.Contains(than, `"summary"`) {
+		t.Error("chữ lọt vào summary — ô công đoạn ở transport sẽ hiện văn truyện")
+	}
+	for _, khoi := range strings.Split(than, "\n\n") {
+		if strings.Contains(khoi, "event: stream_delta") && strings.Contains(khoi, "id:") {
+			t.Errorf("khối stream_delta có `id:` — nó đè mốc Last-Event-ID của ui_event:\n%s", khoi)
+		}
+	}
+}
+
+// TestSSEVanSongToiTrongVaiChucMili canh ĐỘ TRỄ, không canh sự có mặt.
+//
+// # Vì sao cần bài kiểm đo thời gian
+//
+// ĐO ĐƯỢC bằng phép thử đột biến: đảo thứ tự "đăng ký chờ" với "đọc bộ đệm" — tức đặt
+// `van.doi()` SAU `bomVan` — thì mọi bài kiểm khác vẫn XANH. Đột biến đó không làm MẤT chữ;
+// nó chỉ làm chữ tới MUỘN: mẩu đến trong kẽ hở giữa hai bước không đánh thức ai, nên kết nối
+// ngủ tới nhịp dò 700ms kế tiếp.
+//
+// Mà đó đúng là thứ tính năng này sinh ra để tránh. ĐO ĐƯỢC trên scripts/sample.gif: nhịp
+// thật của chữ máy là trung vị 70ms, 94% khoảng cách ≤ 210ms. Chảy qua vòng dò 700ms thì
+// người dùng thấy chữ nhảy từng cục — có chữ, nhưng mất hẳn cảm giác đang chạy.
+//
+// Ngưỡng 300ms là ngưỡng RỘNG cho máy CI chậm, và vẫn nhỏ hơn 700ms đủ để đột biến đỏ.
+//
+// # Vì sao phải dựng server thật
+//
+// `httptest.ResponseRecorder` chỉ đọc được sau khi handler đã về, nên nó không đo được lúc
+// một dòng TỚI. Muốn đo độ trễ thì phải đọc dòng theo dòng từ một kết nối thật.
+func TestSSEVanSongToiTrongVaiChucMili(t *testing.T) {
+	goc := t.TempDir()
+	newBook(t, goc, "sach", nil)
+
+	may := newBoMay(goc)
+	van := &dongVan{}
+	may.dang["sach"] = &phienMay{id: "sach", van: van, moLuc: mocBayGio()}
+
+	ts := httptest.NewServer((&server{root: goc, choGhi: true, may: may}).routes())
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/api/books/sach/events")
+	if err != nil {
+		t.Fatalf("mở dòng: %v", err)
+	}
+	defer resp.Body.Close()
+	doc := bufio.NewReader(resp.Body)
+
+	// Chờ handler vào vòng chờ. Đẩy sớm hơn thì mẩu rơi vào nhánh "gửi cả lượt lúc nối" và
+	// phép đo thành vô nghĩa.
+	time.Sleep(150 * time.Millisecond)
+
+	type ketQua struct {
+		tre time.Duration
+		err error
+	}
+	// `mocDay` đặt TRƯỚC khi goroutine chạy và không ghi lại nữa: goroutine chỉ đọc, nên
+	// không có cuộc đua. Đặt nó thành biến gói rồi gán trong thân bài kiểm là một cuộc đua
+	// thật, và `-race` sẽ bắt chính bài kiểm này chứ không bắt lỗi của sản phẩm.
+	mocDay := time.Now()
+	ch := make(chan ketQua, 1)
+	go func() {
+		for {
+			dong, err := doc.ReadString('\n')
+			if err != nil {
+				ch <- ketQua{err: err}
+				return
+			}
+			if strings.Contains(dong, `"text":"nhanh lên"`) {
+				ch <- ketQua{tre: time.Since(mocDay)}
+				return
+			}
+		}
+	}()
+
+	van.them("nhanh lên")
+
+	select {
+	case kq := <-ch:
+		if kq.err != nil {
+			t.Fatalf("đọc dòng: %v", kq.err)
+		}
+		if kq.tre > 300*time.Millisecond {
+			t.Errorf("mẩu tới sau %v — quá 300ms nghĩa là nó đi theo vòng dò 700ms chứ không "+
+				"theo đánh thức. Kiểm lại thứ tự: `van.doi()` phải gọi TRƯỚC `bomVan`.", kq.tre)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("mẩu không bao giờ tới")
+	}
 }
