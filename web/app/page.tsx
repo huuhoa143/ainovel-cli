@@ -114,7 +114,7 @@ export default function Trang() {
           dùng tự đi tìm chỗ nhập khóa là bắt họ đoán. Đây là trạng thái "rỗng lần đầu"
           của brief thiết kế, và nó đứng TRƯỚC mọi nhánh khác vì nó chặn tất cả. */
       may.canCaiDat ? (
-        <CauHinhXuong lanDau />
+        <CauHinhXuong lanDau onDoiCauHinh={may.hoiLai} />
       ) : xuongTrong && may.choGhi ? (
         // Xưởng rỗng + ghi được → dẫn thẳng vào tạo tác phẩm. Hiện một trang trống kèm
         // một lệnh CLI là câu trả lời của bản chỉ-đọc; giờ studio tạo được nên để người
@@ -159,6 +159,7 @@ export default function Trang() {
             onMoTacPham={s.moTacPhamTai}
             onXongTaoSach={xongTaoSach}
             onChotCungDung={chotCungDung}
+            onDoiCauHinh={may.hoiLai}
             onDoi={s.taiLai}
             nhapSan={nhapTuCungDung}
             suKien={s.suKien}
@@ -227,6 +228,7 @@ export function Khu({
   onMoTacPham,
   onXongTaoSach,
   onChotCungDung,
+  onDoiCauHinh,
   onDoi,
   nhapSan,
   suKien,
@@ -257,6 +259,8 @@ export function Khu({
   /** Tạo tác phẩm xong: đổi tác phẩm VÀ đổi khu — xem lý do ở `xongTaoSach`. */
   onXongTaoSach: (id: string) => void;
   onChotCungDung: (banNhap: string) => void;
+  /** Hỏi lại `/api/config` sau khi người dùng lưu thay đổi ở bề mặt Cấu hình máy. */
+  onDoiCauHinh: () => void;
   /** Nạp lại snapshot sau một lệnh của dải quyết định — `useStudio.taiLai`. */
   onDoi: () => void;
   nhapSan: string;
@@ -320,7 +324,7 @@ export function Khu({
     case 'nhap-xuat':
       return <NhapXuat tacPham={tacPham} />;
     case 'cau-hinh':
-      return <CauHinhXuong />;
+      return <CauHinhXuong onDoiCauHinh={onDoiCauHinh} />;
     case 'tac-pham-moi':
       return <TacPhamMoi onXong={onXongTaoSach} nhapSan={nhapSan} />;
     // Cùng dựng giai đoạn cần tác phẩm; cùng dựng mở sách thì không. Một khu cho cả hai,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { LA_MOCK, LoiApi, layCauHinh } from './api';
 
@@ -29,14 +29,35 @@ export interface TinhTrangMay {
   /** true = chưa có tệp cấu hình nào; studio không làm được gì tới khi có khóa. */
   canCaiDat: boolean;
   daHoi: boolean;
+  /**
+   * Hỏi lại `/api/config`. Gọi sau khi người dùng LƯU một thay đổi cấu hình.
+   *
+   * # Vì sao bắt buộc phải có
+   *
+   * `page.tsx` chặn TOÀN BỘ studio sau `canCaiDat`. Không có đường hỏi lại thì người dùng
+   * mới nhập khóa API xong vẫn kẹt ở màn "Cài đặt lần đầu" — và không gì trên màn hình nói
+   * cho họ biết phải tải lại trang.
+   *
+   * ĐO ĐƯỢC trên một máy sạch (HOME rỗng): lưu nhà cung cấp qua đúng API mà biểu mẫu dùng,
+   * server trả `saved: true` và `/api/config` đổi sang `needs_setup: false`, mà trang vẫn là
+   * "Cài đặt lần đầu" sau 5 giây. F5 mới mở ra.
+   *
+   * `hoiLai` KHÔNG đặt `daHoi` về false: làm thế thì bề mặt nháy qua trạng thái "đang hỏi"
+   * mỗi lần lưu, tức tự chớp dưới tay người đang dùng. Câu trả lời cũ còn dùng được cho tới
+   * khi có câu mới.
+   */
+  hoiLai: () => void;
 }
 
 export function useMay(): TinhTrangMay {
-  const [tt, datTt] = useState<TinhTrangMay>({
-    choGhi: undefined,
+  const [tt, datTt] = useState({
+    choGhi: undefined as boolean | undefined,
     canCaiDat: false,
     daHoi: false,
   });
+  /** Bơm để chạy lại phép hỏi. Một con số, vì nội dung câu hỏi không đổi. */
+  const [lanHoi, datLanHoi] = useState(0);
+  const hoiLai = useCallback(() => datLanHoi((n) => n + 1), []);
 
   useEffect(() => {
     if (LA_MOCK) {
@@ -56,7 +77,7 @@ export function useMay(): TinhTrangMay {
     return () => {
       huy = true;
     };
-  }, []);
+  }, [lanHoi]);
 
-  return tt;
+  return { ...tt, hoiLai };
 }

@@ -28,6 +28,7 @@ function xuong(n: number): Workshop {
 }
 
 const LAY_WORKSHOP = vi.fn<() => Promise<Workshop>>();
+const LAY_HO_SO = vi.fn<() => Promise<unknown>>();
 
 /**
  * `DongGia` giả: dòng sự kiện không phải thứ đang đo, nhưng effect §3 vẫn mở nó.
@@ -71,7 +72,7 @@ vi.mock('@/lib/api', () => ({
   duongSuKien: () => '/khong-dung',
   layWorkshop: () => LAY_WORKSHOP(),
   laySnapshot: () => Promise.resolve(snap({})),
-  layHoSo: () => Promise.reject(new Error('không cần cho bài kiểm này')),
+  layHoSo: () => LAY_HO_SO(),
 }));
 
 const { useStudio } = await import('./useStudio');
@@ -87,6 +88,8 @@ async function mo(url: string, ws: Workshop) {
 
 beforeEach(() => {
   LAY_WORKSHOP.mockReset();
+  LAY_HO_SO.mockReset();
+  LAY_HO_SO.mockResolvedValue({ characters: 3, rules: 4, foreshadow: 0 });
 });
 
 test('URL im và xưởng nhiều cuốn thì đáp vào Xưởng', async () => {
@@ -191,4 +194,23 @@ test('sự kiện engine tới thì danh sách xưởng cũng được nạp l�
     timeout: 4000,
   });
   await waitFor(() => expect(r.result.current.workshop?.books).toHaveLength(5));
+});
+
+test('hồ sơ truyện cũng theo nhịp sự kiện — số ở rail không đứng im suốt lúc viết', async () => {
+  // Rail hiện số Nhân vật / Luật thế giới / Phục bút từ `hoSo`, và engine THÊM những thứ đó
+  // trong lúc viết. Nạp một lần lúc đổi cuốn thì mấy con số ấy đứng im cả phiên — cùng lớp
+  // lỗi với danh sách xưởng, chỉ khác chỗ hiện ra.
+  const r = await mo('/?tp=b1', xuong(2));
+  await waitFor(() => expect(r.result.current.tacPham).toBe('b1'));
+
+  const truoc = LAY_HO_SO.mock.calls.length;
+  LAY_HO_SO.mockResolvedValue({ characters: 9, rules: 12, foreshadow: 2 });
+  act(() => DongGiaCam.ban(202));
+
+  await waitFor(() => expect(LAY_HO_SO.mock.calls.length).toBeGreaterThan(truoc), {
+    timeout: 4000,
+  });
+  await waitFor(() =>
+    expect((r.result.current.hoSo as { characters?: number } | undefined)?.characters).toBe(9),
+  );
 });
