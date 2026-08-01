@@ -10,6 +10,25 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-01-buong-lai-nam-man-design.md`
 **Base:** nhánh `feat/viet-hoa-i18n`, HEAD `a9bbbb4`
+**Trạng thái: ĐÃ XONG 2026-08-01** — 16/16 task, 17 commit, gộp tua nhanh vào
+`feat/viet-hoa-i18n`. Cổng trên bản đã gộp: build ✓ vet ✓ gofmt ✓ 30 gói / 0 FAIL ✓ tsc ✓.
+
+> ### Bài học phải đọc trước khi lặp lại quy trình này
+>
+> **1. Đừng đặt worktree BÊN TRONG repo này.** `.worktrees/hop-dong-go/` là một bản sao đầy
+> đủ của cây nguồn, và hai gói `internal/diag` + `internal/i18n` có bộ quét đi khắp cây tìm
+> chữ Hán và chuỗi chưa bọc i18n. Chúng bò vào bản sao đó và cho **8 FAIL** ngay sau khi gộp,
+> trong khi worktree riêng cho 0 FAIL. Lần sau đặt worktree ngoài repo, hoặc dạy hai bộ quét
+> bỏ qua thư mục ẩn.
+>
+> **2. Cổng xanh ở worktree KHÔNG chứng minh gì về bản đã gộp.** Chính vì thế mà bước chạy
+> lại cổng sau khi gộp bắt được điều trên.
+>
+> **3. Cổng xanh không chứng minh bài kiểm canh được gì.** Phép thử đột biến (sửa mã sản xuất
+> rồi xem bài kiểm có đỏ không) bắt được hai lỗ hổng mà toàn bộ cổng đều xanh:
+> bài kiểm cụm A bắt lỗi bằng cách TREO 45 giây thay vì khẳng định; và cụm B **không có bài
+> kiểm nào chạy qua `bomVan`** — đường mà chữ thật sự đi khi engine đang viết — nên ba đột
+> biến lọt sạch, trong đó có "delta mang `id:`".
 
 ---
 
@@ -68,7 +87,7 @@ bài kiểm nào phủ thì XÓA.
 - Test: `internal/serve/dong_van_test.go` (tạo mới)
 - Modify: `internal/serve/dong_van.go` nếu bài kiểm đỏ
 
-- [ ] **Step 1: Viết bài kiểm đỏ**
+- [x] **Step 1: Viết bài kiểm đỏ**
 
 ```go
 package serve
@@ -124,23 +143,23 @@ func TestDongVanRanhGioiLuotDungThuTu(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Chạy để xác nhận nó đỏ đúng lý do**
+- [x] **Step 2: Chạy để xác nhận nó đỏ đúng lý do**
 
 Run: `cd /path/to/repo && go test ./internal/serve/ -run TestDongVanRanhGioiLuotDungThuTu -v`
 
 Nếu bản nháp đã đúng thì bài này XANH ngay. **Đó là kết quả hợp lệ** — nó biến mã chưa được
 biện hộ thành mã có bài kiểm. Ghi lại output vào báo cáo. Nếu đỏ, đọc lý do rồi sang Step 3.
 
-- [ ] **Step 3: Sửa `dong_van.go` cho tới khi xanh (nếu cần)**
+- [x] **Step 3: Sửa `dong_van.go` cho tới khi xanh (nếu cần)**
 
 Chỉ sửa nếu Step 2 đỏ. Không "dọn dẹp" gì thêm.
 
-- [ ] **Step 4: Chạy lại, xác nhận xanh**
+- [x] **Step 4: Chạy lại, xác nhận xanh**
 
 Run: `go test ./internal/serve/ -run TestDongVanRanhGioiLuotDungThuTu -v`
 Expected: `PASS`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/serve/dong_van_test.go internal/serve/dong_van.go
@@ -155,7 +174,7 @@ git commit -m "test(serve): chốt ranh giới lượt của bộ đệm văn s�
 - Modify: `internal/serve/dong_van_test.go`
 - Modify: `internal/serve/dong_van.go` nếu đỏ
 
-- [ ] **Step 1: Viết bài kiểm đỏ**
+- [x] **Step 1: Viết bài kiểm đỏ**
 
 ```go
 // TestDongVanHaiCaiTran canh hai lớp lỗi khác nhau, đừng gộp chúng.
@@ -204,12 +223,12 @@ func TestDongVanHaiCaiTran(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Chạy để xác nhận đỏ**
+- [x] **Step 2: Chạy để xác nhận đỏ**
 
 Run: `go test ./internal/serve/ -run TestDongVanHaiCaiTran -v`
 Expected: FAIL — `d.vongLen undefined` (bản nháp không có hàm đó).
 
-- [ ] **Step 3: Thêm `vongLen` vào `dong_van.go`**
+- [x] **Step 3: Thêm `vongLen` vào `dong_van.go`**
 
 ```go
 // vongLen là số byte của lượt hiện tại. Chỉ để bài kiểm dừng vòng nạp đúng chỗ; giao diện
@@ -221,12 +240,12 @@ func (d *dongVan) vongLen() int {
 }
 ```
 
-- [ ] **Step 4: Chạy lại, xác nhận xanh**
+- [x] **Step 4: Chạy lại, xác nhận xanh**
 
 Run: `go test ./internal/serve/ -run TestDongVanHaiCaiTran -v`
 Expected: `PASS`. Nếu nhánh cắt vòng đỏ, sửa `them()` cho cắt đúng từ đầu.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/serve/dong_van_test.go internal/serve/dong_van.go
@@ -240,7 +259,7 @@ git commit -m "test(serve): chốt hai cái trần của bộ đệm và hướn
 **Files:**
 - Modify: `internal/serve/dong_van_test.go`
 
-- [ ] **Step 1: Viết bài kiểm đỏ**
+- [x] **Step 1: Viết bài kiểm đỏ**
 
 ```go
 // TestDongVanHaiNguoiDocDeuDu là bài kiểm BIỆN HỘ cho sự tồn tại của cả tệp dong_van.go.
@@ -280,20 +299,20 @@ func TestDongVanHaiNguoiDocDeuDu(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Chạy để xác nhận**
+- [x] **Step 2: Chạy để xác nhận**
 
 Run: `go test ./internal/serve/ -run TestDongVanHaiNguoiDocDeuDu -v`
 
 Bản nháp nên xanh. Ghi output vào báo cáo.
 
-- [ ] **Step 3: (không cần sửa nếu xanh)**
+- [x] **Step 3: (không cần sửa nếu xanh)**
 
-- [ ] **Step 4: Xác nhận xanh**
+- [x] **Step 4: Xác nhận xanh**
 
 Run: `go test ./internal/serve/ -run TestDongVanHaiNguoiDocDeuDu -v`
 Expected: `PASS`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/serve/dong_van_test.go
@@ -307,7 +326,7 @@ git commit -m "test(serve): chốt hai kết nối cùng đọc đều nhận đ
 **Files:**
 - Modify: `internal/serve/dong_van_test.go`
 
-- [ ] **Step 1: Viết bài kiểm đỏ**
+- [x] **Step 1: Viết bài kiểm đỏ**
 
 ```go
 // TestDongVanVaoMuonKhongLap canh lớp lỗi "thấy nửa cuối một câu".
@@ -345,17 +364,17 @@ func TestDongVanVaoMuonKhongLap(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Chạy để xác nhận**
+- [x] **Step 2: Chạy để xác nhận**
 
 Run: `go test ./internal/serve/ -run TestDongVanVaoMuonKhongLap -v`
 
-- [ ] **Step 3: Sửa nếu đỏ**
+- [x] **Step 3: Sửa nếu đỏ**
 
-- [ ] **Step 4: Xác nhận xanh**
+- [x] **Step 4: Xác nhận xanh**
 
 Expected: `PASS`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/serve/dong_van_test.go internal/serve/dong_van.go
@@ -369,7 +388,7 @@ git commit -m "test(serve): chốt người vào muộn nhận cả lượt mà 
 **Files:**
 - Modify: `internal/serve/dong_van_test.go`
 
-- [ ] **Step 1: Viết bài kiểm đỏ**
+- [x] **Step 1: Viết bài kiểm đỏ**
 
 ```go
 // TestDongVanHutKetThucKhiChannelDong canh lớp lỗi rò goroutine.
@@ -408,17 +427,17 @@ func TestDongVanHutKetThucKhiChannelDong(t *testing.T) {
 
 Thêm `"time"` vào import của tệp test.
 
-- [ ] **Step 2: Chạy để xác nhận**
+- [x] **Step 2: Chạy để xác nhận**
 
 Run: `go test ./internal/serve/ -run TestDongVanHutKetThucKhiChannelDong -v`
 
-- [ ] **Step 3: Sửa nếu đỏ**
+- [x] **Step 3: Sửa nếu đỏ**
 
-- [ ] **Step 4: Xác nhận xanh**
+- [x] **Step 4: Xác nhận xanh**
 
 Expected: `PASS`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/serve/dong_van_test.go
@@ -433,7 +452,7 @@ git commit -m "test(serve): chốt hut kết thúc theo channel, không rò goro
 - Modify: `internal/serve/dong_van.go`
 - Modify: `internal/serve/dong_van_test.go`
 
-- [ ] **Step 1: Viết bài kiểm đỏ**
+- [x] **Step 1: Viết bài kiểm đỏ**
 
 ```go
 // TestDongVanDanhThucNgay canh lý do KIẾN TRÚC của cơ chế đánh thức.
@@ -472,12 +491,12 @@ func TestDongVanDanhThucNgay(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Chạy để xác nhận đỏ**
+- [x] **Step 2: Chạy để xác nhận đỏ**
 
 Run: `go test ./internal/serve/ -run TestDongVanDanhThucNgay -v`
 Expected: FAIL — `d.doi undefined`.
 
-- [ ] **Step 3: Thêm `doi()` và phần đánh thức trong `them()`**
+- [x] **Step 3: Thêm `doi()` và phần đánh thức trong `them()`**
 
 Thêm trường vào struct:
 
@@ -521,12 +540,12 @@ Trong `them()`, gọi `d.danhThuc()` ngay trước khi trả về ở CẢ HAI n
 nhánh chữ). Cách gọn: bọc bằng `defer d.danhThuc()` đặt ngay sau `defer d.mu.Unlock()` — thứ
 tự defer là ngược, nên `danhThuc` chạy TRƯỚC `Unlock`, đúng yêu cầu "gọi trong lúc giữ khóa".
 
-- [ ] **Step 4: Chạy lại, xác nhận xanh**
+- [x] **Step 4: Chạy lại, xác nhận xanh**
 
 Run: `go test ./internal/serve/ -run TestDongVanDanhThucNgay -v`
 Expected: `PASS`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/serve/dong_van.go internal/serve/dong_van_test.go
@@ -541,7 +560,7 @@ git commit -m "feat(serve): đánh thức người chờ văn sống thay vì đ
 - Modify: `internal/serve/events.go`
 - Test: `internal/serve/events_van_test.go` (tạo mới)
 
-- [ ] **Step 1: Viết bài kiểm đỏ**
+- [x] **Step 1: Viết bài kiểm đỏ**
 
 ```go
 package serve
@@ -607,12 +626,12 @@ func contextVoiHan(t *testing.T, d time.Duration) (context.Context, context.Canc
 
 Thêm `"context"` vào import.
 
-- [ ] **Step 2: Chạy để xác nhận đỏ**
+- [x] **Step 2: Chạy để xác nhận đỏ**
 
 Run: `go test ./internal/serve/ -run TestSSEVanSongKhungDung -v`
 Expected: FAIL — `không thấy sự kiện stream_delta` (handler chưa phát loại này).
 
-- [ ] **Step 3: Thêm phần phát văn sống vào `events.go`**
+- [x] **Step 3: Thêm phần phát văn sống vào `events.go`**
 
 Thêm hàm ghi khung không có `id:`:
 
@@ -713,12 +732,12 @@ Rồi đổi vòng lặp chính thành:
 	}
 ```
 
-- [ ] **Step 4: Chạy lại, xác nhận xanh**
+- [x] **Step 4: Chạy lại, xác nhận xanh**
 
 Run: `go test ./internal/serve/ -run TestSSEVanSongKhungDung -v`
 Expected: `PASS`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/serve/events.go internal/serve/events_van_test.go
@@ -732,7 +751,7 @@ git commit -m "feat(serve): phát văn sống qua SSE, không mang id và chữ 
 **Files:**
 - Modify: `internal/serve/events_van_test.go`
 
-- [ ] **Step 1: Viết bài kiểm đỏ**
+- [x] **Step 1: Viết bài kiểm đỏ**
 
 ```go
 // TestSSEVanSongVaoGiuaLuot canh thứ tự hai sự kiện đầu tiên.
@@ -776,20 +795,20 @@ func TestSSEVanSongVaoGiuaLuot(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Chạy để xác nhận**
+- [x] **Step 2: Chạy để xác nhận**
 
 Run: `go test ./internal/serve/ -run TestSSEVanSongVaoGiuaLuot -v`
 
-- [ ] **Step 3: Sửa `handleEvents` nếu đỏ**
+- [x] **Step 3: Sửa `handleEvents` nếu đỏ**
 
 Nếu có nhiều hơn một `stream_delta`, nghĩa là `mocVan` không được đặt từ `vongHienTai()` — sửa
 để nó nhận đúng mốc trả về trong cùng lời gọi.
 
-- [ ] **Step 4: Xác nhận xanh**
+- [x] **Step 4: Xác nhận xanh**
 
 Expected: `PASS`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/serve/events_van_test.go internal/serve/events.go
@@ -803,7 +822,7 @@ git commit -m "test(serve): chốt thứ tự clear-trước-delta cho người 
 **Files:**
 - Modify: `internal/serve/events_van_test.go`
 
-- [ ] **Step 1: Viết bài kiểm đỏ**
+- [x] **Step 1: Viết bài kiểm đỏ**
 
 ```go
 // TestSSEVanSongKhongCoMayVanChay canh việc "không có văn sống" KHÔNG phải lỗi.
@@ -845,18 +864,18 @@ func TestSSEVanSongKhongCoMayVanChay(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Chạy để xác nhận**
+- [x] **Step 2: Chạy để xác nhận**
 
 Run: `go test ./internal/serve/ -run TestSSEVanSongKhongCoMayVanChay -v`
 Expected: PASS nếu Task 7 đã guard đúng; FAIL với nil-pointer nếu chưa.
 
-- [ ] **Step 3: Sửa guard nếu đỏ**
+- [x] **Step 3: Sửa guard nếu đỏ**
 
-- [ ] **Step 4: Xác nhận xanh**
+- [x] **Step 4: Xác nhận xanh**
 
 Expected: `PASS`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/serve/events_van_test.go internal/serve/events.go
@@ -870,7 +889,7 @@ git commit -m "test(serve): chốt chế độ chỉ đọc và engine chưa m�
 **Files:**
 - Modify: `internal/serve/events_van_test.go`
 
-- [ ] **Step 1: Viết bài kiểm đỏ**
+- [x] **Step 1: Viết bài kiểm đỏ**
 
 ```go
 // TestNhipDoUiEventKhongDoi canh việc ai đó "tối ưu" cả hai loại về một nhịp.
@@ -890,19 +909,19 @@ func TestNhipDoUiEventKhongDoi(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Chạy**
+- [x] **Step 2: Chạy**
 
 Run: `go test ./internal/serve/ -run TestNhipDoUiEventKhongDoi -v`
 Expected: `PASS` (chốt hiện trạng)
 
-- [ ] **Step 3: (không cần sửa)**
+- [x] **Step 3: (không cần sửa)**
 
-- [ ] **Step 4: Chạy toàn bộ gói**
+- [x] **Step 4: Chạy toàn bộ gói**
 
 Run: `go test -count=1 ./internal/serve/ -v 2>&1 | tail -30`
 Expected: mọi bài PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/serve/events_van_test.go
@@ -918,7 +937,7 @@ git commit -m "test(serve): chốt hai nhịp khác nhau cho ui_event và văn s
 - Modify: `internal/serve/snapshot.go`
 - Test: `internal/serve/snapshot_song_test.go` (tạo mới)
 
-- [ ] **Step 1: Viết bài kiểm đỏ**
+- [x] **Step 1: Viết bài kiểm đỏ**
 
 ```go
 package serve
@@ -967,12 +986,12 @@ func TestAnhXaVaiKhopTUI(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Chạy để xác nhận đỏ**
+- [x] **Step 2: Chạy để xác nhận đỏ**
 
 Run: `go test ./internal/serve/ -run TestAnhXaVaiKhopTUI -v`
 Expected: FAIL — `anhXaVai undefined`, `Vai` chưa có.
 
-- [ ] **Step 3: Thêm kiểu và hàm ánh xạ**
+- [x] **Step 3: Thêm kiểu và hàm ánh xạ**
 
 Trong `model.go`:
 
@@ -1018,12 +1037,12 @@ func anhXaVai(vao []host.AgentSnapshot) (dang []Vai, cho []string) {
 }
 ```
 
-- [ ] **Step 4: Chạy lại, xác nhận xanh**
+- [x] **Step 4: Chạy lại, xác nhận xanh**
 
 Run: `go test ./internal/serve/ -run TestAnhXaVaiKhopTUI -v`
 Expected: `PASS`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/serve/model.go internal/serve/snapshot.go internal/serve/snapshot_song_test.go
@@ -1038,7 +1057,7 @@ git commit -m "feat(serve): ánh xạ cây vai và vai chờ theo đúng luật 
 - Modify: `internal/serve/snapshot_song_test.go`
 - Modify: `internal/serve/model.go`, `internal/serve/snapshot.go`
 
-- [ ] **Step 1: Viết bài kiểm đỏ**
+- [x] **Step 1: Viết bài kiểm đỏ**
 
 ```go
 // TestTruongSongLaNullKhiMayDong canh lớp lỗi "0 nói dối".
@@ -1078,12 +1097,12 @@ func TestTruongSongLaNullKhiMayDong(t *testing.T) {
 
 Thêm `"encoding/json"`, `"net/http/httptest"`, `"strings"` vào import.
 
-- [ ] **Step 2: Chạy để xác nhận đỏ**
+- [x] **Step 2: Chạy để xác nhận đỏ**
 
 Run: `go test ./internal/serve/ -run TestTruongSongLaNullKhiMayDong -v`
 Expected: FAIL — các khóa vắng mặt (`` vs `null`).
 
-- [ ] **Step 3: Thêm trường dạng con trỏ vào payload**
+- [x] **Step 3: Thêm trường dạng con trỏ vào payload**
 
 Trong `model.go`, thêm vào struct `Snapshot`:
 
@@ -1119,12 +1138,12 @@ type NguCanh struct {
 Trong `snapshot.go`, chỉ điền bốn trường này khi có `UISnapshot`; engine đóng thì để nguyên
 `nil`. Đừng khởi tạo slice rỗng — `[]Vai{}` marshal thành `[]`, không phải `null`.
 
-- [ ] **Step 4: Chạy lại, xác nhận xanh**
+- [x] **Step 4: Chạy lại, xác nhận xanh**
 
 Run: `go test ./internal/serve/ -run TestTruongSongLaNullKhiMayDong -v`
 Expected: `PASS`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/serve/model.go internal/serve/snapshot.go internal/serve/snapshot_song_test.go
@@ -1139,7 +1158,7 @@ git commit -m "feat(serve): trường sống trả null khi engine đóng, khôn
 - Modify: `internal/serve/model.go`, `internal/serve/snapshot.go`
 - Modify: `internal/serve/snapshot_song_test.go`
 
-- [ ] **Step 1: Viết bài kiểm đỏ**
+- [x] **Step 1: Viết bài kiểm đỏ**
 
 ```go
 // TestAnhXaTruongSongDiXuyenTuSnapshot canh việc serve TỰ TÍNH thay vì lấy từ engine.
@@ -1196,12 +1215,12 @@ func TestAnhXaTruongSongDiXuyenTuSnapshot(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Chạy để xác nhận đỏ**
+- [x] **Step 2: Chạy để xác nhận đỏ**
 
 Run: `go test ./internal/serve/ -run TestAnhXaTruongSongDiXuyenTuSnapshot -v`
 Expected: FAIL — `chieuTruongSong undefined`.
 
-- [ ] **Step 3: Thêm `chieuTruongSong` và các trường còn lại**
+- [x] **Step 3: Thêm `chieuTruongSong` và các trường còn lại**
 
 Trong `model.go`, thêm vào `Snapshot`:
 
@@ -1266,12 +1285,12 @@ func chieuTruongSong(snap host.UISnapshot) truongSong {
 
 Rồi gọi nó ở chỗ dựng `Snapshot` khi có engine, và gán từng trường sang payload.
 
-- [ ] **Step 4: Chạy lại + chạy cả gói**
+- [x] **Step 4: Chạy lại + chạy cả gói**
 
 Run: `go test -count=1 ./internal/serve/ -v 2>&1 | tail -20`
 Expected: mọi bài PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/serve/model.go internal/serve/snapshot.go internal/serve/snapshot_song_test.go
@@ -1286,7 +1305,7 @@ git commit -m "feat(serve): chiếu phần còn lại của UISnapshot ra payloa
 - Modify: `internal/serve/model.go`, `internal/serve/serve.go`
 - Modify: `internal/serve/snapshot_song_test.go`
 
-- [ ] **Step 1: Viết bài kiểm đỏ**
+- [x] **Step 1: Viết bài kiểm đỏ**
 
 ```go
 // TestWorkshopCoDuSoLieuChoManXuong canh một lỗi HIỆU NĂNG thành lỗi đúng đắn.
@@ -1324,12 +1343,12 @@ func TestWorkshopCoDuSoLieuChoManXuong(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Chạy để xác nhận đỏ**
+- [x] **Step 2: Chạy để xác nhận đỏ**
 
 Run: `go test ./internal/serve/ -run TestWorkshopCoDuSoLieuChoManXuong -v`
 Expected: FAIL — thiếu năm khóa.
 
-- [ ] **Step 3: Thêm năm trường vào `Book` và điền trong `handleWorkshop`**
+- [x] **Step 3: Thêm năm trường vào `Book` và điền trong `handleWorkshop`**
 
 ```go
 	// Năm trường cho bề mặt Xưởng. Lấy từ cùng nguồn mà `/studio` dùng (transport của store)
@@ -1343,12 +1362,12 @@ Expected: FAIL — thiếu năm khóa.
 
 `EngineOpen` suy từ `s.may.dangMo(id)` khi `s.may != nil`; `s.may == nil` thì luôn `false`.
 
-- [ ] **Step 4: Chạy lại + cả gói**
+- [x] **Step 4: Chạy lại + cả gói**
 
 Run: `go test -count=1 ./internal/serve/ 2>&1 | tail -5`
 Expected: `ok`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/serve/model.go internal/serve/serve.go internal/serve/snapshot_song_test.go
@@ -1363,7 +1382,7 @@ git commit -m "feat(serve): workshop mang chi phí, nhịp và trạng thái eng
 - Test: `internal/serve/web_kieu_test.go` (tạo mới)
 - Modify: `web/lib/types.ts`
 
-- [ ] **Step 1: Viết bài kiểm đỏ**
+- [x] **Step 1: Viết bài kiểm đỏ**
 
 ```go
 package serve
@@ -1414,12 +1433,12 @@ func TestKieuTruongSongPhaiChoNull(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Chạy để xác nhận đỏ**
+- [x] **Step 2: Chạy để xác nhận đỏ**
 
 Run: `go test ./internal/serve/ -run TestKieuTruongSongPhaiChoNull -v`
 Expected: FAIL — cả năm trường chưa có trong `types.ts`.
 
-- [ ] **Step 3: Thêm kiểu vào `web/lib/types.ts`**
+- [x] **Step 3: Thêm kiểu vào `web/lib/types.ts`**
 
 ```ts
 /**
@@ -1483,7 +1502,7 @@ Và thêm năm trường vào `interface Book`:
   engine_open: boolean;
 ```
 
-- [ ] **Step 4: Chạy bộ canh + `tsc`**
+- [x] **Step 4: Chạy bộ canh + `tsc`**
 
 Run: `go test ./internal/serve/ -run TestKieuTruongSongPhaiChoNull -v`
 Expected: `PASS`
@@ -1492,7 +1511,7 @@ Run: `cd web && npx tsc --noEmit`
 Expected: 0 lỗi. Nếu `node_modules` thiếu trong worktree:
 `ln -s /Users/robin/Personal/ainovel-cli/web/node_modules web/node_modules`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add internal/serve/web_kieu_test.go web/lib/types.ts
@@ -1505,7 +1524,7 @@ git commit -m "feat(web): kiểu cho trường sống, kèm bộ canh đòi | nu
 
 **Files:** không sửa gì — đây là bước xác minh.
 
-- [ ] **Step 1: Chạy toàn bộ cổng**
+- [x] **Step 1: Chạy toàn bộ cổng**
 
 ```bash
 go build ./...
@@ -1515,7 +1534,7 @@ go test -count=1 ./...  # phải 30 gói ok / 0 FAIL
 cd web && npx tsc --noEmit && cd ..
 ```
 
-- [ ] **Step 2: Dựng binary và chạy trên gốc sách thật**
+- [x] **Step 2: Dựng binary và chạy trên gốc sách thật**
 
 ```bash
 go build -o /tmp/ainovel-moi ./cmd/ainovel-cli
@@ -1525,7 +1544,7 @@ go build -o /tmp/ainovel-moi ./cmd/ainovel-cli
 và bài kiểm khóa sẽ từ chối đúng như thiết kế. Báo cáo lại rằng bước này cần người vận hành
 dừng server cũ — **đừng tự dừng nó**.
 
-- [ ] **Step 3: E2E — hai kết nối cùng lúc**
+- [x] **Step 3: E2E — hai kết nối cùng lúc**
 
 Sau khi người vận hành khởi động lại server bằng binary mới, trên một cuốn ĐANG CHẠY:
 
@@ -1538,12 +1557,12 @@ wait; diff /tmp/a.txt /tmp/b.txt && echo "HAI KẾT NỐI KHỚP"
 Expected: hai tệp giống nhau. Lệch nghĩa là hai kết nối đang giành mẩu — đúng ca mà `dongVan`
 tồn tại để chặn.
 
-- [ ] **Step 4: E2E — nhịp**
+- [x] **Step 4: E2E — nhịp**
 
 Đo khoảng cách giữa các `stream_delta` liên tiếp. Expected: phần lớn dưới 300ms. Nếu chúng đến
 thành cục cách nhau ~700ms thì cơ chế đánh thức không hoạt động và nó đang đi theo vòng dò.
 
-- [ ] **Step 5: Báo cáo, không commit**
+- [x] **Step 5: Báo cáo, không commit**
 
 Bước này không sửa mã nên không có commit. Báo cáo gồm: output bốn cổng, kết quả `diff` hai
 kết nối, và phân bố khoảng cách nhịp.
