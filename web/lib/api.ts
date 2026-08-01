@@ -41,8 +41,21 @@ export const LA_MOCK = MOCK !== '';
 
 const GOC = process.env.NEXT_PUBLIC_API_BASE ?? '';
 
-/** Các `event:` mà server có thể gửi (internal/domain/runtime_events.go). */
-export const LOAI_SU_KIEN = ['ui_event', 'stream_delta', 'stream_clear', 'control'] as const;
+/**
+ * Các `event:` mà server có thể gửi (internal/domain/runtime_events.go), tách làm HAI nhóm
+ * vì chúng đi hai đường KHÁC NHAU trong `useStudio`.
+ *
+ * Gộp làm một danh sách là lỗi đã đo: handler của đường ui đòi trường `seq`, mà payload văn
+ * sống không có nó — xem chú thích của `nhanSuKienUi` trong lib/dongSuKien.ts.
+ *
+ * Hai nhịp cũng khác nhau, và đó là thiết kế chứ không phải thiếu sót: `ui_event` nhảy khoảng
+ * 5 lần trong 18 giây nên vòng dò 700ms là đủ; `stream_delta` có nhịp trung vị 2ms nên nó
+ * được ĐÁNH THỨC ở phía server. Hạ vòng dò chung xuống cho khớp delta là nghiền đĩa vì một
+ * dòng gần như im.
+ */
+export const LOAI_SU_KIEN_UI = ['ui_event', 'control'] as const;
+export const LOAI_VAN_SONG = ['stream_delta', 'stream_clear'] as const;
+export const LOAI_SU_KIEN = [...LOAI_SU_KIEN_UI, ...LOAI_VAN_SONG] as const;
 
 export class LoiApi extends Error {
   readonly status: number;

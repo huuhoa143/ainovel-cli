@@ -702,6 +702,46 @@ export const CHU = {
   chuong: 'Chương',
   canThiep: 'Can thiệp',
 
+  /* ── khu văn sống của buồng lái ────────────────────────────────────────────
+   *
+   * Tiêu đề khu ĐỔI theo trạng thái máy, nhưng tên VÙNG thì không — và hai thứ đó là hai
+   * khóa khác nhau ở đây vì đúng lý do đã ghi ở `vttVung`: tên vùng để trình đọc màn hình
+   * điều hướng TỚI, nên đặt nó bằng câu trạng thái thì cây trợ năng đọc tên vùng rồi đọc
+   * lại y nguyên câu đó ở nội dung, và tên vùng còn thành sai khi máy chuyển sang nghỉ.
+   */
+  vanSongVung: 'Văn sống',
+  mayDangNoi: 'Máy đang nói',
+  mayNghi: 'Máy đang nghỉ',
+  /* Chữ thường: đây là nút hành động nhỏ nổi trong khu chữ, không phải nhãn của một vùng. */
+  veCuoi: 'về cuối',
+
+  /* ── dải trạng thái của buồng lái ──────────────────────────────────────────
+   *
+   * `daiTrangThaiVung` là tên VÙNG, đứng yên — cùng lý do đã ghi ở `vttVung` và
+   * `vanSongVung`: tên vùng là thứ trình đọc màn hình điều hướng tới, nên nó không được đổi
+   * theo trạng thái máy.
+   *
+   * Hai nhãn của dải này DÙNG LẠI khóa đã có ở dưới thay vì khai mới, vì cùng chủ ngữ:
+   *   - `vaiDangChay` (khối "tổ sản xuất") — một VAI đang chạy;
+   *   - `nguCanh` (khối transport) — cùng cửa sổ ngữ cảnh, cùng con số.
+   * Bản đầu của khối này khai lại cả hai, và thứ bắt được là `tsc` chứ KHÔNG phải bộ kiểm:
+   * khai trùng khóa trong một object literal là JavaScript hợp lệ (bản sau thắng), nên
+   * `npm test` xanh suốt trong khi hai nhãn cùng tên sống song song.
+   *
+   * `vaiDangChay` cũng không dùng lại `buocDangChayNgan` dù hai chuỗi giống hệt nhau lúc
+   * này: khóa kia nói về một CÔNG ĐOẠN của engine, ở đây chủ ngữ là VAI. Ngày ai đó đổi nhãn
+   * công đoạn thành "đang xử lý", nhãn của nhóm vai không được đi theo.
+   */
+  daiTrangThaiVung: 'Trạng thái máy',
+  vaiCho: 'chờ',
+  vieccTon: 'việc tồn',
+  /* TUI gốc viết `writer turn 7`. Đây là lượt của VAI trong chu kỳ hiện tại, không phải lượt
+     nói của khu văn sống — hai thứ trùng từ nhưng khác chủ ngữ, nên có chú giải đi kèm. */
+  luotVai: (n: number) => `lượt ${n}`,
+  lyDoVietLai: 'Lý do viết lại',
+  /* Chữ thường: nó đứng SAU dấu hai chấm của nhãn trường, không mở đầu một câu. */
+  khongDoDuoc: 'không đo được',
+
   // bảng chương
   // "n chương ngoài tập 3" — phép lọc phải nói ra mình đã ẩn bao nhiêu.
   ngoaiPhamVi: (n: number, phamVi: string) => `${n} chương ngoài ${phamVi}`,
@@ -716,7 +756,24 @@ export const CHU = {
   colThoiLuong: 'Thời lượng',
   chuaDatTieuDe: 'chưa đặt tiêu đề',
 
-  // inspector
+  /* ── inspector ─────────────────────────────────────────────────────────────
+   *
+   * `cotPhaiVung` là tên VÙNG, và nó đứng yên qua CẢ HAI chế độ của cột phải —
+   * cùng luật đã ghi ở `vttVung`, `vanSongVung`, `daiTrangThaiVung`.
+   * Trước khi cột này có hai chế độ, tên vùng viết thẳng trong component là
+   * "Chi tiết chương". Câu đó thành SAI ở chế độ ngữ cảnh truyện: trình đọc màn
+   * hình điều hướng tới một vùng tên "Chi tiết chương" rồi gặp tiền đề và danh
+   * sách nhân vật. Tên vùng phải nói cột này LÀ GÌ, không nói nó đang hiện gì.
+   */
+  cotPhaiVung: 'Ngữ cảnh và chi tiết',
+  nguCanhTruyen: 'Ngữ cảnh truyện',
+  /* Chữ thường: nút đường lui nhỏ trong đầu panel, không phải nhãn một vùng —
+     cùng lý do đã ghi ở `veCuoi`. Mũi tên `←` là trang trí và nằm ngoài chuỗi
+     này: chữ đã nói đủ, nên trình đọc màn hình không cần đọc "mũi tên trái". */
+  veDanhSachChuong: 'danh sách chương',
+  /* Nhãn cho một vạch chương trong dải `●▶○`: số hiệu VÀ công đoạn, vì một dải
+     chỉ có ký hiệu là một dải chỉ đọc được bằng mắt đã quen. */
+  chuongVaCongDoan: (n: number, congDoan: string) => `Chương ${n} · ${congDoan}`,
   tabKheUoc: 'Khế ước',
   tabKiemDinh: 'Kiểm định',
   tabBanThao: 'Bản thảo',
@@ -1037,6 +1094,49 @@ export const GIAI_THICH = {
     'Máy đang nghỉ. Bấm ▶ Chạy ở thanh dưới cùng để nó viết tiếp — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước, việc mở máy không gọi model lần nào.',
   chuaChayLanNao:
     'Tác phẩm đã tạo nhưng chưa viết chương nào. Bấm ▶ Chạy ở thanh dưới cùng để máy bắt đầu — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước.',
+  /* ── dòng sự kiện, hai ca RỖNG ────────────────────────────────────────────
+   *
+   * Rỗng lúc máy ĐANG CHẠY là chuyện bình thường, không phải sự cố: observer chỉ ghi vào
+   * hàng những bước ĐÃ KẾT THÚC (internal/host/observer.go:191), nên suốt một lượt
+   * `draft_chapter` dài không có sự kiện nào. Phép đo trên `sample.gif` nói đúng thế: dòng
+   * này nhảy 5 lần trong 18 giây rồi im 15 giây.
+   *
+   * Nên phải có HAI câu. ĐO ĐƯỢC lúc E2E kế hoạch 2/4: một câu duy nhất khẳng định "Engine
+   * đang nghỉ" hiện ra trong lúc engine đang viết chương 3, ngay dưới một khu văn sống đang
+   * chảy và một dải ghi `Writer → draft_chapter`. Ba chỗ trên cùng màn hình, một chỗ nói
+   * ngược — và chỗ nói ngược là chỗ người vận hành nhìn để biết dây chuyền còn sống không. */
+  chuaCoSuKienDangChay:
+    'Máy đang chạy nhưng chưa có bước nào kết thúc để ghi vào đây. Bước đang chạy hiện ở dải trạng thái phía trên, và chữ nó đang sinh ra chảy ở khu Máy đang nói.',
+  chuaCoSuKienDangNghi:
+    'Chưa nhận sự kiện nào từ engine kể từ lúc mở dòng. Máy đang nghỉ hoặc chưa phát bước nào.',
+  /* ── khu văn sống, hai ca RỖNG ────────────────────────────────────────────
+   *
+   * Chỉ dùng khi bộ đệm KHÔNG còn lượt nào. Lúc bộ đệm còn chữ thì khu vẽ chính chữ đó, kể
+   * cả khi máy đã nghỉ — báo cáo của lượt vừa xong là chữ thật, và bỏ nó đi để lấy một câu
+   * giải thích là đổi thứ đang nói được điều gì đó lấy thứ không.
+   *
+   * Vì vậy câu cho ca nghỉ KHÔNG được nói "đây là báo cáo của lượt vừa xong": ở đúng ca nó
+   * hiện ra thì không có báo cáo nào cả, và một câu chỉ vào chỗ trống là câu nói dối.
+   */
+  vanSongTrong:
+    'Chưa có lượt nào trong phiên xem này. Khi máy bắt đầu viết, chữ sẽ chảy ở đây.',
+  vanSongNghi:
+    'Máy đang nghỉ, và phiên xem này chưa giữ được lượt nào để hiện lại. Bấm Chạy ở thanh dưới để nó viết tiếp — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước.',
+  /* ── dải trạng thái: hai câu cho HAI ca không được lẫn ─────────────────────
+   *
+   * `null` (engine đóng, KHÔNG đo được) và `[]`/`0` (đo được, bằng không) là hai sự thật khác
+   * nhau, và dự án này đã trả giá một lần cho việc gộp chúng: một kiểu TS khai không-null cho
+   * một trường server trả `null` (`Timeline.volumes`) làm `tsc` xanh trong khi renderer SẬP ở
+   * bề mặt mặc định. Ở dải này hệ quả nhẹ hơn nhưng cùng lớp: một cây thước ngữ cảnh 0% vẽ
+   * cho một thứ không có nguồn nói rằng model đang dùng 0% cửa sổ — một con số sai, không
+   * phải một chỗ trống.
+   */
+  truongSongNull:
+    'Engine đang đóng nên studio không đo được giá trị này. Đây KHÁC với "đo được, bằng không".',
+  chuaCoVaiNaoChay:
+    'Engine đang mở và đo được: lúc này không có vai nào đang chạy.',
+  soLuotVaiLaGi:
+    'Số lượt của vai trong chu kỳ hiện tại. Đây là dấu hiệu duy nhất phân biệt "đang chạy lâu" với "treo".',
   /* ── luồng tạo tác phẩm ──────────────────────────────────────────────── */
   batDauRoiKhongPhaiLamGi:
     'Sau khi bấm, bạn KHÔNG phải làm gì thêm: máy tự đi tiếp từng chương. Việc của bạn là xem nó chạy và nói vào ô can thiệp nếu muốn đổi hướng.',
@@ -1104,18 +1204,22 @@ export const GIAI_THICH = {
     'Studio đọc trực tiếp thư mục gốc. Nếu thư mục gốc sai, hoặc tác phẩm này chưa có meta/progress.json, thì không có gì để đọc.',
 
   /**
-   * Inspector khi chưa chọn chương.
+  /*
+   * BA NHÃN "chưa chọn chương" của inspector đã ĐƯỢC BỎ ở cụm dựng buồng lái —
+   * `chuaChonChuongTieuDe`, `chuaChonChuong`, `tabChuaChonChuong`.
    *
-   * Trước đây tiêu đề panel hiện "Chương / *chưa đặt tiêu đề*" trong khi thân
-   * panel nói "Chưa chọn chương" — hai câu nói hai chuyện khác nhau, và câu ở
-   * tiêu đề là câu sai: nó khẳng định có một chương đang mở mà chương đó chưa
-   * được đặt tiêu đề. Giờ tiêu đề và thân nói cùng một điều, và câu duy nhất
-   * còn lại là câu HƯỚNG DẪN, không phải câu lặp lại trạng thái.
+   * Ghi lại vì bài học sinh ra chúng vẫn còn giá trị: bản trước nữa hiện
+   * "Chương / *chưa đặt tiêu đề*" ở tiêu đề panel trong khi thân panel nói "Chưa
+   * chọn chương" — hai câu nói hai chuyện, và câu ở tiêu đề là câu SAI (nó khẳng
+   * định có một chương đang mở, chỉ là chưa được đặt tên). Ba nhãn này là câu trả
+   * lời cho ca đó: đúng một câu trạng thái và đúng một câu hướng dẫn.
+   *
+   * Chúng hết việc vì cột phải giờ có HAI CHẾ ĐỘ (spec §7.2): ca "chưa chọn
+   * chương" không còn là một panel thiếu dữ liệu để xin lỗi, nó là chế độ ngữ
+   * cảnh truyện với nội dung riêng. Ràng buộc gốc — tiêu đề và thân phải nói cùng
+   * một điều — giờ được giữ bằng cấu trúc chứ bằng chữ, và nó ghi ở đầu
+   * `Inspector.tsx`.
    */
-  chuaChonChuongTieuDe: 'Chưa chọn chương',
-  chuaChonChuong:
-    'Bấm một hàng trong bảng chương để xem khế ước, bản duyệt và bản thảo của chương đó.',
-  tabChuaChonChuong: 'chưa chọn chương nên chưa có gì để mở',
 
   chuongChuaCoDuLieu: 'Chương này chưa có dữ liệu trong store.',
   chuaCoKheUoc:

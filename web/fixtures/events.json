@@ -108,5 +108,28 @@
       "Failed": false,
       "Duration": 14900000000
     }
+  },
+  {
+    "seq": 4828,
+    "time": "2026-07-30T17:41:20+07:00",
+    "kind": "stream_clear"
+  },
+  {
+    "seq": 4829,
+    "time": "2026-07-30T17:41:20+07:00",
+    "kind": "stream_delta",
+    "text": "{\"chapter\": 47, \"title\": \"Đêm trước cửa Tàng Kinh\",\n \"scenes\": [\"gặp lại sư huynh\", \"lời hứa dưới mưa\"],\n \"target_words\": 3000}\n\n"
+  },
+  {
+    "seq": 4830,
+    "time": "2026-07-30T17:41:20+07:00",
+    "kind": "stream_delta",
+    "text": "khế ước tự đối chiếu\n  ✓ sự kiện trọng tâm có mặt\n  ✓ móc cuối là câu hỏi bỏ ngỏ\n  ✓ không nhắc phục bút đã gỡ\n  ✓ số từ trong khoảng 2.700–3.300\n\n"
+  },
+  {
+    "seq": 4831,
+    "time": "2026-07-30T17:41:20+07:00",
+    "kind": "stream_delta",
+    "text": "bảng kiểm chất lượng\n  nhịp        7,5/10  — đoạn giữa dừng hơi lâu ở hồi tưởng\n  nhất quán   9,0/10\n  giọng nhân vật 8,5/10\n\nbáo cáo chương 47: 2.980 từ · 3 cảnh · 1 phục bút được nhắc lại\n"
   }
 ]
