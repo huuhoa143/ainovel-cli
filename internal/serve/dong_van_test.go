@@ -114,10 +114,19 @@ func TestDongVanHaiNguoiDocDeuDu(t *testing.T) {
 		d.them("m")
 	}
 
+	// Vòng đọc có TRẦN SỐ LƯỢT, không phải vòng `for` trần.
+	//
+	// ĐO ĐƯỢC bằng phép thử đột biến: đổi `sau()` từ `m.Seq > seq` thành `>= seq` làm mẩu
+	// cuối được trả lại mãi, và bài kiểm này TREO cho tới khi `go test` hết giờ 45 giây rồi
+	// chết bằng một stack dump. Nó vẫn "bắt" được đột biến, nhưng bắt theo cách tệ nhất:
+	// không ai đọc ra nguyên nhân từ stack dump, và một bài kiểm treo là bài kiểm sẽ bị tắt.
+	//
+	// Trần đặt ở `so + 5`: đọc đủ `so` mẩu cần nhiều nhất `so` lượt (ca xấu nhất là mỗi lượt
+	// một mẩu), cộng biên cho lượt cuối trả rỗng.
 	doc := func() int {
 		var moc int64
 		dem := 0
-		for {
+		for luot := 0; luot <= so+5; luot++ {
 			manh, _ := d.sau(moc)
 			if len(manh) == 0 {
 				return dem
@@ -127,6 +136,9 @@ func TestDongVanHaiNguoiDocDeuDu(t *testing.T) {
 				moc = m.Seq
 			}
 		}
+		t.Fatalf("vòng đọc không dừng sau %d lượt — `sau()` đang trả lại mẩu đã đọc, "+
+			"nên một kết nối SSE sẽ phát lại mãi cùng một khúc văn", so+5)
+		return dem
 	}
 
 	a, b := doc(), doc()
