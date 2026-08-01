@@ -1,0 +1,143 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, expect, test, vi } from 'vitest';
+
+import { snap } from '@/components/mau.test-helper';
+import { CHU, GIAI_THICH } from '@/lib/nhan';
+import type { Studio } from '@/lib/useStudio';
+import { BO_DEM_RONG } from '@/lib/vanSong';
+
+import Trang from './page';
+
+/**
+ * Mắt CUỐI của hai sợi dây mà Task 5 vừa nối: `may.choGhi` và `s.taiLai` đi từ `Trang` xuống
+ * dải quyết định của cửa nghiệm thu.
+ *
+ * # Vì sao một tệp riêng chứ không thêm vào `page.test.tsx`
+ *
+ * Tệp này thay `@/lib/api` cho CẢ tệp (`vi.mock` là hoisted, không có phạm vi theo bài kiểm),
+ * và `page.test.tsx` canh luật định tuyến trên một tầng mạng THẬT-nhưng-không-được-gọi. Gộp
+ * lại là bắt mười ba bài định tuyến chạy trên một tầng API giả — và một ngày ai sửa mock sẽ
+ * làm đỏ những bài không liên quan tới mạng. Cùng lý do cụm trước tách
+ * `CuaNghiemThu.hanhdong.test.tsx`.
+ *
+ * # Vì sao phải dựng cả `Trang`
+ *
+ * Lần thứ NĂM của cùng một lớp lỗi trong dự án này — sau `vanSong={s.vanSong}` (cụm D),
+ * `sach={s.workshop?.books}` + `onMoTacPham={s.moTacPhamTai}` (cụm Xưởng) và
+ * `onChonKhu={s.chonKhu}` của thanh trên (cụm nghiệm thu). Bộ kiểm của `BuongLai`, `KiemDinh`
+ * và `Khu` đều truyền giá trị CỦA CHÍNH NÓ vào, nên chúng chỉ chứng minh component dùng đúng
+ * cái nó nhận. Chỗ `Trang` rót giá trị thật vào nằm ngoài tất cả.
+ */
+const CHO_DI_TIEP = vi.fn();
+const TAI_LAI = vi.fn();
+
+vi.mock('@/lib/api', async (goc) => ({
+  ...(await goc<typeof import('@/lib/api')>()),
+  choDiTiep: (...a: unknown[]) => CHO_DI_TIEP(...a),
+}));
+
+/** Máy giả, MUTABLE: hai bài dưới cần hai giá trị `choGhi` khác nhau trong cùng một tệp. */
+const MAY = { choGhi: true as boolean | undefined, canCaiDat: false, daHoi: true };
+
+const STUDIO_GIA: Studio = {
+  workshop: { root: '/w', books: [snap({}).book] },
+  tacPham: 'tran-yeu-ky',
+  snapshot: snap({
+    agents: [],
+    idle_agents: [],
+    advance: { mode: 'review', hold: true, permit_chapter: 8 },
+  }),
+  hoSo: undefined,
+  chuongChon: undefined,
+  khu: 'dong-san-xuat',
+  song: undefined,
+  suKien: [],
+  vanSong: BO_DEM_RONG,
+  ketNoi: 'song',
+  dangTai: false,
+  loi: undefined,
+  chonTacPham: () => {},
+  chonChuong: () => {},
+  chonKhu: () => {},
+  moTacPhamVuaTao: () => {},
+  moTacPhamTai: () => {},
+  docChuong: () => {},
+  taiLai: TAI_LAI,
+};
+
+vi.mock('@/lib/useStudio', () => ({ useStudio: () => STUDIO_GIA }));
+vi.mock('@/lib/useMay', () => ({ useMay: () => MAY }));
+
+/** `Rail` gọi `scrollIntoView` trong effect; jsdom không bố cục nên không có hàm đó. */
+Element.prototype.scrollIntoView = function () {
+  /* jsdom không bố cục */
+};
+
+beforeEach(() => {
+  MAY.choGhi = true;
+  CHO_DI_TIEP.mockReset().mockResolvedValue({ permit_chapter: 9, running: true });
+  TAI_LAI.mockReset();
+});
+
+test('`Trang` nối `taiLai` THẬT của studio vào dải — bấm Cho đi tiếp thì snapshot được nạp lại', async () => {
+  // ĐO ĐƯỢC hệ quả nếu đứt: lệnh đi tới engine và thành công, nhưng snapshot không bao giờ về,
+  // nên dải amber ở lại trên màn hình cho một cái cửa đã mở. Người vận hành bấm tiếp lần thứ
+  // hai — và lần đó cấp phép thêm một chương nữa, tức tiền đôi vì một sợi dây thiếu.
+  //
+  // Không lỗi nào nổ ra ở ca đó, và không bài kiểm nào ngoài bài này chạm tới nó.
+  render(<Trang />);
+
+  fireEvent.click(screen.getByRole('button', { name: CHU.choDiTiep }));
+
+  expect(CHO_DI_TIEP).toHaveBeenCalledWith('tran-yeu-ky');
+  await waitFor(() => expect(TAI_LAI).toHaveBeenCalled());
+});
+
+test('sợi dây `taiLai` cũng liền ở bề mặt KIỂM ĐỊNH, không riêng buồng lái', async () => {
+  // Hai bề mặt, hai chỗ nối, và bài trên chỉ đi qua một chỗ: `KiemDinh` truyền `onDoi` xuống
+  // dải bằng một lời gọi RIÊNG, nên thay nó bằng một hàm rỗng vẫn để bài trên xanh.
+  //
+  // Và đây là bề mặt tệ nhất để hỏng: spec §7.3 gọi nó là chỗ người dùng đọc bằng chứng để
+  // quyết định, tức chỗ nhiều người sẽ bấm nút nhất.
+  const truoc = STUDIO_GIA.khu;
+  STUDIO_GIA.khu = 'kiem-dinh';
+  try {
+    render(<Trang />);
+    fireEvent.click(screen.getByRole('button', { name: CHU.choDiTiep }));
+    expect(CHO_DI_TIEP).toHaveBeenCalledWith('tran-yeu-ky');
+    // `await` TRONG `try`, không `return` một lời hứa: `finally` chạy ngay lúc `return` được
+    // định giá, nên bản `return` khôi phục `khu` trước khi `waitFor` xong — và bài kiểm khi đó
+    // chờ một lời hứa trên một cây đã bị đổi dưới chân nó.
+    await waitFor(() => expect(TAI_LAI).toHaveBeenCalled());
+  } finally {
+    STUDIO_GIA.khu = truoc;
+  }
+});
+
+test('`Trang` nối `choGhi` THẬT của máy vào dải — studio chỉ đọc thì hai nút vô hiệu', () => {
+  // Nhét cứng `choGhi` thành `true` ở `page.tsx` cho ra hai nút bấm được trên một studio lắng
+  // nghe ngoài loopback, tức hai lệnh gửi vào hư không. Bộ kiểm của `Khu` truyền `choGhi` của
+  // chính nó nên nó không thấy được chuyện đó.
+  MAY.choGhi = false;
+  const { container } = render(<Trang />);
+
+  const dai = container.querySelector('.cuanghiemthu')!;
+  expect(dai).not.toBeNull();
+  for (const n of dai.querySelectorAll('button')) {
+    expect(n.disabled).toBe(true);
+  }
+  expect(dai.textContent).toContain(GIAI_THICH.nghiemThuChoDay);
+});
+
+test('`Trang` truyền cửa THẬT từ snapshot — engine đóng thì không dải nào', () => {
+  // Vế ngược của cả hai bài trên: một `page.tsx` dựng `advance` tại chỗ (hay một `Khu` luôn vẽ
+  // dải) vẫn làm chúng xanh.
+  const truoc = STUDIO_GIA.snapshot;
+  STUDIO_GIA.snapshot = snap({ agents: [], idle_agents: [] });
+  try {
+    const { container } = render(<Trang />);
+    expect(container.querySelector('.cuanghiemthu')).toBeNull();
+  } finally {
+    STUDIO_GIA.snapshot = truoc;
+  }
+});

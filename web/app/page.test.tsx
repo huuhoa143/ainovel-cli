@@ -76,13 +76,18 @@ Element.prototype.scrollIntoView = function () {
  * canh định tuyến lại đi đo khả năng giả lập `fetch` của jsdom. `Khu` là một hàm thuần trên
  * đúng cái nó nhận.
  */
-function ve(khu: KhuMa, vanSong = BO_DEM_RONG) {
+function ve(
+  khu: KhuMa,
+  vanSong = BO_DEM_RONG,
+  p: Partial<Parameters<typeof Khu>[0]> = {},
+) {
   return render(
     <Khu
       khu={khu}
       snapshot={snap({ agents: [], idle_agents: [] })}
       sach={[snap({}).book]}
       tacPham="b"
+      choGhi
       chuongChon={undefined}
       onChonChuong={() => {}}
       onChonKhu={() => {}}
@@ -91,11 +96,13 @@ function ve(khu: KhuMa, vanSong = BO_DEM_RONG) {
       onMoTacPham={() => {}}
       onXongTaoSach={() => {}}
       onChotCungDung={() => {}}
+      onDoi={() => {}}
       nhapSan=""
       suKien={[]}
       song={undefined}
       vanSong={vanSong}
       dangChay
+      {...p}
     />,
   );
 }
@@ -214,6 +221,41 @@ test('`Trang` KHÔNG vẽ huy hiệu khi engine đóng (advance null)', () => {
   // `snap()` để `advance: null` theo mặc định — đúng ca engine đóng.
   render(<Trang />);
   expect(screen.queryByRole('button', { name: CHU.nghiemThuChoBan })).toBeNull();
+});
+
+test('CÙNG một snapshot thì cả buồng lái và Kiểm định đều vẽ dải quyết định', () => {
+  // Bài kiểm mà Task 5 đòi thẳng, và nó là phép đo duy nhất cho luật "MỘT component cho hai bề
+  // mặt": hai bộ kiểm riêng của hai bề mặt đều xanh nếu một bên gắn dải mà bên kia quên, vì
+  // không bài nào của chúng biết bên kia tồn tại.
+  //
+  // Đi qua `Khu` chứ không dựng hai component thẳng: tầng định tuyến là chỗ prop được rót vào,
+  // nên đây cũng là chỗ đo được việc `Khu` truyền `advance`/`choGhi`/`onDoi` xuống CẢ HAI nhánh
+  // `case`. Gắn đủ cho một nhánh rồi quên nhánh kia là ca thật.
+  const cho = { advance: { mode: 'review', hold: true, permit_chapter: 8 } };
+
+  const a = ve('dong-san-xuat', BO_DEM_RONG, { snapshot: snap({ ...cho }) });
+  expect(a.container.querySelector('.cuanghiemthu')).not.toBeNull();
+
+  const b = ve('kiem-dinh', BO_DEM_RONG, { snapshot: snap({ ...cho }) });
+  expect(b.container.querySelector('.cuanghiemthu')).not.toBeNull();
+});
+
+test('`Khu` truyền `choGhi` xuống dải ở CẢ HAI bề mặt', () => {
+  // Nửa còn lại: `choGhi` nhét cứng thành `true` ở tầng định tuyến cho ra hai nút bấm được
+  // trên một studio chỉ đọc, tức gửi vào hư không. Bài trên xanh cả khi điều đó xảy ra.
+  const cho = { advance: { mode: 'review', hold: true, permit_chapter: 8 } };
+
+  for (const khu of ['dong-san-xuat', 'kiem-dinh'] as KhuMa[]) {
+    const { container } = ve(khu, BO_DEM_RONG, {
+      snapshot: snap({ ...cho }),
+      choGhi: false,
+    });
+    const dai = container.querySelector('.cuanghiemthu')!;
+    expect(dai).not.toBeNull();
+    for (const n of dai.querySelectorAll('button')) {
+      expect(n.disabled).toBe(true);
+    }
+  }
 });
 
 test('`Trang` nối hành động mở-tại-khu THẬT của studio xuống nút `Mở` của Xưởng', () => {

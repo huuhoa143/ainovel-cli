@@ -23,6 +23,7 @@ import type { Snapshot } from '@/lib/types';
 import type { CongDoanSong } from '@/lib/useStudio';
 import type { BoDemVan } from '@/lib/vanSong';
 
+import { CuaNghiemThu } from './CuaNghiemThu';
 import { DaiTrangThai } from './DaiTrangThai';
 import { VanSong } from './VanSong';
 import { ViecTiepTheo } from './ViecTiepTheo';
@@ -56,7 +57,18 @@ import { ViecTiepTheo } from './ViecTiepTheo';
  * Bọc ba khối trên vào `.bltren` chứ không để chúng làm ba hàng của lưới: khối cảnh báo là
  * CÓ ĐIỀU KIỆN, nên với một lưới khai cứng số hàng thì cuốn có cảnh báo và cuốn không có
  * cảnh báo sẽ đọc lệch nhau một hàng — hàng `1fr` rơi vào khối cảnh báo và cột giữa bị đẩy
- * xuống một hàng ngầm định.
+ * xuống một hàng ngầm định. Dải quyết định của cửa nghiệm thu là khối CÓ ĐIỀU KIỆN thứ hai
+ * của `.bltren`, và nó vào được đúng nhờ luật đó.
+ *
+ * # Vì sao dải quyết định đứng TRÊN dải trạng thái
+ *
+ * Thứ tự ở đây là nội dung, không phải trang trí: "dây chuyền đang chờ BẠN" là một VIỆC PHẢI
+ * LÀM, còn "dây chuyền đang làm gì" là tin để ngó. Một dải nói việc phải làm mà đứng dưới một
+ * dải nói tình hình là đảo đúng thứ tự người vận hành cần đọc.
+ *
+ * Nó ăn thêm chiều cao của `.bltren`, và mọi khối `auto` ở đây đã bị nén để nhường chỗ cho khu
+ * văn sống (xem chú thích cạnh `grid-template-rows` của `.blgiua`). Đổi đó chấp nhận được vì
+ * dải chỉ hiện khi engine ĐANG ĐỨNG CHỜ — tức đúng lúc không có chữ nào chảy để mà xem.
  *
  * # Chỗ lệch khỏi spec §7.2, ghi ra để người sau khỏi tưởng là quên
  *
@@ -69,10 +81,12 @@ import { ViecTiepTheo } from './ViecTiepTheo';
 export function BuongLai({
   snapshot,
   tacPham,
+  choGhi,
   chuongChon,
   onChonChuong,
   onChonKhu,
   onDocChuong,
+  onDoi,
   suKien,
   song,
   vanSong,
@@ -80,10 +94,21 @@ export function BuongLai({
 }: {
   snapshot: Snapshot;
   tacPham: string | undefined;
+  /** undefined = chưa biết (đang hỏi `/api/config`) — xem `useMay`. Dải quyết định đọc nó. */
+  choGhi: boolean | undefined;
   chuongChon: number | undefined;
   onChonChuong: (n: number) => void;
   onChonKhu: (k: Khu) => void;
   onDocChuong: (n: number) => void;
+  /**
+   * Gọi sau mỗi lệnh của dải quyết định để snapshot được nạp lại.
+   *
+   * `OCanThiep` ở hàng 4 KHÔNG cần nó và đó không phải bất đối xứng vô cớ: can thiệp xếp một ý
+   * kiến vào hàng chờ mà không đổi trạng thái cửa nào, còn `Cho đi tiếp` mở đúng cái cửa mà dải
+   * đang vẽ. Không nạp lại thì dải amber ở lại cho một cửa đã mở, và cú bấm thứ hai cấp phép
+   * thêm một chương — tiền đôi vì một sợi dây thiếu.
+   */
+  onDoi: () => void;
   suKien: Parameters<typeof DongSuKien>[0]['suKien'];
   /**
    * Công đoạn suy từ dòng SSE.
@@ -129,6 +154,18 @@ export function BuongLai({
             <MucXem timeline={snapshot.timeline} hienTai={muc} onChon={setMucMuon} />
           ) : null}
         </div>
+
+        {/* Dải quyết định đứng TRƯỚC cả hai dải kia: nó là tin cấp cao hơn — "dây chuyền đang
+            chờ BẠN" đứng trước "dây chuyền đang làm gì". Nó tự trả `null` khi không có cửa nào
+            chờ, nên ở đây không có điều kiện nào: luật "cửa nào là cửa đang chờ" chỉ có MỘT chỗ
+            giữ (`lib/nghiemThu.ts`), và người nối dây không có cơ hội tính sai nó. */}
+        <CuaNghiemThu
+          advance={snapshot.advance}
+          tacPham={tacPham}
+          choGhi={choGhi}
+          dangChay={dangChay}
+          onDoi={onDoi}
+        />
 
         {/* Dải đứng NGAY dưới đầu trang, trên cả cảnh báo dữ liệu lệch.
             Hai loại tin khác nhau: dải này trả lời "máy đang làm gì" (lúc chạy) hoặc "giờ
