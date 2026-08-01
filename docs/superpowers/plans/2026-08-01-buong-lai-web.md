@@ -1514,3 +1514,182 @@ resolve được module" — thứ đó không chứng minh gì về từng kh�
 `go build` 0 · `go vet` 0 · `gofmt -l .` rỗng · `go test -count=1 ./...` **30 gói ok / 0 FAIL**
 (đúng nền) · `npm test` **20/20** (nền 2/2) · `tsc --noEmit` 0 lỗi ·
 `next build --webpack` exit 0 · `npm run build` exit 1 (Turbopack, xem mục 3).
+
+---
+
+### Cụm B (Task 6–9) — thi hành xong
+
+**Commit** (nền = `15f59b4`):
+
+| sha | tiêu đề |
+|---|---|
+| `3781a7c` | feat(web): ngưỡng bám đáy cho khu tự cuộn |
+| `32be38c` | feat(web): khu văn sống vẽ lượt và vạch ngăn |
+| `04a1a9f` | feat(web): tự cuộn khu văn sống, nhường người đang đọc lại |
+| `d41311f` | test(web): canh ca máy nghỉ của khu văn sống |
+
+#### LỖ HỔNG NẶNG NHẤT: bộ chạy `giaodien` không dọn DOM giữa hai bài kiểm
+
+Không phải lỗi mã sản xuất — lỗi HẠ TẦNG KIỂM, và nó làm mọi bài kiểm component của cụm này
+lẫn các cụm sau mất giá trị. `@testing-library/react` chỉ tự đăng ký `afterEach(cleanup)` khi
+bộ chạy bật `globals: true`; `vitest.config.mts` cố ý không bật (mọi tệp kiểm `import` tường
+minh). Hai lựa chọn đó gặp nhau ở một chỗ im lặng, và không ai được báo.
+
+ĐO ĐƯỢC (hai bài cùng vẽ một `<p>dấu vết</p>` rồi đếm): bài thứ hai thấy **2** phần tử.
+
+Nó nói dối theo CẢ HAI chiều, và chiều thứ hai mới đắt:
+- `getByText` gặp hai bản của cùng một chữ → ĐỎ với "Found multiple elements", đỏ ở một bài
+  vô can. Đây là cách nó lộ ra: bài "vạch ngăn hiện nhãn" của Task 7 đỏ vì bài Task 7 TRƯỚC
+  nó để lại đúng cái vạch đó trong `document`.
+- `getByRole('button', …)` **XANH nhờ cái nút bài trước để lại**. Tức toàn bộ bộ kiểm nút
+  "về cuối" của Task 8 có thể xanh mà không cần nút nào được vẽ. Bắt được là do may.
+
+Bịt bằng `web/vitest.setup.giaodien.ts` + `setupFiles` cho project `giaodien` (không lặp
+`afterEach(cleanup)` từng tệp: quên một tệp là im lặng trở lại, và không bộ canh nào bắt).
+**Cụm C và D thừa hưởng bản đã bịt — đừng gỡ.**
+
+#### Phép thử đột biến — Task 6 (`lib/tuCuon.ts`)
+
+Kế hoạch không đòi. Vẫn làm, vì cái đỏ duy nhất của Task 6 là "không resolve được module".
+
+| # | Đột biến | Kết quả | Bài kiểm bắt được |
+|---|---|---|---|
+| 1 | `<= LE_DAY` → `< LE_DAY` | **XANH — LỖ HỔNG** | không bài nào |
+| 2 | `LE_DAY = 24` → `LE_DAY = 0` | **XANH — LỖ HỔNG** | không bài nào |
+| 3 | bỏ `- v.clientHeight` | ĐỎ | 3/4 bài |
+| 4 | `<=` → `>=` | ĐỎ | cả 4 bài |
+| 5 (thêm) | `LE_DAY = 24` → `600` | ĐỎ | "cuộn lên quá ngưỡng thì KHÔNG còn bám đáy" |
+
+**Lỗ hổng 2 — cùng lớp với lỗ hổng `'y'.repeat(…)` của cụm A: bài kiểm đo cái nó tự sinh ra.**
+Bài "lệch trong ngưỡng vẫn coi là bám đáy" dựng đầu vào bằng `900 - LE_DAY + 1`, tức đầu vào
+TRÔI THEO chính hằng số đang được đo. Đặt `LE_DAY = 0` thì nó vẫn xanh — trong khi lúc đó
+ngưỡng không tha một lệch nào, đúng thứ nó sinh ra để tha, và chú thích của chính nó nói khu
+sẽ "rớt khỏi chế độ tự cuộn ngay nhịp đầu". Ba trong bốn bài của kế hoạch đều dựng đầu vào từ
+`LE_DAY`. Bịt bằng bài dùng lệch **viết thẳng** (`scrollTop: 899`).
+**Lỗ hổng 1** bịt bằng bài chốt mốc `lệch === LE_DAY → true`. Chạy lại 1 và 2 → ĐỎ.
+
+#### Phép thử đột biến — Task 7 (`components/VanSong.tsx`)
+
+Kế hoạch không có bảng cho Task 7. Bảng này là của tôi.
+
+| # | Đột biến | Kết quả | Bài kiểm bắt được |
+|---|---|---|---|
+| 1 | bỏ chốt `i > 0` (vẽ vạch cả ở lượt đầu) | **XANH — LỖ HỔNG** | không bài nào |
+| 2 | bỏ chốt `l.nhan` (vạch rỗng) | **XANH — LỖ HỔNG** | không bài nào |
+| 3 | `key={l.id}` → `key={i}` | **XANH — LỖ HỔNG** | không bài nào |
+| 4 | bỏ nhánh bộ đệm rỗng | ĐỎ | "bộ đệm rỗng nói ra là chưa có gì" |
+| 5 | `<pre>` không vẽ `l.chu` | ĐỎ | "vẽ chữ của mọi lượt đang giữ" |
+| 6 | `aria-label` → câu trạng thái | **XANH — LỖ HỔNG** | không bài nào |
+
+**Lỗ hổng 1 — lại là một bài kiểm của kế hoạch không canh được điều nó tự nói.** Bài tên
+"vạch ngăn hiện nhãn của lượt, **và lượt đầu KHÔNG có vạch**" dựng bộ đệm mà lượt đầu có
+`nhan === undefined`, nên chốt `i > 0` không hề tham gia: bỏ hẳn chốt đó vẫn ra đúng một vạch.
+Chốt ấy chỉ làm việc ở ca bộ đệm ĐÃ CHẠM TRẦN — lượt cũ nhất bị bỏ và lượt đứng đầu bây giờ
+mang nhãn của chính nó. Bịt bằng bài dựng bộ đệm `SO_LUOT_GIU + 1` lượt (`boDemDaCat()`), có
+kèm `expect(bd.luot[0]!.nhan).toBeDefined()` để bài này không lặng lẽ trôi về đo nhầm ca.
+
+**Lỗ hổng 3 — chú thích của `LuotVan.id` khẳng định một điều mà không gì giữ.** Nó nói key
+theo chỉ số làm React giữ nguyên nút DOM khi lượt cũ nhất bị bỏ, "một cú nhảy vị trí ngay giữa
+lúc đọc". Bịt bằng bài so DANH TÍNH nút DOM qua hai lần vẽ: sau khi trần cắt, `.chu[0]` mới
+phải LÀ `.chu[1]` cũ.
+
+**Lỗ hổng 6 là chỗ tôi lệch khỏi kế hoạch, xem mục "kế hoạch sai" số 1 dưới đây.**
+
+Cả bốn: chạy lại sau khi bịt → ĐỎ.
+
+#### Phép thử đột biến — Task 8 (bảng của kế hoạch + của tôi)
+
+| # | Đột biến | Kết quả | Bài kiểm bắt được |
+|---|---|---|---|
+| KH-1 | bỏ `if (!bamDayRef.current) return;` | ĐỎ | "chữ mới KHÔNG kéo màn hình" |
+| KH-2 | `dangODay(el)` → `true` cố định | ĐỎ | 3 bài |
+| KH-3 | trong `veCuoi` bỏ `datBamDay(true)` | ĐỎ | "bấm về cuối thì nút biến mất" |
+| R-4 (thêm) | `dangODay(el)` → `false` cố định | ĐỎ | "đang bám đáy thì KHÔNG hiện nút" |
+| R-5 (thêm) | deps `[boDem]` → `[]` | **XANH — LỖ HỔNG** | không bài nào |
+| R-6 (thêm) | bỏ hẳn thân effect tự cuộn | **XANH — LỖ HỔNG** | không bài nào |
+| R-7 (thêm) | `useState(true)` → `useState(false)` | **XANH — LỖ HỔNG** | không bài nào |
+| R-8 (thêm) | bỏ `onScroll` | ĐỎ | 3 bài |
+
+**Lỗ hổng 5 và 6 là lỗ hổng lớn nhất của cụm này: bảng của kế hoạch chỉ canh chiều NGHỊCH của
+tự cuộn.** Bốn bài của Task 8 hỏi "đã cuộn lên thì đừng kéo màn hình" và "nút hiện/biến đúng
+lúc" — không bài nào hỏi tự cuộn CÓ CHẠY không. Hệ quả đo được: **xóa sạch thân effect tự
+cuộn, tức bỏ hẳn tính năng mà spec §2 gọi là thứ duy nhất chạy liên tục, vẫn xanh 11/11.**
+Bịt bằng bài "đang bám đáy thì chữ mới KÉO màn hình xuống theo" (nới `scrollHeight` rồi đòi
+`scrollTop` đi theo).
+
+**Lỗ hổng 7:** ba bài về nút đều bắn một sự kiện cuộn trước khi hỏi, nên không bài nào chạm
+trạng thái ĐẦU. Đặt nhầm nó thành `false` thì nút "về cuối" hiện ngay lúc mở khu — trên một
+khu chưa cuộn đi đâu, đúng cái "nút không làm gì" mà bài `tuCuon` thứ tư nói tới. Bịt bằng bài
+hỏi thẳng lúc vừa gắn, chưa cuộn lần nào.
+
+Cả ba: chạy lại sau khi bịt → ĐỎ.
+
+#### Task 9 — cả hai bài XANH ngay lần chạy đầu
+
+Kế hoạch đã lường trước và bảo phải nói ra thay vì giả vờ. Nói ra: **Task 9 không đổi một dòng
+mã sản xuất nào.** Task 7 đã vẽ đúng nhánh, và câu cho ca nghỉ đã được viết lại ngay ở Task 7
+(xem "kế hoạch sai" số 2).
+
+Nhưng xanh sẵn KHÔNG có nghĩa là thừa, và phép thử đột biến là cách trả lời điều đó bằng số:
+
+| # | Đột biến | Kết quả | Bài kiểm bắt được |
+|---|---|---|---|
+| T9-1 | tiêu đề luôn `Máy đang nói` | ĐỎ | 2 bài — trong đó 1 của Task 7 (trùng lặp) |
+| T9-2 | ca rỗng luôn dùng câu "đang chờ chữ" | ĐỎ | **chỉ** bài Task 9 |
+| T9-3 | máy nghỉ thì vứt chữ trong bộ đệm | ĐỎ | **chỉ** bài Task 9 |
+
+Hai trong ba đột biến chỉ hai bài đó bắt được, nên Task 9 có thêm phòng thủ thật.
+
+#### Chỗ kế hoạch sai hoặc thiếu
+
+1. **`aria-label` của khu văn sống trong Task 7 lặp lại lỗi mà repo đã trả giá một lần.**
+   Kế hoạch viết `<section aria-label={CHU.mayDangNoi}>` trong khi `<h2>` ngay bên trong cũng
+   là `CHU.mayDangNoi` — và chú thích của `CHU.vttVung` đã ghi chính xác hệ quả: "trình đọc
+   đọc tên vùng rồi đọc lại y nguyên câu đó ở nội dung… tên vùng phải giữ nguyên khi trạng
+   thái đổi". Ở đây còn nặng hơn dải "việc tiếp theo": khi máy nghỉ, tên vùng thành SAI hẳn
+   (vùng tên "Máy đang nói" chứa tiêu đề "Máy đang nghỉ"). Đã lệch khỏi kế hoạch: thêm
+   `CHU.vanSongVung = 'Văn sống'` làm tên vùng đứng yên, và một bài kiểm chốt nó (nếu không
+   thì đây chỉ là một ý kiến không ai canh).
+2. **`GIAI_THICH.vanSongNghi` của kế hoạch nói dối ở đúng ca nó hiện ra.** Câu kế hoạch cho là
+   *"Đây là báo cáo của lượt vừa xong. Bấm Chạy ở thanh dưới để máy viết tiếp."* — nhưng nó
+   nằm TRONG nhánh `boDem.luot.length === 0`, tức nó chỉ hiện khi bộ đệm RỖNG, tức khi không
+   có báo cáo nào để trỏ vào. (Ca "còn báo cáo" đi nhánh kia và vẽ chính chữ đó — đúng như
+   spec §7.2 muốn.) Đã viết lại: *"Máy đang nghỉ, và phiên xem này chưa giữ được lượt nào để
+   hiện lại. Bấm Chạy ở thanh dưới…"*, kèm cảnh báo "Mở máy" như `chayTiepOThanhDuoi` đã có.
+   Vẫn khớp `/bấm chạy ở thanh dưới/i` mà bài kiểm Task 9 đòi — **lưu ý cho cụm sau: đừng
+   chèn `▶` vào giữa "Bấm" và "Chạy" ở chuỗi này**, bài kiểm đó khớp chuỗi liền.
+3. **Task 8 thiếu bài canh chiều thuận của tự cuộn** (lỗ hổng R-5/R-6 ở trên). Số bài kiểm
+   thực tế của `VanSong.test.tsx` sau Task 9 là **15**, không phải 7 như kế hoạch ghi ở Task 8
+   bước 4.
+4. **Ba giả định jsdom mà kế hoạch đã thăm dò trước đều ĐÚNG** — `scrollTop` lưu được,
+   `fireEvent.scroll` kích hoạt `onScroll`, gán `scrollTop = scrollHeight` ăn. Không phải chỗ
+   sai; ghi ra vì nó tiết kiệm thật và cụm sau nên tin bảng đó.
+5. **Mục 3 và 4 trong nhật ký của CỤM A giờ không còn đúng, và cùng một nguyên nhân gốc.**
+   `web/node_modules` bây giờ là thư mục THẬT (không còn symlink), nên:
+   - `npm run build` (Turbopack, mặc định) **exit 0** — không cần `--webpack` nữa;
+   - `web/node_modules` **CÓ** bị bỏ qua: `git check-ignore -v` trỏ `web/.gitignore:8`.
+     Lý do cụm A thấy ngược nhiều khả năng là mẫu `node_modules/` có gạch chéo cuối nên chỉ
+     khớp THƯ MỤC, mà lúc đó nó là symlink. Cảnh báo "một lệnh `git add -A` sẽ nuốt 425MB"
+     không còn hiệu lực.
+6. Mục 6 của cụm A (chú thích `internal/serve/web_chu_test.go`) đã được chính cụm A sửa ở
+   `15f59b4`. Không còn việc để nhặt.
+7. **Ngoài phạm vi, để lại cho cụm sau:** `VanSong.tsx` dùng tám lớp CSS chưa tồn tại
+   (`.vansong .vshead .vsthan .vstrong .luot .vach .chu .vecuoi`) — `app/globals.css` không có
+   lớp nào trong số đó. Đúng theo bảng tệp của kế hoạch (globals.css thuộc cụm khác), nhưng
+   nghĩa là khu này CHƯA cuộn được trên trình duyệt thật: `.vsthan` cần `overflow-y: auto` và
+   một chiều cao có hạn, nếu không thì `dangODay` luôn thấy `scrollHeight === clientHeight` và
+   tự cuộn thành vô nghĩa. Bài kiểm không bắt được điều đó vì jsdom không bố cục.
+
+#### Quyết định tự đưa ra vì kế hoạch không nói
+
+- **Đặt bộ dọn DOM ở `setupFiles` chứ không ở từng tệp kiểm**, và không bật `globals: true`
+  (bật là đi ngược lối import tường minh của cả repo).
+- **`CHU.veCuoi` viết thường** ('về cuối'): nó là nút hành động nhỏ nổi trong khu chữ, không
+  phải nhãn của một vùng.
+- **Không tự thêm CSS** cho tám lớp trên — `app/globals.css` nằm ở cụm khác trong bảng tệp,
+  và sửa nó ở đây là mời một va chạm với phiên đang chạy song song. Đã ghi ở mục 7.
+
+**Cổng sau Task 9** (chạy toàn bộ, không lọc gói, không `-x`):
+`go build` exit 0 · `go vet` exit 0 · `gofmt -l .` rỗng · `go test -count=1 ./...`
+**30 gói ok / 0 FAIL** (đúng nền) · `npm test` **42/42** (nền sau cụm A: 20/20) ·
+`tsc --noEmit` exit 0 · `npm run build` **exit 0** (Turbopack, xem mục 5).
