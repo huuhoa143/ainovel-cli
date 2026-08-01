@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>e · chuyển động mang thông tin — ainovel studio</title>
+
+<!-- Font: preview là artifact thiết kế nên dùng CDN; app thật nhúng qua next/font lúc build. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Serif:wght@400&display=swap" rel="stylesheet">
+
+<!-- CSS THẬT của app. Preview không tự vẽ lại token nào — nếu nó trông khác app thì
+     nghĩa là preview sai, không phải app sai. -->
+<link rel="stylesheet" href="../../../web/app/globals.css">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   e · CHUYỂN ĐỘNG MANG THÔNG TIN
+   Bản đề xuất để duyệt. Mọi khối dưới đây lấy nguyên thẻ và lớp của app thật.
+
+   Luận điểm: studio là cỗ máy chạy hàng giờ nhưng đang được vẽ như ảnh tĩnh.
+   DESIGN.md đã chốt "chuyển động duy nhất mang thông tin là nhịp đập"; đo trên
+   mã thì đúng thế — 23 transition đổi màu, 1 keyframe. Đề xuất này KHÔNG phá
+   nguyên tắc đó, nó mở rộng đúng nguyên tắc: thêm chuyển động mang thông tin,
+   không thêm trang trí.
+
+   Năm họ, một tiêu điểm:
+     1. ĐẦU ĐỌC          — tiêu điểm. Máy còn sống, thấy từ hai mét.
+     2. SỐ VỪA ĐỔI       — có gì đổi lúc tôi đi vắng.
+     3. ĐANG CHỜ BẠN     — chờ-người khác chờ-máy.
+     4. NÚT ĐANG GỬI     — lệnh đã đi, đừng bấm nữa.
+     5. VẠCH NGĂN TỚI    — ranh giới lượt là một sự kiện, không phải một đường kẻ.
+
+   Mọi họ đều có nhánh prefers-reduced-motion. Không họ nào animate thuộc tính
+   layout. Không glow, không glassmorphism, không gradient trang trí.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Font: BẮT BUỘC khai lại ở đây ────────────────────────────────────────
+   `globals.css` dùng `var(--ui)` / `var(--mono)` / `var(--serif)`, mà ba biến đó
+   do `next/font` đặt lên `<html>` lúc build app. Preview tĩnh không có bước đó,
+   nên nếu không khai lại thì mọi thứ rơi về serif mặc định của trình duyệt
+   (Times) — ĐO ĐƯỢC ở lượt kiểm đầu. Một preview sai font là một preview không
+   duyệt được: nó không còn nói gì về app thật.
+
+   Cùng ba họ và cùng chuỗi fallback như `app/layout.tsx` khai. */
+:root {
+  --ui: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  --serif: 'Noto Serif', ui-serif, Georgia, serif;
+}
+
+/* ── vỏ trang preview (không vào app) ─────────────────────────────────────── */
+body { background: var(--bg); color: var(--ink); font-family: var(--ui); margin: 0; }
+.pv { max-width: 1180px; margin: 0 auto; padding: 40px 28px 120px; }
+.pv-head h1 { font-size: 21px; font-weight: 600; margin: 0 0 6px; letter-spacing: -0.01em; }
+.pv-head .pv-sub { color: var(--ink-2); font-size: 13px; line-height: 1.72; max-width: 74ch; margin: 0 0 4px; }
+.pv-head .pv-sub b { color: var(--ink); font-weight: 500; }
+.pv code { font-family: var(--mono); font-size: 11px; color: var(--ink-2); }
+
+/* Bảng điều khiển duyệt: bật/tắt từng họ để duyệt lẻ, và so trước/sau. */
+.pv-dk {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px;
+  margin: 22px 0 34px; padding: 11px 14px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+}
+.pv-dk .pv-nhom { display: flex; flex-wrap: wrap; align-items: center; gap: 9px 14px; }
+.pv-dk label { font-size: 11.5px; color: var(--ink-2); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.pv-dk input { accent-color: var(--gold); margin: 0; }
+.pv-dk .pv-vach { width: 1px; height: 20px; background: var(--line); }
+.pv-dk .pv-nhan { font-size: 11px; color: var(--ink-3); }
+
+.pv-sect { margin: 0 0 52px; }
+.pv-sect > h2 {
+  font-size: 14.5px; font-weight: 600; margin: 0 0 3px;
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+}
+.pv-sect > h2 .pv-ma {
+  font-family: var(--mono); font-size: 11px; color: var(--gold);
+  font-weight: 400; letter-spacing: 0;
+}
+.pv-sect > h2 .pv-tieu {
+  font-family: var(--mono); font-size: 10.5px; color: var(--ink-3);
+  border: 1px solid var(--line); border-radius: 3px; padding: 1px 5px;
+}
+.pv-vs { color: var(--ink-2); font-size: 12.5px; line-height: 1.72; max-width: 78ch; margin: 0 0 14px; }
+.pv-vs b { color: var(--ink); font-weight: 500; }
+.pv-vs .pv-mat { color: var(--amber); }
+.pv-khung {
+  border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--bg); overflow: hidden; position: relative;
+}
+.pv-nut {
+  font-family: var(--ui); font-size: 11.5px; color: var(--ink-2);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 4px; padding: 4px 10px; cursor: pointer;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.pv-nut:hover { background: var(--raised); color: var(--ink); }
+.pv-nut:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.pv-hang-nut { display: flex; gap: 8px; margin: 10px 0 0; align-items: center; flex-wrap: wrap; }
+.pv-hang-nut .pv-nhan { font-size: 11px; color: var(--ink-3); }
+
+/* ═══ 1 · ĐẦU ĐỌC — tiêu điểm ══════════════════════════════════════════════
+   Vệt sáng chạy dọc mép trên transport, CHỈ khi engine chạy.
+
+   Vì sao đây là tiêu điểm chứ không phải một spinner: DESIGN.md đã chốt điểm
+   neo là bàn dựng phim / DAW, và transport là chỗ bấm play-stop. Ở DAW, thứ nói
+   "đang chạy" là ĐẦU ĐỌC di chuyển — không phải một biểu tượng xoay. Chuyển động
+   này vì thế thuộc về thế giới đã chọn, không phải một hiệu ứng mượn.
+
+   Vì sao nó đáng tồn tại: cảnh dùng thật trong PRODUCT.md là màn hình phụ cạnh
+   terminal, người vận hành ngó vào rồi rời đi. Một đốm 6px nhấp nháy không đọc
+   được từ hai mét; một vệt chạy hết bề ngang thì đọc được.
+
+   Chi phí: chỉ đổi background-position trên một dải cao 1px. Dừng hẳn khi máy
+   nghỉ (không có data-chay) và khi tab bị ẩn. */
+.mo-dauDoc .trans[data-chay='1'] { position: relative; }
+.mo-dauDoc .trans[data-chay='1']::before {
+  content: '';
+  position: absolute; inset: 0 0 auto 0; height: 1px;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 38%,
+    color-mix(in oklch, var(--gold) 92%, transparent) 50%,
+    transparent 62%,
+    transparent 100%
+  );
+  background-size: 260% 100%;
+  background-repeat: no-repeat;
+  animation: pvDauDoc 3.6s linear infinite;
+  pointer-events: none;
+}
+@keyframes pvDauDoc {
+  from { background-position: -80% 0; }
+  to   { background-position: 180% 0; }
+}
+
+/* ═══ 2 · SỐ VỪA ĐỔI ══════════════════════════════════════════════════════
+   Ô nhấp MỘT lần rồi tắt khi con số của nó đổi.
+
+   Đây là câu trả lời cho tiêu chí thành công của PRODUCT.md — "mở studio sau 6
+   giờ đi vắng và trong vòng 5 giây biết dây chuyền khỏe hay bệnh". Hôm nay một
+   chương chốt và một đô tiêu thêm đều là cú thay giá trị tức thời: nếu bạn không
+   nhìn đúng ô đó, bạn không biết nó vừa đổi.
+
+   Hai màu, hai nghĩa, theo đúng bảng ngữ nghĩa đã chốt: teal = tiến độ (đã
+   nghiệm thu), gold = tiền (đang chạy / tiêu điểm). KHÔNG dùng màu làm kênh duy
+   nhất: con số tự nó đã đổi, đây chỉ là dấu chỉ chỗ để nhìn.
+
+   Chi phí: một keyframe 0.9s trên background, chạy khi có dữ liệu mới — tức
+   nhiều nhất một lần mỗi nhịp làm mới 1,5s. */
+@keyframes pvVuaDoiTien {
+  0%   { background-color: color-mix(in oklch, var(--gold) 22%, transparent); }
+  100% { background-color: transparent; }
+}
+@keyframes pvVuaDoiChot {
+  0%   { background-color: color-mix(in oklch, var(--teal) 22%, transparent); }
+  100% { background-color: transparent; }
+}
+.mo-vuaDoi .pv-doi-tien { animation: pvVuaDoiTien 0.9s var(--ease); }
+.mo-vuaDoi .pv-doi-chot { animation: pvVuaDoiChot 0.9s var(--ease); }
+
+/* ═══ 3 · ĐANG CHỜ BẠN ════════════════════════════════════════════════════
+   Dải nghiệm thu và huy hiệu thở chậm — 2.6s, CỐ Ý chậm hơn nhịp máy 2.2s.
+
+   Sự khác nhịp chính là thông tin: nhanh = máy đang làm, chậm = máy đang đợi
+   bạn. Hai thứ đó hôm nay trông giống nhau (đều tĩnh), mà chúng đối lập về việc
+   phải làm: một cái bảo "đừng động vào", cái kia bảo "chỉ bạn mới đi tiếp được".
+
+   Chỉ thở VIỀN, không thở nền: nền amber đã đo được 4,94:1 với chữ trên nó, và
+   sàn AA là 4,5 — nhấp nền là đem tương phản đi chơi. Viền không chở chữ nào. */
+@keyframes pvThoCho {
+  0%, 100% { border-color: color-mix(in oklch, var(--amber) 26%, var(--line-2)); }
+  50%      { border-color: color-mix(in oklch, var(--amber) 66%, var(--line-2)); }
+}
+.mo-thoCho .cuanghiemthu { animation: pvThoCho 2.6s var(--ease) infinite; }
+.mo-thoCho .hieunghiemthu { animation: pvThoCho 2.6s var(--ease) infinite; }
+
+/* ═══ 4 · NÚT ĐANG GỬI ════════════════════════════════════════════════════
+   Vệt 2px trong lòng nút, chạy trong lúc lệnh còn trên đường.
+
+   Hôm nay nút chỉ đổi chữ thành "Đang gửi…" và `disabled`. Với một nút TIÊU
+   TIỀN thì thế là chưa đủ: chữ đổi là một sự kiện tĩnh, còn cái người dùng cần
+   biết là "nó CÒN đang đi" — vì nếu không thì họ sẽ bấm lại, và ở cửa nghiệm thu
+   bấm hai lần là cấp phép hai chương.
+
+   Vệt nằm TRONG nút, không phải một spinner cạnh nút: nguồn của trạng thái là
+   chính cái nút đó. */
+@keyframes pvDangGui {
+  from { background-position: -60% 0; }
+  to   { background-position: 160% 0; }
+}
+.mo-dangGui button[aria-busy='true'] { position: relative; overflow: hidden; }
+.mo-dangGui button[aria-busy='true']::after {
+  content: '';
+  position: absolute; inset: auto 0 0 0; height: 2px;
+  background-image: linear-gradient(
+    90deg, transparent, color-mix(in oklch, var(--gold) 88%, transparent), transparent
+  );
+  background-size: 55% 100%;
+  background-repeat: no-repeat;
+  animation: pvDangGui 1.1s linear infinite;
+}
+
+/* ═══ 5 · VẠCH NGĂN TỚI ═══════════════════════════════════════════════════
+   Vạch ngăn lượt mở ra từ giữa, 240ms.
+
+   Ranh giới lượt là một SỰ KIỆN — máy vừa xong một việc và bắt đầu việc khác.
+   Hôm nay nó chỉ xuất hiện, nên trong một khu đang tự cuộn thì nó trôi qua mắt
+   như một đường kẻ. Mở ra từ giữa làm nó được đọc là "vừa xảy ra".
+
+   Chỉ transform + opacity, và chỉ chạy MỘT lần cho mỗi vạch. */
+@keyframes pvVachToi {
+  from { transform: scaleX(0.04); opacity: 0; }
+  to   { transform: scaleX(1);    opacity: 1; }
+}
+.mo-vachToi .vach { transform-origin: center; animation: pvVachToi 0.24s var(--ease) both; }
+
+/* ── Đường tắt bắt buộc ──────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .mo-dauDoc .trans[data-chay='1']::before,
+  .mo-vuaDoi .pv-doi-tien,
+  .mo-vuaDoi .pv-doi-chot,
+  .mo-thoCho .cuanghiemthu,
+  .mo-thoCho .hieunghiemthu,
+  .mo-dangGui button[aria-busy='true']::after,
+  .mo-vachToi .vach {
+    animation: none;
+  }
+  /* Không mất thông tin khi tắt: đầu đọc thành một dải tĩnh, thở thành viền đậm
+     cố định, vạch ngăn hiện đủ. Trạng thái vẫn đọc được, chỉ không động. */
+  .mo-dauDoc .trans[data-chay='1']::before {
+    background-image: none;
+    background-color: color-mix(in oklch, var(--gold) 42%, transparent);
+  }
+  .mo-thoCho .cuanghiemthu,
+  .mo-thoCho .hieunghiemthu {
+    border-color: color-mix(in oklch, var(--amber) 66%, var(--line-2));
+  }
+}
+/* Người duyệt bật thử được nhánh trên mà không đổi cài đặt hệ thống. */
+body.pv-giam .mo-dauDoc .trans[data-chay='1']::before,
+body.pv-giam .mo-vuaDoi .pv-doi-tien,
+body.pv-giam .mo-vuaDoi .pv-doi-chot,
+body.pv-giam .mo-thoCho .cuanghiemthu,
+body.pv-giam .mo-thoCho .hieunghiemthu,
+body.pv-giam .mo-dangGui button[aria-busy='true']::after,
+body.pv-giam .mo-vachToi .vach { animation: none; }
+body.pv-giam .mo-dauDoc .trans[data-chay='1']::before {
+  background-image: none;
+  background-color: color-mix(in oklch, var(--gold) 42%, transparent);
+}
+body.pv-giam .mo-thoCho .cuanghiemthu,
+body.pv-giam .mo-thoCho .hieunghiemthu {
+  border-color: color-mix(in oklch, var(--amber) 66%, var(--line-2));
+}
+
+/* Tab ẩn thì không vòng nào chạy — luật của impeccable, và cũng là luật đúng
+   cho một bề mặt mở suốt đêm bên cạnh terminal. */
+body.pv-an * { animation-play-state: paused !important; }
+
+/* ── mảnh khung cho preview: các khối lấy từ app cần một vỏ tối thiểu ────── */
+.pv-trans-vo { position: relative; }
+.pv-trans-vo .trans {
+  position: relative; display: flex; align-items: center; gap: 0;
+  height: 34px; background: var(--panel); border-top: 1px solid var(--line);
+  font-size: 11.5px;
+}
+.pv-trans-vo .trans .o {
+  display: flex; align-items: center; gap: 7px;
+  padding: 0 13px; height: 100%; border-right: 1px solid var(--line-2);
+  white-space: nowrap;
+}
+.pv-trans-vo .trans .o:last-child { border-right: 0; }
+.pv-trans-vo .trans .lbl { color: var(--ink-3); font-size: 11px; }
+.pv-trans-vo .trans .val { font-family: var(--mono); color: var(--ink); }
+.pv-trans-vo .trans .ky { color: var(--gold); font-size: 10px; }
+.pv-day { margin-left: auto !important; }
+
+.pv-tong {
+  display: flex; flex-wrap: wrap; align-items: stretch;
+  border-bottom: 1px solid var(--line-2); background: var(--panel);
+}
+.pv-tong .pv-o {
+  display: flex; align-items: baseline; gap: 6px;
+  padding: 9px 16px; border-right: 1px solid var(--line-2);
+}
+.pv-tong .pv-o:last-child { border-right: 0; }
+.pv-tong b { font-family: var(--mono); font-size: 12.5px; font-weight: 500; color: var(--ink); }
+.pv-tong span { font-size: 11px; color: var(--ink-3); }
+
+.pv-bang { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.pv-bang th {
+  text-align: left; font-weight: 500; font-size: 11px; color: var(--ink-3);
+  padding: 8px 14px; border-bottom: 1px solid var(--line-2);
+}
+.pv-bang td { padding: 10px 14px; border-bottom: 1px solid var(--line-2); color: var(--ink-2); }
+.pv-bang td.num { font-family: var(--mono); text-align: right; color: var(--ink); }
+.pv-bang tr:last-child td { border-bottom: 0; }
+.pv-ten { color: var(--ink); }
+.pv-ma-sach { font-family: var(--mono); font-size: 11px; color: var(--ink-3); display: block; }
+
+.cuanghiemthu {
+  display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 3px 18px;
+  align-items: start; padding: 10px 18px 11px;
+  background: color-mix(in oklch, var(--amber) 9%, var(--bg));
+  border-bottom: 1px solid color-mix(in oklch, var(--amber) 26%, var(--line-2));
+  border-top: 1px solid color-mix(in oklch, var(--amber) 26%, var(--line-2));
+}
+.cuanghiemthu .cnthead { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink); font-weight: 500; }
+.cuanghiemthu .ky { color: var(--amber); font-size: 10px; }
+.cuanghiemthu .cntlydo { font-size: 12.5px; color: var(--ink-2); line-height: 1.6; max-width: 72ch; }
+.cuanghiemthu .cntlydo .lbl { color: var(--ink-3); }
+.cuanghiemthu .cntnut { display: flex; gap: 8px; grid-row: span 2; align-self: center; }
+.nutChinh {
+  font-family: var(--ui); font-size: 12px; color: #241f18; font-weight: 500;
+  background: var(--gold); border: 1px solid var(--gold);
+  border-radius: 4px; padding: 5px 11px; cursor: pointer; white-space: nowrap;
+}
+.nutPhu {
+  font-family: var(--ui); font-size: 12px; color: var(--ink);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 4px; padding: 5px 11px; cursor: pointer; white-space: nowrap;
+}
+.nutChinh:focus-visible, .nutPhu:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.nutChinh[aria-busy='true'], .nutPhu[aria-busy='true'] { opacity: 0.7; cursor: default; }
+
+.pv-bar {
+  display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 14px;
+  background: var(--panel); border-bottom: 1px solid var(--line); font-size: 12.5px;
+}
+.pv-logo { color: var(--ink-3); font-size: 12px; }
+.hieunghiemthu {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px; color: var(--ink);
+  background: color-mix(in oklch, var(--amber) 10%, var(--panel-2));
+  border: 1px solid color-mix(in oklch, var(--amber) 40%, var(--line));
+  border-radius: 4px; padding: 3px 9px; cursor: pointer;
+}
+.hieunghiemthu .ky { color: var(--amber); font-size: 9px; }
+
+.pv-vansong { background: var(--bg); }
+.pv-vansong .vshead {
+  padding: 8px 16px; border-bottom: 1px solid var(--line-2);
+  font-size: 12px; color: var(--ink-2);
+}
+.pv-vansong .vsthan { max-height: 190px; overflow-y: auto; padding: 12px 16px; }
+.pv-vansong .chu {
+  font-family: var(--mono); font-size: 12px; line-height: 1.74;
+  color: var(--ink-2); white-space: pre-wrap; overflow-wrap: anywhere; margin: 0;
+}
+.vach {
+  display: flex; align-items: center; gap: 10px;
+  margin: 14px 0 12px; font-family: var(--mono); font-size: 10.5px; color: var(--ink-3);
+}
+.vach::before, .vach::after { content: ''; height: 1px; background: var(--line); flex: 1; }
+
+.pv-ghi {
+  margin: 12px 0 0; font-size: 11.5px; color: var(--ink-3);
+  line-height: 1.7; max-width: 78ch;
+}
+.pv-ghi b { color: var(--ink); font-weight: 500; }
+.pv-ghi code { background: var(--panel-2); border-radius: 3px; padding: 1px 4px; }
+</style>
+</head>
+
+<body class="mo-dauDoc mo-vuaDoi mo-thoCho mo-dangGui mo-vachToi">
+<div class="pv">
+
+  <div class="pv-head">
+    <h1>Chuyển động mang thông tin</h1>
+    <p class="pv-sub">
+      Bản đề xuất để duyệt. Mọi khối dưới đây dùng <b>đúng CSS thật của app</b>
+      (<code>web/app/globals.css</code>) — nếu nó trông khác app thì preview sai, không phải app sai.
+    </p>
+    <p class="pv-sub">
+      <b>Chẩn đoán:</b> studio là cỗ máy chạy hàng giờ nhưng đang được vẽ như một bức ảnh tĩnh.
+      Đo trên mã: toàn bộ giao diện có 23 transition (chỉ đổi màu) và <b>đúng 1 keyframe</b> —
+      nhịp đập. Chữ chảy thì có động; còn chương chốt, tiền tăng, cửa mở, vai đổi tool đều là
+      cú thay giá trị tức thời, không dấu vết.
+    </p>
+    <p class="pv-sub">
+      <b>Nguyên tắc giữ nguyên:</b> <code>DESIGN.md</code> nói chuyển động phải mang thông tin.
+      Đề xuất này không phá luật đó — nó thêm chuyển động mang thông tin, không thêm trang trí.
+      Không glow, không glassmorphism, không animate thuộc tính layout, và mọi họ đều có nhánh
+      <code>prefers-reduced-motion</code>.
+    </p>
+  </div>
+
+  <div class="pv-dk" role="group" aria-label="Bảng duyệt">
+    <span class="pv-nhan">Duyệt lẻ từng họ:</span>
+    <div class="pv-nhom">
+      <label><input type="checkbox" data-mo="mo-dauDoc" checked> 1 · đầu đọc</label>
+      <label><input type="checkbox" data-mo="mo-vuaDoi" checked> 2 · số vừa đổi</label>
+      <label><input type="checkbox" data-mo="mo-thoCho" checked> 3 · đang chờ bạn</label>
+      <label><input type="checkbox" data-mo="mo-dangGui" checked> 4 · nút đang gửi</label>
+      <label><input type="checkbox" data-mo="mo-vachToi" checked> 5 · vạch ngăn</label>
+    </div>
+    <span class="pv-vach"></span>
+    <label><input type="checkbox" id="pv-tat-het"> <b style="color:var(--ink)">Tắt hết — xem bản hiện tại</b></label>
+    <span class="pv-vach"></span>
+    <label><input type="checkbox" id="pv-giam"> giả lập <code>reduced-motion</code></label>
+  </div>
+
+  <!-- ═══ 1 ═══ -->
+  <section class="pv-sect">
+    <h2><span class="pv-ma">01</span> Đầu đọc <span class="pv-tieu">TIÊU ĐIỂM · 3,6s · linear</span></h2>
+    <p class="pv-vs">
+      Vệt sáng chạy dọc mép trên transport, <b>chỉ tồn tại khi engine chạy</b>. Đây là tiêu điểm
+      chứ không phải một spinner vì thế giới đã chọn là bàn dựng phim / DAW: ở DAW, thứ nói
+      "đang chạy" là <b>đầu đọc di chuyển</b>. Cảnh dùng thật là màn hình phụ cạnh terminal —
+      một đốm 6px nhấp nháy không đọc được từ hai mét, một vệt chạy hết bề ngang thì đọc được.
+      <span class="pv-mat">Bỏ nó đi thì mất câu trả lời cho câu hỏi số một của PRODUCT.md.</span>
+    </p>
+    <div class="pv-khung pv-trans-vo">
+      <div class="trans" data-chay="1" id="pv-trans">
+        <div class="o"><span class="ky" id="pv-ky">▶</span><span class="val" id="pv-tt">đang chạy</span></div>
+        <div class="o"><span class="lbl">công đoạn</span><span class="val">draft_chapter</span></div>
+        <div class="o"><span class="lbl">tổ</span><span class="val">Writer · cx/gpt-5.5</span></div>
+        <div class="o pv-day"><span class="lbl">năng suất</span><span class="val">2,6 chương/giờ</span></div>
+        <div class="o"><span class="lbl">giá thành</span><span class="val">$0,988 / chương</span></div>
+        <div class="o"><span class="lbl">tổng</span><span class="val">$7,91</span></div>
+      </div>
+    </div>
+    <div class="pv-hang-nut">
+      <button class="pv-nut" id="pv-doi-chay">Bấm để dừng máy →</button>
+      <span class="pv-nhan">Máy nghỉ thì đầu đọc phải tắt hẳn, không mờ đi.</span>
+    </div>
+  </section>
+
+  <!-- ═══ 2 ═══ -->
+  <section class="pv-sect">
+    <h2><span class="pv-ma">02</span> Số vừa đổi <span class="pv-tieu">0,9s · một lần</span></h2>
+    <p class="pv-vs">
+      Ô nhấp <b>một lần</b> rồi tắt khi con số của nó đổi. Đây là câu trả lời cho tiêu chí thành
+      công đã ghi trong PRODUCT.md — "mở studio sau 6 giờ đi vắng và trong vòng 5 giây biết dây
+      chuyền khỏe hay bệnh". Hai màu theo đúng bảng ngữ nghĩa đã chốt: <b>teal</b> = tiến độ,
+      <b>gold</b> = tiền. Màu không phải kênh duy nhất — con số tự nó đã đổi; nhấp chỉ chỉ chỗ
+      để nhìn.
+      <span class="pv-mat">Bỏ nó đi thì một chương vừa chốt và một đô vừa tiêu trông y như lúc
+      chưa có gì xảy ra.</span>
+    </p>
+    <div class="pv-khung">
+      <div class="pv-tong">
+        <div class="pv-o"><b>4</b><span>tác phẩm</span></div>
+        <div class="pv-o"><b id="pv-t-chot">17</b><span>chương đã chốt</span></div>
+        <div class="pv-o"><b id="pv-t-tu">48.359</b><span>từ</span></div>
+        <div class="pv-o"><b id="pv-t-tien">$16,06</b><span>đã tiêu</span></div>
+        <div class="pv-o"><b>1</b><span>engine đang mở</span></div>
+      </div>
+      <table class="pv-bang">
+        <thead><tr>
+          <th>Tác phẩm</th><th>Giai đoạn</th><th style="text-align:right">Tiến độ</th>
+          <th style="text-align:right">Số từ</th><th style="text-align:right">Chi phí</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="pv-ten">Con Rối Trong Hộp Kính</span><span class="pv-ma-sach">viet-truyen-dang-trung-sinh</span></td>
+            <td>đang viết</td>
+            <td class="num" id="pv-r-chot">2/111</td>
+            <td class="num" id="pv-r-tu">6.284</td>
+            <td class="num" id="pv-r-tien">$1,18</td>
+          </tr>
+          <tr>
+            <td><span class="pv-ten">Dấu Nước Dưới Cầu Đá</span><span class="pv-ma-sach">novel</span></td>
+            <td>đang viết</td><td class="num">8/68</td><td class="num">25.037</td><td class="num">$7,91</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pv-hang-nut">
+      <button class="pv-nut" id="pv-gia-chot">Giả lập: một chương vừa chốt</button>
+      <button class="pv-nut" id="pv-gia-tien">Giả lập: tiền vừa tăng</button>
+    </div>
+  </section>
+
+  <!-- ═══ 3 ═══ -->
+  <section class="pv-sect">
+    <h2><span class="pv-ma">03</span> Đang chờ bạn <span class="pv-tieu">2,6s · chậm hơn nhịp máy 2,2s</span></h2>
+    <p class="pv-vs">
+      Dải nghiệm thu và huy hiệu <b>thở chậm</b>. Sự khác nhịp chính là thông tin: nhanh = máy
+      đang làm, chậm = máy đang đợi <b>bạn</b>. Hôm nay hai trạng thái đó trông giống nhau (đều
+      tĩnh) trong khi chúng đối lập về việc phải làm — một cái bảo "đừng động vào", cái kia bảo
+      "chỉ bạn mới đi tiếp được". Chỉ thở <b>viền</b>, không thở nền: chữ trên nền amber đã đo
+      được 4,94:1 với sàn AA là 4,5, nên nhấp nền là đem tương phản đi chơi.
+    </p>
+    <div class="pv-khung">
+      <div class="pv-bar">
+        <span class="pv-logo">ainovel studio</span>
+        <button class="hieunghiemthu"><span class="ky">■</span>Nghiệm thu · đang chờ bạn</button>
+      </div>
+      <div class="cuanghiemthu">
+        <div class="cnthead"><span class="ky">■</span>Đang chờ bạn nghiệm thu chương 3</div>
+        <div class="cntlydo">
+          <span class="lbl">Kết luận của Editor:</span> nhịp tụt ở đoạn giữa; ba cảnh liên tiếp
+          cùng một nhịp và không cảnh nào đổi khoảng cách người kể.
+        </div>
+        <div class="cntnut">
+          <button class="nutChinh">Cho đi tiếp 1 chương</button>
+          <button class="nutPhu">Trả chương 3 về viết lại</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 4 ═══ -->
+  <section class="pv-sect">
+    <h2><span class="pv-ma">04</span> Nút đang gửi <span class="pv-tieu">1,1s · linear · trong lòng nút</span></h2>
+    <p class="pv-vs">
+      Vệt 2px chạy trong lòng nút suốt lúc lệnh còn trên đường. Hôm nay nút chỉ đổi chữ thành
+      "Đang gửi…" và <code>disabled</code>. Với một nút <b>tiêu tiền</b> thế là chưa đủ: chữ đổi
+      là một sự kiện tĩnh, còn thứ người dùng cần biết là "nó CÒN đang đi".
+      <span class="pv-mat">Bỏ nó đi thì người dùng bấm lại — và ở cửa nghiệm thu bấm hai lần là
+      cấp phép hai chương, tức tiền đôi.</span>
+    </p>
+    <div class="pv-khung" style="padding:16px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="nutChinh" id="pv-nut-tiep">Cho đi tiếp 1 chương</button>
+      <button class="nutPhu" id="pv-nut-tra">Trả chương 3 về viết lại</button>
+      <span class="pv-nhan" style="color:var(--ink-3);font-size:11px">Bấm thử — nút tự khóa 2,2 giây.</span>
+    </div>
+  </section>
+
+  <!-- ═══ 5 ═══ -->
+  <section class="pv-sect">
+    <h2><span class="pv-ma">05</span> Vạch ngăn tới <span class="pv-tieu">0,24s · một lần cho mỗi vạch</span></h2>
+    <p class="pv-vs">
+      Vạch ngăn lượt <b>mở ra từ giữa</b>. Ranh giới lượt là một sự kiện — máy vừa xong một việc
+      và bắt đầu việc khác. Hôm nay nó chỉ xuất hiện, nên trong một khu đang tự cuộn với nhịp
+      mẩu chữ 2ms thì nó trôi qua mắt như một đường kẻ vô nghĩa.
+    </p>
+    <div class="pv-khung pv-vansong">
+      <div class="vshead">Máy đang nói</div>
+      <div class="vsthan" id="pv-vsthan">
+<pre class="chu">✻ Kiểm định chương 2
+khế ước: ✓ 4/4 mục
+số từ: 1.874 (mục tiêu 1.600–2.000)
+kết luận: nhịp ổn, phục bút "chiếc đèn bến" đã gieo</pre>
+      </div>
+    </div>
+    <div class="pv-hang-nut">
+      <button class="pv-nut" id="pv-gia-vach">Giả lập: máy sang lượt mới</button>
+    </div>
+  </section>
+
+  <p class="pv-ghi">
+    <b>Chi phí:</b> ba vòng lặp (đầu đọc, thở, nút gửi) chỉ đổi <code>background-position</code>
+    hoặc <code>border-color</code>. Đầu đọc và nút gửi chỉ chạy khi có việc đang chạy; thở chỉ
+    chạy khi có cửa đang chờ. Hai họ còn lại là một lần, không lặp. Không họ nào animate
+    <code>width</code>, <code>height</code>, <code>top</code> hay <code>margin</code>. Tab ẩn thì
+    mọi vòng dừng.
+  </p>
+
+<script>
+/* Preview chỉ điều khiển việc BẬT/TẮT và GIẢ LẬP. Không họ chuyển động nào sống trong JS —
+   tất cả là CSS, để bản duyệt xong lắp thẳng vào globals.css được. */
+const body = document.body;
+
+for (const o of document.querySelectorAll('[data-mo]')) {
+  o.addEventListener('change', () => body.classList.toggle(o.dataset.mo, o.checked));
+}
+
+document.getElementById('pv-tat-het').addEventListener('change', (e) => {
+  const tat = e.target.checked;
+  for (const o of document.querySelectorAll('[data-mo]')) {
+    o.disabled = tat;
+    body.classList.toggle(o.dataset.mo, !tat && o.checked);
+  }
+});
+
+document.getElementById('pv-giam').addEventListener('change', (e) =>
+  body.classList.toggle('pv-giam', e.target.checked));
+
+/* 1 · dừng / chạy máy */
+const trans = document.getElementById('pv-trans');
+document.getElementById('pv-doi-chay').addEventListener('click', (e) => {
+  const chay = trans.dataset.chay === '1';
+  trans.dataset.chay = chay ? '0' : '1';
+  document.getElementById('pv-ky').textContent = chay ? '○' : '▶';
+  document.getElementById('pv-tt').textContent = chay ? 'đang nghỉ' : 'đang chạy';
+  e.target.textContent = chay ? 'Bấm để chạy máy →' : 'Bấm để dừng máy →';
+});
+
+/* 2 · giả lập số đổi. Gán lại animation bằng cách bỏ class rồi reflow rồi thêm — nếu không
+   thì bấm lần thứ hai không chạy lại. */
+function nhap(el, lop, giaTri) {
+  el.textContent = giaTri;
+  el.classList.remove(lop);
+  void el.offsetWidth;
+  el.classList.add(lop);
+}
+let chot = 17, rchot = 2, tu = 48359, rtu = 6284, tien = 1606, rtien = 118;
+document.getElementById('pv-gia-chot').addEventListener('click', () => {
+  chot += 1; rchot += 1; tu += 1874; rtu += 1874;
+  nhap(document.getElementById('pv-t-chot'), 'pv-doi-chot', String(chot));
+  nhap(document.getElementById('pv-r-chot'), 'pv-doi-chot', rchot + '/111');
+  nhap(document.getElementById('pv-t-tu'), 'pv-doi-chot', tu.toLocaleString('vi-VN'));
+  nhap(document.getElementById('pv-r-tu'), 'pv-doi-chot', rtu.toLocaleString('vi-VN'));
+});
+const dola = (xu) => '$' + (xu / 100).toLocaleString('vi-VN', { minimumFractionDigits: 2 });
+document.getElementById('pv-gia-tien').addEventListener('click', () => {
+  tien += 34; rtien += 34;
+  nhap(document.getElementById('pv-t-tien'), 'pv-doi-tien', dola(tien));
+  nhap(document.getElementById('pv-r-tien'), 'pv-doi-tien', dola(rtien));
+});
+
+/* 4 · nút đang gửi. Khóa CẢ HAI nút — ở app thật một cờ dùng chung, vì cả hai đều tiêu tiền. */
+const nutTiep = document.getElementById('pv-nut-tiep');
+const nutTra = document.getElementById('pv-nut-tra');
+function gui(nut) {
+  const chuCu = nut.textContent;
+  for (const n of [nutTiep, nutTra]) { n.setAttribute('aria-busy', 'true'); n.disabled = true; }
+  nut.textContent = 'Đang gửi…';
+  setTimeout(() => {
+    for (const n of [nutTiep, nutTra]) { n.removeAttribute('aria-busy'); n.disabled = false; }
+    nut.textContent = chuCu;
+  }, 2200);
+}
+nutTiep.addEventListener('click', () => gui(nutTiep));
+nutTra.addEventListener('click', () => gui(nutTra));
+
+/* 5 · vạch ngăn tới + tự cuộn, đúng như khu văn sống thật. Dựng bằng DOM, không ghép chuỗi. */
+const than = document.getElementById('pv-vsthan');
+let luot = 2;
+const MAU = [
+  '✻ Lên kế hoạch chương {n}\nconflict: Lục Dã phải vào bệnh viện đã thành phế tích để tìm thuốc\nbeat: 4 · nhịp chậm dần về cuối',
+  '✻ Soạn bản thảo chương {n}\nHành lang dưới hầm dẫn tới kho oxy cũ. Đèn huỳnh quang hỏng gần hết,\nchỉ còn những đoạn sáng ngắt quãng.',
+  '✻ Kiểm định chương {n}\nkhế ước: ✓ 4/4 mục\nsố từ: 1.902 (mục tiêu 1.600–2.000)',
+];
+document.getElementById('pv-gia-vach').addEventListener('click', () => {
+  luot += 1;
+  const gio = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  const v = document.createElement('div');
+  v.className = 'vach';
+  v.setAttribute('role', 'separator');
+  const nhan = document.createElement('span');
+  nhan.textContent = 'chương ' + luot + ' · ' + gio;
+  v.append(nhan);
+  const p = document.createElement('pre');
+  p.className = 'chu';
+  p.textContent = MAU[(luot - 3) % MAU.length].replace(/\{n\}/g, String(luot));
+  than.append(v, p);
+  than.scrollTop = than.scrollHeight;
+});
+
+/* Tab ẩn thì dừng mọi vòng — luật của impeccable, và đúng cho một bề mặt mở suốt đêm. */
+document.addEventListener('visibilitychange', () =>
+  body.classList.toggle('pv-an', document.hidden));
+</script>
+</div>
+</body>
+</html>
