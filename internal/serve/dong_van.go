@@ -111,6 +111,14 @@ func (d *dongVan) sau(seq int64) ([]manhVan, int64) {
 	return ra, d.seq
 }
 
+// vongLen là số byte của lượt hiện tại. Chỉ để bài kiểm dừng vòng nạp đúng chỗ; giao diện
+// không cần nó, nên nó không lên JSON.
+func (d *dongVan) vongLen() int {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.vong.Len()
+}
+
 // vongHienTai trả toàn bộ văn của lượt đang chảy và seq tương ứng.
 //
 // Dùng cho người MỚI mở kết nối. Trả seq hiện tại cùng lúc để họ không nhận lại các mẩu

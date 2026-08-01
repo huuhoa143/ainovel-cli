@@ -49,3 +49,52 @@ func TestDongVanRanhGioiLuotDungThuTu(t *testing.T) {
 		t.Error("sentinel lọt vào văn — người dùng sẽ thấy ký tự điều khiển trên trang")
 	}
 }
+
+// TestDongVanHaiCaiTran canh hai lớp lỗi khác nhau, đừng gộp chúng.
+//
+//  1. Hàng phát lại phình vô hạn → process giữ cả engine ăn hết RAM sau vài giờ chạy.
+//  2. `vong` (văn lượt hiện tại) phình vô hạn nếu engine KHÔNG phát lệnh xóa nào — chuyện
+//     xảy ra thật khi có gì đó sai ở tầng dưới.
+//
+// Hướng cắt của (2) là điều đáng canh nhất: cắt từ ĐẦU, không từ cuối. Phần cuối là phần
+// đang chảy, tức phần người dùng đang đọc; cắt cuối là xóa đúng thứ họ đang nhìn.
+func TestDongVanHaiCaiTran(t *testing.T) {
+	t.Run("hàng bỏ mục cũ nhất", func(t *testing.T) {
+		d := &dongVan{}
+		for i := 0; i < soManhGiu+50; i++ {
+			d.them("x")
+		}
+		manh, _ := d.sau(0)
+		if len(manh) > soManhGiu {
+			t.Errorf("hàng giữ %d mục, trần là %d", len(manh), soManhGiu)
+		}
+		// Mục còn lại phải là mục MỚI: seq nhỏ nhất phải lớn hơn 50.
+		if manh[0].Seq <= 50 {
+			t.Errorf("mục đầu có Seq %d — hàng đang bỏ mục MỚI thay vì mục cũ", manh[0].Seq)
+		}
+	})
+
+	t.Run("vòng cắt từ đầu chứ không từ cuối", func(t *testing.T) {
+		d := &dongVan{}
+		d.them("ĐẦU-PHẢI-MẤT")
+		// Đếm số lần gọi thay vì dò `vongLen() <= coVongToiDa`: `them()` tự cắt xuống đúng
+		// coVongToiDa/2 NGAY trong cùng lời gọi mỗi khi vượt trần, nên độ dài đọc lại được sau
+		// mỗi lời gọi luôn <= coVongToiDa — dò theo điều kiện đó sẽ không bao giờ thoát.
+		soLan := coVongToiDa/4096 + 2
+		for i := 0; i < soLan; i++ {
+			d.them(strings.Repeat("y", 4096))
+		}
+		d.them("CUỐI-PHẢI-CÒN")
+
+		vong, _ := d.vongHienTai()
+		if len(vong) > coVongToiDa {
+			t.Errorf("vòng dài %d byte, trần là %d", len(vong), coVongToiDa)
+		}
+		if !strings.HasSuffix(vong, "CUỐI-PHẢI-CÒN") {
+			t.Error("mất phần CUỐI — đó là phần đang chảy, người dùng đang đọc nó")
+		}
+		if strings.Contains(vong, "ĐẦU-PHẢI-MẤT") {
+			t.Error("còn phần ĐẦU sau khi vượt trần — trần không được thi hành")
+		}
+	})
+}
