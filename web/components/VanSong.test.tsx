@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, test } from 'vitest';
 
 import { CHU } from '@/lib/nhan';
@@ -111,4 +111,93 @@ test('tên vùng KHÔNG đổi theo trạng thái máy, tiêu đề thì có', (
 
   expect(screen.getByRole('region', { name: CHU.vanSongVung })).toBeDefined();
   expect(screen.getByRole('heading', { name: CHU.mayNghi })).toBeDefined();
+});
+
+/** jsdom không bố cục nên ba số cuộn đều là 0; đặt tay để mô phỏng một khu đã cuộn. */
+function datCuon(el: HTMLElement, v: { top: number; height: number; client: number }) {
+  Object.defineProperty(el, 'scrollHeight', { value: v.height, configurable: true });
+  Object.defineProperty(el, 'clientHeight', { value: v.client, configurable: true });
+  el.scrollTop = v.top;
+}
+
+test('đang bám đáy thì KHÔNG hiện nút về cuối', () => {
+  const bd = themChu(BO_DEM_RONG, 'x');
+  const { container } = render(<VanSong boDem={bd} dangChay />);
+  const than = container.querySelector('.vsthan') as HTMLElement;
+
+  datCuon(than, { top: 900, height: 1000, client: 100 });
+  fireEvent.scroll(than);
+
+  expect(screen.queryByRole('button', { name: CHU.veCuoi })).toBeNull();
+});
+
+test('cuộn lên thì hiện nút về cuối', () => {
+  const bd = themChu(BO_DEM_RONG, 'x');
+  const { container } = render(<VanSong boDem={bd} dangChay />);
+  const than = container.querySelector('.vsthan') as HTMLElement;
+
+  datCuon(than, { top: 100, height: 1000, client: 100 });
+  fireEvent.scroll(than);
+
+  expect(screen.getByRole('button', { name: CHU.veCuoi })).toBeDefined();
+});
+
+test('bấm về cuối thì cuộn xuống đáy và nút biến mất', () => {
+  const bd = themChu(BO_DEM_RONG, 'x');
+  const { container } = render(<VanSong boDem={bd} dangChay />);
+  const than = container.querySelector('.vsthan') as HTMLElement;
+
+  datCuon(than, { top: 100, height: 1000, client: 100 });
+  fireEvent.scroll(than);
+  fireEvent.click(screen.getByRole('button', { name: CHU.veCuoi }));
+
+  expect(than.scrollTop).toBe(1000);
+  expect(screen.queryByRole('button', { name: CHU.veCuoi })).toBeNull();
+});
+
+test('chữ mới KHÔNG kéo màn hình khi người dùng đã cuộn lên', () => {
+  // Đây là bài canh quan trọng nhất của Task này: tự cuộn phải nhường người đọc. Không có nó
+  // thì đọc lại một đoạn dài trong lúc engine đang phát là bất khả.
+  let bd = themChu(BO_DEM_RONG, 'x');
+  const { container, rerender } = render(<VanSong boDem={bd} dangChay />);
+  const than = container.querySelector('.vsthan') as HTMLElement;
+
+  datCuon(than, { top: 100, height: 1000, client: 100 });
+  fireEvent.scroll(than);
+
+  bd = themChu(bd, 'chữ mới tới');
+  rerender(<VanSong boDem={bd} dangChay />);
+
+  expect(than.scrollTop).toBe(100);
+});
+
+test('đang bám đáy thì chữ mới KÉO màn hình xuống theo', () => {
+  // Bài canh chiều THUẬN của tự cuộn, và cho tới đây không có bài nào giữ nó: bảng đột biến
+  // của kế hoạch chỉ canh chiều nghịch ("đã cuộn lên thì đừng kéo"), nên xóa sạch thân effect
+  // tự cuộn — tức bỏ hẳn tính năng — vẫn xanh cả bộ. Đã thử đột biến hai kiểu: bỏ thân effect,
+  // và đổi deps thành `[]`; cả hai đều xanh trước khi có bài này.
+  //
+  // Tự cuộn là thứ ĐO ĐƯỢC trên sample.gif chứ không phải sở thích: chia khu chữ thành 8 dải
+  // ngang thì bảy dải TRÊN cũng đổi 59–73 khung, tức cả khối dịch lên chứ không chỉ thêm ở đáy.
+  let bd = themChu(BO_DEM_RONG, 'x');
+  const { container, rerender } = render(<VanSong boDem={bd} dangChay />);
+  const than = container.querySelector('.vsthan') as HTMLElement;
+
+  datCuon(than, { top: 900, height: 1000, client: 100 });
+  fireEvent.scroll(than);
+
+  // Chữ mới làm khu cao thêm — đây là chỗ khác nhau giữa "có tự cuộn" và "không".
+  Object.defineProperty(than, 'scrollHeight', { value: 1400, configurable: true });
+  bd = themChu(bd, 'chữ mới tới');
+  rerender(<VanSong boDem={bd} dangChay />);
+
+  expect(than.scrollTop).toBe(1400);
+});
+
+test('vừa mở khu, chưa cuộn lần nào thì KHÔNG có nút về cuối', () => {
+  // Ba bài nút ở trên đều bắn một sự kiện cuộn trước khi hỏi, nên không bài nào chạm tới
+  // trạng thái ĐẦU. Đặt nhầm trạng thái đầu thành `false` thì nút "về cuối" hiện ngay lúc
+  // mở khu — trên một khu chưa cuộn đi đâu cả, tức một nút không làm gì.
+  render(<VanSong boDem={themChu(BO_DEM_RONG, 'x')} dangChay />);
+  expect(screen.queryByRole('button', { name: CHU.veCuoi })).toBeNull();
 });

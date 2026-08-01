@@ -1,6 +1,9 @@
 'use client';
 
+import { useCallback, useEffect, useRef, useState } from 'react';
+
 import { CHU, GIAI_THICH } from '@/lib/nhan';
+import { dangODay } from '@/lib/tuCuon';
 import type { BoDemVan } from '@/lib/vanSong';
 
 /**
@@ -29,12 +32,50 @@ import type { BoDemVan } from '@/lib/vanSong';
  * nguyên câu ấy ở nội dung — và ở đây nó còn thành SAI hẳn khi máy chuyển sang nghỉ.
  */
 export function VanSong({ boDem, dangChay }: { boDem: BoDemVan; dangChay: boolean }) {
+  const thanRef = useRef<HTMLDivElement>(null);
+  const [bamDay, datBamDay] = useState(true);
+
+  // Giữ trong ref VÀ trong state: effect dưới đọc ref (không muốn chạy lại mỗi lần đổi), còn
+  // nút "về cuối" cần state để render lại.
+  const bamDayRef = useRef(true);
+  bamDayRef.current = bamDay;
+
+  const theoCuon = useCallback(() => {
+    const el = thanRef.current;
+    if (!el) return;
+    datBamDay(dangODay(el));
+  }, []);
+
+  const veCuoi = useCallback(() => {
+    const el = thanRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+    datBamDay(true);
+  }, []);
+
+  /**
+   * Tự cuộn — nhưng CHỈ khi người đọc đang ở đáy.
+   *
+   * Tự cuộn là phép ĐO, không phải sở thích: chia khu chữ của `sample.gif` thành 8 dải ngang
+   * thì bảy dải TRÊN cũng đổi 59–73 khung. Nếu chữ chỉ thêm ở dưới thì dải trên phải đứng im
+   * — chúng không im, tức cả khối dịch lên.
+   *
+   * Nhường người đọc cũng là quyết định đã chốt: không dừng khi cuộn lên thì đọc lại một đoạn
+   * dài trong lúc engine đang phát là bất khả — cứ mỗi mẩu 2ms là màn hình lại nhảy về đáy.
+   */
+  useEffect(() => {
+    if (!bamDayRef.current) return;
+    const el = thanRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [boDem]);
+
   return (
     <section className="vansong" aria-label={CHU.vanSongVung}>
       <div className="vshead">
         <h2>{dangChay ? CHU.mayDangNoi : CHU.mayNghi}</h2>
       </div>
-      <div className="vsthan">
+      <div className="vsthan" ref={thanRef} onScroll={theoCuon}>
         {boDem.luot.length === 0 ? (
           <p className="vstrong">{dangChay ? GIAI_THICH.vanSongTrong : GIAI_THICH.vanSongNghi}</p>
         ) : (
@@ -53,6 +94,11 @@ export function VanSong({ boDem, dangChay }: { boDem: BoDemVan; dangChay: boolea
           ))
         )}
       </div>
+      {bamDay ? null : (
+        <button type="button" className="vecuoi" onClick={veCuoi}>
+          {CHU.veCuoi}
+        </button>
+      )}
     </section>
   );
 }
