@@ -1865,3 +1865,214 @@ ngay dưới một transport đang đứng im. R-6 bịt bằng một khẳng đ
 `go build` exit 0 · `go vet` exit 0 · `gofmt -l .` rỗng · `go test -count=1 ./...`
 **30 gói ok / 0 FAIL** (đúng nền) · `npm test` **62/62** (nền sau cụm B: 42/42) ·
 `tsc --noEmit` exit 0 · `npm run build` exit 0.
+
+---
+
+### Cụm D (Task 13–15) — thi hành xong
+
+**Commit** (nền = `bd3682c`):
+
+| sha | tiêu đề |
+|---|---|
+| `759f0c8` | feat(web): buồng lái nhận cả thân Canvas, page.tsx chỉ còn định tuyến khu |
+| `f19ade2` | feat(web): lưới buồng lái, khu văn sống cuộn thật, hai điểm gãy |
+| `5b76980` | feat(web): cột phải hai chế độ — ngữ cảnh truyện và chi tiết chương |
+
+#### Phép thử đột biến — Task 13 (`BuongLai.tsx` + `page.tsx`)
+
+Kế hoạch không có bảng cho Task này. Bảng này là của tôi.
+
+| # | Đột biến | Kết quả | Bài kiểm bắt được |
+|---|---|---|---|
+| R-1 | `default` trả `null` thay vì `<BuongLai/>` | ĐỎ | 3 bài |
+| R-2 | mọi khu về `<BuongLai/>` (bỏ `switch`) | ĐỎ | "khu KHÁC → không phải buồng lái" |
+| R-3 | `page.tsx` truyền `BO_DEM_RONG` xuống `Khu` | **XANH — LỖ HỔNG** | không bài nào |
+| R-4 | `BuongLai` dựng bộ đệm rỗng cho `VanSong` | ĐỎ | 2 bài |
+| R-5 | `VanSong` luôn nhận `dangChay` | ĐỎ | "khu văn sống được cho biết máy đang chạy hay nghỉ" |
+| R-6 | `OCanThiep` không nhận `dangChay` | ĐỎ | "ô can thiệp nói ra hệ quả đúng" |
+| R-7 | bảng chương + nhật ký ra NGOÀI khu cuộn | ĐỎ | 2 bài |
+| R-8 | đảo thứ tự khu văn sống và khu cuộn | ĐỎ | 5 bài |
+| R-9 | bỏ khối cảnh báo | ĐỎ | "cảnh báo dữ liệu lệch hiện ra" |
+| R-10 | luôn vẽ bộ chọn mức xem | ĐỎ | "cuốn KHÔNG phân tầng thì không có bộ chọn" |
+| R-11 | đầu trang bỏ dòng mô tả | ĐỎ | "đầu trang nói tên cuốn, giai đoạn và số đo" |
+| R-12 | `ViecTiepTheo` bỏ khối `DangLam` | ĐỎ | "máy chạy: dòng đang làm gì nói vai và bước" |
+
+**Lỗ hổng R-3 — mắt cuối của sợi dây `vanSong` không có ai chạm tới.** Bộ kiểm mới của
+Task 13 gọi thẳng `Khu`, nên tầng `Trang` — chỗ `vanSong={s.vanSong}` được nối — nằm ngoài
+mọi bài kiểm; đổi nó thành một bộ đệm rỗng dựng tại chỗ vẫn xanh cả bộ. Hệ quả thật: khu đắt
+nhất màn hình im lặng suốt lúc engine viết, không lỗi nào nổ ra, chỉ hiện câu "chưa có lượt
+nào". Bịt bằng bài dựng CẢ `Trang` với `useStudio` và `useMay` bị thay (`app/page.test.tsx`).
+Chạy lại R-3 sau khi bịt → ĐỎ.
+
+Dựng `Trang` cần một mảnh vá jsdom: `Element.prototype.scrollIntoView` không tồn tại và
+`Rail` gọi nó trong effect. Vá TẠI tệp kiểm đó chứ không ở `vitest.setup.giaodien.ts` — tệp
+setup vá một lỗi làm MỌI bài kiểm nói dối, còn cái này chỉ chạm tới bài kiểm nào dựng `Rail`;
+đặt vào setup chung là lặng lẽ tắt một hành vi cho cả bộ kiểm.
+
+#### Phép thử đột biến — Task 15 (`Inspector.tsx`)
+
+Kế hoạch không có bảng. Bảng này là của tôi. **12/12 ĐỎ, không lỗ hổng nào.**
+
+| # | Đột biến | Kết quả | Bài kiểm bắt được |
+|---|---|---|---|
+| S-1 | bỏ `&& !xemNguCanh` (chế độ suy thẳng từ prop) | ĐỎ | 2 bài |
+| S-2 | luôn ở chế độ ngữ cảnh | ĐỎ | 5 bài |
+| S-3 | luôn ở chế độ chi tiết chương | ĐỎ | 7 bài |
+| S-4 | `moChuong` không tắt chế độ ngữ cảnh | ĐỎ | "bấm ĐÚNG chương đang chọn không thành ngõ cụt" |
+| S-5 | bỏ effect đặt lại theo `chuongChon` | ĐỎ | "đổi sang chương KHÁC ở nơi khác" |
+| S-6 | vạch chương bỏ `title` | ĐỎ | 2 bài |
+| S-7 | vạch chương bỏ ký hiệu `●▶○` | ĐỎ | "mỗi vạch mang CẢ ký hiệu lẫn chữ" |
+| S-8 | gộp `null` và `[]` của nhân vật | ĐỎ | "nhân vật null nói khác nhân vật []" |
+| S-9 | tên vùng đổi theo chế độ | ĐỎ | "tên vùng KHÔNG đổi theo chế độ" |
+| S-10 | bỏ nút quay lại | ĐỎ | 4 bài |
+| S-11 | tiền đề không được truyền xuống | ĐỎ | 2 bài |
+| S-12 | hiện CẢ HAI chế độ cùng lúc | ĐỎ | "cột phải vẫn là MỘT cột" |
+
+Hai bài đắt nhất ở đây là S-4 và S-5, và chúng canh cùng một thứ từ hai phía: đường lui
+không được thành ngõ cụt. `chuongChon` do URL giữ, nên bấm lại ĐÚNG chương đang chọn không
+đổi prop nào — nếu chế độ chỉ đặt lại theo prop thì nút trông bấm được mà không phản ứng.
+
+#### Kiểm hình trên trình duyệt thật
+
+Dựng `npm run build:mock`, phục vụ `web/out` tĩnh, mở Chromium qua Playwright.
+Dùng bản mock vì kiểm hình cần dữ liệu có HÌNH DẠNG thật mà không cần engine; E2E trên cuốn
+thật là Task 16 và **không** thay được bằng cái này.
+
+| Việc | Kết quả |
+|---|---|
+| tràn ngang ở 1440×900 | **0** (`documentElement.scrollWidth - clientWidth`) |
+| tràn ngang ở 390×844 | **0** |
+| `.vsthan` cuộn thật ở 1440 | `clientHeight` 185 · `scrollHeight` 719 → **cuộn** |
+| `.vsthan` cuộn thật ở 390 | `clientHeight` 371 · `scrollHeight` 1332 → **cuộn** |
+| tự cuộn bám đáy | `scrollHeight - scrollTop - clientHeight` = **−0,5px** (trong ngưỡng `LE_DAY`) |
+| cuộn lên → nút "về cuối" | hiện; bấm → `scrollTop` 640 = `scrollHeight − clientHeight` 639, nút biến mất |
+| vạch ngăn khi `stream_clear` | 2 lượt · **1** vạch, chữ lượt trước còn nguyên |
+| dưới 1240px cột phải biến mất | `.insp` → `display: none` |
+| dưới 860px dải xếp hai hàng | **2** mốc `top` khác nhau cho ba ô |
+| tương phản AA | **219 phần tử đo được · 0 vi phạm** ở 1440; **263 · 0** ở 390. Thấp nhất 4,66:1 |
+
+Ảnh chụp:
+`/Users/robin/Personal/reclip/VideoCaptionerSystem/.playwright-mcp/buonglai-1440.png` ·
+`/Users/robin/Personal/reclip/VideoCaptionerSystem/.playwright-mcp/buonglai-390.png` ·
+`…/buonglai-1440-ngucanh.png` (cột phải ở chế độ chi tiết chương).
+
+**Phép đo tương phản đầu tiên của tôi VÔ GIÁ TRỊ, và đó là bài học đáng ghi nhất của mục
+này.** Bản đầu đọc `getComputedStyle().color` bằng regex `rgb()`. Chrome trả màu viết bằng
+oklch NGUYÊN DẠNG (`oklch(0.625 0.011 82)`), nên regex không khớp, mọi phần tử bị `continue`,
+và hàm trả về **"0 vi phạm"** — một con số xanh mượt cho một phép đo không đo gì. Cùng lớp
+lỗi với `'y'.repeat(…)` của cụm A và `LE_DAY` của cụm B, chỉ khác là lần này nó nằm trong
+BỘ ĐO chứ trong bộ kiểm. Bản đúng ép màu qua canvas 1×1 rồi đọc pixel, và nó lập tức tìm ra
+9 vi phạm thật.
+
+#### Chỗ kế hoạch sai hoặc thiếu
+
+1. **Lưới của Task 13 (`194px minmax(0,1fr) 312px`, areas `'dai dai dai' / 'trai giua phai'`)
+   không phải lưới của `BuongLai` — đó là lưới ỨNG DỤNG, và nó đã tồn tại.** `.khung` ở
+   `globals.css:99` đã là `194px 1fr 292px` với `'rail canvas insp'`; rail và inspector là
+   anh em của buồng lái trong `page.tsx`, không phải con của nó. Dựng lại `trai`/`phai` bên
+   trong `BuongLai` là dựng cột thứ tư và cột thứ năm. Đã thi hành: `.buonglai` là lưới HAI
+   hàng trong ô `canvas` (`auto minmax(0,1fr)`), và bốn hàng `auto 2fr 1fr auto` nằm ở
+   `.blgiua` — đúng chỗ tỉ lệ 2:1 có nghĩa.
+2. **Spec §7.2 vẽ dải trạng thái trải qua CẢ cột phải (`'rail band band'`); ở đây nó chỉ
+   trải hết cột giữa.** Đưa dải lên tầng `.khung` đòi `page.tsx` phải tự biết bề mặt nào có
+   dải — tức trả lại cho `page.tsx` đúng việc Task 13 vừa lấy đi — và tách luật đổi dải ra
+   khỏi component mang luật đó. Lệch có chủ ý, ghi ở đầu `BuongLai.tsx`.
+3. **Cột phải giữ 292px, KHÔNG lên 312px như spec §7.2.** `dungInspector` chỉ trả `true` cho
+   `dong-san-xuat`, nên con số này chỉ ảnh hưởng buồng lái và đổi nó là an toàn về kỹ thuật.
+   Không đổi vì 292px được SÁU chú thích trong bốn tệp viện dẫn (`DESIGN.md:96`,
+   `globals.css:110`, `page.tsx:66`, `BanDuyet.tsx:18` và `:31`, `KiemDinh.tsx:15`), trong đó
+   hai chú thích ghi phép đo dựa trên chính bề rộng đó ("nó hẹp 292px MÀ vẫn cần tiêu đề
+   riêng"). Đổi một con số để làm sai sáu câu, đổi lấy 20px mà không phép đo nào đòi.
+4. **Task 13 Bước 2 bảo ghi con số 2:1 vào chú thích cạnh `grid-template-rows`, nhưng
+   `grid-template-rows` là CSS, mà bảng tệp xếp `globals.css` vào Task 14.** Đã theo bảng
+   tệp: Task 13 commit phần TSX, Task 14 commit lưới kèm con số. Sau commit Task 13 buồng lái
+   chưa có hình.
+5. **Kế hoạch không nói `Canvas` có một `<div style={{height:8}}/>` ở cuối** kèm chú thích
+   "để hàng cuối bảng không dính vào transport". Lý do vẫn đúng nhưng thứ ở dưới đã đổi (giờ
+   là ô can thiệp ghim đáy, không phải transport), nên nó thành `padding-bottom` của `.blcuon`
+   và chú thích đi theo sang CSS.
+6. **Bộ đo tương phản ban đầu đo nhầm** — xem mục "Kiểm hình" ở trên.
+
+#### Lỗi tìm được ngoài phạm vi kế hoạch
+
+7. **`.blk.done` vi phạm AA, và nó có từ trước cụm này.** `--tren-mau` trên
+   `color-mix(teal 66%, panel)` chỉ đạt **4,0:1** — dưới sàn 4,5:1 của `PRODUCT.md` — và nó
+   hỏng ở CHÍN phần tử cùng lúc (`.ky`/`.idx`/`.txt` của mỗi khối đã xong). Cả hai token lẫn
+   luật đều không đổi ở cụm này; nó chỉ chưa từng được đo. Đã sửa 66% → **72%** (4,66:1), là
+   đúng tỉ lệ mà `.nguoi .hang.h-core` đã dùng cho cùng cặp màu và đạt sàn. Phạm vi ảnh hưởng
+   đúng bằng buồng lái: `.blk` chỉ do `Truc.tsx` vẽ, và `Truc` chỉ do `BuongLai` dựng.
+8. **Ba fixture `web/fixtures/studio-*.json` chưa bao giờ được cập nhật theo hợp đồng của kế
+   hoạch 1/4, và điều đó làm chế độ mock SẬP ngay khi buồng lái được dựng.** Năm trường sống
+   (`agents`, `idle_agents`, `advance`, `context`, `in_progress_chapter`) VẮNG khóa hoàn toàn,
+   nên chúng về `undefined` chứ không `null`, và `DaiTrangThai` — vốn kiểm `=== null` đúng
+   theo hợp đồng — ném `Cannot read properties of undefined (reading 'length')`.
+   **Đường THẬT không bị:** `internal/serve/model.go:227-237` khai bốn trường đầu KHÔNG
+   `omitempty`, nên server luôn phát khóa với giá trị `null`. Đã sửa fixture (Trấn Yêu Ký =
+   engine mở, đo được; hai cuốn kia = engine đóng, `null`) — chọn thế để mock che cả hai
+   nhánh của luật null-khác-rỗng.
+9. **`fixtures/events.json` không có mẩu `stream_delta`/`stream_clear` nào**, nên `dev:mock`
+   hiện một khu văn sống vĩnh viễn trống — tức khu chịu lực nhất của bề mặt mới không xem
+   được nếu không có engine. Đã thêm bốn mục (một `stream_clear` + ba `stream_delta` mang chữ
+   đúng loại mà `sample.gif` đo được: đối số JSON, khế ước tự đối chiếu có ✓, bảng kiểm chất
+   lượng, báo cáo chương). `DongGia` phát chúng qua đúng đường mà `useStudio` nghe.
+10. **Ba nhãn `chuaChonChuongTieuDe`, `chuaChonChuong`, `tabChuaChonChuong` đã hết việc** khi
+    cột phải có hai chế độ. Đã bỏ khóa, GIỮ bài học sinh ra chúng bằng một chú thích tại chỗ
+    và một chú thích ở đầu `Inspector.tsx`.
+11. **Một lần chạy `go test -count=1 ./...` cho 29 gói ok / 3 FAIL.** KHÔNG dựng lại được:
+    bốn lần chạy sau đó đều 30 ok / 0 FAIL, và lần bất thường không bắt được tên gói. Ghi ra
+    để người làm Task 16 biết mà chạy lại thay vì kết luận ngay có hồi quy.
+12. **`web/out` chứa bản MOCK sau khi kiểm hình.** Đã dựng lại bằng `npm run build` (không
+    mock) trước khi commit. Nó bị `.gitignore` bỏ qua nên không vào commit, nhưng Task 16 vẫn
+    nên dựng lại từ đầu.
+
+#### Quyết định tự đưa ra vì kế hoạch không nói
+
+- **`DangLam` được GIỮ, và câu hỏi của cụm C được trả lời bằng một bài kiểm chứ bằng một ý
+  kiến.** Ba lý do, theo thứ tự sức nặng: (1) `dangChay` điều khiển HAI thứ trong
+  `ViecTiepTheo` — câu trạng thái (`trangThai()` có hai nhánh riêng cho ca đang chạy) và khối
+  `DangLam`; bỏ riêng `DangLam` để lại một component phản ứng nửa vời với chính cờ của nó, và
+  bỏ cho sạch thì phải bỏ cả nhánh `dangChay`, tức làm mất luôn thứ bài kiểm hiện có của
+  `BuongLai` ("dải được cho biết máy đang NGHỈ") đang canh. (2) "Không tới được" là tính chất
+  của NGƯỜI GỌI hôm nay, không phải của component; xóa nó là nướng luật đổi dải của `BuongLai`
+  vào một component mà `BuongLai` chỉ tình cờ là người gọi duy nhất. (3) Mã chết đắt vì không
+  ai đo được nó — nên tôi dựng `ViecTiepTheo.test.tsx` và đo nó ở ranh giới CỦA NÓ. Nhánh đó
+  giờ có ba bài kiểm; nó chỉ không có người gọi. Đột biến R-12 xác nhận: bỏ `DangLam` → ĐỎ.
+- **`song` vẫn đi xuyên `BuongLai` mà không quan sát được TỪ ĐÓ.** Cụm C đã thử và kết luận
+  đúng; tôi không lặp lại. Phép đo của nó nằm ở tầng có đường ra màn hình.
+- **Chế độ của cột phải là STATE của `Inspector`, không phải phép bỏ chọn ở `useStudio`.**
+  `chuongChon` do URL giữ (`?ch=`), và đường lui không được xóa nó — tải lại trang phải về
+  đúng chương đang xem. Nút "← danh sách chương" là một chế độ XEM.
+- **`Khu` được export từ `page.tsx`** để bài kiểm gọi thẳng luật định tuyến mà không phải dựng
+  `useStudio` (tức mạng). `Trang` vẫn là cửa duy nhất của ứng dụng.
+- **Ô can thiệp THÔI ghim đáy dưới 860px.** Bản đầu để `position: sticky`. ĐO ĐƯỢC ở 390×844:
+  thanh cao 98px đè lên đáy khu chữ — đúng chỗ chữ mới hiện ra và đúng chỗ tự cuộn vừa kéo
+  tới — giấu 98/371 = 26% chiều cao khu đó. Đổi chỗ nó lên trên khu cuộn thì hết đè nhưng thứ
+  tự DOM lệch thứ tự nhìn thấy, tức thứ tự Tab lệch, mà `PRODUCT.md` xếp bàn phím hạng nhất.
+  Nên nó đi theo dòng chảy.
+- **`.bltruc` có `max-height: 120px` + cuộn riêng.** Kế hoạch gọi đây là "dải trục mảnh ~30px"
+  nhưng `Truc` là widget lane đầy đủ: một cuốn phân tầng cho ba lane cộng chú giải ≈ 171px, và
+  toàn bộ phần thừa đó lấy thẳng từ khu chữ. Trần giữ nguyên mọi lane thay vì cắt bỏ lane nào
+  — bỏ lane tập/cung là bỏ Design Principle 1.
+- **Mọi khối `auto` của buồng lái nén hơn khối cùng loại ở bề mặt khác.** ĐO ĐƯỢC ở 1440×900
+  (cột giữa 802px) với bản chưa nén: đầu trang 55 · dải 124 · cảnh báo 92 · trục 131 · ô can
+  thiệp 143 = 545px, để lại 257px cho hai hàng `fr` — khu chữ được **169px**, đúng 21% chiều
+  cao của một bề mặt tồn tại để xem chữ chảy. Sau khi nén: 458px, khu chữ **229px** (316px ở
+  cuốn không có cảnh báo). Riêng ô can thiệp: 143 → 98 bằng cách xếp tiêu đề và ô nhập trên
+  cùng một hàng.
+- **Câu giải thích của ô can thiệp kẹp HAI dòng, không phải một.** Bản đầu kẹp một dòng và ở
+  1440px nó cắt đúng chỗ đang giải thích vì sao ô nhập bị vô hiệu. `.loiDoc` KHÔNG bị kẹp:
+  câu lỗi bị cắt là thứ `PRODUCT.md` cấm.
+- **Dải `●▶○` của cột phải TRÙNG dữ liệu với lane chương ở cột giữa, và đó là chủ ý:** lane
+  kia vẽ hình dạng cả cuốn theo tỉ lệ, dải này là một danh sách CHỌN ĐƯỢC ngay cạnh chỗ chi
+  tiết sẽ hiện ra.
+- **Thước ngữ cảnh của dải mang vạch đỏ ở mốc 85%**, cùng mốc mà `DESIGN.md` đặt cho thanh
+  transport. Vẽ bằng `background-image` chứ bằng một phần tử: mốc là thuộc tính của cái thước,
+  không phải dữ liệu mà component phải tính rồi truyền xuống.
+- **`Trang` được dựng trong bài kiểm bằng cách thay `useStudio`/`useMay`**, không phải bằng
+  cách giả lập `fetch`: bài kiểm ở tầng đó canh việc NỐI DÂY, và một `useStudio` thật biến nó
+  thành bài kiểm về khả năng giả lập `fetch` + `EventSource` của jsdom.
+
+**Cổng sau Task 15** (chạy toàn bộ trong worktree, không lọc gói, không `-x`):
+`go build` exit 0 · `go vet` exit 0 · `gofmt -l .` rỗng · `go test -count=1 ./...`
+**30 gói ok / 0 FAIL** (đúng nền; xem mục 11 về một lần bất thường không dựng lại được) ·
+`npm test` **91/91** (nền sau cụm C: 62/62) · `tsc --noEmit` exit 0 · `npm run build` exit 0.
