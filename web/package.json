@@ -9,7 +9,9 @@
     "build": "next build",
     "build:mock": "NEXT_PUBLIC_MOCK=1 next build",
     "start": "next start -p 8421",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "next": "16.2.12",
@@ -17,9 +19,14 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "26.1.2",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
-    "typescript": "5.9.3"
+    "@vitejs/plugin-react": "^6.0.5",
+    "jsdom": "^30.0.1",
+    "typescript": "5.9.3",
+    "vitest": "^4.1.10"
   }
 }
