@@ -1335,7 +1335,12 @@
     "arbiter"
   ],
   "pending_steer": "giữ nhịp chậm lại ở cảnh chia tay",
-  "advance": null,
+  "advance": {
+    "mode": "review",
+    "permit_chapter": 46,
+    "hold": true,
+    "hold_reason": "nhịp tụt ở đoạn giữa: ba cảnh liên tiếp cùng một nhịp, và lời thoại của Lục Miên lặp lại ý đã nói ở cảnh thứ hai"
+  },
   "context": {
     "tokens": 52400,
     "window": 128000,

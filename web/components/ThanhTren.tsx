@@ -204,13 +204,22 @@ export function ThanhTren({
         <button
           type="button"
           className="hieunghiemthu"
+          // `aria-label` giữ tên ĐẦY ĐỦ, vì dưới 700px phần chữ hiện ra rút lại thành "Chờ
+          // bạn" để bộ chọn tác phẩm không bị nén mất (xem phép đo ở `nghiemThuChoBanNgan`).
+          // Chép nguyên cách `.nutMoi` xử khi nó rút về một dấu `+`: phần mất là hình, không
+          // phải nghĩa — và tên vùng không đổi theo bề rộng màn hình.
+          aria-label={CHU.nghiemThuChoBan}
           title={GIAI_THICH.nghiemThuHuyHieuDanToi}
           onClick={() => onChonKhu('kiem-dinh')}
         >
           <span className="ky" aria-hidden="true">
             {kyTheoTone('amber')}
           </span>
-          {CHU.nghiemThuChoBan}
+          {/* Hai bản nhãn nằm CẢ HAI trong DOM, CSS chọn bản nào hiện — không có điểm ngắt
+              nào trong JS. Một `matchMedia` ở đây sẽ là bản thứ hai của một con số mà
+              `globals.css` đã giữ, và hai bản của cùng một điểm ngắt thì có ngày lệch. */}
+          <span className="nhan">{CHU.nghiemThuChoBan}</span>
+          <span className="nhanNgan">{CHU.nghiemThuChoBanNgan}</span>
         </button>
       ) : null}
 

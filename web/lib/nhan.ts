@@ -767,8 +767,21 @@ export const CHU = {
   traChuongVeVietLai: (n?: number) =>
     n === undefined ? 'Trả chương đang chờ về viết lại' : `Trả chương ${n} về viết lại`,
   /* Huy hiệu ở thanh trên. Dấu `·` chứ không phải dấu gạch: nó là cùng một dấu nối mà
-     `demTacPham` và các nhãn trạng thái khác của thanh trên đang dùng. */
+     `demTacPham` và các nhãn trạng thái khác của thanh trên đang dùng.
+
+     Bản NGẮN cho dưới 700px, và nó là một phép đo chứ một sở thích. ĐO ĐƯỢC ở 390px: thanh
+     trên còn 330px dùng được (390 trừ đệm 24 và ba khe 36), trong đó bộ chọn tác phẩm đòi
+     76px, nút `+` 27px và huy hiệu kết nối 104px — còn đúng **123px** cho huy hiệu này. Bản
+     đầy đủ cần 194px, và hệ quả đo được là bộ chọn tác phẩm bị nén còn **5px**: tên cuốn
+     đang mở biến mất khỏi màn hình. Đúng cái hỏng mà chú thích của `.slate` đã ghi một lần
+     ("bị nén về bề rộng 0 mà các đốm bên trong vẫn vẽ ra ngoài").
+
+     Giữ vế "chờ bạn" chứ vế "nghiệm thu": vế thứ hai nói CHỦ ĐỀ, còn vế thứ nhất nói cái
+     phải làm — và huy hiệu này tồn tại để nói điều thứ hai đó. Tên đầy đủ vẫn nằm ở
+     `aria-label` và `title`, nên phần mất là hình chứ không phải nghĩa — chép nguyên cách
+     `.nutMoi` đã xử khi nó rút về một dấu `+`. */
   nghiemThuChoBan: 'Nghiệm thu · đang chờ bạn',
+  nghiemThuChoBanNgan: 'Chờ bạn',
 
   // bảng chương
   // "n chương ngoài tập 3" — phép lọc phải nói ra mình đã ẩn bao nhiêu.

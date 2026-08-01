@@ -45,6 +45,29 @@ test('đang chờ nghiệm thu thì thanh trên mang huy hiệu, kèm ký hiệu
   expect(hh.getAttribute('title')).toBe(GIAI_THICH.nghiemThuHuyHieuDanToi);
 });
 
+test('huy hiệu mang CẢ HAI bản nhãn, và tên vùng là bản đầy đủ', () => {
+  // Task 7 rút phần chữ về "Chờ bạn" dưới 700px, và đó là một phép đo: ĐO ĐƯỢC ở 390px, bản
+  // đầy đủ (194px) nén bộ chọn tác phẩm còn 5px — tên cuốn đang mở biến mất khỏi thanh trên.
+  // Ngân sách thật ở đó là 123px; bản ngắn cho 83px và bộ chọn về 116px.
+  //
+  // jsdom KHÔNG bố cục nên nó không có điểm ngắt, không có bề rộng, và bài này KHÔNG chứng
+  // minh được điều gì về hình. Nó canh đúng hai thứ mà DOM giữ được, và cả hai đều đã hỏng
+  // được trong thực tế:
+  //  - cả hai bản nhãn CÓ MẶT (xóa bản ngắn thì dưới 700px huy hiệu chỉ còn một hình vuông
+  //    amber vô danh, và không phép đo nào ngoài bài này chạm tới);
+  //  - `aria-label` là bản ĐẦY ĐỦ, nên tên vùng KHÔNG đổi theo bề rộng màn hình — cùng luật
+  //    đã ghi cho `vttVung`/`vanSongVung`, và cùng cách `.nutMoi` giữ nghĩa khi rút về `+`.
+  ve({ cuaNghiemThu: trangThaiCua({ mode: 'review', hold: true, permit_chapter: 8 }) });
+
+  const hh = screen.getByRole('button', { name: CHU.nghiemThuChoBan });
+  expect(hh.getAttribute('aria-label')).toBe(CHU.nghiemThuChoBan);
+  expect(hh.querySelector('.nhan')!.textContent).toBe(CHU.nghiemThuChoBan);
+  expect(hh.querySelector('.nhanNgan')!.textContent).toBe(CHU.nghiemThuChoBanNgan);
+  // Bản ngắn phải là một câu KHÁC, không phải cùng chuỗi đặt hai lần: hai bản giống nhau thì
+  // điểm ngắt không tiết kiệm được pixel nào, và bài kiểm vẫn xanh.
+  expect(CHU.nghiemThuChoBanNgan).not.toBe(CHU.nghiemThuChoBan);
+});
+
 test('KHÔNG chờ thì không có huy hiệu — cả ba ca không-chờ', () => {
   // Một huy hiệu amber thường trực trên thanh trên là một cảnh báo giả ở chỗ đắt nhất màn
   // hình: thanh trên là thứ người vận hành ngó vào để biết "còn cái nào đang chạy không".
