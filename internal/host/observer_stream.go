@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/voocel/agentcore"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/utils"
 )
 
@@ -141,7 +142,7 @@ func streamHeaderFallback(tool string) string {
 	label := tool
 	switch tool {
 	case "ask_user":
-		label = "向用户提问"
+		label = i18n.F("向用户提问")
 	}
 	return "✻ " + label
 }

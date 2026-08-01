@@ -1,0 +1,60 @@
+{
+  "characters": [
+    {
+      "name": "Lâm Thanh",
+      "aliases": [
+        "người gác cầu",
+        "ông Thanh"
+      ],
+      "role": "nhân vật chính",
+      "description": "Gác cầu đá dưới chân Hàn Sơn mười bảy năm. Giữ ba điều không làm như giữ một cái nghề, không phải như giữ một niềm tin.",
+      "arc": "Từ người canh giữ ranh giới trở thành người bước qua nó.",
+      "traits": [
+        "điềm tĩnh đến mức khó chịu",
+        "nghe trước khi nhìn",
+        "không chịu nợ ai"
+      ],
+      "tier": "core"
+    },
+    {
+      "name": "Người ướt",
+      "aliases": [
+        "kẻ đưa thư"
+      ],
+      "role": "phản đề",
+      "description": "Ngồi trên đá khô mà tóc nhỏ nước. Không nói quá ba câu mỗi lần xuất hiện.",
+      "arc": "Chưa mở.",
+      "traits": [
+        "giọng khô như đá",
+        "biết trước điều người khác sẽ làm"
+      ],
+      "tier": "core"
+    },
+    {
+      "name": "Hà Uyển Nhi",
+      "aliases": [
+        "Nhi"
+      ],
+      "role": "phụ trợ",
+      "description": "Con gái người thợ đúc chuông cuối cùng của Hàn Sơn, giữ bản vẽ khuôn chuông thứ tư.",
+      "arc": "Từ chỗ che giấu bản vẽ đến chỗ dùng nó.",
+      "traits": [
+        "nói nhanh",
+        "đếm giỏi",
+        "không tin chuyện chuông gọi tên"
+      ],
+      "tier": "important"
+    },
+    {
+      "name": "Trưởng lão Vệ",
+      "role": "đối kháng",
+      "description": "Giữ lệ làng về ba tiếng chuông; coi tiếng thứ tư là điều phải bị chôn.",
+      "arc": "Chưa mở.",
+      "traits": [
+        "dùng lệ thay lý"
+      ],
+      "tier": "secondary"
+    }
+  ],
+  "snapshots": null
+}

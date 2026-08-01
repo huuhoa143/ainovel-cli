@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/voocel/ainovel-cli/internal/host"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 func TestAdvanceCommandsAreRegistered(t *testing.T) {
@@ -33,7 +34,7 @@ func TestReviewWaitingPlaceholder(t *testing.T) {
 		},
 	}
 	m.syncRuntimePlaceholder()
-	if got := m.textarea.Placeholder; !strings.Contains(got, "/next") || !strings.Contains(got, "修改意见") {
+	if got := m.textarea.Placeholder; !strings.Contains(got, "/next") || !strings.Contains(got, i18n.F("逐章验收等待中：输入修改意见，或 /next 放行下一章")) {
 		t.Fatalf("review placeholder should expose both choices, got %q", got)
 	}
 }

@@ -11,7 +11,7 @@ import (
 )
 
 func TestSimulationContractsAreStrictReady(t *testing.T) {
-	for _, contract := range []llmcontract.Contract{sourceReportContract, synthesisContract} {
+	for _, contract := range []llmcontract.Contract{sourceReportContract(), synthesisContract()} {
 		if err := llmcontract.ValidateStrictReady(contract.Schema); err != nil {
 			t.Fatalf("%s: %v", contract.Name, err)
 		}
@@ -52,7 +52,7 @@ func TestAnalyzeSourceUsesNativeSchema(t *testing.T) {
 		t.Fatal("summary 为空")
 	}
 	format := model.config.ResponseFormat
-	if format == nil || format.JSONSchema == nil || format.JSONSchema.Name != sourceReportContract.Name {
+	if format == nil || format.JSONSchema == nil || format.JSONSchema.Name != sourceReportContract().Name {
 		t.Fatalf("response format = %#v", format)
 	}
 	if strings.Contains(model.messages[0].TextContent(), "<output-json-schema>") {

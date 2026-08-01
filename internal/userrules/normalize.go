@@ -14,8 +14,10 @@ import (
 	"log/slog"
 	"strings"
 
+	"errors"
 	"github.com/voocel/agentcore"
 	"github.com/voocel/agentcore/schema"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/llmcontract"
 	"github.com/voocel/ainovel-cli/internal/rules"
 )
@@ -27,22 +29,35 @@ const normalizeMaxTokens = 8192
 
 // normalizeContract 紧邻边界 DTO：全字段 required、fatigue_words 用对象数组
 // （strict 模式禁止动态 key 的 map），两种模式共用同一 DTO 约定。
-var normalizeContract = llmcontract.Contract{
-	Name:        "userrules_normalize",
-	Description: "把用户自然语言写作规则归一化为结构化字段",
-	Schema: schema.Object(
-		schema.Property("structured", schema.Object(
-			schema.Property("genre", schema.String("题材;无则空字符串")).Required(),
-			schema.Property("forbidden_chars", schema.Array("禁止出现的字符", schema.String("字符"))).Required(),
-			schema.Property("forbidden_phrases", schema.Array("禁止出现的短语(字面精确匹配)", schema.String("短语"))).Required(),
-			schema.Property("fatigue_words", schema.Array("疲劳词及每章出现上限", schema.Object(
-				schema.Property("word", schema.String("疲劳词")).Required(),
-				schema.Property("max_per_chapter", schema.Int("每章出现次数上限(正整数)")).Required(),
-			))).Required(),
-		)).Required(),
-		schema.Property("preferences", schema.String("自然语言风格/人物/审美偏好;无则空字符串")).Required(),
-		schema.Property("uncertain", schema.Array("故意未提升到 structured 的项+原因", schema.String("条目"))).Required(),
-	),
+//
+// Là FUNC, không phải var — dù nội dung tĩnh. Lý do: mô tả schema đi qua i18n.F,
+// và khởi tạo biến cấp gói chạy TRƯỚC mọi init() của Go. Để ở dạng var thì bản
+// dịch bị chốt theo locale lúc nạp package: test ghim locale
+// (i18n_locale_pin_test.go) không tác dụng, và một lệnh đổi ngôn ngữ lúc chạy sẽ
+// không đổi được mô tả gửi cho LLM. Bọc thành func để bản dịch được đọc lúc DÙNG.
+//
+// Chi phí dựng lại schema mỗi lần gọi là không đáng kể: chỗ dùng là Normalize —
+// một lần cho mỗi nguồn quy tắc, đi kèm một request LLM. Đây là công cụ chạy một
+// lần lúc khởi động sách, không phải vòng lặp nóng. KHÔNG cache bằng sync.Once —
+// cache chính là cái bug đang sửa.
+func normalizeContract() llmcontract.Contract {
+	return llmcontract.Contract{
+		Name:        "userrules_normalize",
+		Description: i18n.F("把用户自然语言写作规则归一化为结构化字段"),
+		Schema: schema.Object(
+			schema.Property("structured", schema.Object(
+				schema.Property("genre", schema.String(i18n.F("题材;无则空字符串"))).Required(),
+				schema.Property("forbidden_chars", schema.Array(i18n.F("禁止出现的字符"), schema.String(i18n.F("字符")))).Required(),
+				schema.Property("forbidden_phrases", schema.Array(i18n.F("禁止出现的短语(字面精确匹配)"), schema.String(i18n.F("短语")))).Required(),
+				schema.Property("fatigue_words", schema.Array(i18n.F("疲劳词及每章出现上限"), schema.Object(
+					schema.Property("word", schema.String(i18n.F("疲劳词"))).Required(),
+					schema.Property("max_per_chapter", schema.Int(i18n.F("每章出现次数上限(正整数)"))).Required(),
+				))).Required(),
+			)).Required(),
+			schema.Property("preferences", schema.String(i18n.F("自然语言风格/人物/审美偏好;无则空字符串"))).Required(),
+			schema.Property("uncertain", schema.Array(i18n.F("故意未提升到 structured 的项+原因"), schema.String(i18n.F("条目")))).Required(),
+		),
+	}
 }
 
 // Normalizer 把单个来源的自然语言规则归一化成 rules.Candidate。
@@ -69,12 +84,16 @@ func (n *Normalizer) Normalize(ctx context.Context, source, text string) (rules.
 		return rules.Candidate{Source: source}, nil
 	}
 	if n == nil || n.model == nil {
-		return rules.Candidate{}, fmt.Errorf("归一化模型未配置")
+		return rules.Candidate{}, errors.New(i18n.F("归一化模型未配置"))
 	}
 
+	// Dựng contract MỘT lần cho lượt gọi này rồi dùng lại trong các hook: vẫn là
+	// đọc bản dịch lúc dùng (mỗi lần Normalize đọc lại), nhưng không dựng lại
+	// schema ba lần cho cùng một request.
+	contract := normalizeContract()
 	out, err := llmcontract.Execute(ctx, n.model, llmcontract.Request[normalizerOutput]{
-		Contract:     normalizeContract,
-		SystemPrompt: normalizerSystemPrompt,
+		Contract:     contract,
+		SystemPrompt: normalizerSystemPrompt(),
 		Payload:      text,
 		Options:      []agentcore.CallOption{agentcore.WithMaxTokens(normalizeMaxTokens)},
 		Validate: func(out *normalizerOutput) error {
@@ -84,19 +103,19 @@ func (n *Normalizer) Normalize(ctx context.Context, source, text string) (rules.
 		Agent: "rules",
 		Hooks: llmcontract.Hooks{
 			Resolved: func(res llmcontract.Resolution) {
-				slog.Debug("规则归一化协议选择", "module", "rules", "source", source,
-					"contract", normalizeContract.Name, "structured_mode", res.Mode,
+				slog.Debug(i18n.F("规则归一化协议选择"), "module", "rules", "source", source,
+					"contract", contract.Name, "structured_mode", res.Mode,
 					"capability_source", res.Source, "provider", res.Provider, "model", res.Model,
-					"schema_fingerprint", normalizeContract.Fingerprint())
+					"schema_fingerprint", contract.Fingerprint())
 			},
 			Correction: func(ev llmcontract.Correction) {
-				slog.Warn("规则归一化输出自愈", "module", "rules", "source", source,
+				slog.Warn(i18n.F("规则归一化输出自愈"), "module", "rules", "source", source,
 					"attempt", ev.Attempt, "layer", ev.Layer, "structured_mode", ev.Mode, "err", ev.Err)
 			},
 		},
 	})
 	if err != nil {
-		return rules.Candidate{}, fmt.Errorf("归一化失败: %w", err)
+		return rules.Candidate{}, fmt.Errorf(i18n.F("归一化失败: %w"), err)
 	}
 	return out.toCandidate(source)
 }
@@ -107,7 +126,7 @@ func degraded(source, text string) rules.Candidate {
 	return rules.Candidate{
 		Source:      source,
 		Preferences: text,
-		Uncertain:   []string{source + "：归一化失败，已按原文作为风格偏好处理（未提炼机械规则）"},
+		Uncertain:   []string{source + i18n.F("：归一化失败，已按原文作为风格偏好处理（未提炼机械规则）")},
 		Degraded:    true,
 	}
 }
@@ -139,10 +158,10 @@ func (o normalizerOutput) toCandidate(source string) (rules.Candidate, error) {
 	for _, e := range o.Structured.FatigueWords {
 		word := strings.TrimSpace(e.Word)
 		if word == "" {
-			return rules.Candidate{}, fmt.Errorf("fatigue_words 含空词条目")
+			return rules.Candidate{}, errors.New(i18n.F("fatigue_words 含空词条目"))
 		}
 		if e.MaxPerChapter < 1 {
-			return rules.Candidate{}, fmt.Errorf("fatigue_words[%q].max_per_chapter 必须是正整数, got %d", word, e.MaxPerChapter)
+			return rules.Candidate{}, fmt.Errorf(i18n.F("fatigue_words[%q].max_per_chapter 必须是正整数, got %d"), word, e.MaxPerChapter)
 		}
 		if fatigue == nil {
 			fatigue = make(map[string]int, len(o.Structured.FatigueWords))
@@ -172,9 +191,10 @@ func nonEmpty(in []string) []string {
 	return out
 }
 
-// normalizerSystemPrompt 只描述归一化语义，输出结构由 normalizeContract 单点维护。
+// normalizerSystemPrompt() 只描述归一化语义，输出结构由 normalizeContract 单点维护。
 // 已用 10 条真实例子（含阈值发明陷阱）验证保守提升成立（10/10）。
-const normalizerSystemPrompt = `你是 AI 小说写作系统的「规则归一化器」。你读取用户某一个来源的长期写作规则（自然语言），把明确且可机械检查的规则提升到 structured，其余内容归入 preferences 或 uncertain。
+func normalizerSystemPrompt() string {
+	return i18n.F(`你是 AI 小说写作系统的「规则归一化器」。你读取用户某一个来源的长期写作规则（自然语言），把明确且可机械检查的规则提升到 structured，其余内容归入 preferences 或 uncertain。
 
 【保守提升——最重要】
 - 只有用户明确、无歧义时才写入 structured。
@@ -185,4 +205,5 @@ const normalizerSystemPrompt = `你是 AI 小说写作系统的「规则归一�
 - 原则:宁可漏进 structured,也不要错误提升(那会每章误报)。
 
 preferences 用一段可读的自然语言保留风格、人物与审美偏好。
-uncertain 说明你故意没有提升到 structured 的项目及原因。`
+uncertain 说明你故意没有提升到 structured 的项目及原因。`)
+}

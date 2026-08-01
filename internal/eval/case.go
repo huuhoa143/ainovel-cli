@@ -10,7 +10,9 @@ package eval
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -61,19 +63,19 @@ type Gate struct {
 // Validate 校验 case 必填字段。
 func (c *Case) Validate() error {
 	if strings.TrimSpace(c.ID) == "" {
-		return fmt.Errorf("case 缺少 id")
+		return errors.New(i18n.F("case 缺少 id"))
 	}
 	if !caseIDPattern.MatchString(c.ID) {
-		return fmt.Errorf("case id 非法 %q：仅允许小写字母/数字/下划线/连字符，且不含路径字符", c.ID)
+		return fmt.Errorf(i18n.F("case id 非法 %q：仅允许小写字母/数字/下划线/连字符，且不含路径字符"), c.ID)
 	}
 	if strings.TrimSpace(c.Prompt) == "" {
-		return fmt.Errorf("case %q 缺少 prompt", c.ID)
+		return fmt.Errorf(i18n.F("case %q 缺少 prompt"), c.ID)
 	}
 	if c.Gate.MaxSeverity == "" {
 		c.Gate.MaxSeverity = "warning"
 	}
 	if !validSeverity(c.Gate.MaxSeverity) {
-		return fmt.Errorf("case %q 的 gate.max_severity 非法: %s", c.ID, c.Gate.MaxSeverity)
+		return fmt.Errorf(i18n.F("case %q 的 gate.max_severity 非法: %s"), c.ID, c.Gate.MaxSeverity)
 	}
 	if c.Gate.MaxCostDeltaRatio == nil {
 		c.Gate.MaxCostDeltaRatio = float64Ptr(defaultDeltaRatio)
@@ -85,7 +87,7 @@ func (c *Case) Validate() error {
 		c.Gate.StylestatRegression = "warn"
 	}
 	if !validStylestatGate(c.Gate.StylestatRegression) {
-		return fmt.Errorf("case %q 的 gate.stylestat_regression 非法: %s", c.ID, c.Gate.StylestatRegression)
+		return fmt.Errorf(i18n.F("case %q 的 gate.stylestat_regression 非法: %s"), c.ID, c.Gate.StylestatRegression)
 	}
 	return nil
 }
@@ -134,13 +136,13 @@ func LoadCases(path string) ([]Case, error) {
 			return nil, err
 		}
 		if prev, dup := seen[c.ID]; dup {
-			return nil, fmt.Errorf("case id 重复: %q（%s 与 %s）", c.ID, prev, f)
+			return nil, fmt.Errorf(i18n.F("case id 重复: %q（%s 与 %s）"), c.ID, prev, f)
 		}
 		seen[c.ID] = f
 		cases = append(cases, c)
 	}
 	if len(cases) == 0 {
-		return nil, fmt.Errorf("未找到任何 case: %s", path)
+		return nil, fmt.Errorf(i18n.F("未找到任何 case: %s"), path)
 	}
 	sort.Slice(cases, func(i, j int) bool { return cases[i].ID < cases[j].ID })
 	return cases, nil
@@ -155,7 +157,7 @@ func loadCaseFile(path string) (Case, error) {
 	dec := json.NewDecoder(strings.NewReader(string(data)))
 	dec.DisallowUnknownFields() // 拼错字段直接报错，避免静默忽略
 	if err := dec.Decode(&c); err != nil {
-		return Case{}, fmt.Errorf("解析 case %s: %w", path, err)
+		return Case{}, fmt.Errorf(i18n.F("解析 case %s: %w"), path, err)
 	}
 	if err := c.Validate(); err != nil {
 		return Case{}, err

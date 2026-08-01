@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ainovel studio — Hướng D: Xưởng sản xuất truyện</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Serif:opsz,wght@8..144,400&display=swap" rel="stylesheet">
+<style>
+/* ── Hướng D: XƯỞNG SẢN XUẤT TRUYỆN ─────────────────────────────────────
+   Không phải bảng theo dõi cỗ máy, cũng không phải chỗ đọc sách. Đây là sàn
+   sản xuất: nhiều tác phẩm trong dây chuyền, công đoạn nhìn thấy được, tổ sản
+   xuất có phân vai, cửa kiểm định, năng suất và giá thành.
+
+   Vì sao mô hình này khớp: Tập → Cung → Chương vốn đã là một cấp bậc sản xuất,
+   đúng như Act → Sequence → Shot của phim. Nên bố cục lấy quy ước của công cụ
+   dựng phim / DAW, thứ mà người làm nghề đã quen:
+
+     thanh trên      = chọn tác phẩm (hàm ý xưởng có nhiều đầu việc)
+     rail trái       = các khu vực sản xuất
+     canvas giữa     = dòng sản xuất dạng lane + bảng chương
+     inspector phải  = chi tiết đơn vị đang chọn
+     transport dưới  = trạng thái máy, năng suất, giá thành — luôn hiện
+
+   Bản sắc màu kế thừa TUI (vàng #b8860b/#e5b449, lam-lục #5fb8a3) nhưng hạ
+   chroma ở bề mặt: công cụ chuyên nghiệp để màu cho DỮ LIỆU, không cho khung.
+   Vàng chỉ dùng cho "đang chạy" và tiêu điểm — một tín hiệu, không rải khắp.
+
+   Nhãn panel viết thường, KHÔNG dùng chữ hoa giãn cách. Chữ hoa nhỏ giãn rộng
+   trên mọi khối là bộ khung mặc định của AI; ở đây nhãn là chức năng, không
+   phải trang trí.
+   -------------------------------------------------------------------- */
+:root {
+  --bg:      oklch(0.155 0.008 74);
+  --panel:   oklch(0.185 0.009 74);
+  --panel-2: oklch(0.215 0.010 74);
+  --raised:  oklch(0.245 0.011 74);
+  --line:    oklch(0.275 0.010 74);
+  --line-2:  oklch(0.225 0.009 74);
+
+  --ink:     oklch(0.945 0.010 82);   /* 16.1:1 */
+  --ink-2:   oklch(0.755 0.012 82);   /* 8.2:1  */
+  --ink-3:   oklch(0.625 0.011 82);   /* 4.9:1  — nhãn nhỏ vẫn vượt ngưỡng */
+
+  --gold:    oklch(0.805 0.128 80);
+  --teal:    oklch(0.755 0.085 176);
+  --amber:   oklch(0.785 0.125 62);
+  --red:     oklch(0.705 0.155 25);
+  --violet:  oklch(0.745 0.095 300);
+  --slate:   oklch(0.60 0.020 250);
+
+  --ui:    "Inter", ui-sans-serif, system-ui, sans-serif;
+  --mono:  "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --serif: "Noto Serif", ui-serif, Georgia, serif;
+
+  --r: 5px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --z-sticky: 10; --z-pop: 30; --z-tip: 40;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 400 13px/1.5 var(--ui);
+  -webkit-font-smoothing: antialiased;
+  display: grid;
+  grid-template-rows: 44px 1fr 30px;
+  grid-template-columns: 194px 1fr 292px;
+  grid-template-areas: "bar bar bar" "rail canvas insp" "trans trans trans";
+}
+@media (max-width: 1240px) { body { grid-template-columns: 194px 1fr; grid-template-areas: "bar bar" "rail canvas" "trans trans"; } .insp { display: none } }
+@media (max-width: 860px)  { body { grid-template-columns: 1fr; grid-template-areas: "bar" "canvas" "trans"; } .rail { display: none } }
+
+/* ══ thanh trên: chọn tác phẩm ══════════════════════════════════════ */
+.bar {
+  grid-area: bar; display: flex; align-items: center; gap: 12px;
+  padding: 0 12px; background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.logo { font: 600 13px/1 var(--ui); letter-spacing: -0.01em; padding-right: 4px; }
+.logo em { font-style: normal; color: var(--ink-3); font-weight: 400; }
+
+/* bộ chọn tác phẩm — hàm ý xưởng đang chạy nhiều đầu việc cùng lúc */
+.picker {
+  display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 9px;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--r);
+  cursor: pointer; transition: background .16s var(--ease);
+}
+.picker:hover { background: var(--raised); }
+.picker:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.picker b { font-weight: 500; }
+.picker .meta { color: var(--ink-3); font: 400 11.5px var(--mono); }
+.picker .chev { color: var(--ink-3); font-size: 9px; }
+.slate { display: flex; align-items: center; gap: 5px; color: var(--ink-3); font-size: 11.5px; }
+.slate i { width: 5px; height: 5px; border-radius: 1px; background: var(--teal); }
+.slate i.run { background: var(--gold); }
+.slate i.idle { background: var(--line); }
+
+.bar .right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.kbd {
+  font: 400 11px var(--mono); color: var(--ink-3);
+  border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px;
+}
+
+/* ══ rail trái: khu vực sản xuất ════════════════════════════════════ */
+.rail { grid-area: rail; background: var(--panel); border-right: 1px solid var(--line); padding: 10px 8px; overflow-y: auto; }
+.rail .grp { font: 500 10.5px/1 var(--ui); color: var(--ink-3); padding: 12px 8px 7px; }
+.rail a {
+  display: flex; align-items: center; gap: 9px; padding: 6px 8px; border-radius: var(--r);
+  color: var(--ink-2); text-decoration: none; font-size: 12.5px;
+  transition: background .14s var(--ease), color .14s var(--ease);
+}
+.rail a:hover { background: var(--panel-2); color: var(--ink); }
+.rail a:focus-visible { outline: 2px solid var(--gold); outline-offset: -1px; }
+.rail a[aria-current] { background: var(--panel-2); color: var(--ink); font-weight: 500; }
+.rail a .g { width: 14px; text-align: center; color: var(--ink-3); font-size: 12px; }
+.rail a[aria-current] .g { color: var(--gold); }
+.rail a .n { margin-left: auto; font: 400 11px var(--mono); color: var(--ink-3); }
+.rail a .n.warn { color: var(--amber); }
+
+/* ══ canvas: dòng sản xuất ══════════════════════════════════════════ */
+.canvas { grid-area: canvas; overflow-y: auto; }
+.head {
+  display: flex; align-items: baseline; gap: 10px; padding: 15px 18px 11px;
+  border-bottom: 1px solid var(--line-2);
+}
+.head h1 { font: 600 14.5px/1 var(--ui); margin: 0; letter-spacing: -0.01em; }
+.head .sub { color: var(--ink-3); font-size: 12px; }
+.head .seg { margin-left: auto; display: flex; background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.head .seg button {
+  background: none; border: 0; color: var(--ink-3); font: 400 12px var(--ui);
+  padding: 5px 11px; cursor: pointer; transition: background .14s var(--ease), color .14s var(--ease);
+}
+.head .seg button:hover { color: var(--ink); }
+.head .seg button[aria-pressed="true"] { background: var(--raised); color: var(--ink); font-weight: 500; }
+
+.sect { padding: 16px 18px; border-bottom: 1px solid var(--line-2); }
+.sect > h2 { font: 500 11.5px/1 var(--ui); color: var(--ink-3); margin: 0 0 12px; }
+
+/* ── lane sản xuất: tập → cung → chương, một trục thời gian ── */
+.lanes { display: grid; grid-template-columns: 74px 1fr; gap: 3px 12px; align-items: center; }
+.lane-lbl { font: 400 11.5px var(--ui); color: var(--ink-3); text-align: right; }
+.lane { display: flex; gap: 3px; height: 24px; }
+.blk {
+  border-radius: 3px; display: flex; align-items: center; justify-content: center;
+  font: 500 10.5px var(--mono); color: oklch(0.20 0.02 74); overflow: hidden; white-space: nowrap;
+  border: 1px solid transparent;
+}
+.blk.done    { background: color-mix(in oklch, var(--teal) 66%, var(--panel)); }
+.blk.now     { background: var(--gold); }
+.blk.plan    { background: var(--panel-2); color: var(--ink-3); border-color: var(--line); }
+.blk.unplan  { background: repeating-linear-gradient(135deg, var(--panel-2) 0 4px, var(--panel) 4px 8px);
+               color: var(--ink-3); border-color: var(--line-2); }
+.blk.qc      { background: color-mix(in oklch, var(--amber) 72%, var(--panel)); }
+
+/* lane chương: 1 vạch = 1 chương, đủ mảnh để chứa cả tập */
+.chlane { display: flex; gap: 1.5px; height: 20px; }
+.chlane i { flex: 1 1 0; border-radius: 1.5px; background: var(--panel-2); position: relative; }
+.chlane i.done { background: color-mix(in oklch, var(--teal) 62%, var(--panel)); }
+.chlane i.now  { background: var(--gold); }
+.chlane i.qc   { background: color-mix(in oklch, var(--amber) 68%, var(--panel)); }
+.chlane i.gate { background: var(--violet); }
+
+.ruler { display: flex; margin-top: 5px; font: 400 10px var(--mono); color: var(--ink-3); }
+.ruler span { flex: 1 1 0; }
+.ruler span + span { text-align: center; }
+.ruler span:last-child { text-align: right; }
+
+.keys { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 11px; font-size: 11.5px; color: var(--ink-3); }
+.keys b { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+
+/* ── bảng chương: nơi làm việc thật, số liệu canh phải, đơn cách ── */
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+thead th {
+  text-align: left; font: 500 11px/1 var(--ui); color: var(--ink-3);
+  padding: 0 10px 8px; border-bottom: 1px solid var(--line-2); white-space: nowrap;
+}
+thead th.num { text-align: right; }
+tbody td { padding: 7px 10px; border-bottom: 1px solid var(--line-2); vertical-align: baseline; }
+tbody tr { transition: background .12s var(--ease); }
+tbody tr:hover { background: var(--panel); }
+tbody tr[aria-selected="true"] { background: var(--panel-2); }
+tbody tr[aria-selected="true"] td:first-child { box-shadow: inset 1px 0 0 var(--gold); }
+td.ch { font: 500 12px var(--mono); color: var(--ink-2); width: 46px; }
+td.title { font-weight: 400; }
+td.title .draft { color: var(--ink-3); font-style: italic; }
+td.num { text-align: right; font: 400 12px var(--mono); color: var(--ink-2); white-space: nowrap; }
+td.who { color: var(--ink-2); font-size: 12px; }
+
+.st { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.st i { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+.st.done  { color: var(--teal); }   .st.done i  { background: var(--teal); }
+.st.run   { color: var(--gold); }   .st.run i   { background: var(--gold); animation: bl 2.2s var(--ease) infinite; }
+.st.qc    { color: var(--amber); }  .st.qc i    { background: var(--amber); }
+.st.wait  { color: var(--ink-3); }  .st.wait i  { background: var(--line); }
+@keyframes bl { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+
+/* ══ inspector phải ═════════════════════════════════════════════════ */
+.insp { grid-area: insp; background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; }
+.insp .ihead { padding: 13px 14px 11px; border-bottom: 1px solid var(--line-2); }
+.insp .ihead .no { font: 400 11px var(--mono); color: var(--ink-3); }
+.insp .ihead h2 { font: 500 14px/1.3 var(--ui); margin: 4px 0 6px; letter-spacing: -0.01em; }
+.tabs { display: flex; gap: 2px; padding: 8px 10px 0; border-bottom: 1px solid var(--line-2); }
+.tabs button {
+  background: none; border: 0; border-bottom: 1.5px solid transparent; color: var(--ink-3);
+  font: 400 12px var(--ui); padding: 6px 9px; cursor: pointer; transition: color .14s var(--ease);
+}
+.tabs button:hover { color: var(--ink-2); }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--gold); font-weight: 500; }
+
+.ibody { padding: 13px 14px; }
+.ibody h3 { font: 500 11px/1 var(--ui); color: var(--ink-3); margin: 0 0 9px; }
+/* h3 nào không phải cái đầu tiên cũng cần khoảng thở, không chỉ h3 liền h3:
+   ở đây h3 đi sau <dl> nên bộ chọn h3+h3 không với tới, kết quả là nhãn nhóm
+   dính sát giá trị cuối của nhóm trên. */
+.ibody h3:not(:first-child) { margin-top: 20px; }
+/* 82px không đủ cho nhãn tiếng Việt — "Nhịp bắt buộc" bị ngắt hai dòng. Nhãn
+   tiếng Việt thường dài hơn tiếng Anh 20-30% nên cột nhãn phải rộng hơn phản xạ. */
+.kv { display: grid; grid-template-columns: 104px 1fr; gap: 6px 10px; margin: 0 0 4px; font-size: 12.5px; }
+.kv dt { color: var(--ink-3); }
+.kv dd { margin: 0; color: var(--ink); }
+.kv dd.m { font: 400 12px var(--mono); }
+
+/* kiểm định 7 chiều: hàng mảnh có kết luận, không phải thẻ điểm */
+.qcrow { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line-2); font-size: 12.5px; }
+.qcrow:last-of-type { border-bottom: 0; }
+.qcrow .v { font-size: 12px; }
+.qcrow .v.pass { color: var(--teal); }
+.qcrow .v.fail { color: var(--amber); }
+.qcnote { margin: 4px 0 0; font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+.qcnote q { font-family: var(--serif); font-style: italic; color: var(--ink-2); }
+
+.excerpt {
+  margin: 0; padding: 11px 12px; background: var(--bg); border: 1px solid var(--line-2);
+  border-radius: var(--r); font: 400 13px/1.72 var(--serif); color: var(--ink-2);
+}
+
+/* ── nhật ký phán quyết: mỗi phán quyết của Arbiter đều落盘 và replay được,
+      nên xưởng phải xem lại được "vì sao máy quyết như vậy" ── */
+.log { display: grid; gap: 0; }
+.entry {
+  display: grid; grid-template-columns: 58px 118px 1fr auto; gap: 12px;
+  padding: 8px 10px; border-bottom: 1px solid var(--line-2); align-items: baseline; font-size: 12.5px;
+}
+.entry:hover { background: var(--panel); }
+.entry time { font: 400 11.5px var(--mono); color: var(--ink-3); }
+.entry .kind { font: 400 11.5px var(--mono); }
+.entry .kind.plan   { color: var(--violet); }
+.entry .kind.steer  { color: var(--teal); }
+.entry .kind.fail   { color: var(--red); }
+.entry .kind.gate   { color: var(--amber); }
+.entry .why { color: var(--ink-2); }
+.entry .why b { color: var(--ink); font-weight: 500; }
+.entry .replay {
+  font: 400 11.5px var(--ui); color: var(--ink-3); background: none; border: 1px solid var(--line-2);
+  border-radius: 4px; padding: 2px 8px; cursor: pointer; white-space: nowrap;
+  transition: color .14s var(--ease), border-color .14s var(--ease);
+}
+.entry .replay:hover { color: var(--ink); border-color: var(--line); }
+.entry .replay:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+/* ── ô can thiệp: người vận hành nói vào dây chuyền đang chạy ── */
+.steerbox { display: flex; gap: 9px; }
+.steerbox input {
+  flex: 1; background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 8px 11px; color: var(--ink); font: 400 13px var(--ui);
+}
+.steerbox input::placeholder { color: var(--ink-3); }
+.steerbox input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; border-color: transparent; }
+.steerbox button {
+  background: var(--gold); color: oklch(0.19 0.02 74); border: 0; border-radius: var(--r);
+  padding: 8px 15px; font: 500 12.5px var(--ui); cursor: pointer; white-space: nowrap;
+  transition: filter .16s var(--ease);
+}
+.steerbox button:hover { filter: brightness(1.07); }
+.steerhint { margin: 8px 0 0; font-size: 11.5px; color: var(--ink-3); }
+
+/* ══ transport dưới: trạng thái máy luôn hiện, như DAW ══════════════ */
+.trans {
+  grid-area: trans; display: flex; align-items: center; gap: 0;
+  background: var(--panel); border-top: 1px solid var(--line);
+  font: 400 11.5px var(--ui); color: var(--ink-2); padding: 0 4px;
+}
+.trans .cell { display: flex; align-items: center; gap: 7px; padding: 0 11px; height: 100%; border-right: 1px solid var(--line-2); }
+.trans .cell:last-child { border-right: 0; }
+.trans .cell.push { margin-left: auto; border-right: 0; }
+.trans .m { font: 500 11.5px var(--mono); color: var(--ink); }
+.trans .lbl { color: var(--ink-3); }
+.play { color: var(--gold); font-size: 10px; }
+.trans .warn { color: var(--amber); }
+
+/* thước ngữ cảnh: thấy được chỗ nén sắp xảy ra, không chỉ một con số */
+.ctx { display: flex; align-items: center; gap: 7px; }
+.ctxbar { width: 62px; height: 5px; border-radius: 3px; background: var(--raised); overflow: hidden; position: relative; }
+.ctxbar i { display: block; height: 100%; width: 62%; background: var(--amber); border-radius: 3px; }
+.ctxbar::after { content: ""; position: absolute; left: 85%; top: -2px; bottom: -2px; width: 1px; background: var(--red); }
+
+@media (prefers-reduced-motion: reduce) {
+  .st.run i { animation: none }
+  * { transition-duration: 0.01ms !important }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ thanh trên ══ -->
+<header class="bar">
+  <div class="logo">ainovel <em>studio</em></div>
+
+  <button class="picker">
+    <b>Trấn Yêu Ký</b>
+    <span class="meta">47/300</span>
+    <span class="chev">▼</span>
+  </button>
+
+  <div class="slate" title="Các tác phẩm khác trong xưởng">
+    <i class="run"></i><i></i><i></i><i class="idle"></i>
+    <span>4 tác phẩm · 1 đang chạy</span>
+  </div>
+
+  <div class="right">
+    <span class="kbd">⌘K</span>
+    <span class="kbd">?</span>
+  </div>
+</header>
+
+<!-- ══ rail ══ -->
+<nav class="rail">
+  <div class="grp">Sản xuất</div>
+  <a href="#" aria-current="page"><span class="g">▤</span>Dòng sản xuất</a>
+  <a href="#"><span class="g">✎</span>Bản thảo<span class="n">47</span></a>
+  <a href="#"><span class="g">◈</span>Kiểm định<span class="n warn">2</span></a>
+  <a href="#"><span class="g">⟲</span>Hàng chờ viết lại<span class="n warn">1</span></a>
+
+  <div class="grp">Hồ sơ tác phẩm</div>
+  <a href="#"><span class="g">☰</span>Dàn ý phân tầng</a>
+  <a href="#"><span class="g">◉</span>Nhân vật<span class="n">18</span></a>
+  <a href="#"><span class="g">⬢</span>Luật thế giới<span class="n">31</span></a>
+  <a href="#"><span class="g">⚑</span>Phục bút<span class="n warn">4</span></a>
+  <a href="#"><span class="g">✧</span>Văn phong</a>
+
+  <div class="grp">Xưởng</div>
+  <a href="#"><span class="g">☗</span>Tổ sản xuất</a>
+  <a href="#"><span class="g">$</span>Chi phí</a>
+  <a href="#"><span class="g">⌗</span>Nhật ký phán quyết</a>
+  <a href="#"><span class="g">⚙</span>Cài đặt</a>
+</nav>
+
+<!-- ══ canvas ══ -->
+<main class="canvas">
+
+  <div class="head">
+    <h1>Dòng sản xuất</h1>
+    <span class="sub">Trấn Yêu Ký · huyền huyễn · 300 chương · 6 tập dự kiến</span>
+    <div class="seg" role="group" aria-label="Mức xem">
+      <button aria-pressed="true">Tập</button>
+      <button aria-pressed="false">Cung</button>
+      <button aria-pressed="false">Chương</button>
+    </div>
+  </div>
+
+  <section class="sect">
+    <h2>Trục sản xuất</h2>
+    <div class="lanes">
+      <div class="lane-lbl">Tập</div>
+      <div class="lane">
+        <div class="blk done"   style="flex:0 0 16.6%">T1 · xong</div>
+        <div class="blk done"   style="flex:0 0 16.6%">T2 · xong</div>
+        <div class="blk now"    style="flex:0 0 16.6%">T3 · đang chạy</div>
+        <div class="blk plan"   style="flex:0 0 16.6%">T4 · đã quy hoạch</div>
+        <div class="blk unplan" style="flex:0 0 16.6%">T5 · chờ mở</div>
+        <div class="blk unplan" style="flex:0 0 16.6%">T6 · chờ mở</div>
+      </div>
+
+      <div class="lane-lbl">Cung, tập 3</div>
+      <div class="lane">
+        <div class="blk done" style="flex:0 0 24%">C1 · xong</div>
+        <div class="blk now"  style="flex:0 0 26%">C2 · chương 45–50</div>
+        <div class="blk unplan" style="flex:0 0 25%">C3 · Architect sẽ mở</div>
+        <div class="blk unplan" style="flex:0 0 25%">C4 · chờ mở</div>
+      </div>
+
+      <div class="lane-lbl">Chương</div>
+      <div>
+        <div class="chlane" role="img" aria-label="47 trong 300 chương đã xong, chương 47 đang viết, chương 41 chờ viết lại, cửa kiểm định ở chương 44">
+          <i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i>
+          <i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i>
+          <i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i>
+          <i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i>
+          <i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i>
+          <i class="qc"></i><i class="done"></i><i class="done"></i><i class="gate"></i><i class="done"></i><i class="done"></i><i class="now"></i>
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <div class="ruler"><span>1</span><span>100</span><span>200</span><span>300</span></div>
+      </div>
+    </div>
+
+    <div class="keys">
+      <span><b style="background:color-mix(in oklch,oklch(0.755 0.085 176) 62%,oklch(0.185 0.009 74))"></b>đã nghiệm thu</span>
+      <span><b style="background:oklch(0.805 0.128 80)"></b>đang sản xuất</span>
+      <span><b style="background:color-mix(in oklch,oklch(0.785 0.125 62) 68%,oklch(0.185 0.009 74))"></b>chờ viết lại</span>
+      <span><b style="background:oklch(0.745 0.095 300)"></b>cửa kiểm định</span>
+      <span><b style="background:oklch(0.215 0.010 74)"></b>chưa tới</span>
+    </div>
+  </section>
+
+  <section class="sect">
+    <h2>Chương trong cung 2 · tập 3</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Ch.</th><th>Tiêu đề</th><th>Công đoạn</th><th>Phụ trách</th>
+          <th class="num">Số từ</th><th class="num">Chi phí</th><th class="num">Thời lượng</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="ch">44</td>
+          <td class="title">Người gác cầu đá</td>
+          <td><span class="st done"><i></i>đã nghiệm thu</span></td>
+          <td class="who">Writer · Editor</td>
+          <td class="num">3.104</td><td class="num">$0,041</td><td class="num">2p 51s</td>
+        </tr>
+        <tr>
+          <td class="ch">45</td>
+          <td class="title">Thư không người nhận</td>
+          <td><span class="st done"><i></i>đã nghiệm thu</span></td>
+          <td class="who">Writer</td>
+          <td class="num">2.870</td><td class="num">$0,038</td><td class="num">2p 34s</td>
+        </tr>
+        <tr>
+          <td class="ch">46</td>
+          <td class="title">Đêm mưa trên Hàn Sơn</td>
+          <td><span class="st done"><i></i>đã nghiệm thu</span></td>
+          <td class="who">Writer</td>
+          <td class="num">3.298</td><td class="num">$0,044</td><td class="num">3p 07s</td>
+        </tr>
+        <tr aria-selected="true">
+          <td class="ch">47</td>
+          <td class="title">Tiếng chuông thứ ba</td>
+          <td><span class="st run"><i></i>đang soạn bản thảo</span></td>
+          <td class="who">Writer</td>
+          <td class="num">2.980</td><td class="num">$0,036</td><td class="num">1p 12s</td>
+        </tr>
+        <tr>
+          <td class="ch">48</td>
+          <td class="title"><span class="draft">chưa đặt tiêu đề</span></td>
+          <td><span class="st wait"><i></i>chờ trong hàng</span></td>
+          <td class="who">—</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+        <tr>
+          <td class="ch">41</td>
+          <td class="title">Vết dao trên bậc thứ chín</td>
+          <td><span class="st qc"><i></i>trả về viết lại</span></td>
+          <td class="who">Editor → Writer</td>
+          <td class="num">2.612</td><td class="num">$0,067</td><td class="num">4p 22s</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="sect">
+    <h2>Nhật ký phán quyết · Arbiter</h2>
+    <div class="log">
+      <div class="entry">
+        <time>17:38</time>
+        <span class="kind plan">plan_start</span>
+        <span class="why">Mở rộng cung 3 bằng <b>architect_long</b> — tồn 253 chương, cần bộ khung nhiều tập</span>
+        <button class="replay">Xem lại</button>
+      </div>
+      <div class="entry">
+        <time>17:12</time>
+        <span class="kind gate">advance_hold</span>
+        <span class="why">Dừng nghiệm thu sau khi xả hàng chờ viết lại — <b>chương 41</b> đổi giọng xong thì tạm nghỉ</span>
+        <button class="replay">Xem lại</button>
+      </div>
+      <div class="entry">
+        <time>16:47</time>
+        <span class="kind steer">intervention</span>
+        <span class="why">Phân loại ý kiến người dùng là <b>phạm vi hẹp</b> — chỉ viết lại chương 41, không lan sang cung</span>
+        <button class="replay">Xem lại</button>
+      </div>
+      <div class="entry">
+        <time>15:03</time>
+        <span class="kind fail">failure</span>
+        <span class="why">Writer bị chặn 3 lượt liền ở <b>commit_chapter</b> — chuyển sang đọc lại chương 40 rồi soạn tiếp</span>
+        <button class="replay">Xem lại</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="sect" style="border-bottom:0">
+    <h2>Can thiệp — nói vào dây chuyền đang chạy, không cần dừng máy</h2>
+    <div class="steerbox">
+      <input placeholder="ví dụ: Lâm Thanh nên do dự lâu hơn trước khi rút kiếm" aria-label="Ý kiến can thiệp">
+      <button>Gửi cho Arbiter</button>
+    </div>
+    <p class="steerhint">Arbiter phân loại phạm vi ảnh hưởng rồi xếp các chương bị tác động vào hàng chờ viết lại. Phán quyết được ghi vào nhật ký ở trên.</p>
+  </section>
+</main>
+
+<!-- ══ inspector ══ -->
+<aside class="insp">
+  <div class="ihead">
+    <div class="no">Chương 47 · tập 3 · cung 2</div>
+    <h2>Tiếng chuông thứ ba</h2>
+    <span class="st run"><i></i>Writer đang soạn bản thảo</span>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true">Hợp đồng</button>
+    <button role="tab" aria-selected="false">Kiểm định</button>
+    <button role="tab" aria-selected="false">Bản thảo</button>
+  </div>
+
+  <div class="ibody">
+    <h3>Yêu cầu chương</h3>
+    <dl class="kv">
+      <dt>Mục tiêu</dt><dd>Hé lộ tiếng chuông thứ ba là tín hiệu người lạ, không phải núi mở</dd>
+      <dt>Xung đột</dt><dd>Lâm Thanh phải chọn giữ vị trí hay xuống bậc</dd>
+      <dt>Nhịp bắt buộc</dt><dd class="m">3 / 4 đã đạt</dd>
+      <dt>Kiểu móc cuối</dt><dd>bỏ lửng hành động</dd>
+      <dt>Độ dài đặt</dt><dd class="m">2.800 – 3.400 từ</dd>
+    </dl>
+
+    <h3>Kiểm định cung 1 · 7 chiều</h3>
+    <div class="qcrow"><span>Nhất quán thiết lập</span><span class="v pass">đạt</span></div>
+    <div class="qcrow"><span>Hành vi nhân vật</span><span class="v pass">đạt</span></div>
+    <div class="qcrow"><span>Nhịp</span><span class="v fail">hơi chậm</span></div>
+    <p class="qcnote">Ba chương liền mở bằng cảnh đêm — nên đổi mốc thời gian ở chương 48.</p>
+    <div class="qcrow"><span>Mạch tự sự</span><span class="v pass">đạt</span></div>
+    <div class="qcrow"><span>Phục bút</span><span class="v fail">cần thu</span></div>
+    <p class="qcnote"><q>Ấn ngọc Hàn Sơn</q> đặt ở chương 38, đã qua 9 chương chưa nhắc lại.</p>
+    <div class="qcrow"><span>Móc chương</span><span class="v pass">đạt</span></div>
+    <div class="qcrow"><span>Chất văn</span><span class="v pass">đạt</span></div>
+
+    <h3>Bản thảo đang chạy</h3>
+    <p class="excerpt">Bước chân ấy đạp thẳng lên bậc thứ chín. Đá kêu một tiếng khô khốc. Lâm Thanh không đứng lên — chàng chỉ đưa tay lên vai, nơi bao kiếm vẫn còn ướt.</p>
+  </div>
+</aside>
+
+<!-- ══ transport ══ -->
+<footer class="trans">
+  <div class="cell"><span class="play">▶</span><span class="m">đang chạy</span></div>
+  <div class="cell"><span class="lbl">công đoạn</span><span class="m">draft_chapter</span><span class="lbl">4,2s</span></div>
+  <div class="cell"><span class="lbl">tổ</span><span>Writer</span><span class="lbl">·</span><span>gemini-2.5-pro</span></div>
+  <div class="cell ctx">
+    <span class="lbl">ngữ cảnh</span>
+    <span class="ctxbar" title="62% — mốc đỏ 85% là ngưỡng nén"><i></i></span>
+    <span class="m warn">62%</span>
+  </div>
+  <div class="cell push"><span class="lbl">năng suất</span><span class="m">3,4 chương/giờ</span></div>
+  <div class="cell"><span class="lbl">giá thành</span><span class="m">$0,046 / chương</span></div>
+  <div class="cell"><span class="lbl">tổng</span><span class="m">$2,14</span></div>
+  <div class="cell"><span class="lbl">đã chạy</span><span class="m">6:12:04</span></div>
+</footer>
+
+</body>
+</html>

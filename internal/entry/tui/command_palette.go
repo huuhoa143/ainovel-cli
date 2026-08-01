@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 type commandPaletteItem struct {
@@ -179,9 +180,10 @@ func renderCommandPalette(width int, items []commandPaletteItem, cursor int) str
 		}
 
 		name := nameRenderer.Render(item.Name)
-		// truncateWidth 按视觉宽度截断（中文字符算 2 列）；用 truncate 会按 rune 数算，
-		// 中文场景实际宽度 = 期望的 2 倍，导致弹窗溢出。
-		desc := truncateWidth(item.Description, max(12, contentW-18))
+		// truncate cũng cắt theo bề rộng hiển thị (chữ Hán 2 cột) như truncateWidth,
+		// nhưng thêm "..." khi thật sự cắt — bản cũ cắt lặng nên mô tả tiếng Việt dài
+		// hiện ra "…đồng sáng tác lên kế hoạch cho " và người dùng không biết còn chữ.
+		desc := truncate(item.Description, max(12, contentW-18))
 		descText := descRenderer.Render(desc)
 		line := prefix + name
 		gap := contentW - lipgloss.Width(line) - lipgloss.Width(descText)
@@ -194,16 +196,16 @@ func renderCommandPalette(width int, items []commandPaletteItem, cursor int) str
 	if selectedIdx < 0 || selectedIdx >= len(visible) {
 		selectedIdx = 0
 	}
-	hint := mutedStyle.Render("↑↓ 选择 · Tab/Enter 接受 · Esc 关闭")
-	usage := "Usage: " + visible[selectedIdx].Usage
+	hint := mutedStyle.Render(i18n.F("↑↓ 选择 · Tab/Enter 接受 · Esc 关闭"))
+	usage := i18n.F("用法：") + visible[selectedIdx].Usage
 	if remaining > 0 {
-		usage = usage + " · 还有 " + strconv.Itoa(remaining) + " 个命令"
+		usage = usage + i18n.F(" · 还有 ") + strconv.Itoa(remaining) + i18n.F(" 个命令")
 	}
-	usageLine := mutedStyle.Render(truncateWidth(usage, contentW))
+	usageLine := mutedStyle.Render(truncate(usage, contentW))
 	body = append(body, usageLine+strings.Repeat(" ", max(0, contentW-lipgloss.Width(usageLine))))
 	body = append(body, hint+strings.Repeat(" ", max(0, contentW-lipgloss.Width(hint))))
 
-	return renderPaddedModalFrame(boxW, len(body)+2, "命令", "", body)
+	return renderPaddedModalFrame(boxW, len(body)+2, i18n.F("命令"), "", body)
 }
 
 func commandPaletteWindow(total, cursor, limit int) (start, end int) {

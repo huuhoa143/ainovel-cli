@@ -14,6 +14,22 @@ import (
 // TUI 按 ID 定位原行原地更新，避免"开始一行、完成又一行"的冗余。
 //
 // SYSTEM / ERROR / CONTEXT 等非调用类事件 ID 为空，每条独立追加。
+// DispatchTaskOpen / DispatchTaskClose bọc phần "việc" trong summary của sự kiện
+// DISPATCH: summary có dạng `agent` + Open + `việc` + Close.
+//
+// Đây là HỢP ĐỒNG hai đầu: internal/host/observer_tools.go sinh ra chuỗi này, còn
+// internal/entry/tui/panels_activity.go tách lại bằng cách tìm Open để tô màu tên
+// agent khác màu phần việc. Trước đây mỗi đầu viết cứng ký tự「（」của riêng nó —
+// đổi một bên là bên kia thôi tách được, và cả dòng mất màu trong im lặng.
+//
+// Dùng dấu ngoặc ASCII chứ không phải dạng toàn phần: dấu toàn phần chiếm 2 cột
+// hiển thị mỗi chiếc trên terminal, tức ăn 4 cột chỉ để bọc, và nó cũng sai chính
+// tả khi nằm trong câu tiếng Việt.
+const (
+	DispatchTaskOpen  = " ("
+	DispatchTaskClose = ")"
+)
+
 type Event struct {
 	ID         string    // 同一次调用的开始/结束共用；非调用事件为空
 	Time       time.Time // 首次发出时间（开始时刻）

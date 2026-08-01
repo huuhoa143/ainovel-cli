@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"errors"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -88,12 +90,12 @@ func LoadState(w *Workspace) (Facts, error) {
 	}
 	src, err := w.LoadSource()
 	if err != nil {
-		return f, fmt.Errorf("读取导入源快照: %w", err)
+		return f, fmt.Errorf(i18n.F("读取导入源快照: %w"), err)
 	}
 	f.WorkspaceReady = true
 	guidance, err := w.LoadGuidance()
 	if err != nil {
-		return f, fmt.Errorf("读取切分指导: %w", err)
+		return f, fmt.Errorf(i18n.F("读取切分指导: %w"), err)
 	}
 
 	// segmentation：绑定归一化源 + 用户指导 + 切分 prompt 版本。指导变化（--guide 重识别）自然失效旧切分。
@@ -102,7 +104,7 @@ func LoadState(w *Workspace) (Facts, error) {
 		return f, nil
 	}
 	if err != nil {
-		return f, fmt.Errorf("读取切分工件: %w", err)
+		return f, fmt.Errorf(i18n.F("读取切分工件: %w"), err)
 	}
 	if segArt.InputDigest != segmentInputDigest(Digest(src), guidance, segmentPromptVersion) {
 		return f, nil
@@ -114,11 +116,11 @@ func LoadState(w *Workspace) (Facts, error) {
 	// confirmation：绑定 segmentation 工件原始字节。
 	segRaw, err := w.readBytes(fileSegmentation)
 	if err != nil {
-		return f, fmt.Errorf("读取切分工件原文: %w", err)
+		return f, fmt.Errorf(i18n.F("读取切分工件原文: %w"), err)
 	}
 	confirmed, err := artifactFresh[Confirmation](w, fileConfirmation, Digest(segRaw))
 	if err != nil {
-		return f, fmt.Errorf("读取切分确认: %w", err)
+		return f, fmt.Errorf(i18n.F("读取切分确认: %w"), err)
 	}
 	if !confirmed {
 		return f, nil
@@ -144,7 +146,7 @@ func LoadState(w *Workspace) (Facts, error) {
 		return f, nil
 	}
 	if err != nil {
-		return f, fmt.Errorf("读取全书综合工件: %w", err)
+		return f, fmt.Errorf(i18n.F("读取全书综合工件: %w"), err)
 	}
 	if synArt.InputDigest != synthesisInputDigest(facts) {
 		return f, nil
@@ -155,16 +157,16 @@ func LoadState(w *Workspace) (Facts, error) {
 	// story resolution：uncertain 时绑定 synthesis 工件原始字节，或由 intent 预选。
 	synRaw, err := w.readBytes(fileSynthesis)
 	if err != nil {
-		return f, fmt.Errorf("读取全书综合工件原文: %w", err)
+		return f, fmt.Errorf(i18n.F("读取全书综合工件原文: %w"), err)
 	}
 	resolved, err := artifactFresh[StoryResolution](w, fileStoryResolve, Digest(synRaw))
 	if err != nil {
-		return f, fmt.Errorf("读取故事状态裁定: %w", err)
+		return f, fmt.Errorf(i18n.F("读取故事状态裁定: %w"), err)
 	}
 	if resolved {
 		f.StoryResolved = true
 	} else if in, iErr := w.LoadIntent(); iErr != nil {
-		return f, fmt.Errorf("读取导入意图: %w", iErr)
+		return f, fmt.Errorf(i18n.F("读取导入意图: %w"), iErr)
 	} else if in.StoryResolution != "" {
 		f.StoryResolved = true
 	}
@@ -213,26 +215,26 @@ func ResumeSummary(st *store.Store) string {
 	}
 	f, err := CollectFacts(st, w)
 	if err != nil {
-		return "发现导入状态读取异常：" + err.Error() + "；请运行 /import 查看并修复"
+		return i18n.F("发现导入状态读取异常：") + err.Error() + i18n.F("；请运行 /import 查看并修复")
 	}
 	var state string
 	switch NextAction(f) {
 	case ActionDone:
 		return ""
 	case ActionIngest, ActionSegment:
-		state = "尚未完成切分"
+		state = i18n.F("尚未完成切分")
 	case ActionAwaitConfirmation:
-		state = fmt.Sprintf("已切分 %d 章，等待核对确认", f.ExpectedChapters)
+		state = fmt.Sprintf(i18n.F("已切分 %d 章，等待核对确认"), f.ExpectedChapters)
 	case ActionAnalyze:
-		state = fmt.Sprintf("已分析 %d/%d 章", f.AnalyzedChapters, f.ExpectedChapters)
+		state = fmt.Sprintf(i18n.F("已分析 %d/%d 章"), f.AnalyzedChapters, f.ExpectedChapters)
 	case ActionSynthesize:
-		state = "逐章分析完成，待全书综合"
+		state = i18n.F("逐章分析完成，待全书综合")
 	case ActionAwaitStoryResolution:
-		state = "待明确故事状态（--story=open|closed）"
+		state = i18n.F("待明确故事状态（--story=open|closed）")
 	case ActionPublish:
-		state = "综合完成，待发布正式状态"
+		state = i18n.F("综合完成，待发布正式状态")
 	}
-	return "发现未完成的导入（" + state + "），输入 /import 从断点恢复"
+	return i18n.F("发现未完成的导入（") + state + i18n.F("），输入 /import 从断点恢复")
 }
 
 // checkImportPreconditions 校验新导入前置条件（RFC §12.1）：
@@ -240,17 +242,17 @@ func ResumeSummary(st *store.Store) string {
 func checkImportPreconditions(st *store.Store) error {
 	prog, err := st.Progress.Load()
 	if err != nil {
-		return fmt.Errorf("读取进度：%w", err)
+		return fmt.Errorf(i18n.F("读取进度：%w"), err)
 	}
 	if prog != nil && len(prog.CompletedChapters) > 0 {
-		return fmt.Errorf("已有 %d 个完成章节，拒绝把外部小说并入非空书籍", len(prog.CompletedChapters))
+		return fmt.Errorf(i18n.F("已有 %d 个完成章节，拒绝把外部小说并入非空书籍"), len(prog.CompletedChapters))
 	}
 	pending, err := st.Signals.LoadPendingCommit()
 	if err != nil {
-		return fmt.Errorf("读取在途提交：%w", err)
+		return fmt.Errorf(i18n.F("读取在途提交：%w"), err)
 	}
 	if pending != nil {
-		return fmt.Errorf("存在在途章节提交，请先完成或清理后再导入")
+		return errors.New(i18n.F("存在在途章节提交，请先完成或清理后再导入"))
 	}
 	return nil
 }

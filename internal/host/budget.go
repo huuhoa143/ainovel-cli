@@ -7,6 +7,7 @@ import (
 
 	"github.com/voocel/agentcore"
 	"github.com/voocel/ainovel-cli/internal/bootstrap"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // 预算状态机：单调递进，每次迁移恰好触发一次副作用，不回退。
@@ -73,21 +74,21 @@ func (s *BudgetSentinel) OnCost(total float64) {
 	}
 	if prev := s.lastTotal.Swap(math.Float64bits(total)); total == math.Float64frombits(prev) {
 		if s.zeroStreak.Add(1) >= blindZeroStreak && s.blindWarned.CompareAndSwap(false, true) {
-			s.report("warn", fmt.Sprintf("预算盲区: 连续记账但累计成本停在 $%.2f 不再增长（当前模型注册表无价且 provider 未自报 cost，或为免费模型）——预算上限不会触发", total))
+			s.report("warn", fmt.Sprintf(i18n.F("预算盲区: 连续记账但累计成本停在 $%.2f 不再增长（当前模型注册表无价且 provider 未自报 cost，或为免费模型）——预算上限不会触发"), total))
 		}
 	} else {
 		s.zeroStreak.Store(0)
 	}
 	if total >= s.limit*s.warnRatio && s.state.CompareAndSwap(budgetNormal, budgetWarned) {
-		s.report("warn", fmt.Sprintf("预算告警: 已花费 $%.2f，达到预算 $%.2f 的 %.0f%%", total, s.limit, s.warnRatio*100))
+		s.report("warn", fmt.Sprintf(i18n.F("预算告警: 已花费 $%.2f，达到预算 $%.2f 的 %.0f%%"), total, s.limit, s.warnRatio*100))
 	}
 	if total >= s.limit && s.state.CompareAndSwap(budgetWarned, budgetStopPending) {
 		if s.hardStop {
-			s.report("error", fmt.Sprintf("预算用尽: 已花费 $%.2f，超出预算 $%.2f，立即停机", total, s.limit))
+			s.report("error", fmt.Sprintf(i18n.F("预算用尽: 已花费 $%.2f，超出预算 $%.2f，立即停机"), total, s.limit))
 			s.stop(total)
 			return
 		}
-		s.report("error", fmt.Sprintf("预算用尽: 已花费 $%.2f，超出预算 $%.2f，将在当前子代理任务结束后停机", total, s.limit))
+		s.report("error", fmt.Sprintf(i18n.F("预算用尽: 已花费 $%.2f，超出预算 $%.2f，将在当前子代理任务结束后停机"), total, s.limit))
 	}
 }
 
@@ -113,7 +114,7 @@ func (s *BudgetSentinel) HandleBoundary() bool {
 
 func (s *BudgetSentinel) stop(total float64) {
 	if s.state.CompareAndSwap(budgetStopPending, budgetStopped) {
-		s.abort(fmt.Sprintf("预算停机: 已花费 $%.2f，超出预算 $%.2f；上调 budget.book_usd 后可恢复续跑", total, s.limit))
+		s.abort(fmt.Sprintf(i18n.F("预算停机: 已花费 $%.2f，超出预算 $%.2f；上调 budget.book_usd 后可恢复续跑"), total, s.limit))
 	}
 }
 
@@ -124,7 +125,7 @@ func (s *BudgetSentinel) Refuse() error {
 		return nil
 	}
 	if cost := s.costNow(); cost >= s.limit {
-		return fmt.Errorf("本书已花费 $%.2f，达到预算上限 $%.2f；请上调配置 budget.book_usd 后重试", cost, s.limit)
+		return fmt.Errorf(i18n.F("本书已花费 $%.2f，达到预算上限 $%.2f；请上调配置 budget.book_usd 后重试"), cost, s.limit)
 	}
 	return nil
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/voocel/agentcore/schema"
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/errs"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -23,9 +24,9 @@ func NewCheckConsistencyTool(store *store.Store) *CheckConsistencyTool {
 
 func (t *CheckConsistencyTool) Name() string { return "check_consistency" }
 func (t *CheckConsistencyTool) Description() string {
-	return "加载已写草稿和对照数据（世界规则、伏笔、关系、别名、最近摘要），供你检查一致性。必须在 draft_chapter 之后调用"
+	return i18n.F("加载已写草稿和对照数据（世界规则、伏笔、关系、别名、最近摘要），供你检查一致性。必须在 draft_chapter 之后调用")
 }
-func (t *CheckConsistencyTool) Label() string { return "一致性检查" }
+func (t *CheckConsistencyTool) Label() string { return i18n.F("一致性检查") }
 
 // 只读工具（仅追加 checkpoint 事件，不改状态），可被并发调度。
 func (t *CheckConsistencyTool) ReadOnly(_ json.RawMessage) bool        { return true }
@@ -33,7 +34,7 @@ func (t *CheckConsistencyTool) ConcurrencySafe(_ json.RawMessage) bool { return 
 
 func (t *CheckConsistencyTool) Schema() map[string]any {
 	return schema.Object(
-		schema.Property("chapter", schema.Int("要检查的章节号")).Required(),
+		schema.Property("chapter", schema.Int(i18n.F("要检查的章节号"))).Required(),
 	)
 }
 
@@ -52,7 +53,7 @@ func (t *CheckConsistencyTool) Execute(_ context.Context, args json.RawMessage) 
 	var warnings []string
 	warn := func(scope string, err error) {
 		if err != nil {
-			warnings = append(warnings, fmt.Sprintf("%s 读取失败: %v", scope, err))
+			warnings = append(warnings, fmt.Sprintf(i18n.F("%s 读取失败: %v"), scope, err))
 		}
 	}
 

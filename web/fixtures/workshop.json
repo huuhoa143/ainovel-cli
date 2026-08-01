@@ -1,0 +1,36 @@
+{
+  "root": "/tmp/xuong",
+  "books": [
+    {
+      "id": "tran-yeu-ky",
+      "name": "Trấn Yêu Ký",
+      "phase": "writing",
+      "flow": "writing",
+      "completed_chapters": 46,
+      "total_chapters": 300,
+      "total_words": 138412,
+      "activity": "running",
+      "updated_at": "2026-07-30T10:41:07Z"
+    },
+    {
+      "id": "mot-dem-khong-ten",
+      "name": "Một đêm không tên",
+      "phase": "complete",
+      "flow": "writing",
+      "completed_chapters": 12,
+      "total_chapters": 12,
+      "total_words": 31240,
+      "activity": "complete",
+      "updated_at": "2026-07-29T20:14:52Z"
+    },
+    {
+      "id": "bien-ky",
+      "name": "",
+      "phase": "premise",
+      "completed_chapters": 0,
+      "total_chapters": 0,
+      "total_words": 0,
+      "activity": "idle"
+    }
+  ]
+}

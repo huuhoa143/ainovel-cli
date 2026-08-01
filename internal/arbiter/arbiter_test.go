@@ -352,7 +352,7 @@ func (m *nativeModel) Generate(ctx context.Context, msgs []agentcore.Message, to
 
 // 契约测试(RFC §11.1):根为 object、全属性(含嵌套)required、dispatch 为可空对象。
 func TestContractSchemasAreStrictReady(t *testing.T) {
-	for _, c := range []llmcontract.Contract{planStartContract, failureContract, interventionContract} {
+	for _, c := range []llmcontract.Contract{planStartContract(), failureContract(), interventionContract()} {
 		if c.Schema["type"] != "object" {
 			t.Fatalf("%s: 根必须是 object", c.Name)
 		}
@@ -363,7 +363,7 @@ func TestContractSchemasAreStrictReady(t *testing.T) {
 			t.Fatalf("%s: fingerprint 异常: %q", c.Name, c.Fingerprint())
 		}
 	}
-	dispatch := failureContract.Schema["properties"].(map[string]any)["dispatch"].(map[string]any)
+	dispatch := failureContract().Schema["properties"].(map[string]any)["dispatch"].(map[string]any)
 	types, ok := dispatch["type"].([]string)
 	if !ok || !slices.Contains(types, "null") || !slices.Contains(types, "object") {
 		t.Fatalf("dispatch 应为可空对象: %v", dispatch["type"])

@@ -9,6 +9,8 @@ import (
 	"log/slog"
 	"os"
 	"time"
+
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // DecisionStore 审计运行时的 LLM 语义裁定(meta/decisions.jsonl,append-only)。
@@ -116,7 +118,7 @@ func (s *DecisionStore) committedDataUnlocked() ([]byte, error) {
 	if err := os.Truncate(s.io.path(decisionsFile), int64(keep)); err != nil {
 		return nil, err
 	}
-	slog.Warn("已修复裁定审计的未提交尾部",
+	slog.Warn(i18n.F("已修复裁定审计的未提交尾部"),
 		"module", "store", "file", decisionsFile, "discarded_bytes", len(data)-keep)
 	return data[:keep], nil
 }

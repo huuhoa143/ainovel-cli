@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/voocel/ainovel-cli/internal/host"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 func TestRenderTopBarShowsVersion(t *testing.T) {
@@ -34,7 +35,7 @@ func TestRenderStatusBar(t *testing.T) {
 		BudgetLimitUSD:     5,
 		TotalSavedUSD:      0.12,
 	}, "/tmp/output", 120))
-	for _, want := range []string{"test-model(200K,med)", "↑1.2M", "↓89.3k", "$0.31/$5.00", "省$0.12", "./output"} {
+	for _, want := range []string{"test-model(200K,med)", "↑1.2M", "↓89.3k", "$0.31/$5.00", i18n.F(" 省") + "$0.12", "./output"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("状态栏缺少 %q：%q", want, out)
 		}

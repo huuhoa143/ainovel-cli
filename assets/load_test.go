@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // TestBuildWriterPrompt_ByteIdenticalToPreSplit 是文风层验收标准 ①:
@@ -53,14 +55,16 @@ func TestLoad_NoOverrides(t *testing.T) {
 
 func TestInterventionPromptsKeepScopeContract(t *testing.T) {
 	prompts := loadPrompts()
-	for _, phrase := range []string{"上下文不等于修改授权", "最小充分范围", "分析范围不等于修改范围"} {
+	for _, phrase := range []string{"ngữ cảnh không đồng nghĩa với quyền sửa", "phạm vi tối thiểu đủ dùng", "phạm vi phân tích không đồng nghĩa phạm vi sửa"} {
 		if !strings.Contains(prompts.ArbiterIntervention, phrase) {
-			t.Fatalf("Arbiter 干预提示缺少范围契约 %q", phrase)
+			t.Fatalf("prompt can thiệp của Arbiter thiếu hợp đồng phạm vi %q", phrase)
 		}
 	}
-	for _, phrase := range []string{"用户原始干预", "分析范围不等于修改范围", "最小充分章节集合"} {
+	// "Can thiệp gốc của người dùng" phải khớp đúng nhãn mà
+	// internal/host.interventionDispatchTask đính vào task hạ nguồn.
+	for _, phrase := range []string{"Can thiệp gốc của người dùng", "phạm vi phân tích không đồng nghĩa phạm vi sửa", "tập chương tối thiểu đủ dùng"} {
 		if !strings.Contains(prompts.Editor, phrase) {
-			t.Fatalf("Editor 提示缺少范围契约 %q", phrase)
+			t.Fatalf("prompt Editor thiếu hợp đồng phạm vi %q", phrase)
 		}
 	}
 }
@@ -71,9 +75,9 @@ func TestStructuredArbiterPromptsContainOnlySemantics(t *testing.T) {
 		"plan_start": prompts.ArbiterPlanStart,
 		"failure":    prompts.ArbiterFailure,
 	} {
-		for _, duplicate := range []string{"```json", "不要 Markdown", "输出一个 JSON 对象"} {
+		for _, duplicate := range []string{"```json", "đừng dùng Markdown", "xuất ra một đối tượng JSON"} {
 			if strings.Contains(prompt, duplicate) {
-				t.Fatalf("%s 提示词仍重复维护输出格式 %q", name, duplicate)
+				t.Fatalf("prompt %s vẫn duy trì trùng lặp định dạng đầu ra %q", name, duplicate)
 			}
 		}
 	}
@@ -115,8 +119,11 @@ func TestLoad_ThreeTierAppendAndReplace(t *testing.T) {
 	if !strings.HasPrefix(b.Voice, builtinVoice) {
 		t.Fatal("追加语义必须保留内置原文为前缀")
 	}
-	giIdx := strings.Index(b.Voice, "## 用户全局文风覆盖")
-	bkIdx := strings.Index(b.Voice, "## 本书文风覆盖")
+	// Tìm theo chuỗi ĐÃ DỊCH, không theo nguyên văn tiếng Trung: hai dấu phân
+	// đoạn này là chữ hiển thị đi vào prompt nên đã bọc i18n, mà locale mặc định
+	// của repo là vi. So bằng cùng msgid thì test đúng ở cả hai ngôn ngữ.
+	giIdx := strings.Index(b.Voice, i18n.F("\n\n## 用户全局文风覆盖（以下要求优先于项目默认）\n\n"))
+	bkIdx := strings.Index(b.Voice, i18n.F("\n\n## 本书文风覆盖（以下要求优先于以上全部）\n\n"))
 	if giIdx < 0 || bkIdx < 0 || giIdx > bkIdx {
 		t.Fatalf("追加段顺序错误:global=%d book=%d", giIdx, bkIdx)
 	}
@@ -166,7 +173,7 @@ func TestOverrideVoice_SharesAssemblyPath(t *testing.T) {
 		t.Fatal("占位符必须被消耗")
 	}
 	// 协议部分不受 voice 覆盖影响
-	if !strings.Contains(got, "## 执行协议") {
+	if !strings.Contains(got, "## Giao thức thực thi") {
 		t.Fatal("协议模板不得被 voice 覆盖破坏")
 	}
 }

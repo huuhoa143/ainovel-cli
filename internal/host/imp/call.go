@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/voocel/agentcore"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/llmcontract"
 	"github.com/voocel/ainovel-cli/internal/llmretry"
 	"github.com/voocel/litellm"
@@ -24,7 +25,7 @@ type errTruncated struct {
 	Raw string
 }
 
-func (e *errTruncated) Error() string { return "模型输出被长度截断（stop=length）" }
+func (e *errTruncated) Error() string { return i18n.F("模型输出被长度截断（stop=length）") }
 
 // errSemantic 表示无法通过重问修复的输出层失败，携带原始响应，
 // 供 runner 统一落 failures/ 失败工件（§14.2），所有语义函数共用。
@@ -91,25 +92,37 @@ func snippet(s string, max int) string {
 func briefErr(err error) string {
 	s := err.Error()
 	if d := modelErrDetail(err); d != "" {
-		s = d + "：" + s
+		s = d + ": " + s
 	}
 	return snippet(s, 100)
 }
 
 // errTypeLabels 把 litellm 错误分类翻成一眼可读的中文短标签。
-var errTypeLabels = map[litellm.ErrorType]string{
-	litellm.ErrorTypeAuth:            "鉴权失败",
-	litellm.ErrorTypeRateLimit:       "限流",
-	litellm.ErrorTypeNetwork:         "网络错误",
-	litellm.ErrorTypeValidation:      "请求参数非法",
-	litellm.ErrorTypeProvider:        "上游服务错误",
-	litellm.ErrorTypeTimeout:         "超时",
-	litellm.ErrorTypeQuota:           "配额不足",
-	litellm.ErrorTypeModel:           "模型不可用",
-	litellm.ErrorTypeInternal:        "内部错误",
-	litellm.ErrorTypeContextOverflow: "上下文超限",
-	litellm.ErrorTypeOverloaded:      "上游过载",
-	litellm.ErrorTypeContentFilter:   "内容过滤拦截",
+//
+// Vì sao là func chứ không phải var: i18n.F trong khởi tạo biến cấp gói chạy
+// TRƯỚC mọi init(), nên bảng nhãn bị chốt theo locale lúc nạp package — test
+// ghim locale không tác dụng, và lệnh đổi ngôn ngữ lúc chạy sẽ không đổi được
+// những nhãn này. Bọc thành func để bản dịch được đọc lúc DÙNG.
+//
+// Dựng lại map mỗi lần gọi là chấp nhận được ở đây: chỗ dùng duy nhất là
+// modelErrDetail ← briefErr, chỉ chạy trên nhánh lỗi/retry của một lượt gọi LLM
+// (vài lần cho cả phiên nhập). 12 entry map không đáng kể so với chính cái
+// request vừa thất bại.
+func errTypeLabels() map[litellm.ErrorType]string {
+	return map[litellm.ErrorType]string{
+		litellm.ErrorTypeAuth:            i18n.F("鉴权失败"),
+		litellm.ErrorTypeRateLimit:       i18n.F("限流"),
+		litellm.ErrorTypeNetwork:         i18n.F("网络错误"),
+		litellm.ErrorTypeValidation:      i18n.F("请求参数非法"),
+		litellm.ErrorTypeProvider:        i18n.F("上游服务错误"),
+		litellm.ErrorTypeTimeout:         i18n.F("超时"),
+		litellm.ErrorTypeQuota:           i18n.F("配额不足"),
+		litellm.ErrorTypeModel:           i18n.F("模型不可用"),
+		litellm.ErrorTypeInternal:        i18n.F("内部错误"),
+		litellm.ErrorTypeContextOverflow: i18n.F("上下文超限"),
+		litellm.ErrorTypeOverloaded:      i18n.F("上游过载"),
+		litellm.ErrorTypeContentFilter:   i18n.F("内容过滤拦截"),
+	}
 }
 
 // modelErrDetail 从错误链提取适配器的结构化事实（错误分类、HTTP 状态、provider、模型）。
@@ -122,7 +135,7 @@ func modelErrDetail(err error) string {
 		return ""
 	}
 	parts := make([]string, 0, 4)
-	if label := errTypeLabels[le.Type]; label != "" {
+	if label := errTypeLabels()[le.Type]; label != "" {
 		parts = append(parts, label)
 	}
 	if le.StatusCode != 0 {
@@ -134,7 +147,7 @@ func modelErrDetail(err error) string {
 	if le.Model != "" {
 		parts = append(parts, le.Model)
 	}
-	return strings.Join(parts, "，")
+	return strings.Join(parts, ", ")
 }
 
 // callOptions 组装本次调用的 CallOption：始终带输出上限；按能力可选 thinking。
@@ -158,18 +171,18 @@ func callStructured[T any](ctx context.Context, m callModel, contract llmcontrac
 		Agent:        "import",
 		Hooks: llmcontract.Hooks{
 			Resolved: func(res llmcontract.Resolution) {
-				prof.logger().Debug("imp 结构化协议选择",
+				prof.logger().Debug(i18n.F("imp 结构化协议选择"),
 					"contract", contract.Name, "structured_mode", res.Mode,
 					"capability_source", res.Source, "provider", res.Provider,
 					"model", res.Model, "schema_fingerprint", contract.Fingerprint())
 			},
 			RequestRetry: func(ev llmretry.Event) {
-				prof.sayRetry(time.Now().Add(ev.Delay), "模型请求失败（%s），进行第 %d 次重试", briefErr(ev.Err), ev.Attempt)
-				prof.logger().Warn("imp 模型请求重试", "attempt", ev.Attempt, "delay", ev.Delay, "err", ev.Err)
+				prof.sayRetry(time.Now().Add(ev.Delay), i18n.F("模型请求失败（%s），进行第 %d 次重试"), briefErr(ev.Err), ev.Attempt)
+				prof.logger().Warn(i18n.F("imp 模型请求重试"), "attempt", ev.Attempt, "delay", ev.Delay, "err", ev.Err)
 			},
 			Correction: func(ev llmcontract.Correction) {
-				prof.say("输出校验未通过（%s），带错误反馈进行第 %d 次重问", briefErr(ev.Err), ev.Attempt+1)
-				prof.logger().Warn("imp 结构化输出自愈", "attempt", ev.Attempt,
+				prof.say(i18n.F("输出校验未通过（%s），带错误反馈进行第 %d 次重问"), briefErr(ev.Err), ev.Attempt+1)
+				prof.logger().Warn(i18n.F("imp 结构化输出自愈"), "attempt", ev.Attempt,
 					"layer", ev.Layer, "structured_mode", ev.Mode, "err", ev.Err)
 			},
 		},
@@ -193,7 +206,7 @@ func callStructured[T any](ctx context.Context, m callModel, contract llmcontrac
 		}
 	case llmcontract.FailureRequest:
 		if detail := modelErrDetail(failure); detail != "" {
-			return out, fmt.Errorf("imp: 模型调用失败（%s）：%w", detail, failure)
+			return out, fmt.Errorf(i18n.F("imp: 模型调用失败（%s）：%w"), detail, failure)
 		}
 	}
 	return out, fmt.Errorf("imp: %w", failure)

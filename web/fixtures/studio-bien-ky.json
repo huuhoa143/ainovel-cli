@@ -1,0 +1,28 @@
+{
+  "book": {
+    "id": "bien-ky",
+    "name": "",
+    "phase": "premise",
+    "completed_chapters": 0,
+    "total_chapters": 0,
+    "total_words": 0,
+    "activity": "idle"
+  },
+  "capabilities": {
+    "per_chapter_duration": true,
+    "per_chapter_cost": false,
+    "layered_outline": false,
+    "steer": false
+  },
+  "timeline": {
+    "volumes": [],
+    "arcs": [],
+    "chapters": []
+  },
+  "chapters": [],
+  "transport": {
+    "state": "idle",
+    "cost_usd": 0
+  },
+  "queue_seq": 0
+}

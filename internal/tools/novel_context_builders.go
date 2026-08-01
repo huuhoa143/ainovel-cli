@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/rules"
 	"github.com/voocel/ainovel-cli/internal/stylestat"
 )
@@ -443,7 +444,7 @@ func (t *ContextTool) buildChapterWorkingMemory(envelope *chapterContextEnvelope
 		if volumes, err := t.store.Outline.LoadLayeredOutline(); err == nil {
 			if fv := domain.FinaleVolume(volumes); fv > 0 {
 				if b, berr := t.store.Outline.CheckArcBoundary(state.chapter); berr == nil && b != nil && b.Volume == fv {
-					envelope.Working["finale"] = "本卷为全书收官卷：不再新开长线或埋新伏笔，优先回收既有伏笔、收拢关系线，按大纲把故事推向终局。"
+					envelope.Working["finale"] = i18n.F("本卷为全书收官卷：不再新开长线或埋新伏笔，优先回收既有伏笔、收拢关系线，按大纲把故事推向终局。")
 				}
 			}
 		}
@@ -476,9 +477,13 @@ func (t *ContextTool) buildChapterWorkingMemory(envelope *chapterContextEnvelope
 
 	if state.chapter > 1 {
 		if prevText, err := t.store.Drafts.LoadChapterText(state.chapter - 1); err == nil && prevText != "" {
+			// 800 是 upstream 按汉字单位选的：约 800 字内容，够 writer 接住上一章的
+			// 语气与场面。文本是越南语时，800 个 rune 只装得下约 168 字——writer 接章
+			// 只看得到最后一两句，接口处断气。没有报错、没有告警，只是质量下滑。
+			budget := domain.RuneBudgetForWords(800)
 			runes := []rune(prevText)
-			if len(runes) > 800 {
-				runes = runes[len(runes)-800:]
+			if len(runes) > budget {
+				runes = runes[len(runes)-budget:]
 			}
 			envelope.Working["previous_tail"] = string(runes)
 		}

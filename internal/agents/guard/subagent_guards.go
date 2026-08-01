@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 
 	"github.com/voocel/agentcore"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -62,7 +63,7 @@ func newCheckpointDeltaGuard(st *store.Store, agentName string, requiredSteps []
 	return func(_ context.Context, info agentcore.StopInfo) agentcore.StopDecision {
 		// 不可恢复错误：直接升级，不浪费一次催促。
 		if _, hard := hardStopReasons[info.Message.StopReason]; hard {
-			slog.Error("subagent stop_guard 检测到不可恢复停机，立即升级",
+			slog.Error(i18n.F("subagent stop_guard 检测到不可恢复停机，立即升级"),
 				"module", "agent.guard", "agent", agentName,
 				"turn", info.TurnIndex, "stop_reason", info.Message.StopReason)
 			if onBlock != nil {
@@ -99,14 +100,14 @@ func newCheckpointDeltaGuard(st *store.Store, agentName string, requiredSteps []
 		lastBlockSeq.Store(latestSeq)
 		n := consecutive.Add(1)
 		if n > subagentMaxConsecutiveBlocks {
-			slog.Error("subagent stop_guard 连续阻拦超限，升级为终止",
+			slog.Error(i18n.F("subagent stop_guard 连续阻拦超限，升级为终止"),
 				"module", "agent.guard", "agent", agentName, "turn", info.TurnIndex, "consecutive", n)
 			if onBlock != nil {
 				onBlock(agentName, "escalated", n)
 			}
 			return agentcore.StopDecision{Allow: false, Escalate: true}
 		}
-		slog.Warn("subagent stop_guard 拦截 end_turn",
+		slog.Warn(i18n.F("subagent stop_guard 拦截 end_turn"),
 			"module", "agent.guard", "agent", agentName, "turn", info.TurnIndex, "consecutive", n)
 		if onBlock != nil {
 			onBlock(agentName, "blocked", n)
@@ -136,11 +137,11 @@ func writerBlockMsg(seen map[string]struct{}) string {
 	_, hasCheck := seen["consistency_check"]
 	switch {
 	case !hasDraft && !hasEdit:
-		return "禁止结束：本轮尚未落盘任何正文。请按 plan_chapter → draft_chapter → check_consistency → commit_chapter 的顺序完成本章；正文只输出在聊天里等于丢失，必须通过工具落盘并提交。"
+		return i18n.F("禁止结束：本轮尚未落盘任何正文。请按 plan_chapter → draft_chapter → check_consistency → commit_chapter 的顺序完成本章；正文只输出在聊天里等于丢失，必须通过工具落盘并提交。")
 	case !hasCheck:
-		return "禁止结束：正文已落盘但未收尾。请先调 check_consistency 核对一致性，再调 commit_chapter 提交本章。draft_chapter / edit_chapter 只是保存草稿，不算完成。"
+		return i18n.F("禁止结束：正文已落盘但未收尾。请先调 check_consistency 核对一致性，再调 commit_chapter 提交本章。draft_chapter / edit_chapter 只是保存草稿，不算完成。")
 	default:
-		return "禁止结束：本章只差 commit_chapter 提交。请立即调用 commit_chapter；若它返回错误，先按错误信息处理（核对章节号、按提示补齐前置动作）再重试提交，不要在未提交的状态下结束。"
+		return i18n.F("禁止结束：本章只差 commit_chapter 提交。请立即调用 commit_chapter；若它返回错误，先按错误信息处理（核对章节号、按提示补齐前置动作）再重试提交，不要在未提交的状态下结束。")
 	}
 }
 
@@ -151,7 +152,7 @@ func NewArchitectStopGuard(st *store.Store, onBlock BlockHook) agentcore.StopGua
 			"premise", "outline", "layered_outline", "characters", "world_rules",
 			"foundation_audit", "expand_arc", "append_volume", "update_compass", "complete_book", "revise_outline",
 		},
-		staticBlockMsg("你必须调用 save_foundation、revise_outline 或 audit_foundation 将产出落盘后才能结束。只输出 Markdown/JSON 文字等于丢失。"),
+		staticBlockMsg(i18n.F("你必须调用 save_foundation、revise_outline 或 audit_foundation 将产出落盘后才能结束。只输出 Markdown/JSON 文字等于丢失。")),
 		onBlock,
 	)
 }
@@ -168,14 +169,14 @@ func NewEditorStopGuard(st *store.Store, task string, onBlock BlockHook) agentco
 	switch {
 	case strings.Contains(task, "save_volume_summary") || strings.Contains(task, "卷摘要"):
 		return newCheckpointDeltaGuard(st, "editor", []string{"volume_summary"},
-			staticBlockMsg("本次任务是生成卷摘要：你必须调用 save_volume_summary 落盘后才能结束，save_review 复核不算完成。"), onBlock)
+			staticBlockMsg(i18n.F("本次任务是生成卷摘要：你必须调用 save_volume_summary 落盘后才能结束，save_review 复核不算完成。")), onBlock)
 	case strings.Contains(task, "save_arc_summary") || strings.Contains(task, "弧摘要"):
 		return newCheckpointDeltaGuard(st, "editor", []string{"arc_summary"},
-			staticBlockMsg("本次任务是生成弧摘要：你必须调用 save_arc_summary 落盘后才能结束，save_review 复核不算完成。"), onBlock)
+			staticBlockMsg(i18n.F("本次任务是生成弧摘要：你必须调用 save_arc_summary 落盘后才能结束，save_review 复核不算完成。")), onBlock)
 	default:
 		// 评审或临时任务：任一审阅/摘要落盘即可（保持既有宽松行为）。
 		return newCheckpointDeltaGuard(st, "editor",
 			[]string{"review", "arc_summary", "volume_summary"},
-			staticBlockMsg("你必须调用 save_review / save_arc_summary / save_volume_summary 之一落盘结果后才能结束。"), onBlock)
+			staticBlockMsg(i18n.F("你必须调用 save_review / save_arc_summary / save_volume_summary 之一落盘结果后才能结束。")), onBlock)
 	}
 }

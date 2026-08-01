@@ -49,7 +49,7 @@ func TestCallStructuredNotifiesRetries(t *testing.T) {
 			reasks++
 		}
 	}}
-	if _, err := callStructured[boundaryBatch](context.Background(), m, segmentContract, "sys", "p", 100, prof, nil); err != nil {
+	if _, err := callStructured[boundaryBatch](context.Background(), m, segmentContract(), "sys", "p", 100, prof, nil); err != nil {
 		t.Fatalf("最终应成功：%v", err)
 	}
 	if retries != 2 || reasks != 1 {
@@ -85,7 +85,7 @@ func TestCallStructuredCancelIsNotSemanticFailure(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	m := &mockModel{responses: []string{"垃圾输出"}}
-	_, err := callStructured[boundaryBatch](ctx, m, segmentContract, "sys", "p", 100, callProfile{}, nil)
+	_, err := callStructured[boundaryBatch](ctx, m, segmentContract(), "sys", "p", 100, callProfile{}, nil)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("应返回 context.Canceled，得 %v", err)
 	}
@@ -99,7 +99,7 @@ func TestCallStructuredCancelIsNotSemanticFailure(t *testing.T) {
 // 错误必须携带原始响应，供 runner 统一落 failures/ 失败工件。
 func TestCallStructuredCarriesRawOnSemanticFailure(t *testing.T) {
 	m := &nativeImportModel{mockModel: &mockModel{responses: []string{"垃圾输出 not json"}}}
-	_, err := callStructured[boundaryBatch](context.Background(), m, segmentContract, "sys", "payload", 100, callProfile{}, nil)
+	_, err := callStructured[boundaryBatch](context.Background(), m, segmentContract(), "sys", "payload", 100, callProfile{}, nil)
 	var se *errSemantic
 	if !errors.As(err, &se) {
 		t.Fatalf("应返回 errSemantic，得 %T：%v", err, err)
@@ -114,7 +114,7 @@ func TestCallStructuredCarriesRawOnProtocolFailure(t *testing.T) {
 		responses: []string{"upstream malformed output"},
 		stops:     []agentcore.StopReason{agentcore.StopReasonError},
 	}}
-	_, err := callStructured[boundaryBatch](context.Background(), m, segmentContract, "sys", "payload", 100, callProfile{}, nil)
+	_, err := callStructured[boundaryBatch](context.Background(), m, segmentContract(), "sys", "payload", 100, callProfile{}, nil)
 	var se *errSemantic
 	if !errors.As(err, &se) || se.Raw != "upstream malformed output" || !strings.Contains(se.Error(), "stop_reason=error") {
 		t.Fatalf("协议错误应携带原始响应，得 %T：%v", err, err)

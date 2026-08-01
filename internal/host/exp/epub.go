@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"fmt"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"html"
 	"strings"
 	"time"
@@ -121,9 +122,9 @@ p { text-indent: 2em; margin: 0.5em 0; }
 
 func renderChapterXHTML(ch int, title string, loc chapterLocation, hasLoc bool, body string) string {
 	var b strings.Builder
-	displayTitle := fmt.Sprintf("第 %d 章", ch)
+	displayTitle := fmt.Sprintf(i18n.F("第 %d 章"), ch)
 	if title != "" {
-		displayTitle = fmt.Sprintf("第 %d 章 %s", ch, title)
+		displayTitle = fmt.Sprintf(i18n.F("第 %d 章 %s"), ch, title)
 	}
 
 	fmt.Fprintf(&b, `<?xml version="1.0" encoding="utf-8"?>
@@ -137,7 +138,7 @@ func renderChapterXHTML(ch int, title string, loc chapterLocation, hasLoc bool, 
 `, html.EscapeString(displayTitle))
 
 	if hasLoc && loc.IsFirstOfVolume {
-		fmt.Fprintf(&b, "  <div class=\"volume-divider\">第 %d 卷 %s</div>\n",
+		fmt.Fprintf(&b, i18n.F("  <div class=\"volume-divider\">第 %d 卷 %s</div>\n"),
 			loc.VolumeIdx, html.EscapeString(strings.TrimSpace(loc.VolumeTitle)))
 	}
 
@@ -171,7 +172,7 @@ func splitParagraphs(body string) []string {
 
 func renderCoverXHTML(novelName string) string {
 	var b strings.Builder
-	b.WriteString(`<?xml version="1.0" encoding="utf-8"?>
+	b.WriteString(i18n.F(`<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">
 <head>
@@ -179,7 +180,7 @@ func renderCoverXHTML(novelName string) string {
   <link rel="stylesheet" type="text/css" href="style.css"/>
 </head>
 <body>
-`)
+`))
 	if name := strings.TrimSpace(novelName); name != "" {
 		fmt.Fprintf(&b, "  <h1 class=\"book-title\">%s</h1>\n", html.EscapeString(name))
 	}
@@ -191,7 +192,7 @@ func renderCoverXHTML(novelName string) string {
 
 func renderNavXHTML(hasCover bool, chapters []int, titleIdx chapterTitleIndex) string {
 	var b strings.Builder
-	b.WriteString(`<?xml version="1.0" encoding="utf-8"?>
+	b.WriteString(i18n.F(`<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="zh-CN">
 <head>
@@ -202,18 +203,18 @@ func renderNavXHTML(hasCover bool, chapters []int, titleIdx chapterTitleIndex) s
   <nav epub:type="toc">
     <h1>目录</h1>
     <ol>
-`)
+`))
 	if hasCover {
-		b.WriteString("      <li><a href=\"cover.xhtml\">封面</a></li>\n")
+		b.WriteString(i18n.F("      <li><a href=\"cover.xhtml\">封面</a></li>\n"))
 	}
 
 	// 平铺章节列表。卷/弧分组在阅读器里反而不如单层目录清爽（阅读器自己会折叠），
 	// 而且 EPUB 3 nav 嵌套 ol 在某些阅读器上渲染怪。保持简单。
 	for _, ch := range chapters {
 		title := strings.TrimSpace(titleIdx[ch])
-		display := fmt.Sprintf("第 %d 章", ch)
+		display := fmt.Sprintf(i18n.F("第 %d 章"), ch)
 		if title != "" {
-			display = fmt.Sprintf("第 %d 章 %s", ch, title)
+			display = fmt.Sprintf(i18n.F("第 %d 章 %s"), ch, title)
 		}
 		fmt.Fprintf(&b, "      <li><a href=\"%s\">%s</a></li>\n",
 			chapterFileName(ch), html.EscapeString(display))

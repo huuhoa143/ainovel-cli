@@ -101,9 +101,11 @@ var (
 			Foreground(colorAccent).
 			Bold(true)
 
+	// KHÔNG đặt Width ở đây: Width của lipgloss vừa là bề rộng tối thiểu vừa là
+	// điểm xuống dòng, nên nhãn dài hơn cột sẽ bị xé thành hai dòng. Việc đệm cho
+	// đủ cột do renderFieldLabel làm bằng tay — xem layout.go.
 	fieldLabelStyle = lipgloss.NewStyle().
-			Foreground(colorMuted).
-			Width(10)
+			Foreground(colorMuted)
 
 	// fieldValueStyle / cardContentStyle 用 bodyTextColor —— 概览区的值（运行态、
 	// 已完成章节数、字数等）、大纲条目、角色列表、章节摘要等"中性正文内容"

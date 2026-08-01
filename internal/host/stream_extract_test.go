@@ -3,6 +3,8 @@ package host
 import (
 	"strings"
 	"testing"
+
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // feedAll 一次性喂入，返回累积输出。
@@ -44,12 +46,63 @@ func mustNotContain(t *testing.T, got, want string) {
 	}
 }
 
+// TestTieuDeStreamLuonGiuTienTo chốt khế ước hai đầu của tiền tố "✻ ".
+//
+// Bên SINH là headerText() ở tệp này; bên NHẬN là renderStreamContent trong
+// internal/entry/tui/panels_activity.go, nó dò khối điều phối agent bằng
+// HasPrefix(text, "✻"). Hai bên nằm ở hai package khác nhau và không có kiểu
+// dùng chung nào buộc chúng khớp — chỉ có quy ước ghi trong comment.
+//
+// Từ lúc tiêu đề đi qua i18n.F, bản dịch trở thành một đường làm vỡ khế ước đó:
+// dịch "✻ 规划" thành "Lên kế hoạch" (bỏ ✻ cho gọn) là một sửa đổi hoàn toàn hợp
+// lý với người dịch, không đụng một dòng Go nào, và hậu quả chỉ hiện ra dưới dạng
+// "tiêu đề trên bảng stream mất màu" — không ai truy ra được từ triệu chứng đó.
+// Test này biến quy ước thành bất biến, và làm ở MỌI locale vì mỗi catalog là một
+// cơ hội mới để vỡ.
+func TestTieuDeStreamLuonGiuTienTo(t *testing.T) {
+	// Hoàn nguyên về locale ĐANG hoạt động, không phải DefaultLocale: package host
+	// cũng được ghim về zh (xem internal/host/imp/i18n_locale_pin_test.go giải
+	// thích lớp lỗi này), nên trả về vi sẽ phá ghim cho các test chạy sau.
+	truoc := i18n.Active()
+	t.Cleanup(func() { _ = i18n.SetLocale(truoc) })
+
+	for _, loc := range []i18n.Locale{i18n.Vietnamese, i18n.Chinese} {
+		if err := i18n.SetLocale(loc); err != nil {
+			t.Fatalf("SetLocale(%s): %v", loc, err)
+		}
+		soTieuDe := 0
+		for tool, cfg := range toolDisplays {
+			if cfg.header == "" {
+				continue // draft_chapter chạy chế độ luồng trần, không có tiêu đề
+			}
+			soTieuDe++
+			e := &jsonFieldExtractor{cfg: cfg}
+			got := e.headerText()
+
+			if !strings.HasPrefix(got, "✻ ") {
+				t.Errorf("[%s] tiêu đề của %s mất tiền tố \"✻ \" — renderStreamContent sẽ không nhận ra khối agent và vẽ tiêu đề bằng màu mặc định\n  msgid: %q\n  dịch : %q",
+					loc, tool, cfg.header, got)
+				continue
+			}
+			if strings.TrimSpace(strings.TrimPrefix(got, "✻ ")) == "" {
+				t.Errorf("[%s] tiêu đề của %s chỉ còn tiền tố, mất phần nhãn\n  msgid: %q",
+					loc, tool, cfg.header)
+			}
+		}
+		// Chống bài kiểm rỗng: nếu ai đó đổi cách cấu hình tiêu đề mà vòng lặp
+		// không còn thấy mục nào, test này sẽ xanh vô nghĩa.
+		if soTieuDe < 10 {
+			t.Fatalf("[%s] chỉ thấy %d tiêu đề trong toolDisplays — bài kiểm này đang rỗng nghĩa", loc, soTieuDe)
+		}
+	}
+}
+
 // ── 通用模式：扁平 obj ──
 
 func TestExtract_PlanChapter(t *testing.T) {
 	in := `{"chapter":1,"title":"卖身契","goal":"建立矿场基线","conflict":"父债","hook":"灰矿","emotion_arc":"压抑"}`
 	out := feedAll(t, "plan_chapter", in)
-	mustContain(t, out, "✻ 规划")
+	mustContain(t, out, i18n.F("✻ 规划"))
 	mustContain(t, out, "chapter: 1")
 	mustContain(t, out, "title: 卖身契")
 	mustContain(t, out, "goal: 建立矿场基线")
@@ -66,7 +119,7 @@ func TestExtract_FoundationCharacters(t *testing.T) {
 		`{"name":"顾小灯","role":"重要配角","description":"药坊试药童女。"}` +
 		`]}`
 	out := feedAll(t, "save_foundation", in)
-	mustContain(t, out, "✻ 设定")
+	mustContain(t, out, i18n.F("✻ 设定"))
 	mustContain(t, out, "type: characters")
 	mustContain(t, out, "scale: long")
 	// 通用渲染：所有字段都展示，包括之前被白名单跳过的 aliases / traits
@@ -122,7 +175,7 @@ func TestExtract_FoundationUpdateCompass(t *testing.T) {
 func TestExtract_SaveReview(t *testing.T) {
 	in := `{"chapter":3,"scope":"chapter","verdict":"polish","summary":"节奏略慢。","dimensions":[{"dimension":"hook","score":55,"verdict":"fail"}],"issues":[{"type":"hook","severity":"error","description":"章末缺钩子。"}],"affected_chapters":[3,4]}`
 	out := feedAll(t, "save_review", in)
-	mustContain(t, out, "✻ 审阅")
+	mustContain(t, out, i18n.F("✻ 审阅"))
 	mustContain(t, out, "verdict: polish")
 	mustContain(t, out, "summary: 节奏略慢。")
 	mustContain(t, out, "dimension: hook")
@@ -140,7 +193,7 @@ func TestExtract_SaveReview(t *testing.T) {
 func TestExtract_CommitChapter(t *testing.T) {
 	in := `{"chapter":1,"summary":"被卖入矿场。","characters":["沈砺","母亲"],"key_events":["签卖身契"],"foreshadow_updates":[{"id":"f1","action":"plant","description":"灰矿发烫。"}],"state_changes":[{"entity":"沈砺","field":"身份","old_value":"采药少年","new_value":"矿场杂役"}]}`
 	out := feedAll(t, "commit_chapter", in)
-	mustContain(t, out, "✻ 章节提交")
+	mustContain(t, out, i18n.F("✻ 章节提交"))
 	mustContain(t, out, "summary: 被卖入矿场。")
 	mustContain(t, out, "- 沈砺")
 	mustContain(t, out, "- 母亲")
@@ -159,7 +212,7 @@ func TestExtract_CommitChapter(t *testing.T) {
 func TestExtract_EditChapter(t *testing.T) {
 	in := `{"chapter":24,"old_string":"沈砺低头不语。\n他攥紧了拳头。","new_string":"沈砺没有抬头，喉结滚动一下。\n指节攥得发白。","replace_all":false}`
 	out := feedAll(t, "edit_chapter", in)
-	mustContain(t, out, "✻ 打磨")
+	mustContain(t, out, i18n.F("✻ 打磨"))
 	mustContain(t, out, "chapter: 24")
 	mustContain(t, out, "old_string: 沈砺低头不语。\n他攥紧了拳头。")
 	mustContain(t, out, "new_string: 沈砺没有抬头，喉结滚动一下。\n指节攥得发白。")
@@ -171,14 +224,14 @@ func TestExtract_EditChapter(t *testing.T) {
 func TestExtract_ReadChapter(t *testing.T) {
 	in := `{"chapter":234,"source":"final"}`
 	out := feedAll(t, "read_chapter", in)
-	mustContain(t, out, "✻ 读章节")
+	mustContain(t, out, i18n.F("✻ 读章节"))
 	mustContain(t, out, "chapter: 234")
 	mustContain(t, out, "source: final")
 }
 
 func TestExtract_CheckConsistency(t *testing.T) {
 	out := feedAll(t, "check_consistency", `{"chapter":234}`)
-	mustContain(t, out, "✻ 一致性检查")
+	mustContain(t, out, i18n.F("✻ 一致性检查"))
 	mustContain(t, out, "chapter: 234")
 }
 
@@ -186,12 +239,12 @@ func TestExtract_CheckConsistency(t *testing.T) {
 // 不能完全静默，至少要输出 header 让用户感知调用。
 func TestExtract_NovelContextEmptyArgs(t *testing.T) {
 	out := feedAll(t, "novel_context", `{}`)
-	mustContain(t, out, "✻ 查询上下文")
+	mustContain(t, out, i18n.F("✻ 查询上下文"))
 }
 
 func TestExtract_NovelContextWithChapter(t *testing.T) {
 	out := feedAll(t, "novel_context", `{"chapter":234}`)
-	mustContain(t, out, "✻ 查询上下文")
+	mustContain(t, out, i18n.F("✻ 查询上下文"))
 	mustContain(t, out, "chapter: 234")
 }
 

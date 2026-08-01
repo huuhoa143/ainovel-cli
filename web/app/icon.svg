@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!--
+    Ba lane của trục sản xuất: tập → cung → chương. Lane đang chạy dùng vàng,
+    màu tín hiệu duy nhất của hệ; hai lane đã xong dùng lam-lục "đã nghiệm thu".
+
+    Có tệp này thì Next phát <link rel="icon"> và trình duyệt không đòi
+    /favicon.ico nữa — bản build tĩnh phục vụ bằng http.FileServer không có tệp
+    đó nên mỗi lần tải trang đều sinh một lỗi 404 trong console.
+
+    Màu ghi thẳng dạng hex chứ không dùng biến CSS: tệp này được tải như ảnh
+    riêng, không thấy :root của globals.css. Giá trị là oklch trong DESIGN.md đã
+    chuyển sang sRGB.
+  -->
+  <rect width="32" height="32" rx="6" fill="#221d17" />
+  <rect x="6" y="8" width="20" height="4" rx="1.5" fill="#4f9d8b" />
+  <rect x="6" y="14" width="13" height="4" rx="1.5" fill="#4f9d8b" />
+  <rect x="6" y="20" width="8" height="4" rx="1.5" fill="#e0a53a" />
+</svg>

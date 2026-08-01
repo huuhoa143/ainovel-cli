@@ -1,95 +1,99 @@
 # ainovel-cli
 
-全自动 AI 长篇小说创作引擎。确定性引擎跑完整本书，模型在每个需要判断的位置被精确使用：Engine 按事实路由驱动 Architect / Writer / Editor 三个自主创作代理，语义裁定按需唤醒 Arbiter。从一句话需求到完整小说，全程无需人工干预。
+Engine viết tiểu thuyết dài bằng AI, toàn tự động. Engine tất định chạy trọn một cuốn sách, model chỉ được gọi đúng những chỗ cần phán đoán: Engine định tuyến theo sự thật để điều phối ba tác tử sáng tác tự chủ Architect / Writer / Editor, và đánh thức Arbiter khi cần phán quyết ngữ nghĩa. Từ một câu yêu cầu tới một cuốn tiểu thuyết hoàn chỉnh, không cần người can thiệp.
+
+> Đây là **bản fork tiếng Việt** của [voocel/ainovel-cli](https://github.com/voocel/ainovel-cli). Giao diện, prompt và tài liệu đã việt hóa nên AI sinh truyện tiếng Việt; xem [Ghi công](#ghi-công) ở cuối.
 
 <p align="center">
   <img src="scripts/sample.gif" alt="ainovel-cli demo" width="800">
   <img src="scripts/novel.png" alt="ainovel-cli bg" width="800">
 </p>
 
-## 特性
+## Đặc điểm
 
-- **确定性引擎 + 多智能体协作** — Engine 按事实决策表调度 Architect / Writer / Editor 三个自主创作代理，主循环零 LLM 开销、行为可穷举测试
-- **语义裁定可审计** — 选规划师、干预分诊、失败出路等判断由 Arbiter 单次调用完成，每次裁定落盘可回放。越简单越稳定，拒绝复杂编排
-- **Step 级断点恢复** — 每个工具执行成功后写入 checkpoint，崩溃后精确到 plan/draft/check/commit 步骤级恢复
-- **卷弧双层滚动规划** — 长篇不再一次性规划全部章节。初始只规划前 2 卷弧骨架 + 第 1 弧详细章节，后续弧/卷在写作推进到时再由 Architect 展开，每次展开都参考前文摘要和角色状态，远期规划不空洞
-- **相关章节智能推荐** — 每章写作时从伏笔、角色出场、状态变化、关系四个维度自动推荐相关历史章节，配合下一章预告，确保 500+ 章长篇的连续性
-- **自适应上下文策略** — 根据总章节数自动切换全量 / 滑窗 / 分层摘要，支持 500+ 章长篇
-- **七维质量评审** — Editor 从设定一致性、角色行为、节奏、叙事连贯、伏笔、钩子、审美品质七个维度评审，审美维度细分描写质感/叙事手法/对话区分度/用词质量/情感打动力五项，每项必须引用原文举证
-- **用户实时干预** — 写作过程中随时在输入框注入修改意见（无需暂停），系统自动评估影响范围并重写受影响章节
-- **可选逐章验收** — 默认仍全自动；需要精细控制时用 `/review on`，每次 `/next` 只放行一个新章节，返工和崩溃恢复不会误消耗许可
-- **统一 TUI 入口** — 交互界面实时观察进度，也支持携带一句需求直接启动
-- **多 LLM 支持** — OpenRouter / Anthropic / Gemini / OpenAI 等等随意切换
+- **Engine tất định + nhiều tác tử phối hợp** — Engine điều phối ba tác tử sáng tác tự chủ Architect / Writer / Editor theo bảng quyết định dựa trên sự thật; vòng lặp chính không tốn một lời gọi LLM nào, hành vi kiểm thử vét cạn được
+- **Phán quyết ngữ nghĩa có thể kiểm toán** — chọn kiến trúc sư, phân loại can thiệp, đường ra khi thất bại đều do Arbiter quyết trong một lời gọi duy nhất; mỗi phán quyết ghi xuống đĩa và phát lại được. Càng đơn giản càng ổn định, từ chối điều phối phức tạp
+- **Khôi phục checkpoint ở cấp step** — mỗi tool chạy xong là ghi một checkpoint, sập máy vẫn khôi phục chính xác tới bước plan/draft/check/commit
+- **Quy hoạch cuốn dần hai tầng tập–cung** — truyện dài không còn quy hoạch toàn bộ chương một lần. Ban đầu chỉ quy hoạch khung 2 tập đầu + chương chi tiết của cung 1; các cung/tập sau do Architect mở rộng khi viết tới, mỗi lần mở rộng đều tham chiếu tóm tắt phía trước và trạng thái nhân vật nên quy hoạch xa không rỗng
+- **Gợi ý chương liên quan thông minh** — mỗi chương khi viết, hệ thống tự gợi ý các chương lịch sử liên quan theo bốn chiều: phục bút, nhân vật xuất hiện, biến động trạng thái, quan hệ; kèm dự báo chương kế tiếp để giữ tính liên tục cho truyện 500+ chương
+- **Chiến lược ngữ cảnh tự thích ứng** — tự chuyển giữa toàn phần / cửa sổ trượt / tóm tắt phân tầng theo tổng số chương, đủ sức cho truyện 500+ chương
+- **Duyệt chất lượng bảy chiều** — Editor duyệt theo bảy chiều: nhất quán thiết định, hành vi nhân vật, nhịp, mạch tự sự liền lạc, phục bút, móc, và phẩm chất thẩm mỹ; riêng chiều thẩm mỹ chia nhỏ thành năm mục chất cảm miêu tả / thủ pháp tự sự / độ phân biệt đối thoại / chất lượng dùng từ / sức lay động cảm xúc, mỗi mục buộc phải dẫn nguyên văn làm chứng
+- **Người dùng can thiệp thời gian thực** — trong lúc viết có thể tiêm ý kiến sửa vào ô nhập bất cứ lúc nào (không cần tạm dừng); hệ thống tự lượng định phạm vi ảnh hưởng và viết lại những chương bị ảnh hưởng
+- **Nghiệm thu từng chương tùy chọn** — mặc định vẫn toàn tự động; khi cần kiểm soát tinh, dùng `/review on` để mỗi lần `/next` chỉ mở đúng một chương mới, viết lại và khôi phục sau sập máy không tiêu lẫn giấy phép
+- **Một cửa vào TUI thống nhất** — giao diện tương tác theo dõi tiến độ trực tiếp, cũng có thể mang theo một câu yêu cầu để khởi động luôn
+- **Web studio đọc store** — `ainovel-cli serve --web <thư mục>` mở một bề mặt vận hành chỉ-đọc: trục sản xuất tập/cung/chương, bảng chương, nhật ký phán quyết của Arbiter, dòng sự kiện realtime qua SSE
+- **Tiếng Việt là mặc định** — giao diện, prompt, tài liệu tham chiếu và văn phong đều đã việt hóa nên AI sinh truyện tiếng Việt; đặt `AINOVEL_LANG=zh` để quay về bản gốc upstream
+- **Hỗ trợ nhiều LLM** — OpenRouter / Anthropic / Gemini / OpenAI v.v., chuyển đổi tùy ý
 
-## 架构
+## Kiến trúc
 
-核心设计：**事实层确定，语义层自主**。可枚举的状态迁移由确定性代码执行（Engine + Route）；边界清晰的判断按需咨询 LLM 函数（Arbiter）；开放式创作交给自主的 LLM 循环（Workers）。一句话概括：一个串行确定性 Engine、三个自主 Worker、少数几个按需 Arbiter 函数、一个文件系统事实层。
+Thiết kế cốt lõi: **tầng sự thật thì tất định, tầng ngữ nghĩa thì tự chủ**. Những chuyển trạng thái liệt kê được thì do code tất định thực thi (Engine + Route); những phán đoán có biên rõ ràng thì hỏi hàm LLM khi cần (Arbiter); còn sáng tác mở thì giao cho vòng lặp LLM tự chủ (Workers). Một câu tóm lại: một Engine tất định chạy tuần tự, ba Worker tự chủ, vài hàm Arbiter gọi khi cần, và một tầng sự thật nằm trên hệ tệp.
 
 ```
-┌─────────────────────────────────────────────────┐
-│              Host / Engine（确定性）              │
-│  读 Store → Route → 直接运行 Worker → 循环        │
-│  启动裁定 / 干预分诊 / 失败僵局 → 按需咨询 Arbiter  │
-└────┬──────────┬──────────┬─────────────┬────────┘
-     │          │          │             │
- ┌───▼────┐ ┌───▼───┐ ┌────▼────┐   ┌────▼────┐
- │Architect│ │Writer │ │ Editor  │   │ Arbiter │
- │(LLM循环)│ │(LLM循环)│ │(LLM循环)│   │(LLM函数)│
- └───┬────┘ └───┬───┘ └────┬────┘   └─────────┘
-     └──────────┼──────────┘
-                │ 工具调用（IO + checkpoint）
-┌───────────────▼─────────────────────────────────┐
-│                   Store                         │
-│  Progress / Checkpoint / Outline / Drafts / ... │
-└─────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│                    Host / Engine (tất định)                    │
+│  đọc Store → Route → chạy Worker trực tiếp → lặp               │
+│  phán quyết khởi động / phân loại can thiệp / bế tắc → Arbiter │
+└─────┬────────────┬────────────┬────────────┬───────────────────┘
+      │            │            │            │
+ ┌────▼────┐  ┌────▼────┐  ┌────▼────┐  ┌────▼────┐
+ │Architect│  │ Writer  │  │ Editor  │  │ Arbiter │
+ │vòng LLM │  │vòng LLM │  │vòng LLM │  │ hàm LLM │
+ └────┬────┘  └────┬────┘  └────┬────┘  └─────────┘
+      └────────────┼────────────┘
+                   │ lời gọi tool (IO + checkpoint)
+┌──────────────────▼─────────────────────────────────────────────┐
+│                             Store                              │
+│  Progress / Checkpoint / Outline / Drafts / ...                │
+└────────────────────────────────────────────────────────────────┘
 ```
 
-- **Engine** — 每轮从 Store 读事实、按 Route 决策表派发 Worker，执行决定、不参与文学判断；崩溃恢复=读 store 续跑,无会话可恢复
-- **Arbiter** — 按需唤醒的语义裁定（选规划师、用户干预分诊、失败/僵局出路），事实进、结构化决策出，每次裁定落盘可审计可回放
-- **Workers** — Architect / Writer / Editor 各自独立 context 的自主创作循环，通过 Store 中的工件协作
-- **Tools** — 单文件原子 IO + 幂等重放；章节提交使用持久化 Saga + checkpoint，只返事实 JSON，不夹带指令
+- **Engine** — mỗi lượt đọc sự thật từ Store, phái Worker theo bảng quyết định Route; nó quyết định việc thực thi, không tham gia phán đoán văn học; khôi phục sau sập máy = đọc store rồi chạy tiếp, không có phiên nào cần phục hồi
+- **Arbiter** — phán quyết ngữ nghĩa được đánh thức khi cần (chọn kiến trúc sư, phân loại can thiệp của người dùng, đường ra khi thất bại/bế tắc); sự thật vào, quyết định có cấu trúc ra, mỗi phán quyết ghi xuống đĩa nên kiểm toán và phát lại được
+- **Workers** — Architect / Writer / Editor là các vòng sáng tác tự chủ, mỗi vòng một ngữ cảnh riêng, phối hợp với nhau qua các hiện vật trong Store
+- **Tools** — IO nguyên tử một tệp + phát lại bất biến; việc nộp chương dùng Saga bền vững + checkpoint, chỉ trả JSON sự thật, không kèm chỉ thị
 
-### 智能体职责
+### Trách nhiệm từng tác tử
 
-| 角色 | 职责 | 工具 |
+| Vai | Trách nhiệm | Tool |
 |--------|------|------|
-| **Arbiter** | 语义裁定：启动选规划师、用户干预分诊、失败/僵局出路 | 无（单次 LLM 调用，输出结构化决策） |
-| **Architect** | 生成前提、大纲、角色档案、世界规则 | `novel_context` `save_foundation` |
-| **Writer** | 自主完成一章的构思、写作、自审和提交 | `novel_context` `read_chapter` `plan_chapter` `draft_chapter` `check_consistency` `commit_chapter` |
-| **Editor** | 阅读原文，从结构和审美两个层面审阅 | `novel_context` `read_chapter` `save_review` `save_arc_summary` `save_volume_summary` |
+| **Arbiter** | Phán quyết ngữ nghĩa: chọn kiến trúc sư lúc khởi động, phân loại can thiệp của người dùng, đường ra khi thất bại/bế tắc | không có (một lời gọi LLM, xuất ra quyết định có cấu trúc) |
+| **Architect** | Sinh tiền đề, dàn ý, hồ sơ nhân vật, luật thế giới | `novel_context` `save_foundation` |
+| **Writer** | Tự chủ hoàn tất một chương: cấu tứ, viết, tự duyệt và nộp | `novel_context` `read_chapter` `plan_chapter` `draft_chapter` `check_consistency` `commit_chapter` |
+| **Editor** | Đọc nguyên văn, duyệt trên hai tầng kết cấu và thẩm mỹ | `novel_context` `read_chapter` `save_review` `save_arc_summary` `save_volume_summary` |
 
-### 写作流程
+### Luồng viết
 
 ```
-用户需求 → Arbiter 选规划师 → Architect 规划骨架+首弧 → Writer 逐章写作 → Editor 弧级评审
-              (裁定落盘)                                     ↑                   │
-                                                            ├── 重写/打磨 ◄──────┘
-                                                            │
-                                                     Architect 展开下一弧/卷
-                                                    （参考前文摘要+角色快照）
+Yêu cầu → Arbiter chọn kiến trúc sư → Architect quy hoạch khung + cung 1 → Writer viết từng chương → Editor duyệt cung
+             (phán quyết lưu đĩa)                                                  ↑                        │
+                                                                                   ├── viết lại/gia công ◄──┘
+                                                                                   │
+                                                                        Architect mở rộng cung/tập kế tiếp
+                                                                       (tóm tắt trước + ảnh chụp nhân vật)
 ```
 
-每一步"下一个派谁"由 Engine 的 Route 决策表按 Store 事实推导（万级组合穷举测试钉死），不消耗任何 LLM 调用。
+Ở mỗi bước, câu hỏi "phái ai tiếp" do bảng quyết định Route của Engine suy ra từ sự thật trong Store (đã đóng đinh bằng kiểm thử vét cạn hàng vạn tổ hợp), không tiêu bất kỳ lời gọi LLM nào.
 
-Writer 按固定顺序完成每章（写作内容完全自主，工具调用顺序严格）：
+Writer hoàn tất mỗi chương theo thứ tự cố định (nội dung viết thì hoàn toàn tự chủ, thứ tự gọi tool thì nghiêm ngặt):
 
-1. `novel_context` — 加载上下文（前情摘要、伏笔、角色状态、风格规则、相关章节推荐）
-2. `read_chapter` — 回读前文找回语气和节奏
-3. `plan_chapter` — 构思本章目标、冲突、情绪弧线
-4. `draft_chapter` — 写入整章正文
-5. `check_consistency` — 对照状态数据检查一致性（必须在 draft 之后）
-6. `commit_chapter` — 提交终稿，落盘事实字段（`arc_end` / `next_chapter` / 反馈池等），下一步由 Engine 按 Route 决策表推导
+1. `novel_context` — nạp ngữ cảnh (tóm tắt tình tiết trước, phục bút, trạng thái nhân vật, luật văn phong, gợi ý chương liên quan)
+2. `read_chapter` — đọc lại phía trước để tìm lại giọng và nhịp
+3. `plan_chapter` — cấu tứ mục tiêu, xung đột, đường cong cảm xúc của chương này; kết quả là **khế ước chương**, tức định nghĩa hoàn thành của chương này, và cũng là bản mà Editor đối chiếu khi nghiệm thu
+4. `draft_chapter` — viết trọn phần chính văn của chương
+5. `check_consistency` — đối chiếu dữ liệu trạng thái để kiểm tính nhất quán (buộc phải sau draft)
+6. `commit_chapter` — nộp bản cuối, ghi xuống đĩa các trường sự thật (`arc_end` / `next_chapter` / bể phản hồi v.v.); bước kế tiếp do Engine suy ra theo bảng quyết định Route
 
-### 状态迁移规则
+### Luật chuyển trạng thái
 
-系统内部把运行状态拆成两层：
+Bên trong, hệ thống tách trạng thái vận hành thành hai tầng:
 
-- **Phase** — 大阶段，表示作品目前处于设定期、写作期还是已完成
-- **Flow** — 当前活跃流程，表示系统此刻是在正常写作、审阅、重写、打磨还是处理用户干预
+- **Phase** — giai đoạn lớn, cho biết tác phẩm đang ở kỳ thiết định, kỳ viết, hay đã hoàn thành
+- **Flow** — luồng đang hoạt động, cho biết ngay lúc này hệ thống đang viết bình thường, đang duyệt, đang viết lại, đang gia công, hay đang xử lý can thiệp của người dùng
 
 #### Phase
 
-`Phase` 采用“只前进不回退”的规则：
+`Phase` áp dụng luật "chỉ tiến, không lùi":
 
 ```text
 init -> premise -> outline -> writing -> complete
@@ -97,23 +101,23 @@ init -> premise -> outline -> writing -> complete
   \--------------> writing
 ```
 
-含义：
+Ý nghĩa:
 
-- `init` — 任务已创建，尚未形成稳定设定
-- `premise` — 已保存故事前提
-- `outline` — 已保存大纲，可以进入正式写作
-- `writing` — 已进入章节创作期
-- `complete` — 全书流程结束
+- `init` — nhiệm vụ đã tạo, chưa hình thành thiết định ổn định
+- `premise` — đã lưu tiền đề câu chuyện
+- `outline` — đã lưu dàn ý, có thể vào kỳ viết chính thức
+- `writing` — đã vào kỳ sáng tác từng chương
+- `complete` — toàn bộ luồng của cuốn sách đã kết thúc
 
-规则说明：
+Giải thích luật:
 
-- 允许同态更新，例如 `writing -> writing`
-- 允许前进，例如 `outline -> writing`
-- 不允许回退，例如 `writing -> premise`、`complete -> writing`
+- Cho phép cập nhật cùng trạng thái, ví dụ `writing -> writing`
+- Cho phép tiến, ví dụ `outline -> writing`
+- Không cho phép lùi, ví dụ `writing -> premise`, `complete -> writing`
 
 #### Flow
 
-`Flow` 只描述写作期内的活跃流程，允许在几个工作流之间切换：
+`Flow` chỉ mô tả các luồng hoạt động bên trong kỳ viết, cho phép chuyển qua lại giữa vài luồng công việc:
 
 ```text
 writing   -> reviewing / rewriting / polishing / steering / writing
@@ -123,99 +127,99 @@ polishing -> writing / steering / polishing
 steering  -> writing / reviewing / rewriting / polishing / steering
 ```
 
-含义：
+Ý nghĩa:
 
-- `writing` — 正常推进下一章
-- `reviewing` — Editor 正在评审
-- `rewriting` — 处理必须重写的章节
-- `polishing` — 处理只需打磨的章节
-- `steering` — 正在评估并处理用户干预
+- `writing` — đẩy sang chương kế tiếp một cách bình thường
+- `reviewing` — Editor đang duyệt
+- `rewriting` — xử lý những chương buộc phải viết lại
+- `polishing` — xử lý những chương chỉ cần gia công
+- `steering` — đang lượng định và xử lý can thiệp của người dùng
 
-规则说明：
+Giải thích luật:
 
-- 允许 `writing -> reviewing`，例如章节提交后触发评审
-- 允许 `reviewing -> rewriting/polishing/writing`，由评审结果决定
-- 允许 `steering -> writing/reviewing/rewriting/polishing`，由干预影响范围决定
-- 不允许明显反常的跳转，例如 `rewriting -> reviewing`
+- Cho phép `writing -> reviewing`, ví dụ nộp chương xong thì kích hoạt duyệt
+- Cho phép `reviewing -> rewriting/polishing/writing`, do kết quả duyệt quyết định
+- Cho phép `steering -> writing/reviewing/rewriting/polishing`, do phạm vi ảnh hưởng của can thiệp quyết định
+- Không cho phép những cú nhảy rõ ràng bất thường, ví dụ `rewriting -> reviewing`
 
-这些规则现在由代码中的轻量校验统一约束，避免状态回退或跳到不合理的流程分支。
+Các luật này hiện được một lớp kiểm tra nhẹ trong code ràng buộc thống nhất, tránh trạng thái lùi hoặc nhảy sang nhánh luồng vô lý.
 
-### 长篇滚动规划
+### Quy hoạch cuốn dần cho truyện dài
 
-传统方案一次规划所有章节，300+ 章时大纲空洞、节奏像赶进度。本系统采用**指南针 + 视野滚动规划**，模拟网文作者的真实创作流程：
-
-```
-初始规划                     弧结束时                      卷结束时
-┌────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
-│ 终局方向（指南针）   │    │ Editor 弧级评审      │    │ Editor 卷级评审      │
-│ 起步 2 卷，后续按需  │    │ 弧摘要 + 角色快照    │    │ 卷摘要               │
-│ 第1弧详细章节       │ →  │ Architect 展开下一弧 │ → │ Architect 自主创建   │
-│ 角色 + 世界观       │    │ Writer 继续写作      │    │ 下一卷 + 更新指南针   │
-└────────────────────┘    └─────────────────────┘    └─────────────────────┘
-```
-
-- **指南针（Compass）** — 终局方向 + 活跃长线 + 规模估计，每次卷边界由 Architect 更新，故事方向可随创作演化
-- **按需生成** — 当前卷写完后，Architect 根据已写内容自主创建下一卷。初始规划生成 2 卷作为起步，后续卷按需生成
-- **骨架弧** — 只有 goal + 预估章数，到达时再展开详细章节
-- **渐进细化** — 每次展开都参考前文摘要、角色快照、风格规则，越往后写越精确
-- **通用节奏模板** — 成长突破弧 / 竞技对抗弧 / 探索发现弧 / 恩怨冲突弧 / 日常过渡弧，每种弧型有参考密度和适用题材映射
-
-### 长篇上下文管理
-
-500+ 章小说采用三级摘要 + 四级压缩管线 + 智能推荐：
+Cách làm truyền thống quy hoạch tất cả chương một lần; tới 300+ chương thì dàn ý rỗng, nhịp như chạy cho kịp tiến độ. Hệ thống này dùng **la bàn + quy hoạch cuốn dần theo tầm nhìn**, mô phỏng đúng quy trình sáng tác thật của tác giả truyện mạng:
 
 ```
-卷（Volume）→ 卷摘要
-└── 弧（Arc）→ 弧摘要 + 角色快照 + 风格规则
-    └── 章（Chapter）→ 章摘要（滑窗最近3章）
+Quy hoạch ban đầu               Khi cung kết thúc                  Khi tập kết thúc
+┌───────────────────────────┐   ┌────────────────────────────────┐   ┌──────────────────────────┐
+│ Hướng kết cục (la bàn)    │   │ Editor duyệt cấp cung          │   │ Editor duyệt cấp tập     │
+│ Khởi đầu 2 tập, sau mở dần│   │ Tóm tắt cung + ảnh chụp NV     │   │ Tóm tắt tập              │
+│ Chương chi tiết của cung 1│ → │ Architect mở rộng cung sau     │ → │ Architect tự chủ tạo     │
+│ Nhân vật + luật thế giới  │   │ Writer tiếp tục viết           │   │ tập kế + cập nhật la bàn │
+└───────────────────────────┘   └────────────────────────────────┘   └──────────────────────────┘
 ```
 
-- **分层摘要** — 近处用章摘要，中距离用弧摘要，远处用卷摘要，层层压缩不丢信息
-- **相关章节推荐** — 每章写作时从伏笔、角色出场、状态变化、关系四个维度反查历史章节，推荐 Writer 按需回读
-- **下一章预告** — 加载下一章大纲，帮 Writer 设计章末钩子和伏笔衔接
-- **弧边界检测** — 自动识别弧/卷结束，触发评审、摘要生成和下一弧/卷展开
+- **La bàn (Compass)** — hướng kết cục + các mạch dài đang hoạt động + ước lượng quy mô; Architect cập nhật ở mỗi biên tập, nên hướng truyện có thể tiến hóa theo quá trình sáng tác
+- **Sinh theo nhu cầu** — viết xong tập hiện tại, Architect tự chủ tạo tập kế tiếp dựa trên phần đã viết. Quy hoạch ban đầu sinh 2 tập làm bước khởi động, các tập sau sinh khi cần
+- **Cung khung** — chỉ có goal + số chương ước lượng, tới lúc mới mở rộng thành chương chi tiết
+- **Tinh chỉnh dần** — mỗi lần mở rộng đều tham chiếu tóm tắt phía trước, ảnh chụp nhân vật và luật văn phong, càng viết về sau càng chính xác
+- **Mẫu nhịp dùng chung** — cung đột phá trưởng thành / cung tranh đấu thi kỹ / cung khám phá phát hiện / cung ân oán xung đột / cung chuyển tiếp thường ngày; mỗi loại cung có mật độ tham chiếu và bản đồ đề tài phù hợp
 
-#### 上下文压缩管线
+### Quản lý ngữ cảnh truyện dài
 
-当对话超出模型上下文窗口时，按代价从低到高逐级压缩：
+Tiểu thuyết 500+ chương dùng ba cấp tóm tắt + đường ống nén bốn cấp + gợi ý thông minh:
+
+```
+Tập (Volume) → tóm tắt tập
+└── Cung (Arc) → tóm tắt cung + ảnh chụp nhân vật + luật văn phong
+    └── Chương (Chapter) → tóm tắt chương (cửa sổ trượt 3 chương gần nhất)
+```
+
+- **Tóm tắt phân tầng** — gần thì dùng tóm tắt chương, trung bình thì dùng tóm tắt cung, xa thì dùng tóm tắt tập; nén từng tầng mà không mất thông tin
+- **Gợi ý chương liên quan** — mỗi chương khi viết, hệ thống tra ngược các chương lịch sử theo bốn chiều phục bút, nhân vật xuất hiện, biến động trạng thái, quan hệ; gợi ý để Writer đọc lại khi cần
+- **Dự báo chương kế tiếp** — nạp dàn ý chương sau để Writer thiết kế móc cuối chương và mối nối phục bút
+- **Phát hiện biên cung** — tự nhận ra cung/tập kết thúc, kích hoạt duyệt, sinh tóm tắt và mở rộng cung/tập kế tiếp
+
+#### Đường ống nén ngữ cảnh
+
+Khi hội thoại vượt cửa sổ ngữ cảnh của model, hệ thống nén dần theo giá phải trả từ thấp lên cao:
 
 ```
 ToolResultMicrocompact → LightTrim → StoreSummaryCompact → FullSummary
-     清理旧工具结果        截断长文本      store 零 LLM 压缩      LLM 摘要兜底
+   dọn kết quả tool cũ    cắt văn bản dài  store nén 0 LLM   LLM tóm tắt đỡ lưng
 ```
 
-- **StoreSummaryCompact** — Writer 专用，用 store 中已有的章节摘要、角色快照、伏笔台账直接替换旧消息，零 LLM 开销
-- **FullSummary 小说定制** — Writer 使用面向叙事连续性的摘要提示词，明确要求保留角色状态、伏笔线索、审稿待修项、风格锚点
-- **压缩后恢复包** — FullSummary 后自动注入当前章节计划、大纲和角色快照，防止 Writer 压缩后"失忆"
-- **熔断器** — 压缩连续失败时自动跳过并显式告警，采用半开模式，下轮自动重试
-- **CJK Token 估算** — 中文 `runes × 1.5`，不会因为 `bytes/4` 低估而导致压缩触发滞后
-- **TUI 健康度渐变** — 上下文占用绿(<70%)→黄(70-85%)→红(>85%)实时展示
+- **StoreSummaryCompact** — riêng cho Writer, dùng luôn tóm tắt chương, ảnh chụp nhân vật, sổ phục bút đã có trong store để thay thế tin nhắn cũ, không tốn một lời gọi LLM nào
+- **FullSummary bản riêng cho tiểu thuyết** — Writer dùng prompt tóm tắt hướng tới sự liền lạc của mạch tự sự, yêu cầu rõ ràng phải giữ trạng thái nhân vật, đầu mối phục bút, mục còn phải sửa theo duyệt, và các mốc neo văn phong
+- **Gói khôi phục sau khi nén** — sau FullSummary, hệ thống tự tiêm lại kế hoạch chương hiện tại, dàn ý và ảnh chụp nhân vật để Writer không bị "mất ký ức" sau khi nén
+- **Cầu chì (circuit breaker)** — khi nén thất bại liên tiếp thì tự bỏ qua và cảnh báo rõ; dùng chế độ nửa mở, lượt sau tự thử lại
+- **Ước lượng token CJK** — tiếng Trung tính `runes × 1.5`, không bị `bytes/4` ước thấp làm nén kích hoạt trễ
+- **Sức khỏe TUI đổi màu dần** — mức chiếm dụng ngữ cảnh hiện trực tiếp: xanh (<70%) → vàng (70-85%) → đỏ (>85%)
 
-## 快速开始
+## Bắt đầu nhanh
 
 ```bash
-# 一键安装（macOS / Linux，无需 Go）
+# Cài một phát (macOS / Linux, không cần Go)
 curl -fsSL https://raw.githubusercontent.com/voocel/ainovel-cli/main/scripts/install.sh | sh
 
-# 安装指定版本
+# Cài phiên bản chỉ định
 curl -fsSL https://raw.githubusercontent.com/voocel/ainovel-cli/main/scripts/install.sh | sh -s -- v1.2.3
 
-# 或通过 Go 安装
+# Hoặc cài qua Go
 go install github.com/voocel/ainovel-cli/cmd/ainovel-cli@latest
 
-# 查看版本 / 更新到最新版本
+# Xem phiên bản / cập nhật lên bản mới nhất
 ainovel-cli --version
 ainovel-cli update
 
-# 首次运行，自动进入引导流程（选择 Provider → 输入 API Key → Base URL → 模型名）
+# Chạy lần đầu sẽ tự vào luồng dẫn dắt (chọn Provider → nhập API Key → Base URL → tên model)
 ainovel-cli
 ```
 
-> Windows 或手动安装：前往 [Releases](https://github.com/voocel/ainovel-cli/releases/latest) 下载对应平台的包。
+> Windows hoặc cài tay: vào [Releases](https://github.com/voocel/ainovel-cli/releases/latest) tải gói đúng nền tảng.
 
 ### Docker
 
-Docker 镜像适合在服务器/NAS 上运行 headless 长任务，也可以用 `-it` 进入 TUI。配置和作品目录建议挂载到宿主机：
+Ảnh Docker phù hợp để chạy tác vụ dài headless trên server/NAS, cũng có thể dùng `-it` để vào TUI. Nên mount thư mục cấu hình và thư mục tác phẩm ra máy chủ:
 
 ```bash
 mkdir -p config workspace
@@ -231,32 +235,60 @@ docker run --rm \
   -v "$PWD/config:/root/.ainovel" \
   -v "$PWD/workspace:/workspace" \
   ghcr.io/voocel/ainovel-cli:latest \
-  --headless --prompt "写一本东方玄幻长篇，主角从边陲小城起步"
+  --headless --prompt "viết một truyện huyền huyễn phương Đông dài, nhân vật chính khởi đầu từ một thị trấn biên thùy"
 ```
 
-也可以用 Compose：
+Cũng có thể dùng Compose:
 
 ```bash
 docker compose run --rm ainovel
-docker compose run --rm ainovel --headless --prompt "写一本悬疑短篇"
+docker compose run --rm ainovel --headless --prompt "viết một truyện trinh thám ngắn"
 ```
 
-进入 TUI 后，启动阶段支持两种前置交互：
+Sau khi vào TUI, ở giai đoạn khởi động có hai kiểu tương tác trước khi vào việc:
 
-- `快速开始`：一句话直接进入创作
-- `共创规划`：与 AI 多轮对话澄清需求，**右侧实时同步整理出的创作指令草稿**；AI 每轮主动提供 1-3 条引导建议，按数字键一键填入输入框，按 `Ctrl+S` 进入正式创作
+- `Bắt đầu nhanh`: một câu là vào sáng tác ngay
+- `Cùng lên kế hoạch`: đối thoại nhiều lượt với AI để làm rõ yêu cầu, **bên phải đồng bộ trực tiếp bản nháp chỉ thị sáng tác đang được chỉnh ra**; mỗi lượt AI chủ động đưa 1-3 gợi ý dẫn dắt, bấm số là điền luôn vào ô nhập, bấm `Ctrl+S` để vào sáng tác chính thức
 
-两种模式最终都会收敛为同一份创作指令，再进入同一套创作引擎。
+Cả hai chế độ cuối cùng đều thu về cùng một bản chỉ thị sáng tác, rồi vào cùng một bộ engine sáng tác.
 
-### 管理多本小说
+### Web studio
 
-每本小说绑定到启动目录，产物落在 `{cwd}/output/novel/`。换目录启动 = 换一本，`cd` 回去启动 = 自动从最近 checkpoint 恢复。配置 `~/.ainovel/config.json` 全局共享，无需复制。
+Ngoài TUI, bản fork này có một **bề mặt vận hành trên web** đọc trực tiếp từ store:
 
-### 配置文件
+```bash
+# Chỉ API (127.0.0.1:8420), đọc các tác phẩm trong ./output
+ainovel-cli serve
 
-首次运行时自动引导生成配置文件 `~/.ainovel/config.json`。进入 TUI 后可输入 `/config` 新增或编辑 Provider、保存多个模型并为每个模型设置上下文窗口；保存后立即生效。`/model` 用于在这些已保存模型之间切换。
+# Kèm giao diện đã build
+ainovel-cli serve --web ./web/out
 
-也可以手动创建配置文件，参考仓库根目录的 `config.example.jsonc`。首次引导也会复制一份到 `~/.ainovel/config.example.jsonc`，方便本机离线查看。
+# Chọn thư mục gốc khác, hoặc chỉ phục vụ đúng một tác phẩm
+ainovel-cli serve --root ./output --book ten-tac-pham --addr 127.0.0.1:8420
+```
+
+Studio cho xem: trục sản xuất tập/cung/chương theo tỉ lệ thật, bảng chương kèm trạng thái từng công đoạn, nhật ký phán quyết của Arbiter (mỗi dòng có lý do dựa trên sự thật), và dòng sự kiện realtime qua SSE.
+
+Studio **làm được cả vòng đời**: tạo tác phẩm, chạy, can thiệp, nghiệm thu từng chương, đặt khóa API, đổi model theo vai, nhập truyện ngoài, xuất bản — không cần mở terminal lần nào.
+
+Engine chạy **trong cùng process** với studio. Bản trước của tài liệu này giải thích vì sao studio chỉ đọc ("engine là process riêng và nó sở hữu quyền ghi; hai process cùng sửa `meta/run_meta.json` sẽ làm mất ý kiến can thiệp"), và lý lẽ đó đúng với tiền đề của nó. Tiền đề đã đổi: không còn hai process, studio LÀ người ghi duy nhất. Mọi lệnh ghi đi qua `*host.Host` nên chúng dùng đúng những giao dịch mà engine dùng cho chính nó.
+
+Hai hàng rào đi kèm:
+
+- **Khóa mức tệp** (`meta/studio.lock`). `store.IO.WithWriteLock` chỉ là mutex trong process, nên nó không thấy process khác. TUI vẫn chạy được, nên khóa này là thứ chặn hai bên cùng mở một cuốn. Nó nêu PID đang giữ và đường dẫn tệp cần xóa nếu khóa mồ côi.
+- **Đường ghi chỉ bật trên loopback.** Từ khi studio giữ khóa API và khởi động được engine, một yêu cầu từ người lạ không chỉ đọc được bản thảo mà còn tiêu được tiền. Nên `--addr` không phải loopback thì cả nhóm route ghi KHÔNG được mắc — studio lui về đúng hành vi chỉ-đọc cũ. Thêm một hàng rào chống CSRF sang localhost (header riêng + kiểm `Origin`/`Host`), vì mọi trang web đang mở đều gọi được tới `127.0.0.1`.
+
+Khóa API đi **một chiều**: đặt được qua giao diện, nhưng API không bao giờ trả nó về — chỗ nào cần hiện thì chỉ hiện dạng che (`sk-4…802`).
+
+### Quản lý nhiều tiểu thuyết
+
+Mỗi cuốn tiểu thuyết gắn với thư mục khởi động, sản phẩm nằm ở `{cwd}/output/novel/`. Khởi động ở thư mục khác = một cuốn khác, `cd` về lại rồi khởi động = tự khôi phục từ checkpoint gần nhất. Cấu hình `~/.ainovel/config.json` dùng chung toàn cục, không cần copy.
+
+### Tệp cấu hình
+
+Chạy lần đầu, hệ thống tự dẫn dắt sinh tệp cấu hình `~/.ainovel/config.json`. Vào TUI rồi có thể nhập `/config` để thêm hoặc sửa Provider, lưu nhiều model và đặt cửa sổ ngữ cảnh cho từng model; lưu là có hiệu lực ngay. `/model` dùng để chuyển giữa các model đã lưu đó.
+
+Cũng có thể tạo tệp cấu hình bằng tay, tham khảo `config.example.jsonc` ở thư mục gốc của repo. Luồng dẫn dắt lần đầu cũng copy một bản sang `~/.ainovel/config.example.jsonc` cho tiện xem offline trên máy.
 
 ```jsonc
 {
@@ -281,129 +313,129 @@ docker compose run --rm ainovel --headless --prompt "写一本悬疑短篇"
 }
 ```
 
-#### 配置文件查找顺序（后者覆盖前者）
+#### Thứ tự tìm tệp cấu hình (bản sau ghi đè bản trước)
 
-1. `~/.ainovel/config.json` — 全局配置
-2. `./.ainovel/config.json` — 项目级覆盖（可选）
+1. `~/.ainovel/config.json` — cấu hình toàn cục
+2. `./.ainovel/config.json` — ghi đè ở cấp dự án (tùy chọn)
 
-> 项目级 `.ainovel/` 是全局 `~/.ainovel/` 的镜像：同样的结构、只是根目录从家目录换成当前项目。配置放 `./.ainovel/config.json`，写作规则放 `./.ainovel/rules/*.md`（详见下文「去 AI 味与自定义规则」）。该目录含密钥，已默认加入 `.gitignore`。
+> `.ainovel/` cấp dự án là bản phản chiếu của `~/.ainovel/` toàn cục: cùng cấu trúc, chỉ khác gốc từ thư mục home đổi sang dự án hiện tại. Cấu hình đặt ở `./.ainovel/config.json`, luật viết đặt ở `./.ainovel/rules/*.md` (xem phần «Khử mùi AI và luật tự định nghĩa» bên dưới). Thư mục này chứa khóa nên đã được thêm vào `.gitignore` mặc định.
 
-覆盖规则说明：
+Giải thích luật ghi đè:
 
-- 标量字段按后者覆盖前者，例如 `provider`、`model`、`reasoning_effort`、`style`
-- `providers` 和 `roles` 按 key 合并，同名项内部按字段覆盖
-- 未填写的字段会继承上层配置，例如项目级配置只写 `base_url` 时会保留全局配置中的 `api_key`
-- 不支持用空字符串清空上层已有值；如需清空，请直接编辑更高优先级的配置文件
+- Trường vô hướng thì bản sau ghi đè bản trước, ví dụ `provider`, `model`, `reasoning_effort`, `style`
+- `providers` và `roles` hợp nhất theo key, các mục trùng tên thì ghi đè theo từng trường bên trong
+- Trường không điền sẽ kế thừa cấu hình tầng trên, ví dụ cấu hình cấp dự án chỉ ghi `base_url` thì vẫn giữ `api_key` của cấu hình toàn cục
+- Không hỗ trợ dùng chuỗi rỗng để xóa giá trị đã có ở tầng trên; muốn xóa thì sửa trực tiếp tệp cấu hình có ưu tiên cao hơn
 
-> ⚠️ `provider`（以及 `roles.*.provider`）的值是 `providers` 里的 **key 名**——一根指针，不是协议名。项目级若把 `provider` 切到一个全局 `providers` 里不存在的账号，必须在项目级同时补上该账号的凭证（`api_key` / `base_url`），否则启动会报“未配置凭证”。
+> ⚠️ Giá trị của `provider` (và `roles.*.provider`) là **tên key** trong `providers` — một con trỏ, không phải tên giao thức. Nếu cấu hình cấp dự án chuyển `provider` sang một tài khoản không tồn tại trong `providers` toàn cục thì phải bổ sung luôn thông tin xác thực của tài khoản đó ở cấp dự án (`api_key` / `base_url`), nếu không khởi động sẽ báo "chưa cấu hình thông tin xác thực".
 
-`providers.<name>.models` 为可选模型对象列表：`name` 是传给 Provider 的模型名，`context_window` 是模型专属的上下文压缩窗口，`json_schema` 是原生结构化输出的三态覆盖（`true` 确认支持、`false` 确认不支持、省略则采用适配器能力）。自定义中转或能力取决于具体模型时建议明确填写。旧版字符串数组仍可读取，下一次通过 `/config` 保存时会规范化为对象列表。如果未配置，系统会回退为配置中已经出现过的同 Provider 模型。
+`providers.<name>.models` là danh sách đối tượng model tùy chọn: `name` là tên model gửi cho Provider, `context_window` là cửa sổ nén ngữ cảnh riêng của model đó, `json_schema` là ghi đè ba trạng thái cho đầu ra có cấu trúc nguyên bản (`true` xác nhận có hỗ trợ, `false` xác nhận không hỗ trợ, bỏ trống thì dùng năng lực của adapter). Với proxy tự dựng hoặc khi năng lực phụ thuộc model cụ thể thì nên điền rõ. Mảng chuỗi kiểu cũ vẫn đọc được, lần sau lưu qua `/config` sẽ được chuẩn hóa thành danh sách đối tượng. Nếu không cấu hình, hệ thống lùi về các model cùng Provider đã từng xuất hiện trong cấu hình.
 
-上下文窗口按“模型专属值 → 旧顶层 `context_window` → 模型注册表 → 200K 兜底”的顺序解析。它只影响本地上下文压缩时机，不改变远端 API 的真实请求限制。
+Cửa sổ ngữ cảnh được giải theo thứ tự "giá trị riêng của model → `context_window` cũ ở tầng đỉnh → sổ đăng ký model → 200K đỡ lưng". Nó chỉ ảnh hưởng thời điểm nén ngữ cảnh cục bộ, không thay đổi hạn mức request thật của API phía xa.
 
-`/config` 只用来**编辑 Provider 的定义**（协议 / API Key / Base URL / 模型库），不负责“当前用哪个模型”——切换模型与推理强度请用 `/model`。模型列表支持 `↑↓` 选行、`←→` 选字段、`Enter` 原位编辑模型 ID 或上下文窗口、`Delete` 删除；末尾可直接新增模型，不再进入多层详情页。窗口可输入整数、`128K`、`1M`，留空表示自动解析。保存**就近写回当前生效的那份配置**——项目目录有 `./.ainovel/config.json` 就写它，否则写全局 `~/.ainovel/config.json`——并立即热应用。普通修改只补对应 Provider 段；显式修改模型 ID 时，会在同一次原子写入中同步迁移顶层、角色和 fallback 引用。被引用的模型不能直接删除，需先在 `/model` 切走。API Key 输入始终隐藏。
+`/config` chỉ dùng để **sửa định nghĩa của Provider** (giao thức / API Key / Base URL / thư viện model), không phụ trách "hiện đang dùng model nào" — muốn chuyển model và cường độ suy luận thì dùng `/model`. Danh sách model hỗ trợ `↑↓` chọn dòng, `←→` chọn trường, `Enter` sửa tại chỗ ID model hoặc cửa sổ ngữ cảnh, `Delete` để xóa; cuối danh sách thêm model được luôn, không phải vào nhiều tầng trang chi tiết nữa. Cửa sổ nhận số nguyên, `128K`, `1M`; để trống nghĩa là tự giải. Lưu thì **ghi về gần nhất, tức bản cấu hình đang có hiệu lực** — thư mục dự án có `./.ainovel/config.json` thì ghi vào đó, không thì ghi vào `~/.ainovel/config.json` toàn cục — và áp dụng nóng ngay. Sửa thường thì chỉ bổ sung đoạn Provider tương ứng; khi sửa ID model một cách tường minh, hệ thống di trú đồng bộ các tham chiếu ở tầng đỉnh, ở vai và ở fallback trong cùng một lượt ghi nguyên tử. Model đang được tham chiếu thì không xóa trực tiếp được, phải chuyển đi ở `/model` trước. Ô nhập API Key luôn được ẩn.
 
-Provider 详情中的 API Key 与 Base URL 支持原位编辑，已有 Key 只显示首尾脱敏提示；“测试连接”会使用当前草稿和所选模型发送一个最小真实请求，可能产生少量 API 用量，但测试结果不会阻止保存或触发自动降级。任意 `extra`、`extra_body`、`stream_idle_timeout` 等高级配置仍在界面显示的实际配置文件中维护。
+API Key và Base URL trong trang chi tiết Provider sửa được tại chỗ, Key đã có chỉ hiện gợi ý che giữa; "kiểm tra kết nối" sẽ dùng bản nháp hiện tại và model đang chọn để gửi một request thật tối thiểu, có thể phát sinh chút lượng dùng API, nhưng kết quả kiểm tra không chặn việc lưu và không kích hoạt hạ cấp tự động. Các cấu hình nâng cao như `extra`, `extra_body`, `stream_idle_timeout` vẫn được bảo trì trong đúng tệp cấu hình mà giao diện đang hiển thị.
 
-`reasoning_effort` 为默认推理强度，可选值为 `off` / `low` / `medium` / `high` / `xhigh` / `max`；省略或空字符串表示沿用模型/provider 默认。`roles.<role>.reasoning_effort` 可按角色覆盖，未配置时继承顶层 `reasoning_effort`。推理强度按“意图 × 能力”生效：配置里存的是你选定的**原始意图**，实际下发时再按该角色**当前模型的能力**钳制——换到能力较低的模型只是当次生效值被钳低，存储的意图不变，切回强模型即自动恢复。TUI `/model` 面板切换 provider、model 或推理强度后，会写回当前生效的那份配置（与 `/config` 一致：项目级存在则写项目，否则写全局）。
+`reasoning_effort` là cường độ suy luận mặc định, các giá trị chọn được là `off` / `low` / `medium` / `high` / `xhigh` / `max`; bỏ trống hoặc chuỗi rỗng nghĩa là dùng mặc định của model/provider. `roles.<role>.reasoning_effort` ghi đè được theo vai, không cấu hình thì kế thừa `reasoning_effort` ở tầng đỉnh. Cường độ suy luận có hiệu lực theo "ý định × năng lực": trong cấu hình lưu **ý định gốc** bạn đã chọn, lúc gửi đi thật thì bị kẹp lại theo **năng lực của model hiện tại của vai đó** — chuyển sang model năng lực thấp hơn chỉ làm giá trị có hiệu lực lần đó bị kẹp thấp, ý định lưu vẫn nguyên, chuyển về model mạnh là tự phục hồi. Panel `/model` của TUI sau khi chuyển provider, model hoặc cường độ suy luận sẽ ghi về bản cấu hình đang có hiệu lực (giống `/config`: có bản cấp dự án thì ghi dự án, không thì ghi toàn cục).
 
-`providers.<name>.api` 仅对 `type: "openai"` 或内置 `openai` 生效，用于选择 OpenAI 协议 endpoint：`chat`（默认，`base_url + /chat/completions`）或 `responses`（`base_url + /responses`）。`base_url` 若已包含路径（如火山方舟的 `/api/v3`），该路径会原样保留；只填写域名时默认使用 OpenAI 的 `/v1`。Codex 类代理通常需要配置为 `responses`。
+`providers.<name>.api` chỉ có hiệu lực với `type: "openai"` hoặc `openai` dựng sẵn, dùng để chọn endpoint của giao thức OpenAI: `chat` (mặc định, `base_url + /chat/completions`) hoặc `responses` (`base_url + /responses`). Nếu `base_url` đã chứa đường dẫn (như `/api/v3` của Volcano Ark) thì đường dẫn đó được giữ nguyên; chỉ điền tên miền thì mặc định dùng `/v1` của OpenAI. Proxy kiểu Codex thường cần cấu hình thành `responses`.
 
-`providers.<name>.extra` 为 provider 级配置，会传给底层 HTTP 客户端，适合配置 `user_agent`、`headers`、`anthropic_beta` 等代理识别字段；`providers.<name>.extra_body` 才是请求体扩展参数，两者不要混用。
+`providers.<name>.extra` là cấu hình cấp provider, được truyền xuống HTTP client, phù hợp để cấu hình các trường nhận dạng của proxy như `user_agent`, `headers`, `anthropic_beta`; còn `providers.<name>.extra_body` mới là tham số mở rộng của body request — đừng dùng lẫn hai thứ.
 
-## 诊断报告
+## Báo cáo chẩn đoán
 
-在 TUI 中输入 `/diag` 可对当前小说的 output 产物进行诊断分析，产出可执行的发现和改进建议。
+Nhập `/diag` trong TUI để chẩn đoán và phân tích các sản phẩm trong output của tác phẩm hiện tại, cho ra những phát hiện và đề xuất cải thiện thi hành được.
 
-诊断覆盖四个维度：
+Chẩn đoán bao gồm bốn chiều:
 
-- **流程** — 改写循环卡顿、未消费的转向指令、阶段/流程状态异常、章节跳号
-- **质量** — 评审维度持续低分、合同履约率、改写率、章节字数异常
-- **规划** — 伏笔停滞、指南针过时、大纲耗尽、摘要缺失
-- **上下文** — 角色消失、时间线缺口、关系数据停滞
+- **Luồng** — vòng viết lại bị kẹt, chỉ thị chuyển hướng chưa được tiêu thụ, trạng thái phase/flow bất thường, số chương bị nhảy
+- **Chất lượng** — chiều duyệt liên tục điểm thấp, tỉ lệ thực hiện khế ước, tỉ lệ viết lại, số từ của chương bất thường
+- **Quy hoạch** — phục bút đứng bánh, la bàn lỗi thời, dàn ý cạn, thiếu tóm tắt
+- **Ngữ cảnh** — nhân vật biến mất, lỗ hổng trên trục thời gian, dữ liệu quan hệ đứng bánh
 
-每条发现包含：问题描述、数据证据、改进建议（指向具体的 prompt/flow/config）。
+Mỗi phát hiện gồm: mô tả vấn đề, bằng chứng dữ liệu, đề xuất cải thiện (trỏ tới prompt/flow/config cụ thể).
 
-`/diag` 同时会写出一份**已脱敏**的 `meta/diag-export.md`（移除小说正文，仅保留工具调用、错误串、重复次数等行为骨架）。遇到死循环 / 中断类问题，把它贴到 GitHub issue 即可，方便维护者在拿不到本地数据的情况下定位。
+`/diag` đồng thời ghi ra một bản `meta/diag-export.md` **đã tẩy thông tin riêng** (bỏ chính văn tiểu thuyết, chỉ giữ bộ xương hành vi gồm lời gọi tool, chuỗi lỗi, số lần lặp v.v.). Gặp vấn đề kiểu vòng lặp vô tận / bị ngắt, dán tệp đó vào GitHub issue là đủ, giúp người bảo trì định vị được khi không có dữ liệu cục bộ của bạn.
 
-## 仿写画像
+## Chân dung mô phỏng văn phong
 
-把参考文章放到当前启动目录的 `simulate/` 文件夹中，然后在 TUI 输入 `/simulate`。系统会递归读取 `.txt`、`.md`、`.markdown` 文件，用 architect 模型分析语料，并写入：
+Đặt các bài tham khảo vào thư mục `simulate/` trong thư mục khởi động hiện tại, rồi nhập `/simulate` trong TUI. Hệ thống đọc đệ quy các tệp `.txt`, `.md`, `.markdown`, dùng model của architect để phân tích ngữ liệu, và ghi vào:
 
 ```text
 output/novel/meta/simulation_profile.json
 ```
 
-再次运行 `/simulate` 时，会按 `relative_path + sha256` 跳过未变化文件；如果没有新增或变更内容，会提示“画像已是最新”并且不会调用 LLM。若已有画像且 `simulate/` 中出现新增或修改文章，系统会在原画像基础上继续合成。
+Chạy `/simulate` lần nữa, hệ thống bỏ qua các tệp không đổi theo `relative_path + sha256`; nếu không có nội dung mới hoặc thay đổi, nó thông báo "chân dung đã là mới nhất" và không gọi LLM. Nếu đã có chân dung mà `simulate/` xuất hiện bài mới hoặc bài đã sửa, hệ thống tiếp tục tổng hợp trên nền chân dung cũ.
 
-也可以导入之前生成的画像，避免重复分析同一批文章：
+Cũng có thể nhập chân dung đã sinh trước đó để tránh phân tích lại cùng một mớ bài:
 
 ```text
 /simulate
 /importsim ./profile.json
 ```
 
-`/importsim` 只接受本功能生成的 `simulation_profile.v1` JSON，并按语料指纹合并，重复来源会跳过。只导入可信来源的画像文件；导入内容会成为后续 Agent 的上下文参考。画像会以 compact 形式注入 `novel_context`，Architect、Writer、Editor 都能读取；各 Agent 只借鉴结构、节奏、钩子和吸引读者手法，不复制原文表达或专有设定。
+`/importsim` chỉ nhận JSON `simulation_profile.v1` do chính chức năng này sinh ra, và hợp nhất theo dấu tay của ngữ liệu, nguồn trùng thì bỏ qua. Chỉ nhập tệp chân dung từ nguồn tin được; nội dung nhập vào sẽ trở thành ngữ cảnh tham chiếu cho các Agent về sau. Chân dung được tiêm vào `novel_context` ở dạng compact, cả Architect, Writer, Editor đều đọc được; mỗi Agent chỉ học kết cấu, nhịp, móc và thủ pháp hút người đọc, không copy cách diễn đạt hay thiết định riêng của nguyên văn.
 
-## 导入
+## Nhập
 
-在 TUI 中输入 `/import <文件路径>` 可把一本已有的小说**语义编译**进项目。一次启动绑定一本书（启动目录下的 `output/novel`），因此导入通常在**新目录启动后的欢迎界面**直接发起——它和"输入需求起新书"、"共创起新书"并列，是起一本书的第三种方式；引擎正在创作时该命令会被拒绝。管线分阶段推进：源文件快照（ingest）→ LLM 识别章节边界（segment）→ 确认切分 → 逐章提取事实（analyze）→ 分层归纳全书前提 / 角色 / 世界观 / 分层大纲 / 指南针（synthesize）→ 发布正式 Foundation 并逐章落盘（publish）。章节边界由模型按语义裁定，不依赖硬编码标题规则；Go 侧只掌管坐标、覆盖校验、幂等与顺序。
+Nhập `/import <đường dẫn tệp>` trong TUI để **biên dịch ngữ nghĩa** một cuốn tiểu thuyết đã có vào dự án. Mỗi lần khởi động gắn với một cuốn sách (`output/novel` dưới thư mục khởi động), nên việc nhập thường được phát ngay ở **màn hình chào sau khi khởi động trong thư mục mới** — nó nằm ngang hàng với "nhập yêu cầu để mở sách mới" và "cùng lên kế hoạch mở sách mới", là cách thứ ba để mở một cuốn sách; khi engine đang sáng tác thì lệnh này bị từ chối. Đường ống tiến theo từng giai đoạn: chụp ảnh tệp nguồn (ingest) → LLM nhận biên chương (segment) → xác nhận cách chia → trích sự thật từng chương (analyze) → quy nạp phân tầng ra tiền đề / nhân vật / luật thế giới / dàn ý phân tầng / la bàn cho cả sách (synthesize) → phát hành Foundation chính thức và ghi từng chương xuống đĩa (publish). Biên chương do model phán quyết theo ngữ nghĩa, không dựa vào luật tiêu đề cứng; phía Go chỉ nắm tọa độ, kiểm tra bao phủ, tính bất biến và thứ tự.
 
-典型流程就三步——导入、核对、等完成：
+Luồng điển hình chỉ ba bước — nhập, đối chiếu, đợi xong:
 
 ```text
-/import ~/我的小说.txt   # ① 启动：面板实时显示进度，切分完成后停下
-                         # ② 核对面板列出的全部章节标题：按 y 确认继续
-                         # ③ 自动跑完 分析→综合→发布，完成后停在验收，确认无误即可继续创作
+/import ~/tieu-thuyet-cua-toi.txt   # ① Khởi động: panel hiện tiến độ trực tiếp, chia xong thì dừng lại
+                                    # ② Đối chiếu toàn bộ tiêu đề chương panel liệt kê: bấm y để tiếp
+                                    # ③ Tự chạy hết phân tích→tổng hợp→phát hành, xong thì dừng ở nghiệm thu, xác nhận ổn là sáng tác tiếp
 ```
 
-切分不对？Esc 关面板，用自然语言说明后重新识别（会再次停下核对）：
+Chia không đúng? Esc để đóng panel, nói bằng ngôn ngữ tự nhiên rồi nhận biên lại (sẽ lại dừng để đối chiếu):
 
 ```text
-/import --guide=幕间·X 也是独立章节     # 指导文本可含空格，置于命令最后
+/import --guide=Màn phụ · X cũng là chương riêng     # Văn bản hướng dẫn có thể chứa dấu cách, đặt ở cuối lệnh
 ```
 
-全部选项（前三个会持久化，崩溃恢复后仍然遵守）：
+Toàn bộ tùy chọn (ba cái đầu được lưu bền, sau khi khôi phục từ sập máy vẫn tuân thủ):
 
 ```text
-/import ~/我的小说.txt --yes           # 无人值守：自动接受切分并跑完全程
-/import ~/我的小说.txt --story=closed  # 预答"故事状态存疑"：按完结（closed）/未完（open）处理
-/import ~/我的小说.txt --continue      # 导入完成后直接接力续写，不停在验收
-/import                                # 无参数：从中断处恢复未完成的导入
+/import ~/tieu-thuyet-cua-toi.txt --yes           # Không người trực: tự nhận cách chia và chạy hết
+/import ~/tieu-thuyet-cua-toi.txt --story=closed  # Trả lời trước "trạng thái truyện còn ngờ": xử theo đã hoàn (closed) / chưa hoàn (open)
+/import ~/tieu-thuyet-cua-toi.txt --continue      # Nhập xong là viết tiếp luôn, không dừng ở nghiệm thu
+/import                                           # Không tham số: khôi phục lần nhập chưa xong từ chỗ bị ngắt
 ```
 
-前置与恢复：
+Điều kiện trước và khôi phục:
 
-- 只能导入到**空书**（没有已完成章节），不支持把另一本书并入已有作品；源文件支持 `txt`/`md`，编码 UTF-8 / GB18030（自动识别，无法可靠解码会明确报错）。
-- 每个阶段的产物落在 `meta/import/` 工作区并按输入指纹绑定：中断或失败后重跑 `/import` 只补做缺失部分，不重复调用模型、不用记 "导到第几章了"。存在未完成的导入时，重新启动后的欢迎界面会主动提示进度（如"已分析 210/300 章"）；恢复完成前引擎被门禁挡住，不会把半成品当完整的书续写。模型输出失败的原始响应保存在 `meta/import/failures/` 供排查。
-- 故事状态被综合判定为 `uncertain` 时管线停下，用 `--story=open|closed` 明确后重跑即可。
-- 默认发布完成后设一次验收 Hold，等你确认再续写；`--continue` 跳过该 Hold（review 模式下仍需 `/next`）。
-- 导入的三个语义函数可在配置 `roles` 中指定独立模型档位（见[按角色使用不同模型](#按角色使用不同模型)）。
+- Chỉ nhập được vào **sách trống** (chưa có chương nào hoàn thành), không hỗ trợ ghép một cuốn khác vào tác phẩm đã có; tệp nguồn hỗ trợ `txt`/`md`, mã hóa UTF-8 / GB18030 (tự nhận biết, không giải mã đáng tin được thì báo lỗi rõ ràng).
+- Sản phẩm của từng giai đoạn nằm ở khu làm việc `meta/import/` và gắn theo dấu tay của đầu vào: bị ngắt hay thất bại thì chạy lại `/import` chỉ làm bù phần còn thiếu, không gọi lại model, không phải nhớ "đã nhập tới chương mấy". Khi có lần nhập chưa xong, màn hình chào sau khi khởi động lại sẽ chủ động nhắc tiến độ (ví dụ "đã phân tích 210/300 chương"); trước khi khôi phục xong, engine bị cửa gác chặn nên không lấy bán thành phẩm ra viết tiếp như thể là sách đủ. Phản hồi thô của các lần model xuất lỗi được lưu ở `meta/import/failures/` để tra.
+- Khi trạng thái truyện bị tổng hợp phán là `uncertain` thì đường ống dừng, làm rõ bằng `--story=open|closed` rồi chạy lại là được.
+- Mặc định sau khi phát hành xong sẽ đặt một Hold nghiệm thu, đợi bạn xác nhận mới viết tiếp; `--continue` bỏ qua Hold đó (ở chế độ review vẫn cần `/next`).
+- Ba hàm ngữ nghĩa của việc nhập có thể chỉ định bậc model riêng trong `roles` của cấu hình (xem [Dùng model khác nhau theo vai](#dùng-model-khác-nhau-theo-vai)).
 
-> 原文会逐字落盘为已完成章节，因此导入适合"续写同一本书"。如果只想借鉴设定做全新创作，请用普通方式起一本新书、在需求里描述想要的风格设定。
+> Nguyên văn được ghi xuống đĩa từng chữ thành các chương đã hoàn thành, nên việc nhập phù hợp để "viết tiếp cùng một cuốn". Nếu chỉ muốn học thiết định để sáng tác hoàn toàn mới thì hãy mở một cuốn mới theo cách thường và mô tả văn phong, thiết định bạn muốn trong yêu cầu.
 
-## 导出
+## Xuất
 
-在 TUI 中输入 `/export` 可把已完成的章节合并导出，默认 TXT，写到 `{novelDir}/{NovelName}.txt`。导出是只读操作，写作中途也可以随时拿"现阶段成品"，不影响引擎运行。
+Nhập `/export` trong TUI để hợp nhất và xuất các chương đã hoàn thành, mặc định TXT, ghi vào `{novelDir}/{NovelName}.txt`. Xuất là tác vụ chỉ đọc, đang viết giữa đường vẫn lấy được "thành phẩm giai đoạn hiện tại" bất cứ lúc nào, không ảnh hưởng engine đang chạy.
 
-格式由**输出路径后缀**决定（`.txt` / `.epub`）：
+Định dạng do **hậu tố của đường dẫn đầu ra** quyết định (`.txt` / `.epub`):
 
 ```text
-/export                            # 默认 TXT，{novelDir}/{NovelName}.txt
-/export ~/光斑.txt                  # 后缀 .txt → TXT
-/export ~/光斑.epub                 # 后缀 .epub → EPUB（Apple Books / 微信读书 / Kindle 转换器可读）
-/export from=10 to=30 --overwrite  # 章节区间 + 覆盖
+/export                            # Mặc định TXT, {novelDir}/{NovelName}.txt
+/export ~/quang-sang.txt           # Hậu tố .txt → TXT
+/export ~/quang-sang.epub          # Hậu tố .epub → EPUB (Apple Books / WeChat Reading / bộ chuyển đổi Kindle đọc được)
+/export from=10 to=30 --overwrite  # Khoảng chương + ghi đè
 /export from=10 ~/x.epub --overwrite
 ```
 
-- **TXT** — `《书名》` → 卷分隔 → 章节正文（长篇分层模式自动加卷分隔）。两类内部数据**不进导出**：premise（创作蓝图，含目标读者 / 写作禁区等后台信息，写给作者与引擎看的）、弧分隔（读者视角下弧是过细的内部结构）。导出器统一生成"第 N 章 标题"，正文里 writer 自带的重复标题（`# 第N章…` 或 `# 章节名`）会被剥掉。
-- **EPUB** — EPUB 3 标准容器，含封面页、目录、按章拆分的 XHTML，标识符基于内容稳定派生（重导出同一本书阅读器识别为更新版本）。不带封面图。
+- **TXT** — `《Tên sách》` → phân cách tập → chính văn chương (chế độ phân tầng của truyện dài tự thêm phân cách tập). Hai loại dữ liệu nội bộ **không vào bản xuất**: premise (bản thiết kế sáng tác, chứa thông tin hậu trường như đối tượng đọc / vùng cấm khi viết, viết cho tác giả và engine đọc) và phân cách cung (dưới góc nhìn người đọc, cung là kết cấu nội bộ quá chi li). Bộ xuất sinh thống nhất "Chương N Tiêu đề"; tiêu đề trùng lặp mà writer tự mang trong chính văn (`# Chương N…` hoặc `# Tên chương`) sẽ bị lột đi.
+- **EPUB** — container chuẩn EPUB 3, gồm trang bìa, mục lục, XHTML tách theo chương; định danh phái sinh ổn định dựa trên nội dung (xuất lại cùng một cuốn thì trình đọc nhận là bản cập nhật). Không kèm ảnh bìa.
 
-范围内未完成的章节会跳过并显示在结果里，不算错误。
+Chương chưa hoàn thành trong khoảng chỉ định sẽ bị bỏ qua và hiện trong kết quả, không tính là lỗi.
 
-#### 按角色使用不同模型
+#### Dùng model khác nhau theo vai
 
-通过 `roles` 字段为不同智能体分配不同的模型，未配置的角色使用默认模型：
+Dùng trường `roles` để phân model khác nhau cho từng tác tử, vai không cấu hình thì dùng model mặc định:
 
 ```jsonc
 {
@@ -421,11 +453,11 @@ output/novel/meta/simulation_profile.json
 }
 ```
 
-可配置的角色：`architect` / `writer` / `editor`，以及导入管线的三个语义函数档位 `import_segment` / `import_analyze` / `import_synthesize`（未配置时落到 architect；可把机械性更强的切分指到更便宜的模型省成本）。语义裁定 Arbiter 统一使用 default 模型，当前不开放独立角色配置。
+Các vai cấu hình được: `architect` / `writer` / `editor`, cùng ba bậc model cho ba hàm ngữ nghĩa của đường ống nhập là `import_segment` / `import_analyze` / `import_synthesize` (không cấu hình thì rơi về architect; có thể trỏ việc chia chương — thiên về máy móc hơn — sang model rẻ hơn để tiết kiệm). Arbiter phán quyết ngữ nghĩa dùng thống nhất model default, hiện chưa mở cấu hình vai riêng.
 
-#### 自定义代理
+#### Proxy tự định nghĩa
 
-选择任意 Provider 后填写代理地址即可，或使用 Custom Proxy 并指定 API 协议类型。自定义代理的 `api_key` 可选；如果你的代理不需要认证，可以省略：
+Chọn Provider nào cũng được rồi điền địa chỉ proxy, hoặc dùng Custom Proxy và chỉ định loại giao thức API. `api_key` của proxy tự định nghĩa là tùy chọn; nếu proxy của bạn không cần xác thực thì bỏ đi được:
 
 ```jsonc
 {
@@ -444,9 +476,9 @@ output/novel/meta/simulation_profile.json
 }
 ```
 
-支持的 Provider：`openrouter` / `anthropic` / `gemini` / `openai` / `deepseek` / `qwen` / `glm` / `grok` / `ollama` / `bedrock` 及任意自定义代理。
+Các Provider được hỗ trợ: `openrouter` / `anthropic` / `gemini` / `openai` / `deepseek` / `qwen` / `glm` / `grok` / `ollama` / `bedrock` và mọi proxy tự định nghĩa.
 
-如果代理是 Anthropic 协议，并限制只能由 Claude Code 客户端访问，`type` 应设为 `anthropic`，`anthropic_beta` 放在 `extra` 顶层，Stainless 等 HTTP 头放在 `extra.headers` 中：
+Nếu proxy dùng giao thức Anthropic và hạn chế chỉ client Claude Code truy cập được, `type` phải đặt là `anthropic`, `anthropic_beta` đặt ở tầng đỉnh của `extra`, còn các HTTP header như Stainless đặt trong `extra.headers`:
 
 ```jsonc
 {
@@ -471,7 +503,7 @@ output/novel/meta/simulation_profile.json
 }
 ```
 
-如果代理是 OpenAI/NewAPI 协议，并限制只能由 Codex 客户端访问，`type` 应设为 `openai`，用 `extra.user_agent` 覆盖默认 `litellm-go/0.1`，并在 `extra.headers` 里透传 Codex 识别头。示例里的 `Session_id` 和 `X-Codex-Turn-Metadata` 应换成稳定的随机值；它们同时兼容 New API 的 Codex 透传模板和 sub2api 的 `x-codex-*` 指纹检查：
+Nếu proxy dùng giao thức OpenAI/NewAPI và hạn chế chỉ client Codex truy cập được, `type` phải đặt là `openai`, dùng `extra.user_agent` để ghi đè `litellm-go/0.1` mặc định, và truyền xuyên các header nhận dạng Codex trong `extra.headers`. `Session_id` và `X-Codex-Turn-Metadata` trong ví dụ nên đổi thành giá trị ngẫu nhiên ổn định; chúng đồng thời tương thích mẫu truyền xuyên Codex của New API và phép kiểm dấu tay `x-codex-*` của sub2api:
 
 ```jsonc
 {
@@ -501,13 +533,13 @@ output/novel/meta/simulation_profile.json
 }
 ```
 
-关于 `api_key`：
+Về `api_key`:
 
-- `openrouter` / `anthropic` / `gemini` / `openai` / `deepseek` / `qwen` / `glm` / `grok` 这类托管接口通常需要填写 `api_key`
-- `ollama` 和 `bedrock` 允许不填 `api_key`；Bedrock 需在 `extra` 中配置 `region`、`access_key_id`、`secret_access_key`（可选 `session_token`）
-- 显式指定了 `type` 的自定义代理允许不填 `api_key`
+- Các giao diện được vận hành sẵn như `openrouter` / `anthropic` / `gemini` / `openai` / `deepseek` / `qwen` / `glm` / `grok` thường cần điền `api_key`
+- `ollama` và `bedrock` cho phép không điền `api_key`; Bedrock cần cấu hình `region`, `access_key_id`, `secret_access_key` trong `extra` (`session_token` tùy chọn)
+- Proxy tự định nghĩa đã chỉ định `type` tường minh thì cho phép không điền `api_key`
 
-例如本地 `ollama` 配置：
+Ví dụ cấu hình `ollama` cục bộ:
 
 ```jsonc
 {
@@ -521,184 +553,196 @@ output/novel/meta/simulation_profile.json
 }
 ```
 
-### 写作风格
+### Văn phong
 
-通过配置文件的 `style` 字段切换：
+Chuyển bằng trường `style` của tệp cấu hình:
 
-- `default` — 通用风格
-- `suspense` — 悬疑推理
-- `fantasy` — 奇幻仙侠
-- `romance` — 言情
+- `default` — văn phong dùng chung
+- `suspense` — trinh thám suy luận
+- `fantasy` — kỳ ảo tiên hiệp
+- `romance` — ngôn tình
 
-### 去 AI 味与自定义规则
+### Khử mùi AI và luật tự định nghĩa
 
-内置一份去 AI 味基线（出厂默认）：机械黑名单（套句 / 疲劳词，代码内置 `rules.SystemDefaults()`，commit 时确定性检查）+ 语义判据 `assets/references/anti-ai-tone.md`（注入 writer / editor 规避与举证）。
+Hệ thống có sẵn một đường nền khử mùi AI (mặc định xuất xưởng): danh sách đen máy móc (câu khuôn / từ mỏi, dựng sẵn trong code ở `rules.SystemDefaults()`, kiểm tra tất định lúc commit) + tiêu chí ngữ nghĩa `assets/references/anti-ai-tone.md` (tiêm cho writer / editor để né và để dẫn chứng).
 
-想叠加自己的偏好**无需改源码**：在 `~/.ainovel/rules/` 目录（全局，放任意 `.md`，按文件名字典序合并）或 `./.ainovel/rules/` 目录（本书，同样放任意 `.md`，与全局同形态）里，**用大白话写偏好即可**（如「主角别写成圣母」「多用身体感知」「每章 3000 字左右」「不要出现『某种程度上』」）——零格式、零 YAML。系统会用模型把这些自然语言要求归一化成本书规则快照（字数范围 / 禁用词 / 疲劳词阈值等结构化约束 + 风格偏好），写作时自动遵循、提交时自动机械自检；常见 AI 套句与疲劳词的机械基线已内置，不写也能用，就近覆盖、与内置基线叠加生效。
+Muốn xếp thêm sở thích riêng thì **không cần sửa mã nguồn**: trong thư mục `~/.ainovel/rules/` (toàn cục, đặt tệp `.md` nào cũng được, hợp nhất theo thứ tự từ điển của tên tệp) hoặc thư mục `./.ainovel/rules/` (theo sách, cũng đặt tệp `.md` bất kỳ, cùng hình thái với toàn cục), **cứ viết sở thích bằng lời thường** (như «đừng viết nhân vật chính thành thánh mẫu», «dùng nhiều cảm nhận cơ thể», «mỗi chương khoảng 3000 từ», «đừng để xuất hiện 'ở một mức độ nào đó'») — không định dạng, không YAML. Hệ thống dùng model để chuẩn hóa các yêu cầu ngôn ngữ tự nhiên này thành ảnh chụp luật của sách (khoảng số từ / từ bị cấm / ngưỡng từ mỏi v.v. dạng ràng buộc có cấu trúc + sở thích văn phong), lúc viết tự tuân theo, lúc nộp tự kiểm máy móc; đường nền máy móc cho các câu khuôn AI và từ mỏi thường gặp đã dựng sẵn, không viết gì cũng dùng được, ghi đè theo mức gần nhất và xếp lớp cùng đường nền dựng sẵn.
 
-### 自定义文风（Voice Layer）
+### Văn phong tự định nghĩa (Voice Layer)
 
-写作标准与去 AI 味判据也可以直接覆盖，同样**无需改源码、无需重新编译**。覆盖目录两级：`<输出目录>/style/`（本书，随书走——换机器恢复同一本书加载同一份文风）> `~/.ainovel/style/`（全局），目录结构：
+Chuẩn viết và tiêu chí khử mùi AI cũng ghi đè trực tiếp được, cũng **không cần sửa mã nguồn, không cần biên dịch lại**. Thư mục ghi đè có hai cấp: `<thư mục output>/style/` (theo sách, đi cùng sách — đổi máy rồi khôi phục cùng cuốn đó thì nạp cùng một bản văn phong) > `~/.ainovel/style/` (toàn cục), cấu trúc thư mục:
 
 ```
 style/
-├── voice.md                          # 写作标准追加段（内置保留，你的要求追加在后、优先级更高）
-├── anti-ai-tone.md                   # 去 AI 味判据追加段（同上）
+├── voice.md                          # Đoạn nối thêm cho chuẩn viết (bản dựng sẵn được giữ, yêu cầu của bạn nối sau và ưu tiên cao hơn)
+├── anti-ai-tone.md                   # Đoạn nối thêm cho tiêu chí khử mùi AI (như trên)
 ├── styles/
-│   └── xianxia.md                    # 新增自定义风格（文件名即风格名，config 里 style: xianxia 即用）
-│                                     #（与内置同名如 fantasy.md 则整体替换）
+│   └── xianxia.md                    # Thêm văn phong tự định nghĩa (tên tệp chính là tên văn phong, trong config đặt style: xianxia là dùng)
+│                                     # (nếu trùng tên với bản dựng sẵn như fantasy.md thì thay thế toàn bộ)
 └── genres/
     └── xianxia/
-        └── style-references.md       # 该风格的题材参考（整文件替换）
+        └── style-references.md       # Tham chiếu đề tài của văn phong đó (thay thế toàn tệp)
 ```
 
-语义速记：**指导性文本（voice / anti-ai-tone）追加，风格预设（styles / genres）整文件替换**。追加的优先级是给模型的指示；需要机械强制的约束（禁用词、字数）请写在上面的 rules 目录里。改动重启后生效（断点恢复精确到步骤，重启无成本）。执行协议类提示词不开放覆盖——协作不变量由工具层守卫保障，这也是你可以放心改文风而不会弄坏系统的原因。设计细节见 `docs/voice-layer.md`。
+Ghi nhớ nhanh về ngữ nghĩa: **văn bản mang tính chỉ dẫn (voice / anti-ai-tone) thì nối thêm, còn preset văn phong (styles / genres) thì thay thế toàn tệp**. Ưu tiên của phần nối thêm là chỉ thị đưa cho model; những ràng buộc cần cưỡng chế máy móc (từ bị cấm, số từ) thì viết vào thư mục rules ở trên. Thay đổi có hiệu lực sau khi khởi động lại (khôi phục checkpoint chính xác tới từng bước nên khởi động lại không tốn gì). Prompt thuộc loại giao thức thi hành thì không mở cho ghi đè — các bất biến của việc phối hợp do tầng tool gác, và đó cũng là lý do bạn có thể yên tâm sửa văn phong mà không làm hỏng hệ thống. Chi tiết thiết kế xem `docs/voice-layer.md`.
 
-## 输出结构
+## Cấu trúc đầu ra
 
-所有创作数据（章节、大纲、角色、进度等）保存在output目录中。中断后重新运行会自动从上次进度续写。删除output目录将重新开始创作。
+Toàn bộ dữ liệu sáng tác (chương, dàn ý, nhân vật, tiến độ v.v.) được lưu trong thư mục output. Bị ngắt rồi chạy lại là tự viết tiếp từ tiến độ lần trước. Xóa thư mục output sẽ sáng tác lại từ đầu.
 
 ```
 output/{novel_name}/
-├── chapters/           # 终稿（Markdown）
+├── chapters/           # Bản cuối (Markdown)
 │   ├── 01.md
 │   └── ...
-├── summaries/          # 章节摘要（JSON）
-├── drafts/             # 章节草稿
-├── reviews/            # 评审报告
+├── summaries/          # Tóm tắt chương (JSON)
+├── drafts/             # Bản nháp chương
+├── reviews/            # Báo cáo duyệt
 ├── meta/
-│   ├── premise.md      # 故事前提
-│   ├── outline.json    # 扁平章节大纲（仅含已展开的章节）
-│   ├── layered_outline.json # 分层大纲（当前卷 + 预览卷，长篇模式）
-│   ├── compass.json   # 终局方向指南针（长篇模式）
-│   ├── characters.json # 角色档案
-│   ├── world_rules.json# 世界规则
-│   ├── progress.json   # 进度状态
-│   ├── timeline.json   # 时间线
-│   ├── foreshadow.json # 伏笔台账
-│   ├── state_changes.json # 角色状态变化记录
-│   ├── style_rules.json# 写作风格规则（弧边界时提炼）
-│   ├── snapshots/      # 角色状态快照（长篇）
-│   ├── checkpoints.jsonl # Step 级 checkpoint（每个工具成功后追加）
-│   ├── characters.md   # 角色档案（可读版）
-│   └── world_rules.md  # 世界规则（可读版）
+│   ├── premise.md      # Tiền đề câu chuyện
+│   ├── outline.json    # Dàn ý chương dạng phẳng (chỉ chứa các chương đã mở rộng)
+│   ├── layered_outline.json # Dàn ý phân tầng (tập hiện tại + tập xem trước, chế độ truyện dài)
+│   ├── compass.json   # La bàn hướng kết cục (chế độ truyện dài)
+│   ├── characters.json # Hồ sơ nhân vật
+│   ├── world_rules.json# Luật thế giới
+│   ├── progress.json   # Trạng thái tiến độ
+│   ├── timeline.json   # Trục thời gian
+│   ├── foreshadow.json # Sổ phục bút
+│   ├── state_changes.json # Ghi nhận biến động trạng thái nhân vật
+│   ├── style_rules.json# Luật văn phong (chắt ra ở biên cung)
+│   ├── snapshots/      # Ảnh chụp trạng thái nhân vật (truyện dài)
+│   ├── checkpoints.jsonl # Checkpoint cấp step (nối thêm sau mỗi tool thành công)
+│   ├── characters.md   # Hồ sơ nhân vật (bản đọc được)
+│   └── world_rules.md  # Luật thế giới (bản đọc được)
 ```
 
-## 断点恢复
+## Khôi phục từ checkpoint
 
-写一部长篇小说可能需要数小时甚至数天，中途崩溃、断网、Ctrl+C 都是常见情况。系统在**同一目录再次运行时自动恢复**，无需手动操作。
+Viết một bộ tiểu thuyết dài có thể mất vài giờ đến vài ngày; sập giữa đường, mất mạng, Ctrl+C đều là chuyện thường. Hệ thống **tự khôi phục khi chạy lại trong cùng thư mục**, không cần làm gì bằng tay.
 
-### 恢复场景
+### Các tình huống khôi phục
 
-| 中断时机 | 恢复行为 |
+| Thời điểm bị ngắt | Hành vi khôi phục |
 |---|---|
-| 规划阶段（正在构建世界观/大纲） | 检查已保存的设定，自动补全缺失项 |
-| 某章正在写作（有草稿未提交） | 从该章续写，读取已有草稿继续 |
-| 审阅进行中 | 重新触发 Editor 评审 |
-| 重写/打磨队列未清空 | 继续处理待重写的章节 |
-| 弧/卷展开中断（评审完但下一弧未展开） | 自动检测骨架弧/卷，触发 Architect 展开 |
-| 用户干预未完成 | 重新注入上次的干预指令 |
-| 正常写作中断 | 从下一章继续 |
+| Kỳ quy hoạch (đang dựng luật thế giới/dàn ý) | Kiểm các thiết định đã lưu, tự bù phần còn thiếu |
+| Đang viết một chương (có bản nháp chưa nộp) | Viết tiếp chương đó, đọc bản nháp đã có để tiếp |
+| Đang duyệt | Kích hoạt lại việc duyệt của Editor |
+| Hàng đợi viết lại/gia công chưa rỗng | Tiếp tục xử lý các chương đang chờ viết lại |
+| Mở rộng cung/tập bị ngắt (duyệt xong mà cung sau chưa mở) | Tự phát hiện cung/tập khung, kích hoạt Architect mở rộng |
+| Can thiệp của người dùng chưa xong | Tiêm lại chỉ thị can thiệp lần trước |
+| Bị ngắt lúc đang viết bình thường | Tiếp tục từ chương kế tiếp |
 
-### 工作原理
+### Cách hoạt động
 
-所有创作产物持久化在 `output/` 目录。每个工具执行成功后写入 checkpoint (`meta/checkpoints.jsonl`)。重启时：
+Mọi sản phẩm sáng tác được lưu bền trong thư mục `output/`. Mỗi tool chạy xong là ghi một checkpoint (`meta/checkpoints.jsonl`). Khi khởi động lại:
 
-1. 读取 `progress.json` + 最近 checkpoint + 待处理信号
-2. 精确到 step 级生成恢复指令（如"第 7 章 draft 已落盘，请继续 check_consistency"）
-3. Engine 直接从 store 重算路由续跑——没有会话需要恢复，checkpoint 幂等保证重复派发安全
+1. Đọc `progress.json` + checkpoint gần nhất + các tín hiệu đang chờ
+2. Sinh chỉ thị khôi phục chính xác tới cấp step (ví dụ "draft chương 7 đã xuống đĩa, hãy tiếp tục check_consistency")
+3. Engine tính lại định tuyến ngay từ store rồi chạy tiếp — không có phiên nào cần khôi phục, tính bất biến của checkpoint bảo đảm phái lại vẫn an toàn
 
-> 文件写入使用 temp + fsync + rename 原子操作，即使在写入过程中断电也不会损坏已有数据。
+> Việc ghi tệp dùng thao tác nguyên tử temp + fsync + rename, mất điện ngay giữa lúc ghi cũng không làm hỏng dữ liệu đã có.
 
-## 逐章验收
+## Nghiệm thu từng chương
 
-系统默认使用 `auto` 模式持续自主创作。需要逐章审读、避免审读窗口期继续写新章时，可启用确定性的验收闸门：
+Hệ thống mặc định dùng chế độ `auto` để sáng tác tự chủ liên tục. Khi cần đọc soát từng chương, tránh việc trong lúc bạn đang đọc thì máy vẫn viết chương mới, có thể bật cửa nghiệm thu tất định:
 
 ```text
-/review on   # 开启逐章验收；当前工作完成后，在下一个正向新章前等待
-/next        # 只放行下一章；必要的评审与弧/卷结构维护仍会自动完成
-/review off  # 恢复自动推进；若当前已暂停，再输入继续指令启动 Engine
+/review on   # Bật nghiệm thu từng chương; xong việc hiện tại thì đợi trước chương mới xuôi kế tiếp
+/next        # Chỉ mở đúng một chương kế tiếp; việc duyệt và bảo trì kết cấu cung/tập cần thiết vẫn tự hoàn tất
+/review off  # Trở lại đẩy tự động; nếu hiện đang tạm dừng, nhập tiếp chỉ thị để khởi động Engine
 ```
 
-许可与具体章节号绑定。章节只有在提交恢复状态清空且 commit checkpoint 已落盘后才消费许可，因此进程在提交中途崩溃也不会意外多写下一章。重写、打磨、评审和结构维护不属于“新章”，不会被闸门截断。
+Giấy phép gắn với số chương cụ thể. Chương chỉ tiêu giấy phép sau khi trạng thái khôi phục việc nộp đã rỗng và commit checkpoint đã xuống đĩa, nên process sập giữa lúc nộp cũng không vô tình viết thêm chương sau. Viết lại, gia công, duyệt và bảo trì kết cấu không thuộc loại "chương mới" nên không bị cửa gác chặn.
 
-## 实时干预（Steer）
+## Can thiệp thời gian thực (Steer)
 
-创作过程中可以随时通过输入框注入修改意见，**不需要暂停或重启**。
+Trong lúc sáng tác, bạn có thể tiêm ý kiến sửa qua ô nhập bất cứ lúc nào, **không cần tạm dừng hay khởi động lại**.
 
-### TUI 模式
+### Chế độ TUI
 
-创作启动后，底部输入框自动切换为干预模式：
+Sau khi sáng tác khởi động, ô nhập dưới đáy tự chuyển sang chế độ can thiệp:
 
 ```
-❯ 把感情线提前到第4章，增加男女主的对手戏
+❯ Đẩy tuyến tình cảm lên chương 4, thêm cảnh đối đầu giữa nam và nữ chính
 ```
 
-输入后按 Enter，系统自动：
-1. 记录干预指令到 `run.json`（崩溃恢复用）
-2. Arbiter 立即裁定（查询秒级回显；控制类动作在章节边界安全提交）
-3. 按裁定执行：修改设定走 Architect、重写已有章节走 Editor 入队、写作规则即时落盘——每次裁定审计可回放
+Nhập xong bấm Enter, hệ thống tự:
+1. Ghi chỉ thị can thiệp vào `run.json` (để khôi phục sau sập máy)
+2. Arbiter phán quyết ngay (truy vấn phản hồi trong vài giây; động tác thuộc loại điều khiển thì nộp an toàn ở biên chương)
+3. Thi hành theo phán quyết: sửa thiết định thì đi qua Architect, viết lại chương đã có thì vào hàng đợi của Editor, luật viết thì xuống đĩa ngay — mỗi phán quyết kiểm toán và phát lại được
 
-### 干预示例
+### Ví dụ can thiệp
 
-| 干预指令 | 系统可能的响应 |
+| Chỉ thị can thiệp | Phản ứng hệ thống có thể có |
 |---|---|
-| "主角改成女性" | 修改角色设定，评估已写章节是否需要重写 |
-| "把感情线提前到第4章" | 调整大纲，可能重写第4章及后续 |
-| "加入一个反派角色" | 更新角色档案和世界规则，在后续章节引入 |
-| "节奏太慢了，加快推进" | 调整后续章节的大纲密度 |
+| "Đổi nhân vật chính thành nữ" | Sửa thiết định nhân vật, lượng định xem các chương đã viết có cần viết lại |
+| "Đẩy tuyến tình cảm lên chương 4" | Điều chỉnh dàn ý, có thể viết lại chương 4 và các chương sau |
+| "Thêm một nhân vật phản diện" | Cập nhật hồ sơ nhân vật và luật thế giới, đưa vào ở các chương sau |
+| "Nhịp chậm quá, đẩy nhanh lên" | Điều chỉnh mật độ dàn ý của các chương sau |
 
-## 设计理念
+## Triết lý thiết kế
 
-> **事实层确定，语义层自主。** 模型自由在验证不可能的地方（写什么、怎么写），被约束在验证可能的地方（顺序、幂等、阶段）。
+> **Tầng sự thật thì tất định, tầng ngữ nghĩa thì tự chủ.** Model được tự do ở chỗ không kiểm chứng được (viết gì, viết thế nào), và bị ràng buộc ở chỗ kiểm chứng được (thứ tự, tính bất biến, giai đoạn).
 
-### 三分法，越简单越稳定
+### Phép tam phân — càng đơn giản càng ổn định
 
-- **可枚举的迁移归代码** — "下一个派谁"是读事实查表（`flow.Route` 纯函数，万级组合穷举测试），错误率趋近 0、零 LLM 开销
-- **边界清晰的判断归 Arbiter** — 选规划师、干预分诊、失败出路：事实进、结构化决策出、机械校验兜底、每次裁定落盘可回放
-- **开放式创作归 Worker** — 一章之内 Writer 完全自主；工具失败时返回结构化错误与出路提示，由 LLM 自行修正
-- **硬编码边界,不硬编码判断** — 代码只守可证明的不变量；无法枚举的创作取舍交给模型，不用关键词、评分阈值或规则表冒充理解
-- **工具只返事实** — 单文件原子 IO + 显式错误 + 幂等重放；章节提交用持久化 Saga + checkpoint，返回值是 JSON 事实字段（`final_verdict` / `pending_rewrites` / `arc_end`），不夹带任何指令字符串
-- **事实护栏,不是行为护栏** — Worker 的 CheckpointDeltaGuard 只认落盘产物：没提交就想收工会被拦下；护栏在模型行为正确时零成本
-- **拒绝复杂编排** — 没有 task queue、没有 policy engine。一个串行循环 + 一张决策表 + 几个裁定函数就是全部控制流
-- **模型越强收益越大** — 创作与裁定质量随模型升级线性受益；确定性外壳一行不用改
+- **Chuyển trạng thái liệt kê được thì về code** — "phái ai tiếp" là đọc sự thật rồi tra bảng (`flow.Route` là hàm thuần, kiểm thử vét cạn hàng vạn tổ hợp), tỉ lệ lỗi tiến về 0, không tốn lời gọi LLM
+- **Phán đoán có biên rõ ràng thì về Arbiter** — chọn kiến trúc sư, phân loại can thiệp, đường ra khi thất bại: sự thật vào, quyết định có cấu trúc ra, kiểm tra máy móc đỡ lưng, mỗi phán quyết xuống đĩa và phát lại được
+- **Sáng tác mở thì về Worker** — trong phạm vi một chương, Writer hoàn toàn tự chủ; khi tool thất bại thì trả về lỗi có cấu trúc kèm gợi ý đường ra, để LLM tự sửa
+- **Đóng cứng biên, không đóng cứng phán đoán** — code chỉ gác những bất biến chứng minh được; các lựa chọn sáng tác không liệt kê được thì giao cho model, không dùng từ khóa, ngưỡng điểm hay bảng luật để giả làm sự thông hiểu
+- **Tool chỉ trả sự thật** — IO nguyên tử một tệp + lỗi tường minh + phát lại bất biến; việc nộp chương dùng Saga bền vững + checkpoint, giá trị trả về là các trường sự thật JSON (`final_verdict` / `pending_rewrites` / `arc_end`), không kèm bất kỳ chuỗi chỉ thị nào
+- **Lan can theo sự thật, không phải theo hành vi** — CheckpointDeltaGuard của Worker chỉ nhận sản phẩm đã xuống đĩa: chưa nộp mà muốn nghỉ là bị chặn lại; khi hành vi của model đúng thì lan can không tốn gì
+- **Từ chối điều phối phức tạp** — không có task queue, không có policy engine. Một vòng lặp tuần tự + một bảng quyết định + vài hàm phán quyết là toàn bộ luồng điều khiển
+- **Model càng mạnh thì lợi càng lớn** — chất lượng sáng tác và phán quyết hưởng lợi tuyến tính khi nâng model; vỏ tất định không phải sửa một dòng
 
-### 全自动闭环
+### Vòng kín toàn tự động
 
-一句话输入，完整小说输出：
+Nhập một câu, xuất ra tiểu thuyết hoàn chỉnh:
 
 ```
-“写一部悬疑小说” → 构建世界观 → 设计角色 → 规划大纲
-                → 逐章写作 → 质量评审 → 自动重写
-                → 弧级摘要 → 角色快照 → 完整成书
+“viết một truyện trinh thám” → dựng luật thế giới → thiết kế nhân vật → quy hoạch dàn ý
+                             → viết từng chương → duyệt chất lượng → tự động viết lại
+                             → tóm tắt cấp cung → ảnh chụp nhân vật → thành sách hoàn chỉnh
 ```
 
-- **Engine 确定性调度** — 每轮读事实层按决策表派发，无会话、无转发；崩溃恢复 = 读 store 续跑
-- **Writer 自主创作** — 每章独立完成 plan → draft → check → commit 的完整闭环
-- **Editor 自主评审** — 跨章节分析结构问题，输出裁定及影响范围
-- **Architect 自主构建** — 从一句话需求推导出完整设定，弧/卷边界时自主展开后续规划（参考 Writer 落盘的大纲反馈池）
-- **自动伏笔管理** — 埋设、推进、回收全程由 Agent 自行追踪
-- **自动节奏调控** — 追踪叙事线和钩子类型历史，避免连续章节结构雷同
+- **Engine điều phối tất định** — mỗi lượt đọc tầng sự thật rồi phái theo bảng quyết định, không phiên, không chuyển tiếp; khôi phục sau sập máy = đọc store rồi chạy tiếp
+- **Writer sáng tác tự chủ** — mỗi chương tự hoàn tất trọn vòng kín plan → draft → check → commit
+- **Editor duyệt tự chủ** — phân tích vấn đề kết cấu xuyên chương, xuất ra phán quyết và phạm vi ảnh hưởng
+- **Architect dựng tự chủ** — từ một câu yêu cầu suy ra trọn bộ thiết định, ở biên cung/tập thì tự chủ mở rộng quy hoạch tiếp theo (tham chiếu bể phản hồi dàn ý mà Writer đã ghi xuống đĩa)
+- **Quản lý phục bút tự động** — gieo, đẩy, thu hồi đều do Agent tự theo dõi toàn trình
+- **Điều tiết nhịp tự động** — theo dõi lịch sử các mạch tự sự và loại móc, tránh để các chương liên tiếp giống nhau về kết cấu
 
-### 事实与指令解耦
+### Tách rời sự thật và chỉ thị
 
-工具只返事实，"下一步"由 Engine 每轮从事实层重算：
+Tool chỉ trả sự thật, "bước tiếp theo" do Engine tính lại từ tầng sự thật mỗi lượt:
 
-- `commit_chapter` / `save_review` 落盘结构化事实（`final_verdict` / `pending_rewrites` / `arc_end` / 大纲反馈池），不夹带任何 `[系统]` 字符串
-- `flow.Route` 读 `Progress` + `Outline` 等事实推导下一步指令；决策表的每次改动必须先改穷举规格再改实现
-- 语义决策（裁定）全部落 `meta/decisions.jsonl`：审计、离线重放、A/B 回归
+- `commit_chapter` / `save_review` ghi xuống đĩa các sự thật có cấu trúc (`final_verdict` / `pending_rewrites` / `arc_end` / bể phản hồi dàn ý), không kèm bất kỳ chuỗi `[hệ thống]` nào
+- `flow.Route` đọc các sự thật như `Progress` + `Outline` để suy ra chỉ thị bước tiếp; mỗi lần đổi bảng quyết định thì phải đổi bản đặc tả vét cạn trước rồi mới đổi phần hiện thực
+- Toàn bộ quyết định ngữ nghĩa (phán quyết) rơi vào `meta/decisions.jsonl`: để kiểm toán, phát lại ngoại tuyến, hồi quy A/B
 
-这样指令不会被链式调用吞掉，也不会在工具产物里漂移。改流程 bug 只需改一个分支 + 一条规格。
+Nhờ vậy chỉ thị không bị chuỗi lời gọi nuốt mất, cũng không trôi lệch trong sản phẩm của tool. Sửa bug về luồng chỉ cần sửa một nhánh + một dòng đặc tả.
 
-## 技术栈
+## Công nghệ
 
-- **Go 1.25** — 主语言
-- **[agentcore](https://github.com/voocel/agentcore)** — 极简 Agent 内核（tool-calling + streaming）
-- **[litellm](https://github.com/voocel/litellm)** — 统一 LLM 接口适配
-- **[Bubble Tea](https://github.com/charmbracelet/bubbletea)** — 终端 TUI 框架
+- **Go 1.25** — ngôn ngữ chính
+- **[agentcore](https://github.com/voocel/agentcore)** — nhân Agent tối giản (tool-calling + streaming)
+- **[litellm](https://github.com/voocel/litellm)** — lớp thích ứng giao diện LLM thống nhất
+- **[Bubble Tea](https://github.com/charmbracelet/bubbletea)** — framework TUI cho terminal
+
+## Ghi công
+
+Đây là **bản fork** của [voocel/ainovel-cli](https://github.com/voocel/ainovel-cli) — toàn bộ engine, kiến trúc và thiết kế gốc thuộc về dự án upstream. Bản fork này không phải dự án gốc.
+
+Phần fork thêm vào so với upstream:
+
+- **Lớp i18n** (`internal/i18n/`) — tiếng Việt là mặc định, `AINOVEL_LANG=zh` quay về chuỗi gốc của upstream
+- **Việt hóa prompt / tài liệu tham chiếu / văn phong** trong `assets/`, nên AI sinh truyện tiếng Việt thay vì tiếng Trung
+- **Web studio** (`internal/serve/` + `web/`) — HTTP API chỉ-đọc trên store cùng một giao diện vận hành, xem [Web studio](#web-studio)
+
+Bản dịch ban đầu tham khảo [kentjuno/ainovel-cli](https://github.com/kentjuno/ainovel-cli) tại commit `68eb92d` — cảm ơn công sức việt hóa của họ.
 
 ## License
 
 MIT
 
-本项目积极参与并认可 [linux.do 社区](https://linux.do/)。
+Dự án này tích cực tham gia và ghi nhận [cộng đồng linux.do](https://linux.do/).

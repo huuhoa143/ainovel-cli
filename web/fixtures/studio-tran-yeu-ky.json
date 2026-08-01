@@ -1,0 +1,1535 @@
+{
+  "book": {
+    "id": "tran-yeu-ky",
+    "name": "Trấn Yêu Ký",
+    "phase": "writing",
+    "flow": "writing",
+    "completed_chapters": 46,
+    "total_chapters": 300,
+    "total_words": 138412,
+    "activity": "running",
+    "updated_at": "2026-07-30T10:41:07Z"
+  },
+  "capabilities": {
+    "per_chapter_duration": true,
+    "per_chapter_cost": false,
+    "layered_outline": true,
+    "steer": false
+  },
+  "timeline": {
+    "volumes": [
+      {
+        "index": 1,
+        "title": "Sương phủ Hàn Sơn",
+        "state": "done",
+        "chapters": 18,
+        "from": 1,
+        "to": 18
+      },
+      {
+        "index": 2,
+        "title": "Vết dao trên đá",
+        "state": "done",
+        "chapters": 20,
+        "from": 19,
+        "to": 38
+      },
+      {
+        "index": 3,
+        "title": "Ba tiếng chuông",
+        "state": "running",
+        "chapters": 22,
+        "estimated": true,
+        "from": 39,
+        "to": 50
+      },
+      {
+        "index": 4,
+        "title": "Người gác cầu",
+        "state": "planned",
+        "chapters": 24,
+        "estimated": true,
+        "from": 61,
+        "to": 84
+      },
+      {
+        "index": 5,
+        "title": "Chờ Architect mở",
+        "state": "unplanned",
+        "chapters": 0,
+        "estimated": true
+      },
+      {
+        "index": 6,
+        "title": "Chờ Architect mở",
+        "state": "unplanned",
+        "chapters": 0,
+        "estimated": true,
+        "final": true
+      }
+    ],
+    "arcs": [
+      {
+        "index": 1,
+        "title": "Bậc thứ chín",
+        "state": "done",
+        "chapters": 6,
+        "from": 39,
+        "to": 44
+      },
+      {
+        "index": 2,
+        "title": "Tiếng chuông thứ ba",
+        "state": "running",
+        "chapters": 6,
+        "from": 45,
+        "to": 50
+      },
+      {
+        "index": 3,
+        "title": "Thư không người nhận",
+        "state": "unplanned",
+        "chapters": 5,
+        "estimated": true
+      },
+      {
+        "index": 4,
+        "title": "Chờ Architect mở",
+        "state": "unplanned",
+        "chapters": 0,
+        "estimated": true
+      }
+    ],
+    "chapters": [
+      {
+        "chapter": 1,
+        "state": "done"
+      },
+      {
+        "chapter": 2,
+        "state": "done"
+      },
+      {
+        "chapter": 3,
+        "state": "done"
+      },
+      {
+        "chapter": 4,
+        "state": "done"
+      },
+      {
+        "chapter": 5,
+        "state": "done"
+      },
+      {
+        "chapter": 6,
+        "state": "done"
+      },
+      {
+        "chapter": 7,
+        "state": "done"
+      },
+      {
+        "chapter": 8,
+        "state": "done"
+      },
+      {
+        "chapter": 9,
+        "state": "done"
+      },
+      {
+        "chapter": 10,
+        "state": "done"
+      },
+      {
+        "chapter": 11,
+        "state": "done"
+      },
+      {
+        "chapter": 12,
+        "state": "done"
+      },
+      {
+        "chapter": 13,
+        "state": "done"
+      },
+      {
+        "chapter": 14,
+        "state": "done"
+      },
+      {
+        "chapter": 15,
+        "state": "done"
+      },
+      {
+        "chapter": 16,
+        "state": "done"
+      },
+      {
+        "chapter": 17,
+        "state": "done"
+      },
+      {
+        "chapter": 18,
+        "state": "done"
+      },
+      {
+        "chapter": 19,
+        "state": "done"
+      },
+      {
+        "chapter": 20,
+        "state": "done"
+      },
+      {
+        "chapter": 21,
+        "state": "done"
+      },
+      {
+        "chapter": 22,
+        "state": "done"
+      },
+      {
+        "chapter": 23,
+        "state": "done"
+      },
+      {
+        "chapter": 24,
+        "state": "done"
+      },
+      {
+        "chapter": 25,
+        "state": "done"
+      },
+      {
+        "chapter": 26,
+        "state": "done"
+      },
+      {
+        "chapter": 27,
+        "state": "done"
+      },
+      {
+        "chapter": 28,
+        "state": "done"
+      },
+      {
+        "chapter": 29,
+        "state": "done"
+      },
+      {
+        "chapter": 30,
+        "state": "done"
+      },
+      {
+        "chapter": 31,
+        "state": "done"
+      },
+      {
+        "chapter": 32,
+        "state": "done"
+      },
+      {
+        "chapter": 33,
+        "state": "done"
+      },
+      {
+        "chapter": 34,
+        "state": "done"
+      },
+      {
+        "chapter": 35,
+        "state": "done"
+      },
+      {
+        "chapter": 36,
+        "state": "done"
+      },
+      {
+        "chapter": 37,
+        "state": "done"
+      },
+      {
+        "chapter": 38,
+        "state": "done"
+      },
+      {
+        "chapter": 39,
+        "state": "done"
+      },
+      {
+        "chapter": 40,
+        "state": "done"
+      },
+      {
+        "chapter": 41,
+        "state": "rewrite"
+      },
+      {
+        "chapter": 42,
+        "state": "done"
+      },
+      {
+        "chapter": 43,
+        "state": "done"
+      },
+      {
+        "chapter": 44,
+        "state": "gate"
+      },
+      {
+        "chapter": 45,
+        "state": "done"
+      },
+      {
+        "chapter": 46,
+        "state": "done"
+      },
+      {
+        "chapter": 47,
+        "state": "running"
+      },
+      {
+        "chapter": 48,
+        "state": "pending"
+      },
+      {
+        "chapter": 49,
+        "state": "pending"
+      },
+      {
+        "chapter": 50,
+        "state": "pending"
+      },
+      {
+        "chapter": 51,
+        "state": "pending"
+      },
+      {
+        "chapter": 52,
+        "state": "pending"
+      },
+      {
+        "chapter": 53,
+        "state": "pending"
+      },
+      {
+        "chapter": 54,
+        "state": "pending"
+      },
+      {
+        "chapter": 55,
+        "state": "pending"
+      },
+      {
+        "chapter": 56,
+        "state": "pending"
+      },
+      {
+        "chapter": 57,
+        "state": "pending"
+      },
+      {
+        "chapter": 58,
+        "state": "pending"
+      },
+      {
+        "chapter": 59,
+        "state": "pending"
+      },
+      {
+        "chapter": 60,
+        "state": "pending"
+      },
+      {
+        "chapter": 61,
+        "state": "pending"
+      },
+      {
+        "chapter": 62,
+        "state": "pending"
+      },
+      {
+        "chapter": 63,
+        "state": "pending"
+      },
+      {
+        "chapter": 64,
+        "state": "pending"
+      },
+      {
+        "chapter": 65,
+        "state": "pending"
+      },
+      {
+        "chapter": 66,
+        "state": "pending"
+      },
+      {
+        "chapter": 67,
+        "state": "pending"
+      },
+      {
+        "chapter": 68,
+        "state": "pending"
+      },
+      {
+        "chapter": 69,
+        "state": "pending"
+      },
+      {
+        "chapter": 70,
+        "state": "pending"
+      },
+      {
+        "chapter": 71,
+        "state": "pending"
+      },
+      {
+        "chapter": 72,
+        "state": "pending"
+      },
+      {
+        "chapter": 73,
+        "state": "pending"
+      },
+      {
+        "chapter": 74,
+        "state": "pending"
+      },
+      {
+        "chapter": 75,
+        "state": "pending"
+      },
+      {
+        "chapter": 76,
+        "state": "pending"
+      },
+      {
+        "chapter": 77,
+        "state": "pending"
+      },
+      {
+        "chapter": 78,
+        "state": "pending"
+      },
+      {
+        "chapter": 79,
+        "state": "pending"
+      },
+      {
+        "chapter": 80,
+        "state": "pending"
+      },
+      {
+        "chapter": 81,
+        "state": "pending"
+      },
+      {
+        "chapter": 82,
+        "state": "pending"
+      },
+      {
+        "chapter": 83,
+        "state": "pending"
+      },
+      {
+        "chapter": 84,
+        "state": "pending"
+      },
+      {
+        "chapter": 85,
+        "state": "pending"
+      },
+      {
+        "chapter": 86,
+        "state": "pending"
+      },
+      {
+        "chapter": 87,
+        "state": "pending"
+      },
+      {
+        "chapter": 88,
+        "state": "pending"
+      },
+      {
+        "chapter": 89,
+        "state": "pending"
+      },
+      {
+        "chapter": 90,
+        "state": "pending"
+      },
+      {
+        "chapter": 91,
+        "state": "pending"
+      },
+      {
+        "chapter": 92,
+        "state": "pending"
+      },
+      {
+        "chapter": 93,
+        "state": "pending"
+      },
+      {
+        "chapter": 94,
+        "state": "pending"
+      },
+      {
+        "chapter": 95,
+        "state": "pending"
+      },
+      {
+        "chapter": 96,
+        "state": "pending"
+      },
+      {
+        "chapter": 97,
+        "state": "pending"
+      },
+      {
+        "chapter": 98,
+        "state": "pending"
+      },
+      {
+        "chapter": 99,
+        "state": "pending"
+      },
+      {
+        "chapter": 100,
+        "state": "pending"
+      },
+      {
+        "chapter": 101,
+        "state": "pending"
+      },
+      {
+        "chapter": 102,
+        "state": "pending"
+      },
+      {
+        "chapter": 103,
+        "state": "pending"
+      },
+      {
+        "chapter": 104,
+        "state": "pending"
+      },
+      {
+        "chapter": 105,
+        "state": "pending"
+      },
+      {
+        "chapter": 106,
+        "state": "pending"
+      },
+      {
+        "chapter": 107,
+        "state": "pending"
+      },
+      {
+        "chapter": 108,
+        "state": "pending"
+      },
+      {
+        "chapter": 109,
+        "state": "pending"
+      },
+      {
+        "chapter": 110,
+        "state": "pending"
+      },
+      {
+        "chapter": 111,
+        "state": "pending"
+      },
+      {
+        "chapter": 112,
+        "state": "pending"
+      },
+      {
+        "chapter": 113,
+        "state": "pending"
+      },
+      {
+        "chapter": 114,
+        "state": "pending"
+      },
+      {
+        "chapter": 115,
+        "state": "pending"
+      },
+      {
+        "chapter": 116,
+        "state": "pending"
+      },
+      {
+        "chapter": 117,
+        "state": "pending"
+      },
+      {
+        "chapter": 118,
+        "state": "pending"
+      },
+      {
+        "chapter": 119,
+        "state": "pending"
+      },
+      {
+        "chapter": 120,
+        "state": "pending"
+      },
+      {
+        "chapter": 121,
+        "state": "pending"
+      },
+      {
+        "chapter": 122,
+        "state": "pending"
+      },
+      {
+        "chapter": 123,
+        "state": "pending"
+      },
+      {
+        "chapter": 124,
+        "state": "pending"
+      },
+      {
+        "chapter": 125,
+        "state": "pending"
+      },
+      {
+        "chapter": 126,
+        "state": "pending"
+      },
+      {
+        "chapter": 127,
+        "state": "pending"
+      },
+      {
+        "chapter": 128,
+        "state": "pending"
+      },
+      {
+        "chapter": 129,
+        "state": "pending"
+      },
+      {
+        "chapter": 130,
+        "state": "pending"
+      },
+      {
+        "chapter": 131,
+        "state": "pending"
+      },
+      {
+        "chapter": 132,
+        "state": "pending"
+      },
+      {
+        "chapter": 133,
+        "state": "pending"
+      },
+      {
+        "chapter": 134,
+        "state": "pending"
+      },
+      {
+        "chapter": 135,
+        "state": "pending"
+      },
+      {
+        "chapter": 136,
+        "state": "pending"
+      },
+      {
+        "chapter": 137,
+        "state": "pending"
+      },
+      {
+        "chapter": 138,
+        "state": "pending"
+      },
+      {
+        "chapter": 139,
+        "state": "pending"
+      },
+      {
+        "chapter": 140,
+        "state": "pending"
+      },
+      {
+        "chapter": 141,
+        "state": "pending"
+      },
+      {
+        "chapter": 142,
+        "state": "pending"
+      },
+      {
+        "chapter": 143,
+        "state": "pending"
+      },
+      {
+        "chapter": 144,
+        "state": "pending"
+      },
+      {
+        "chapter": 145,
+        "state": "pending"
+      },
+      {
+        "chapter": 146,
+        "state": "pending"
+      },
+      {
+        "chapter": 147,
+        "state": "pending"
+      },
+      {
+        "chapter": 148,
+        "state": "pending"
+      },
+      {
+        "chapter": 149,
+        "state": "pending"
+      },
+      {
+        "chapter": 150,
+        "state": "pending"
+      },
+      {
+        "chapter": 151,
+        "state": "pending"
+      },
+      {
+        "chapter": 152,
+        "state": "pending"
+      },
+      {
+        "chapter": 153,
+        "state": "pending"
+      },
+      {
+        "chapter": 154,
+        "state": "pending"
+      },
+      {
+        "chapter": 155,
+        "state": "pending"
+      },
+      {
+        "chapter": 156,
+        "state": "pending"
+      },
+      {
+        "chapter": 157,
+        "state": "pending"
+      },
+      {
+        "chapter": 158,
+        "state": "pending"
+      },
+      {
+        "chapter": 159,
+        "state": "pending"
+      },
+      {
+        "chapter": 160,
+        "state": "pending"
+      },
+      {
+        "chapter": 161,
+        "state": "pending"
+      },
+      {
+        "chapter": 162,
+        "state": "pending"
+      },
+      {
+        "chapter": 163,
+        "state": "pending"
+      },
+      {
+        "chapter": 164,
+        "state": "pending"
+      },
+      {
+        "chapter": 165,
+        "state": "pending"
+      },
+      {
+        "chapter": 166,
+        "state": "pending"
+      },
+      {
+        "chapter": 167,
+        "state": "pending"
+      },
+      {
+        "chapter": 168,
+        "state": "pending"
+      },
+      {
+        "chapter": 169,
+        "state": "pending"
+      },
+      {
+        "chapter": 170,
+        "state": "pending"
+      },
+      {
+        "chapter": 171,
+        "state": "pending"
+      },
+      {
+        "chapter": 172,
+        "state": "pending"
+      },
+      {
+        "chapter": 173,
+        "state": "pending"
+      },
+      {
+        "chapter": 174,
+        "state": "pending"
+      },
+      {
+        "chapter": 175,
+        "state": "pending"
+      },
+      {
+        "chapter": 176,
+        "state": "pending"
+      },
+      {
+        "chapter": 177,
+        "state": "pending"
+      },
+      {
+        "chapter": 178,
+        "state": "pending"
+      },
+      {
+        "chapter": 179,
+        "state": "pending"
+      },
+      {
+        "chapter": 180,
+        "state": "pending"
+      },
+      {
+        "chapter": 181,
+        "state": "pending"
+      },
+      {
+        "chapter": 182,
+        "state": "pending"
+      },
+      {
+        "chapter": 183,
+        "state": "pending"
+      },
+      {
+        "chapter": 184,
+        "state": "pending"
+      },
+      {
+        "chapter": 185,
+        "state": "pending"
+      },
+      {
+        "chapter": 186,
+        "state": "pending"
+      },
+      {
+        "chapter": 187,
+        "state": "pending"
+      },
+      {
+        "chapter": 188,
+        "state": "pending"
+      },
+      {
+        "chapter": 189,
+        "state": "pending"
+      },
+      {
+        "chapter": 190,
+        "state": "pending"
+      },
+      {
+        "chapter": 191,
+        "state": "pending"
+      },
+      {
+        "chapter": 192,
+        "state": "pending"
+      },
+      {
+        "chapter": 193,
+        "state": "pending"
+      },
+      {
+        "chapter": 194,
+        "state": "pending"
+      },
+      {
+        "chapter": 195,
+        "state": "pending"
+      },
+      {
+        "chapter": 196,
+        "state": "pending"
+      },
+      {
+        "chapter": 197,
+        "state": "pending"
+      },
+      {
+        "chapter": 198,
+        "state": "pending"
+      },
+      {
+        "chapter": 199,
+        "state": "pending"
+      },
+      {
+        "chapter": 200,
+        "state": "pending"
+      },
+      {
+        "chapter": 201,
+        "state": "pending"
+      },
+      {
+        "chapter": 202,
+        "state": "pending"
+      },
+      {
+        "chapter": 203,
+        "state": "pending"
+      },
+      {
+        "chapter": 204,
+        "state": "pending"
+      },
+      {
+        "chapter": 205,
+        "state": "pending"
+      },
+      {
+        "chapter": 206,
+        "state": "pending"
+      },
+      {
+        "chapter": 207,
+        "state": "pending"
+      },
+      {
+        "chapter": 208,
+        "state": "pending"
+      },
+      {
+        "chapter": 209,
+        "state": "pending"
+      },
+      {
+        "chapter": 210,
+        "state": "pending"
+      },
+      {
+        "chapter": 211,
+        "state": "pending"
+      },
+      {
+        "chapter": 212,
+        "state": "pending"
+      },
+      {
+        "chapter": 213,
+        "state": "pending"
+      },
+      {
+        "chapter": 214,
+        "state": "pending"
+      },
+      {
+        "chapter": 215,
+        "state": "pending"
+      },
+      {
+        "chapter": 216,
+        "state": "pending"
+      },
+      {
+        "chapter": 217,
+        "state": "pending"
+      },
+      {
+        "chapter": 218,
+        "state": "pending"
+      },
+      {
+        "chapter": 219,
+        "state": "pending"
+      },
+      {
+        "chapter": 220,
+        "state": "pending"
+      },
+      {
+        "chapter": 221,
+        "state": "pending"
+      },
+      {
+        "chapter": 222,
+        "state": "pending"
+      },
+      {
+        "chapter": 223,
+        "state": "pending"
+      },
+      {
+        "chapter": 224,
+        "state": "pending"
+      },
+      {
+        "chapter": 225,
+        "state": "pending"
+      },
+      {
+        "chapter": 226,
+        "state": "pending"
+      },
+      {
+        "chapter": 227,
+        "state": "pending"
+      },
+      {
+        "chapter": 228,
+        "state": "pending"
+      },
+      {
+        "chapter": 229,
+        "state": "pending"
+      },
+      {
+        "chapter": 230,
+        "state": "pending"
+      },
+      {
+        "chapter": 231,
+        "state": "pending"
+      },
+      {
+        "chapter": 232,
+        "state": "pending"
+      },
+      {
+        "chapter": 233,
+        "state": "pending"
+      },
+      {
+        "chapter": 234,
+        "state": "pending"
+      },
+      {
+        "chapter": 235,
+        "state": "pending"
+      },
+      {
+        "chapter": 236,
+        "state": "pending"
+      },
+      {
+        "chapter": 237,
+        "state": "pending"
+      },
+      {
+        "chapter": 238,
+        "state": "pending"
+      },
+      {
+        "chapter": 239,
+        "state": "pending"
+      },
+      {
+        "chapter": 240,
+        "state": "pending"
+      },
+      {
+        "chapter": 241,
+        "state": "pending"
+      },
+      {
+        "chapter": 242,
+        "state": "pending"
+      },
+      {
+        "chapter": 243,
+        "state": "pending"
+      },
+      {
+        "chapter": 244,
+        "state": "pending"
+      },
+      {
+        "chapter": 245,
+        "state": "pending"
+      },
+      {
+        "chapter": 246,
+        "state": "pending"
+      },
+      {
+        "chapter": 247,
+        "state": "pending"
+      },
+      {
+        "chapter": 248,
+        "state": "pending"
+      },
+      {
+        "chapter": 249,
+        "state": "pending"
+      },
+      {
+        "chapter": 250,
+        "state": "pending"
+      },
+      {
+        "chapter": 251,
+        "state": "pending"
+      },
+      {
+        "chapter": 252,
+        "state": "pending"
+      },
+      {
+        "chapter": 253,
+        "state": "pending"
+      },
+      {
+        "chapter": 254,
+        "state": "pending"
+      },
+      {
+        "chapter": 255,
+        "state": "pending"
+      },
+      {
+        "chapter": 256,
+        "state": "pending"
+      },
+      {
+        "chapter": 257,
+        "state": "pending"
+      },
+      {
+        "chapter": 258,
+        "state": "pending"
+      },
+      {
+        "chapter": 259,
+        "state": "pending"
+      },
+      {
+        "chapter": 260,
+        "state": "pending"
+      },
+      {
+        "chapter": 261,
+        "state": "pending"
+      },
+      {
+        "chapter": 262,
+        "state": "pending"
+      },
+      {
+        "chapter": 263,
+        "state": "pending"
+      },
+      {
+        "chapter": 264,
+        "state": "pending"
+      },
+      {
+        "chapter": 265,
+        "state": "pending"
+      },
+      {
+        "chapter": 266,
+        "state": "pending"
+      },
+      {
+        "chapter": 267,
+        "state": "pending"
+      },
+      {
+        "chapter": 268,
+        "state": "pending"
+      },
+      {
+        "chapter": 269,
+        "state": "pending"
+      },
+      {
+        "chapter": 270,
+        "state": "pending"
+      },
+      {
+        "chapter": 271,
+        "state": "pending"
+      },
+      {
+        "chapter": 272,
+        "state": "pending"
+      },
+      {
+        "chapter": 273,
+        "state": "pending"
+      },
+      {
+        "chapter": 274,
+        "state": "pending"
+      },
+      {
+        "chapter": 275,
+        "state": "pending"
+      },
+      {
+        "chapter": 276,
+        "state": "pending"
+      },
+      {
+        "chapter": 277,
+        "state": "pending"
+      },
+      {
+        "chapter": 278,
+        "state": "pending"
+      },
+      {
+        "chapter": 279,
+        "state": "pending"
+      },
+      {
+        "chapter": 280,
+        "state": "pending"
+      },
+      {
+        "chapter": 281,
+        "state": "pending"
+      },
+      {
+        "chapter": 282,
+        "state": "pending"
+      },
+      {
+        "chapter": 283,
+        "state": "pending"
+      },
+      {
+        "chapter": 284,
+        "state": "pending"
+      },
+      {
+        "chapter": 285,
+        "state": "pending"
+      },
+      {
+        "chapter": 286,
+        "state": "pending"
+      },
+      {
+        "chapter": 287,
+        "state": "pending"
+      },
+      {
+        "chapter": 288,
+        "state": "pending"
+      },
+      {
+        "chapter": 289,
+        "state": "pending"
+      },
+      {
+        "chapter": 290,
+        "state": "pending"
+      },
+      {
+        "chapter": 291,
+        "state": "pending"
+      },
+      {
+        "chapter": 292,
+        "state": "pending"
+      },
+      {
+        "chapter": 293,
+        "state": "pending"
+      },
+      {
+        "chapter": 294,
+        "state": "pending"
+      },
+      {
+        "chapter": 295,
+        "state": "pending"
+      },
+      {
+        "chapter": 296,
+        "state": "pending"
+      },
+      {
+        "chapter": 297,
+        "state": "pending"
+      },
+      {
+        "chapter": 298,
+        "state": "pending"
+      },
+      {
+        "chapter": 299,
+        "state": "pending"
+      },
+      {
+        "chapter": 300,
+        "state": "pending"
+      }
+    ]
+  },
+  "chapters": [
+    {
+      "chapter": 41,
+      "title": "Vết dao trên bậc thứ chín",
+      "stage": "rewrite",
+      "words": 2612,
+      "duration_ms": 262000,
+      "owner": [
+        "writer",
+        "editor"
+      ]
+    },
+    {
+      "chapter": 44,
+      "title": "Người gác cầu đá",
+      "stage": "done",
+      "words": 3104,
+      "duration_ms": 171000,
+      "owner": [
+        "writer",
+        "editor"
+      ]
+    },
+    {
+      "chapter": 45,
+      "title": "Thư không người nhận",
+      "stage": "done",
+      "words": 2870,
+      "duration_ms": 154000,
+      "owner": [
+        "writer"
+      ]
+    },
+    {
+      "chapter": 46,
+      "title": "Đêm mưa trên Hàn Sơn",
+      "stage": "done",
+      "words": 3298,
+      "owner": [
+        "writer"
+      ]
+    },
+    {
+      "chapter": 47,
+      "title": "Tiếng chuông thứ ba",
+      "stage": "drafting",
+      "words": 2980,
+      "duration_ms": 72000,
+      "owner": [
+        "writer"
+      ]
+    },
+    {
+      "chapter": 48,
+      "stage": "pending"
+    }
+  ],
+  "transport": {
+    "state": "running",
+    "last_step": "draft",
+    "model": "gemini-2.5-pro",
+    "cost_usd": 2.14,
+    "cost_per_chapter": 0.0465,
+    "chapters_per_hour": 3.42,
+    "elapsed_ms": 22324000
+  },
+  "decisions": [
+    {
+      "id": "dec-9f21c07a4e1b",
+      "at": "2026-07-30T17:38:12+07:00",
+      "kind": "plan_start",
+      "decider": "arbiter",
+      "reason": "Mở rộng cung 3 bằng architect_long — tồn 253 chương, cần bộ khung nhiều tập",
+      "input": "tồn 253 chương, cung 2 sắp hết",
+      "model": "gemini-2.5-pro",
+      "duration_ms": 1840,
+      "decision": {
+        "action": "expand_arc",
+        "arc": 3,
+        "strategy": "architect_long",
+        "chapters": 8
+      }
+    },
+    {
+      "id": "dec-4c8e1b2f9a03",
+      "at": "2026-07-30T17:12:44+07:00",
+      "kind": "decision_stale",
+      "decider": "engine",
+      "input": "Lâm Thanh nên do dự lâu hơn trước khi rút kiếm",
+      "reason": "Phán quyết được ghi trước khi chương 41 vào hàng chờ viết lại nên đã cũ"
+    },
+    {
+      "id": "dec-71ab3e5d8cc4",
+      "at": "2026-07-30T16:47:03+07:00",
+      "kind": "intervention",
+      "decider": "arbiter",
+      "reason": "Phân loại ý kiến người dùng là phạm vi hẹp — chỉ viết lại chương 41, không lan sang cung",
+      "input": "Lâm Thanh nên do dự lâu hơn trước khi rút kiếm",
+      "model": "gemini-2.5-pro",
+      "duration_ms": 2160,
+      "decision": {
+        "scope": "chapter",
+        "chapters": [
+          41
+        ],
+        "propagate": false
+      }
+    },
+    {
+      "id": "dec-2d6f90ba17e5",
+      "at": "2026-07-30T15:03:57+07:00",
+      "kind": "worker_failure",
+      "decider": "arbiter",
+      "reason": "Writer bị chặn 3 lượt liền ở commit_chapter",
+      "input": "writer: chốt bản thảo chương 41",
+      "model": "gemini-2.5-pro",
+      "duration_ms": 8420,
+      "error": "arbiter: mô hình trả về JSON không hợp lệ (stop_reason=length)"
+    },
+    {
+      "id": "dec-0b4a7c3e2f18",
+      "at": "2026-07-30T11:20:31+07:00",
+      "kind": "volume_end",
+      "decider": "architect",
+      "reason": "Chốt tập 2: 20 chương đã nghiệm thu, phục bút còn treo được chuyển sang tập 3",
+      "decision": {
+        "action": "close_volume",
+        "volume": 2,
+        "carry_foreshadow": 2
+      }
+    }
+  ],
+  "selected": {
+    "chapter": 47,
+    "title": "Tiếng chuông thứ ba",
+    "words": 2980,
+    "contract": {
+      "chapter": 47,
+      "title": "Tiếng chuông thứ ba",
+      "core_event": "Hé lộ tiếng chuông thứ ba là tín hiệu người lạ, không phải núi mở",
+      "hook": "bỏ lửng hành động",
+      "scenes": [
+        "Lâm Thanh đứng lại ở bậc thứ chín",
+        "Người gác cầu nhắc chuyện chín năm trước",
+        "Chuông đổ lần thứ ba, sương tan về phía tây"
+      ]
+    },
+    "review": {
+      "chapter": 47,
+      "scope": "chapter",
+      "verdict": "revise",
+      "summary": "Chương đạt hợp đồng về sự kiện trọng tâm nhưng nhịp chậm và một phục bút treo quá lâu.",
+      "dimensions": [
+        {
+          "name": "setting_consistency",
+          "score": 8,
+          "verdict": "pass"
+        },
+        {
+          "name": "character_behavior",
+          "score": 8,
+          "verdict": "pass"
+        },
+        {
+          "name": "pacing",
+          "score": 5,
+          "verdict": "warn",
+          "comment": "Ba chương liền mở bằng cảnh đêm — nên đổi mốc thời gian ở chương 48."
+        },
+        {
+          "name": "narrative",
+          "score": 7,
+          "verdict": "pass"
+        },
+        {
+          "name": "foreshadowing",
+          "score": 4,
+          "verdict": "revise",
+          "comment": "Ấn ngọc Hàn Sơn đặt ở chương 38, đã qua 9 chương chưa nhắc lại."
+        },
+        {
+          "name": "hook",
+          "score": 8,
+          "verdict": "pass"
+        },
+        {
+          "name": "prose",
+          "score": 7,
+          "verdict": "pass"
+        }
+      ],
+      "issues": [
+        {
+          "type": "foreshadowing",
+          "severity": "major",
+          "description": "Phục bút Ấn ngọc Hàn Sơn treo quá lâu không nhắc lại",
+          "evidence": "Ấn ngọc nằm im trong tay áo, lạnh như một lời chưa nói.",
+          "suggestion": "Cho Lâm Thanh chạm vào ấn ngọc ở cảnh cuối chương 48, không cần giải thích.",
+          "chapters": [
+            38,
+            47
+          ],
+          "needs_change": true
+        },
+        {
+          "type": "pacing",
+          "severity": "minor",
+          "description": "Ba chương liền mở bằng cảnh đêm làm nhịp chậm lại",
+          "chapters": [
+            45,
+            46,
+            47
+          ],
+          "needs_change": false
+        }
+      ],
+      "contract_status": "partial",
+      "contract_misses": [
+        "Móc cuối chưa bỏ lửng hành động, còn giải thích thêm một câu",
+        "Thiếu một cảnh so với hợp đồng: sương tan về phía tây"
+      ]
+    },
+    "excerpt": "Ấy là lần thứ ba tiếng chuông đổ xuống trong đêm. Bước chân ấy đạp thẳng lên bậc thứ chín. Đá kêu một tiếng khô khốc, ngắn, không vọng lại. Lâm Thanh không đứng lên — chàng chỉ đưa tay lên vai, nơi bao kiếm vẫn còn ướt nước mưa đêm trước."
+  },
+  "warnings": [
+    "progress ghi 46 chương xong nhưng chỉ tìm thấy 45 tệp trong chapters/",
+    "phục bút “Ấn ngọc Hàn Sơn” đặt ở chương 38, chưa thu sau 9 chương"
+  ],
+  "queue_seq": 4821
+}

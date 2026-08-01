@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 const (
@@ -77,14 +79,14 @@ func StartPricingRefresh(registry *ModelRegistry, cacheDir string) {
 		if models == nil {
 			fetched, err := fetchModels()
 			if err != nil {
-				slog.Warn("模型元数据刷新失败", "module", "models", "err", err)
+				slog.Warn(i18n.F("模型元数据刷新失败"), "module", "models", "err", err)
 				return
 			}
 			models = fetched
 			saveCache(models, cacheDir)
 		}
 		registry.MergeModels(models)
-		slog.Info("模型元数据已就绪", "module", "models", "count", len(models))
+		slog.Info(i18n.F("模型元数据已就绪"), "module", "models", "count", len(models))
 	}()
 }
 

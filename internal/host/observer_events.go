@@ -8,20 +8,21 @@ import (
 
 	"encoding/json"
 	"github.com/voocel/agentcore"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"log/slog"
 )
 
 func retryPrefix(attempt, maxRetries int, delay time.Duration) string {
 	if maxRetries <= 0 {
 		if text := formatRetryDelay(delay); text != "" {
-			return fmt.Sprintf("重试 (第%d次，%s后): ", attempt, text)
+			return fmt.Sprintf(i18n.F("重试 (第%d次，%s后): "), attempt, text)
 		}
-		return fmt.Sprintf("重试 (第%d次): ", attempt)
+		return fmt.Sprintf(i18n.F("重试 (第%d次): "), attempt)
 	}
 	if text := formatRetryDelay(delay); text != "" {
-		return fmt.Sprintf("重试 (%d/%d，%s后): ", attempt, maxRetries, text)
+		return fmt.Sprintf(i18n.F("重试 (%d/%d，%s后): "), attempt, maxRetries, text)
 	}
-	return fmt.Sprintf("重试 (%d/%d): ", attempt, maxRetries)
+	return fmt.Sprintf(i18n.F("重试 (%d/%d): "), attempt, maxRetries)
 }
 
 func formatRetryDelay(delay time.Duration) string {
@@ -92,7 +93,7 @@ func (o *observer) handleContextProgress(ev agentcore.Event) {
 	if payload.Percent > 85 {
 		level = "warn"
 	}
-	summary := fmt.Sprintf("%s 上下文 %.0f%% (%d/%d) 策略: %s", agent, payload.Percent, payload.Tokens, payload.ContextWindow, payload.Strategy)
+	summary := fmt.Sprintf(i18n.F("%s 上下文 %.0f%% (%d/%d) 策略: %s"), agent, payload.Percent, payload.Tokens, payload.ContextWindow, payload.Strategy)
 
 	if payload.Strategy != "" {
 		// 触发了压缩 → 事件流 + 日志

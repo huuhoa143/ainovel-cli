@@ -8,9 +8,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"unicode/utf8"
 
 	"github.com/voocel/agentcore"
+	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // SessionStore 追加式记录 LLM 对话历史到 JSONL 文件。
@@ -138,10 +139,26 @@ func (s *SessionStore) subAgentPath(agentName, task string) string {
 	return fmt.Sprintf("meta/sessions/agents/%s-%s.jsonl", agentName, suffix)
 }
 
-var chapterRe = regexp.MustCompile(`第\s*(\d+)\s*章`)
+// chapterRe / chapterViRe bóc số chương từ mô tả task của agent, theo cả hai
+// ngôn ngữ. Giữ hai regex rời thay vì một regex hai nhóm bắt: nhóm bắt lồng nhau
+// khiến chỗ đọc phải đoán nhóm nào có giá trị, còn dò lần lượt thì đọc thẳng.
+//
+// Vì sao cần bản tiếng Việt: extractChapter quyết định tên file log phiên. Bóc
+// được thì log ra meta/sessions/agents/writer-ch03.jsonl; không bóc được thì rơi
+// về số thứ tự writer-001.jsonl. Với task tiếng Việt ("Viết chương 3") regex
+// tiếng Trung không khớp nên MỌI chương dồn vào chuỗi số thứ tự — đi truy lỗi
+// một chương cụ thể không còn mở đúng file được, mà không có triệu chứng nào báo
+// là đã mất khả năng đó.
+var (
+	chapterRe   = regexp.MustCompile(`第\s*(\d+)\s*章`)
+	chapterViRe = regexp.MustCompile(`(?i)chương\s*(\d+)`)
+)
 
 func extractChapter(task string) string {
 	m := chapterRe.FindStringSubmatch(task)
+	if len(m) < 2 {
+		m = chapterViRe.FindStringSubmatch(task)
+	}
 	if len(m) < 2 {
 		return ""
 	}
@@ -196,12 +213,12 @@ func compactText(role agentcore.Role, toolName, text string) string {
 		summary := extractJSONField(text, "_loading_summary")
 		return fmt.Sprintf("[session_compact: novel_context %dB | %s]", len(text), summary)
 	case "read_chapter":
-		chars := utf8.RuneCountInString(text)
-		return fmt.Sprintf("[session_compact: read_chapter %d字 | 见 chapters/]", chars)
+		chars := domain.WordCount(text)
+		return fmt.Sprintf(i18n.F("[session_compact: read_chapter %d字 | 见 chapters/]"), chars)
 	default:
 		if len(text) > 8192 {
-			chars := utf8.RuneCountInString(text)
-			return fmt.Sprintf("[session_compact: %s %d字]", toolName, chars)
+			chars := domain.WordCount(text)
+			return fmt.Sprintf(i18n.F("[session_compact: %s %d字]"), toolName, chars)
 		}
 		return text
 	}
@@ -211,7 +228,10 @@ func compactText(role agentcore.Role, toolName, text string) string {
 func compactToolCall(tc *agentcore.ToolCall) *agentcore.ToolCall {
 	switch tc.Name {
 	case "draft_chapter":
-		return compactArgsContent(tc, "第N章正文", "drafts/")
+		// Nhãn dự phòng khi args không có trường chapter. Phải bọc i18n như nhánh
+		// có số chương bên dưới (i18n.F("第%d章正文")), nếu không thì cùng một chỗ
+		// hiển thị ra hai ngôn ngữ tuỳ theo args có chapter hay không.
+		return compactArgsContent(tc, i18n.F("第N章正文"), "drafts/")
 	case "save_foundation":
 		return compactFoundationArgs(tc)
 	default:
@@ -231,16 +251,16 @@ func compactArgsContent(tc *agentcore.ToolCall, label, ref string) *agentcore.To
 	var content string
 	if err := json.Unmarshal(contentRaw, &content); err != nil {
 		// content 不是字符串（可能是 JSON 对象），用字节数
-		placeholder := fmt.Sprintf("[session_compact: %s %dB | 见 %s]", label, len(contentRaw), ref)
+		placeholder := fmt.Sprintf(i18n.F("[session_compact: %s %dB | 见 %s]"), label, len(contentRaw), ref)
 		args["content"], _ = json.Marshal(placeholder)
 	} else {
-		chars := utf8.RuneCountInString(content)
+		chars := domain.WordCount(content)
 		ch := extractJSONFieldInt(tc.Args, "chapter")
 		if ch > 0 {
-			label = fmt.Sprintf("第%d章正文", ch)
+			label = fmt.Sprintf(i18n.F("第%d章正文"), ch)
 			ref = fmt.Sprintf("drafts/%02d.draft.md", ch)
 		}
-		placeholder := fmt.Sprintf("[session_compact: %s %d字 | 见 %s]", label, chars, ref)
+		placeholder := fmt.Sprintf(i18n.F("[session_compact: %s %d字 | 见 %s]"), label, chars, ref)
 		args["content"], _ = json.Marshal(placeholder)
 	}
 	clone := *tc
@@ -262,7 +282,7 @@ func compactFoundationArgs(tc *agentcore.ToolCall) *agentcore.ToolCall {
 	if json.Unmarshal(args["type"], &t) == nil && t != "" {
 		typeName = t
 	}
-	placeholder := fmt.Sprintf("[session_compact: %s %dB | 见 store]", typeName, len(contentRaw))
+	placeholder := fmt.Sprintf(i18n.F("[session_compact: %s %dB | 见 store]"), typeName, len(contentRaw))
 	args["content"], _ = json.Marshal(placeholder)
 	clone := *tc
 	clone.Args, _ = json.Marshal(args)

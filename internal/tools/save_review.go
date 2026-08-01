@@ -9,6 +9,7 @@ import (
 
 	"github.com/voocel/agentcore/schema"
 	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/llmcontract"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
@@ -24,11 +25,11 @@ func NewSaveReviewTool(store *store.Store) *SaveReviewTool {
 
 func (t *SaveReviewTool) Name() string { return "save_review" }
 func (t *SaveReviewTool) Description() string {
-	return "保存审阅结果并更新流程状态。verdict 为 accept/polish/rewrite 之一。" +
-		"Editor 依据完整上下文作出 verdict，工具只校验事实并原子更新 Progress。" +
-		"返回结构化事实：verdict / affected_chapters / next_flow / next_chapter"
+	return i18n.F("保存审阅结果并更新流程状态。verdict 为 accept/polish/rewrite 之一。") +
+		i18n.F("Editor 依据完整上下文作出 verdict，工具只校验事实并原子更新 Progress。") +
+		i18n.F("返回结构化事实：verdict / affected_chapters / next_flow / next_chapter")
 }
-func (t *SaveReviewTool) Label() string { return "保存审阅" }
+func (t *SaveReviewTool) Label() string { return i18n.F("保存审阅") }
 
 // 写工具（同时更新 reviews/ 与 Progress 的 PendingRewrites/Flow），禁止并发。
 func (t *SaveReviewTool) ReadOnly(_ json.RawMessage) bool        { return false }
@@ -37,29 +38,29 @@ func (t *SaveReviewTool) StrictSchema() bool                     { return true }
 
 func (t *SaveReviewTool) Schema() map[string]any {
 	issueSchema := schema.Object(
-		schema.Property("type", schema.String("问题维度；可使用评审提示中的基础维度，也可写更准确的具体维度")).Required(),
-		schema.Property("severity", schema.Enum("严重程度", "critical", "error", "warning")).Required(),
-		schema.Property("description", schema.String("问题描述")).Required(),
-		schema.Property("evidence", schema.String("证据：原文片段、具体情节或状态数据")).Required(),
-		schema.Property("suggestion", llmcontract.Nullable(schema.String("修改建议；无需建议时为 null"))).Required(),
-		schema.Property("chapters", schema.Array("该问题证据实际所在的章节；弧评审必须落在任务给定区间", schema.Int("章节号"))).Required(),
-		schema.Property("requires_change", schema.Bool("该问题是否应立即触发所列章节返工，由 Editor 结合整体阅读体验判断")).Required(),
+		schema.Property("type", schema.String(i18n.F("问题维度；可使用评审提示中的基础维度，也可写更准确的具体维度"))).Required(),
+		schema.Property("severity", schema.Enum(i18n.F("严重程度"), "critical", "error", "warning")).Required(),
+		schema.Property("description", schema.String(i18n.F("问题描述"))).Required(),
+		schema.Property("evidence", schema.String(i18n.F("证据：原文片段、具体情节或状态数据"))).Required(),
+		schema.Property("suggestion", llmcontract.Nullable(schema.String(i18n.F("修改建议；无需建议时为 null")))).Required(),
+		schema.Property("chapters", schema.Array(i18n.F("该问题证据实际所在的章节；弧评审必须落在任务给定区间"), schema.Int(i18n.F("章节号")))).Required(),
+		schema.Property("requires_change", schema.Bool(i18n.F("该问题是否应立即触发所列章节返工，由 Editor 结合整体阅读体验判断"))).Required(),
 	)
 	dimensionSchema := schema.Object(
-		schema.Property("dimension", schema.String("评价维度；由当前评审任务和 rubric 决定")).Required(),
-		schema.Property("score", schema.Int("评分（0-100）")).Required(),
-		schema.Property("comment", schema.String("该维度的简要结论和证据；每个维度必填")).Required(),
+		schema.Property("dimension", schema.String(i18n.F("评价维度；由当前评审任务和 rubric 决定"))).Required(),
+		schema.Property("score", schema.Int(i18n.F("评分（0-100）"))).Required(),
+		schema.Property("comment", schema.String(i18n.F("该维度的简要结论和证据；每个维度必填"))).Required(),
 	)
 	return schema.Object(
-		schema.Property("chapter", schema.Int("审阅的章节号（全局审阅填最新章节号）")).Required(),
-		schema.Property("scope", schema.Enum("审阅范围", "chapter", "global", "arc")).Required(),
-		schema.Property("dimensions", schema.Array("分维度评分；基础 rubric 由 Editor 提示提供，可按任务补充更具体维度", dimensionSchema)).Required(),
-		schema.Property("issues", schema.Array("发现的问题", issueSchema)).Required(),
-		schema.Property("contract_status", llmcontract.Nullable(schema.Enum("章节契约完成度；不适用时为 null", "met", "partial", "missed"))).Required(),
-		schema.Property("contract_misses", schema.Array("未完成或违背的 contract 条目；无则为空数组", schema.String(""))).Required(),
-		schema.Property("contract_notes", llmcontract.Nullable(schema.String("对 contract 履行情况的简要说明；无则为 null"))).Required(),
-		schema.Property("verdict", schema.Enum("审阅结论", "accept", "polish", "rewrite")).Required(),
-		schema.Property("summary", schema.String("审阅总结")).Required(),
+		schema.Property("chapter", schema.Int(i18n.F("审阅的章节号（全局审阅填最新章节号）"))).Required(),
+		schema.Property("scope", schema.Enum(i18n.F("审阅范围"), "chapter", "global", "arc")).Required(),
+		schema.Property("dimensions", schema.Array(i18n.F("分维度评分；基础 rubric 由 Editor 提示提供，可按任务补充更具体维度"), dimensionSchema)).Required(),
+		schema.Property("issues", schema.Array(i18n.F("发现的问题"), issueSchema)).Required(),
+		schema.Property("contract_status", llmcontract.Nullable(schema.Enum(i18n.F("章节契约完成度；不适用时为 null"), "met", "partial", "missed"))).Required(),
+		schema.Property("contract_misses", schema.Array(i18n.F("未完成或违背的 contract 条目；无则为空数组"), schema.String(""))).Required(),
+		schema.Property("contract_notes", llmcontract.Nullable(schema.String(i18n.F("对 contract 履行情况的简要说明；无则为 null")))).Required(),
+		schema.Property("verdict", schema.Enum(i18n.F("审阅结论"), "accept", "polish", "rewrite")).Required(),
+		schema.Property("summary", schema.String(i18n.F("审阅总结"))).Required(),
 	)
 }
 

@@ -2,6 +2,7 @@ package startup
 
 import (
 	"fmt"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"strings"
 )
 
@@ -13,7 +14,7 @@ func PrepareQuick(req Request) (Plan, error) {
 	}
 	return Plan{
 		Mode:        ModeQuick,
-		DisplayName: "快速开始",
+		DisplayName: i18n.F("快速开始"),
 		RawPrompt:   prompt,
 	}, nil
 }

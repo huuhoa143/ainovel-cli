@@ -1,0 +1,230 @@
+{
+  "book": {
+    "id": "mot-dem-khong-ten",
+    "name": "Một đêm không tên",
+    "phase": "complete",
+    "flow": "writing",
+    "completed_chapters": 12,
+    "total_chapters": 12,
+    "total_words": 31240,
+    "activity": "complete",
+    "updated_at": "2026-07-29T20:14:52Z"
+  },
+  "capabilities": {
+    "per_chapter_duration": true,
+    "per_chapter_cost": false,
+    "layered_outline": false,
+    "steer": false
+  },
+  "timeline": {
+    "volumes": [],
+    "arcs": [],
+    "chapters": [
+      {
+        "chapter": 1,
+        "state": "done"
+      },
+      {
+        "chapter": 2,
+        "state": "done"
+      },
+      {
+        "chapter": 3,
+        "state": "done"
+      },
+      {
+        "chapter": 4,
+        "state": "done"
+      },
+      {
+        "chapter": 5,
+        "state": "done"
+      },
+      {
+        "chapter": 6,
+        "state": "done"
+      },
+      {
+        "chapter": 7,
+        "state": "done"
+      },
+      {
+        "chapter": 8,
+        "state": "done"
+      },
+      {
+        "chapter": 9,
+        "state": "done"
+      },
+      {
+        "chapter": 10,
+        "state": "done"
+      },
+      {
+        "chapter": 11,
+        "state": "done"
+      },
+      {
+        "chapter": 12,
+        "state": "done"
+      }
+    ]
+  },
+  "chapters": [
+    {
+      "chapter": 1,
+      "title": "Đoạn 1",
+      "stage": "done",
+      "words": 2437,
+      "owner": [
+        "writer",
+        "editor"
+      ]
+    },
+    {
+      "chapter": 2,
+      "title": "Đoạn 2",
+      "stage": "done",
+      "words": 2474,
+      "owner": [
+        "writer",
+        "editor"
+      ]
+    },
+    {
+      "chapter": 3,
+      "title": "Đoạn 3",
+      "stage": "done",
+      "words": 2511,
+      "owner": [
+        "writer",
+        "editor"
+      ]
+    },
+    {
+      "chapter": 4,
+      "title": "Đoạn 4",
+      "stage": "done",
+      "words": 2548,
+      "owner": [
+        "writer",
+        "editor"
+      ]
+    },
+    {
+      "chapter": 5,
+      "title": "Đoạn 5",
+      "stage": "done",
+      "words": 2585,
+      "owner": [
+        "writer",
+        "editor"
+      ]
+    },
+    {
+      "chapter": 6,
+      "title": "Đoạn 6",
+      "stage": "done",
+      "words": 2622,
+      "owner": [
+        "writer",
+        "editor"
+      ]
+    },
+    {
+      "chapter": 7,
+      "title": "Đoạn 7",
+      "stage": "done",
+      "words": 2659,
+      "owner": [
+        "writer",
+        "editor"
+      ]
+    },
+    {
+      "chapter": 8,
+      "title": "Đoạn 8",
+      "stage": "done",
+      "words": 2696,
+      "owner": [
+        "writer",
+        "editor"
+      ]
+    },
+    {
+      "chapter": 9,
+      "title": "Đoạn 9",
+      "stage": "done",
+      "words": 2733,
+      "owner": [
+        "writer",
+        "editor"
+      ]
+    },
+    {
+      "chapter": 10,
+      "title": "Đoạn 10",
+      "stage": "done",
+      "words": 2770,
+      "owner": [
+        "writer",
+        "editor"
+      ]
+    },
+    {
+      "chapter": 11,
+      "title": "Đoạn 11",
+      "stage": "done",
+      "words": 2807,
+      "owner": [
+        "writer",
+        "editor"
+      ]
+    },
+    {
+      "chapter": 12,
+      "title": "Đoạn 12",
+      "stage": "done",
+      "words": 2844,
+      "owner": [
+        "writer",
+        "editor"
+      ]
+    }
+  ],
+  "transport": {
+    "state": "complete",
+    "last_step": "volume_summary",
+    "agent": "editor",
+    "model": "gemini-2.5-flash",
+    "cost_usd": 0.412,
+    "cost_per_chapter": 0.0343,
+    "elapsed_ms": 5112000
+  },
+  "selected": {
+    "chapter": 12,
+    "title": "Đoạn 12",
+    "words": 2844,
+    "review": {
+      "chapter": 12,
+      "scope": "volume",
+      "verdict": "pass",
+      "summary": "Toàn tập nhất quán, móc cuối đóng đúng chỗ.",
+      "dimensions": [
+        {
+          "name": "narrative",
+          "score": 9,
+          "verdict": "pass"
+        },
+        {
+          "name": "prose",
+          "score": 8,
+          "verdict": "pass"
+        }
+      ],
+      "contract_status": "met"
+    },
+    "excerpt": "Ổ khóa cũ hơn cánh cửa. Người ta thay cửa ba lần mà không ai nghĩ tới việc thay khóa, nên đêm ấy nó mở ra dễ như một câu chuyện đã kể xong."
+  },
+  "queue_seq": 0
+}

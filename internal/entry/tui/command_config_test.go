@@ -12,6 +12,7 @@ import (
 	"github.com/muesli/termenv"
 	"github.com/voocel/ainovel-cli/internal/bootstrap"
 	"github.com/voocel/ainovel-cli/internal/host"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 func hubFieldIDs(fields []hubField) []string {
@@ -136,7 +137,7 @@ func TestModelRenameProducesExplicitDraftAndReferenceNotice(t *testing.T) {
 	if len(draft.Renames) != 1 || draft.Renames[0] != (host.ModelRename{From: "old", To: "renamed"}) {
 		t.Fatalf("模型改名必须保留显式身份关系，renames=%#v", draft.Renames)
 	}
-	if !strings.Contains(st.message, "同步更新引用") || !strings.Contains(st.message, "default") {
+	if !strings.Contains(st.message, i18n.F("保存时将同步更新引用：")) || !strings.Contains(st.message, "default") {
 		t.Fatalf("引用模型改名应明确提示保存行为，message=%q", st.message)
 	}
 }
@@ -149,7 +150,7 @@ func TestModelListRendersEditableColumnsAndReferences(t *testing.T) {
 		},
 	}
 	plain := ansi.Strip(renderModelConfigModal(120, st))
-	for _, want := range []string{"模型 ID", "上下文窗口", "引用", "deepseek-chat", "128K", "default", "+ 新增模型"} {
+	for _, want := range []string{i18n.F("模型 ID"), i18n.F("上下文窗口"), i18n.F("引用"), "deepseek-chat", "128K", "default", i18n.F("+ 新增模型…")} {
 		if !strings.Contains(plain, want) {
 			t.Fatalf("单页模型表缺少 %q:\n%s", want, plain)
 		}
@@ -185,7 +186,7 @@ func TestRenamedReferencedModelStillCannotBeDeleted(t *testing.T) {
 			References: map[string][]string{"proxy\x00old": {"default"}},
 		},
 	}
-	if st.deleteModel(0) || len(st.models) != 1 || !strings.Contains(st.message, "正在使用") {
+	if st.deleteModel(0) || len(st.models) != 1 || !strings.Contains(st.message, i18n.F("该模型正在使用中，请先用 /model 切换后再删除")) {
 		t.Fatalf("重命名尚未保存时仍应按原身份保护删除，models=%#v message=%q", st.models, st.message)
 	}
 }
@@ -306,7 +307,7 @@ func TestSaveConfigHighlightsOnlyWhenDirty(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.TrueColor)
 	t.Cleanup(func() { lipgloss.SetColorProfile(oldProfile) })
 	lines := renderProviderHubFields(state, 68)
-	want := lipgloss.NewStyle().Foreground(colorSuccess).Render("保存配置")
+	want := lipgloss.NewStyle().Foreground(colorSuccess).Render(i18n.F("保存配置"))
 	found := false
 	for _, line := range lines {
 		if strings.Contains(line, want) {
@@ -349,7 +350,7 @@ func TestProviderHubDeleteClearsOnlyOptionalAPIKey(t *testing.T) {
 	optional.cursor = hubFieldIndex(optional.hubFields(), "key")
 	m := Model{modelConfig: optional}
 	m.handleModelConfigKey(tea.KeyMsg{Type: tea.KeyDelete})
-	if optional.apiKeyAction != host.APIKeyClear || optional.keyStatus() != "已清除" {
+	if optional.apiKeyAction != host.APIKeyClear || optional.keyStatus() != i18n.F("已清除") {
 		t.Fatalf("可选 Key 的 Delete 应标记清除，action=%q status=%q", optional.apiKeyAction, optional.keyStatus())
 	}
 
@@ -358,7 +359,7 @@ func TestProviderHubDeleteClearsOnlyOptionalAPIKey(t *testing.T) {
 	required.cursor = hubFieldIndex(required.hubFields(), "key")
 	m = Model{modelConfig: required}
 	m.handleModelConfigKey(tea.KeyMsg{Type: tea.KeyDelete})
-	if required.apiKeyAction != host.APIKeyKeep || !strings.Contains(required.message, "不能清除") {
+	if required.apiKeyAction != host.APIKeyKeep || !strings.Contains(required.message, i18n.F("该 Provider 必须配置 API Key，不能清除")) {
 		t.Fatalf("必需 Key 不应被清除，action=%q message=%q", required.apiKeyAction, required.message)
 	}
 }
@@ -386,7 +387,7 @@ func TestProviderHubShowsConfigPathAndConnectionAction(t *testing.T) {
 		t.Fatalf("测试连接应优先当前模型，fields=%#v", fields)
 	}
 	view := renderModelConfigModal(120, state)
-	for _, want := range []string{"高级配置", "extra_body"} {
+	for _, want := range []string{i18n.F("高级配置（extra / extra_body / stream_idle_timeout）："), "extra_body"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("配置 Hub 缺少 %q:\n%s", want, view)
 		}
@@ -424,13 +425,13 @@ func TestConnectionTestCanBeCancelled(t *testing.T) {
 		testCancel: func() { cancelled = true }}
 	m := Model{modelConfig: state}
 	m.handleModelConfigKey(tea.KeyMsg{Type: tea.KeyEsc})
-	if !cancelled || !state.testing || state.message != "正在取消连接测试..." {
+	if !cancelled || !state.testing || state.message != i18n.F("正在取消连接测试...") {
 		t.Fatalf("Esc 应取消在途测试并等待结果，cancelled=%v testing=%v message=%q", cancelled, state.testing, state.message)
 	}
 
 	updated, _, handled := m.handleRuntimeMsg(modelConfigConnectionMsg{err: context.Canceled})
 	m = updated.(Model)
-	if !handled || m.modelConfig.testing || m.modelConfig.message != "连接测试已取消" {
+	if !handled || m.modelConfig.testing || m.modelConfig.message != i18n.F("连接测试已取消") {
 		t.Fatalf("取消结果未正确收敛: handled=%v testing=%v message=%q", handled, m.modelConfig.testing, m.modelConfig.message)
 	}
 }

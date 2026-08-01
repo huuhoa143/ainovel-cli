@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ainovel — Hướng B: Nhà xuất bản</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:opsz,wght@8..144,400;8..144,500;8..144,600&family=Be+Vietnam+Pro:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── Hướng B: NHÀ XUẤT BẢN ──────────────────────────────────────────────
+   Bề mặt chính = đọc thành quả. Typography là nhân vật chính, tiến độ lùi
+   xuống thành ghi chú bên lề.
+
+   Nền: KHÔNG dùng kem/cát/giấy-ngà. Cả dải warm-neutral near-white (L .84-.97,
+   C<.06, hue 40-100) chính là tông AI mặc định — gọi nó là "giấy" hay "ngà" thì
+   vẫn là nó. Ở đây nền là trắng-xám TRUNG TÍNH chroma 0; hơi ấm của thương hiệu
+   dồn hết vào vàng nhấn và bộ chữ serif.
+
+   Chữ tiếng Việt cần line-height cao hơn tiếng Anh: dấu xếp hai tầng (ế, ộ, ữ,
+   ỗ) ăn vào khoảng trên, dấu nặng ăn vào khoảng dưới. 1.5 vốn đủ cho tiếng Anh
+   sẽ làm dấu huyền dòng dưới chạm dấu nặng dòng trên. Thân bài dùng 1.78.
+   -------------------------------------------------------------------- */
+:root {
+  --bg:        oklch(0.975 0 0);
+  --surface:   oklch(1 0 0);
+  --line:      oklch(0.885 0 0);
+  --line-soft: oklch(0.93 0 0);
+
+  --ink:       oklch(0.255 0.008 74);  /* 13.4:1 — thân bài, không dùng xám nhạt */
+  --ink-2:     oklch(0.44 0.008 74);   /* 7.4:1 */
+  --ink-3:     oklch(0.55 0.008 74);   /* 4.8:1 — nhãn nhỏ, vẫn vượt ngưỡng */
+
+  --gold:      oklch(0.52 0.115 76);   /* 4.9:1 trên nền — dùng được cho chữ */
+  --teal:      oklch(0.48 0.075 176);
+  --amber:     oklch(0.55 0.12 62);
+
+  --serif: "Noto Serif", ui-serif, Georgia, serif;
+  --sans:  "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 16px/1.6 var(--serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── thanh trên: mảnh, lùi lại, không cạnh tranh với văn bản ── */
+.masthead {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 34px; border-bottom: 1px solid var(--line);
+  font: 400 13px/1 var(--sans); color: var(--ink-2);
+  position: sticky; top: 0; background: color-mix(in oklch, var(--bg) 92%, transparent);
+  backdrop-filter: blur(6px); z-index: 10;
+}
+.masthead .name { font-weight: 500; color: var(--ink); }
+.masthead .sep { color: var(--line); }
+.masthead .live { margin-left: auto; display: inline-flex; align-items: center; gap: 7px; color: var(--gold); }
+.masthead .live i { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); animation: beat 2.6s var(--ease) infinite; }
+@keyframes beat { 0%,100% { opacity: 1 } 50% { opacity: 0.35 } }
+
+/* ── bố cục: sống sách bên lề + khổ đọc + ghi chú biên tập ── */
+.sheet {
+  display: grid; grid-template-columns: 208px minmax(0, 68ch) 214px;
+  gap: 48px; max-width: 1180px; margin: 0 auto; padding: 52px 34px 96px;
+}
+@media (max-width: 1100px) { .sheet { grid-template-columns: 190px minmax(0,68ch); } .marginalia { display: none } }
+@media (max-width: 820px)  { .sheet { grid-template-columns: minmax(0,1fr); gap: 34px } .spine { order: 2 } }
+
+/* ── sống sách: mục lục theo tập/cung, không phải sidebar nav ── */
+.spine { font: 400 13px/1.5 var(--sans); }
+.spine h2 { font: 500 11.5px/1 var(--sans); color: var(--ink-3); margin: 0 0 14px; }
+.spine .vol { margin: 0 0 5px; font-weight: 500; color: var(--ink); font-size: 13px; }
+.spine .arc { margin: 0 0 3px; color: var(--ink-3); font-size: 12px; }
+.spine ol { list-style: none; margin: 0 0 20px; padding: 0 0 0 1px; border-left: 1px solid var(--line); }
+.spine li a {
+  display: block; padding: 4px 0 4px 12px; color: var(--ink-2); text-decoration: none;
+  border-left: 1px solid transparent; margin-left: -1px; transition: color .18s var(--ease);
+}
+.spine li a:hover { color: var(--ink); }
+.spine li a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 2px; }
+.spine li.cur a { color: var(--gold); border-left-color: var(--gold); font-weight: 500; }
+.spine li.pending a { color: var(--ink-3); font-style: italic; }
+
+/* ── khổ đọc ── */
+article header { margin-bottom: 38px; }
+.ch-no { font: 400 12.5px/1 var(--sans); letter-spacing: 0.06em; color: var(--ink-3); }
+article h1 {
+  font: 600 clamp(1.85rem, 1.3rem + 2vw, 2.6rem)/1.24 var(--serif);
+  letter-spacing: -0.018em; margin: 12px 0 0; text-wrap: balance;
+}
+.byline { margin: 14px 0 0; font: 400 13px/1 var(--sans); color: var(--ink-3); }
+article p {
+  margin: 0 0 1.35em; font-size: 1.055rem; line-height: 1.78; text-wrap: pretty;
+}
+/* Dùng class tường minh, KHÔNG dùng :first-of-type. :first-of-type tính theo
+   từng phần tử cha, nên nó khớp cả <p class="byline"> trong <header> lẫn đoạn
+   truyện đầu trong <article> — kết quả là "2.980 từ" bị bóc thành chữ "2." cỡ
+   lớn. Lỗi này chỉ hiện ra khi chụp ảnh, đọc CSS không thấy.
+
+   line-height 0.94 (không phải 0.86): chữ hoa tiếng Việt có dấu — Ế, Ộ, Ữ, Ấ —
+   cao hơn chữ Latin trơn, đặt chặt quá sẽ bị cắt ngọn. Chương mở bằng "Đêm" thì
+   không lộ vì Đ không có dấu phía trên, nên phải chừa chỗ ngay từ đầu. */
+.lede::first-letter {
+  float: left; font-size: 3em; line-height: 0.94; padding: 0.02em 0.09em 0 0;
+  color: var(--gold); font-weight: 500;
+}
+.break { margin: 2.1em 0; text-align: center; color: var(--ink-3); letter-spacing: 0.55em; }
+
+/* ── ghi chú biên tập: bản duyệt 7 chiều hiện như marginalia, không phải bảng ── */
+.marginalia { font: 400 12.5px/1.62 var(--sans); }
+.marginalia h2 { font: 500 11.5px/1 var(--sans); color: var(--ink-3); margin: 0 0 14px; }
+.note { padding: 0 0 14px; margin: 0 0 14px; border-bottom: 1px solid var(--line-soft); }
+.note:last-child { border-bottom: 0; }
+.note .dim { display: block; color: var(--ink); font-weight: 500; margin-bottom: 3px; }
+.note .verdict { color: var(--teal); }
+.note .verdict.warn { color: var(--amber); }
+.note p { margin: 4px 0 0; color: var(--ink-2); }
+.note q { color: var(--ink); font-style: italic; font-family: var(--serif); }
+
+/* ── tiến độ: ghi chú chân trang, cố ý KHÔNG phải hàng số to ── */
+.colophon {
+  max-width: 1180px; margin: 0 auto; padding: 20px 34px 40px;
+  border-top: 1px solid var(--line);
+  font: 400 12.5px/1.6 var(--sans); color: var(--ink-3);
+  display: flex; gap: 26px; flex-wrap: wrap;
+}
+.colophon b { color: var(--ink-2); font-weight: 500; }
+
+@media (prefers-reduced-motion: reduce) {
+  .masthead .live i { animation: none }
+  * { transition-duration: 0.01ms !important }
+}
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <span class="name">Trấn Yêu Ký</span>
+  <span class="sep">·</span><span>tập 3 — Sương phủ Hàn Sơn</span>
+  <span class="sep">·</span><span>cung 2</span>
+  <span class="live"><i></i> đang viết chương 47</span>
+</div>
+
+<div class="sheet">
+
+  <nav class="spine">
+    <h2>Mục lục</h2>
+    <p class="vol">Tập 3 · Sương phủ Hàn Sơn</p>
+    <p class="arc">Cung 2 — Ba tiếng chuông</p>
+    <ol>
+      <li><a href="#">44 · Người gác cầu đá</a></li>
+      <li><a href="#">45 · Thư không người nhận</a></li>
+      <li><a href="#">46 · Đêm mưa trên Hàn Sơn</a></li>
+      <li class="cur"><a href="#" aria-current="page">47 · Tiếng chuông thứ ba</a></li>
+      <li class="pending"><a href="#">48 · chưa mở</a></li>
+    </ol>
+    <p class="arc">Cung 3 — chờ Architect mở rộng</p>
+  </nav>
+
+  <article>
+    <header>
+      <div class="ch-no">CHƯƠNG 47</div>
+      <h1>Tiếng chuông thứ ba</h1>
+      <p class="byline">2.980 từ · bản thảo đang viết</p>
+    </header>
+
+    <p class="lede">Đêm ấy mưa không dừng. Lâm Thanh ngồi dựa cột đá ở chân bậc thứ hai trăm, nghe tiếng chuông từ Hàn Sơn vọng xuống qua màn nước — một tiếng, rồi hai tiếng, đều đặn như nhịp thở của người đã ngủ rất sâu.</p>
+
+    <p>Chàng đếm. Suốt mười hai năm ở đây chàng vẫn đếm, và suốt mười hai năm chuông chỉ đổ hai lần rồi tắt. Người trong trấn bảo tiếng thứ ba dành cho ngày núi mở. Lâm Thanh không tin chuyện núi mở, nhưng chàng vẫn đếm.</p>
+
+    <div class="break">◇</div>
+
+    <p>Mưa ngớt vào canh tư. Trong khoảng lặng đó chàng nghe rõ một thứ khác: tiếng bước chân, rất nhẹ, đi từ phía cổng lên. Không phải bước của người quen đường — người quen đường sẽ tránh bậc thứ chín, chỗ đá đã nứt.</p>
+
+    <p>Bước chân ấy đạp thẳng lên bậc thứ chín. Đá kêu một tiếng khô khốc.</p>
+
+    <p>Lâm Thanh không đứng lên. Chàng chỉ đưa tay lên vai, nơi bao kiếm vẫn còn ướt, và giữ nguyên tay ở đó — không rút, cũng không rời.</p>
+  </article>
+
+  <aside class="marginalia">
+    <h2>Editor duyệt cung 1</h2>
+
+    <div class="note">
+      <span class="dim">Nhất quán thiết lập</span>
+      <span class="verdict">đạt</span>
+      <p>Số bậc đá khớp chương 12 và 31.</p>
+    </div>
+
+    <div class="note">
+      <span class="dim">Phục bút</span>
+      <span class="verdict warn">cần thu</span>
+      <p><q>Ấn ngọc Hàn Sơn</q> đặt ở chương 38, đã qua 9 chương chưa nhắc lại.</p>
+    </div>
+
+    <div class="note">
+      <span class="dim">Chất văn</span>
+      <span class="verdict">đạt</span>
+      <p>Không thấy mẫu câu lặp. Đoạn <q>giữ nguyên tay ở đó</q> tả bằng hành động, không giải thích cảm xúc.</p>
+    </div>
+
+    <div class="note">
+      <span class="dim">Nhịp</span>
+      <span class="verdict warn">hơi chậm</span>
+      <p>Ba chương liền mở bằng cảnh đêm. Nên đổi mốc thời gian ở chương 48.</p>
+    </div>
+  </aside>
+
+</div>
+
+<div class="colophon">
+  <span><b>47</b> / 300 chương</span>
+  <span><b>128.400</b> từ</span>
+  <span>chi phí <b>$2,14</b></span>
+  <span>ngữ cảnh <b>62%</b></span>
+  <span>máy đã chạy <b>6 giờ 12 phút</b></span>
+</div>
+
+</body>
+</html>
