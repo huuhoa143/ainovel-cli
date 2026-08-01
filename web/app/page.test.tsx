@@ -69,6 +69,7 @@ function ve(khu: KhuMa, vanSong = BO_DEM_RONG) {
     <Khu
       khu={khu}
       snapshot={snap({ agents: [], idle_agents: [] })}
+      sach={[snap({}).book]}
       tacPham="b"
       chuongChon={undefined}
       onChonChuong={() => {}}
@@ -120,4 +121,25 @@ test('`Trang` nối bộ đệm văn sống THẬT của studio xuống buồng 
   // vì không bài nào chạm tới `Trang`. Bài này là chỗ chạm đó.
   render(<Trang />);
   expect(screen.getByText('nàng quay đầu lại')).toBeDefined();
+});
+
+test('khu `xuong` → bảng Xưởng, không phải buồng lái', () => {
+  const { container } = ve('xuong');
+  expect(container.querySelector('.khuxuong')).not.toBeNull();
+  expect(container.querySelector('.buonglai')).toBeNull();
+});
+
+test('`Trang` nối danh sách sách THẬT của studio xuống màn Xưởng', () => {
+  // Mắt CUỐI của sợi dây `useStudio.workshop.books` → `Trang` → `Khu` → `Xuong`, và nó không
+  // nằm trong `Khu`: bài kiểm ở trên truyền `sach` thẳng vào nên đổi `sach={s.workshop?.books
+  // ?? []}` thành một mảng rỗng dựng tại chỗ vẫn xanh. Hệ quả thật là một Xưởng trống trơn
+  // trên một xưởng có sách — cùng lớp với `vanSong={s.vanSong}` mà cụm D đã đo được.
+  const truoc = STUDIO_GIA.khu;
+  STUDIO_GIA.khu = 'xuong';
+  try {
+    const { container } = render(<Trang />);
+    expect(container.querySelector('.khuxuong tbody tr[data-ma="b"]')).not.toBeNull();
+  } finally {
+    STUDIO_GIA.khu = truoc;
+  }
 });
