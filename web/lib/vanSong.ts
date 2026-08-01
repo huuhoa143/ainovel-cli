@@ -55,6 +55,29 @@ export function themChu(bd: BoDemVan, chu: string): BoDemVan {
   return cat({ luot, idKe: bd.idKe });
 }
 
+/**
+ * Mở một lượt mới — phản ứng với `stream_clear`.
+ *
+ * Tên hàm là "mở lượt", không phải "xóa": ở TUI lệnh này XÓA sạch khu chữ, còn ở đây nó thành
+ * một vạch ngăn. Trình duyệt giỏi đúng cái terminal dở — cuộn lại được — nên vứt đi phần vừa
+ * đọc là bỏ phí một khả năng, và người dùng đã chọn phương án vạch ngăn.
+ *
+ * Lượt đang mở mà RỖNG thì thay nhãn của nó chứ không xếp thêm một lượt nữa: hai sentinel
+ * liền nhau là ca hợp lệ, và một lượt rỗng vẽ ra là một vạch ngăn không ngăn gì cả.
+ */
+export function moLuot(bd: BoDemVan, nhan?: string): BoDemVan {
+  const cuoi = bd.luot[bd.luot.length - 1];
+  if (cuoi && cuoi.chu === '') {
+    const luot = bd.luot.slice();
+    luot[luot.length - 1] = { ...cuoi, nhan };
+    return { luot, idKe: bd.idKe };
+  }
+  return cat({
+    luot: [...bd.luot, { id: bd.idKe, nhan, chu: '' }],
+    idKe: bd.idKe + 1,
+  });
+}
+
 /** Cắt theo hai trần. Bước 3 của Task 4 thay thân hàm này. */
 function cat(bd: BoDemVan): BoDemVan {
   return bd;
