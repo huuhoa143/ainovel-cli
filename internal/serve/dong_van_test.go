@@ -134,3 +134,37 @@ func TestDongVanHaiNguoiDocDeuDu(t *testing.T) {
 			"Số lệch nghĩa là hai kết nối đang giành dữ liệu của nhau.", a, b, so)
 	}
 }
+
+// TestDongVanVaoMuonKhongLap canh lớp lỗi "thấy nửa cuối một câu".
+//
+// Người dùng mở trang GIỮA lúc engine đang viết. Chỉ phát các mẩu MỚI thì họ thấy khúc giữa
+// một câu và phải đoán phần đầu. Nên lúc nối phải gửi cả `vong`.
+//
+// Nhưng gửi cả vòng RỒI gửi tiếp từ seq 0 thì họ nhận đoạn đó HAI lần. Vì vậy `vongHienTai`
+// trả cả văn và mốc seq trong MỘT lời gọi có khóa: tách hai lời gọi thì giữa chúng có thể
+// xen mẩu mới, và người đọc thấy một khúc bị lặp.
+func TestDongVanVaoMuonKhongLap(t *testing.T) {
+	d := &dongVan{}
+	d.them("Giọt đầu tiên ")
+	d.them("rơi xuống ")
+	d.them("mặt kính.")
+
+	vong, moc := d.vongHienTai()
+	if vong != "Giọt đầu tiên rơi xuống mặt kính." {
+		t.Fatalf("vòng = %q", vong)
+	}
+
+	// Sau mốc đó, người vào muộn KHÔNG được nhận lại gì cả.
+	manh, _ := d.sau(moc)
+	if len(manh) != 0 {
+		t.Errorf("nhận thêm %d mẩu sau mốc của vòng — người đọc sẽ thấy đoạn văn lặp: %+v",
+			len(manh), manh)
+	}
+
+	// Mẩu mới sau đó thì phải nhận.
+	d.them(" Nó không trong.")
+	manh, _ = d.sau(moc)
+	if len(manh) != 1 || manh[0].Chu != " Nó không trong." {
+		t.Errorf("mẩu mới sau mốc = %+v, muốn đúng một mẩu %q", manh, " Nó không trong.")
+	}
+}
