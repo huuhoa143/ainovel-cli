@@ -1,0 +1,192 @@
+# Design
+
+Hệ thiết kế của **ainovel studio** (web) — chốt từ hướng D đã được duyệt: `docs/design/explorations/d-studio.html`.
+
+## Visual Theme
+
+Sàn sản xuất tối, mật độ cao, lấy quy ước của bàn dựng phim và DAW: thanh transport luôn hiện ở đáy, dòng sản xuất dạng lane ở giữa, panel inspector bên phải.
+
+**Vì sao tối:** engine chạy dài, thường là những phiên đêm hoặc nền màn hình phụ bên cạnh terminal. Người vận hành ngó vào rồi rời đi. Đây là lý do vật lý, không phải "công cụ thì trông ngầu khi tối".
+
+**Vì sao là nâu-mực chứ không phải đen trung tính:** bản sắc màu đã tồn tại trong TUI (`internal/entry/tui/theme.go`) là tông "sách cũ ấm" — vàng `#b8860b` / `#e5b449`, lam-lục `#5fb8a3`. Giữ bản sắc thắng việc bịa mới, nên nền lệch về hue vàng của thương hiệu. Vàng đặt lên nền cùng họ thì không chỏi như đặt trên đen lạnh, và web với TUI thành một hệ chứ không phải hai sản phẩm.
+
+Chiến lược màu: **restrained** — bề mặt là trung tính đã nhuộm, một màu tín hiệu duy nhất chiếm dưới 10% diện tích.
+
+## Color
+
+OKLCH toàn bộ. Tỉ số tương phản ghi kèm là so với `--bg`.
+
+### Bề mặt
+
+| Token | Giá trị | Dùng cho |
+|---|---|---|
+| `--bg` | `oklch(0.155 0.008 74)` | nền canvas |
+| `--panel` | `oklch(0.185 0.009 74)` | rail, inspector, thanh trên, transport |
+| `--panel-2` | `oklch(0.215 0.010 74)` | ô nhập, khối chưa chạy, hàng được chọn |
+| `--raised` | `oklch(0.245 0.011 74)` | nút bật, nền thước đo |
+| `--line` | `oklch(0.275 0.010 74)` | viền phân vùng |
+| `--line-2` | `oklch(0.225 0.009 74)` | viền trong bảng, phân cách nhẹ |
+
+### Chữ
+
+| Token | Giá trị | Tương phản | Dùng cho |
+|---|---|---|---|
+| `--ink` | `oklch(0.945 0.010 82)` | 16.1:1 | thân bài, giá trị chính |
+| `--ink-2` | `oklch(0.755 0.012 82)` | 8.2:1 | chữ phụ, ô bảng |
+| `--ink-3` | `oklch(0.625 0.011 82)` | 4.9:1 | nhãn nhỏ, placeholder — **sàn cứng, không hạ thêm** |
+
+`--ink-3` là giới hạn dưới. Mọi lần muốn "nhạt hơn cho thanh thoát" đều phải bị từ chối: nhãn nhỏ và placeholder chịu cùng ngưỡng 4.5:1 như thân bài.
+
+### Ngữ nghĩa
+
+| Token | Giá trị | Nghĩa |
+|---|---|---|
+| `--gold` | `oklch(0.805 0.128 80)` | đang chạy, tiêu điểm — **màu tín hiệu duy nhất** |
+| `--teal` | `oklch(0.755 0.085 176)` | đã nghiệm thu |
+| `--amber` | `oklch(0.785 0.125 62)` | cần chú ý, chờ viết lại, ngữ cảnh cao |
+| `--red` | `oklch(0.705 0.155 25)` | lỗi, mốc ngưỡng nén |
+| `--violet` | `oklch(0.745 0.095 300)` | tên tool, cửa kiểm định |
+
+Quy tắc: **màu không bao giờ là kênh thông tin duy nhất.** Mọi trạng thái công đoạn mang cả đốm màu, ký hiệu, và nhãn chữ.
+
+## Typography
+
+Ba họ chữ, mỗi họ một nhiệm vụ rõ ràng — ghép theo trục tương phản, không ghép hai sans gần giống nhau.
+
+| Token | Họ | Nhiệm vụ |
+|---|---|---|
+| `--ui` | Inter | toàn bộ giao diện. Hỗ trợ tiếng Việt đầy đủ |
+| `--mono` | JetBrains Mono | mọi số liệu, tên tool, mã step. Canh phải trong bảng |
+| `--serif` | Noto Serif | **chỉ** dùng cho văn bản tiểu thuyết — trích đoạn, bản thảo, tiêu đề chương, dẫn chứng của Editor |
+
+Serif là dấu hiệu ngữ nghĩa: thấy serif là thấy văn của tác phẩm, không phải chữ của công cụ.
+
+**Phép thử khi gặp một loại chữ mới:** chữ này có nằm trong bộ truyện xuất bản không? Có thì serif, không thì `--ui`. Danh sách bốn mục trên là kết quả của phép thử, không phải một bảng trắng để tra — trích đoạn và bản thảo là văn đó, tiêu đề chương được in cùng nó, và dẫn chứng của Editor mang serif vì nó *trích lại* văn đó chứ không vì Editor viết ra nó.
+
+Phép thử này loại hẳn một loại dễ nhầm: **mô tả trong hồ sơ tác phẩm** — mô tả nhân vật, mô tả phục bút, ghi chú luật thế giới. Chúng là bản ghi của engine *về* tác phẩm, viết cho người vận hành, và người đọc truyện không bao giờ thấy chúng; cùng loại với `core_event` của khế ước hay `comment` của bản duyệt. Cho chúng serif thì mỗi hồ sơ đọc như một trang truyện và tín hiệu serif loãng đi đúng chỗ nó cần sắc nhất. Chúng dùng `--ui`, vẫn giữ `line-height` và `max-width` của khổ đọc dài.
+
+### Thang cỡ
+
+| Vai trò | Cỡ / weight / line-height |
+|---|---|
+| nền giao diện | 13px / 400 / 1.5 |
+| tiêu đề vùng | 14.5px / 600 / 1 |
+| nhãn nhóm | 11–11.5px / 500 / 1 |
+| ô bảng | 12.5px / 400 |
+| số liệu | 12px mono / 400 |
+| transport | 11.5px / 400 |
+| **văn tiểu thuyết** | **13px serif / 400 / 1.72** |
+
+### Ràng buộc tiếng Việt
+
+Ba luật này sinh ra từ lỗi thật đã gặp khi dựng bản thử, không phải phòng ngừa lý thuyết:
+
+1. **`line-height` văn bản ≥ 1.72** (khổ đọc dài ≥ 1.78). Dấu tiếng Việt xếp hai tầng — `ế`, `ộ`, `ữ`, `ỗ` ăn vào khoảng trên, dấu nặng ăn khoảng dưới. Mức 1.5 đủ cho tiếng Anh sẽ làm dấu huyền dòng dưới chạm dấu nặng dòng trên.
+2. **Cột nhãn rộng hơn phản xạ 20–30%.** Nhãn tiếng Việt dài hơn tiếng Anh. Cột 82px làm "Nhịp bắt buộc" ngắt hai dòng; phải 104px.
+3. **Chữ hoa có dấu cần chừa chỗ phía trên.** Drop cap `line-height: 0.94`, không phải `0.86` — `Ế`, `Ộ`, `Ữ`, `Ấ` cao hơn Latin trơn và sẽ bị cắt ngọn. Lỗi này ẩn khi chương mở bằng "Đêm" vì `Đ` không có dấu trên, nên phải chừa chỗ ngay từ đầu.
+
+Ngoài ra: `text-wrap: balance` cho tiêu đề, `text-wrap: pretty` cho văn xuôi dài.
+
+## Layout
+
+Khung ứng dụng cố định, không phải trang cuộn:
+
+```
+grid-template-rows:    44px  1fr  30px
+grid-template-columns: 194px 1fr  292px
+grid-template-areas:   "bar    bar     bar"
+                       "rail   canvas  insp"
+                       "trans  trans   trans"
+```
+
+| Vùng | Vai trò |
+|---|---|
+| `bar` | chọn tác phẩm + **nút tạo tác phẩm** + tình trạng cả xưởng (hàm ý nhiều đầu việc) |
+| `rail` | khu vực sản xuất, có số đếm việc tồn; bốn nhóm, ba nhóm dưới **thu gọn được** |
+| `canvas` | dải việc tiếp theo → trục sản xuất dạng lane → bảng chương → nhật ký phán quyết → ô can thiệp |
+| `insp` | chi tiết đơn vị đang chọn, có tab: Khế ước / Kiểm định / Bản thảo |
+| `trans` | trạng thái máy, năng suất, giá thành — **luôn hiện, không cuộn mất** |
+
+Điểm ngắt: `1240px` bỏ inspector, `860px` rail **thôi làm cột và thành dải ngang cuộn được** —
+không bỏ. Điều khoản cũ ("860px bỏ rail") đúng khi rail là danh sách trang trí của một bề mặt
+duy nhất; giờ nó là đường điều hướng duy nhất giữa mười sáu khu, nên bỏ nó là khóa người dùng
+trong khu đang mở. Ở dải ngang thì nhãn nhóm và phép thu nhóm đều tắt: không còn nhóm thì
+không còn cái để thu, và một nhóm đóng ở đó sẽ ẩn mục mà không còn nút nào mở lại.
+Transport không bao giờ bị bỏ.
+
+Bán kính: `--r: 5px` thống nhất. Không có bán kính lớn — công cụ chuyên nghiệp không bo tròn mềm.
+
+Lớp z có tên: `--z-sticky: 10`, `--z-pop: 30`, `--z-tip: 40`. Không dùng số tùy tiện kiểu 999.
+
+## Components
+
+- **Dải việc tiếp theo** — hàng đầu của bề mặt mặc định: một đốm trạng thái, một câu nói máy đang làm gì *kèm số thật của cuốn đang mở*, một câu chỉ đường, và nhiều nhất hai nút. Nó không mang dữ liệu mới — mọi thứ trong đó đã có ở đâu đó trên trang; nó mang **thứ tự ưu tiên**. Hai luật cứng: (a) nút ở đây chỉ ĐIỀU HƯỚNG, việc chạy engine để nguyên ở transport, vì hai nút cùng gọi một API tiêu tiền thì trạng thái khóa của chúng không thấy nhau; (b) nút mời đọc chỉ trỏ tới chương CHẮC CHẮN có bản thảo (`done`/`rewrite`), và nó chọn chương rồi mới đổi khu — mở bề mặt đọc mà chưa chọn chương là mở một khổ đọc trống.
+- **Nhóm rail thu gọn được** — nhãn nhóm là nút, thu bằng `display: none` chứ không bằng cách thôi render. Ba hệ quả bắt buộc: khu đang mở luôn kéo nhóm chứa nó mở ra (đọc `[aria-current]` từ DOM, không từ một bảng khu→nhóm sẽ lệch), nhóm đóng mà bên trong có việc tồn thì mang dấu amber ra ngoài, và dải ngang dưới 860px bật lại toàn bộ mục bằng một `@media`.
+- **Trục sản xuất (lane)** — Tập / Cung / Chương là ba lane cùng một trục ngang, độ rộng khối tỉ lệ với phạm vi thật. Lane chương: một vạch một chương. Khối "chờ mở" dùng vân sọc chéo để phân biệt *chưa quy hoạch* với *đã quy hoạch nhưng chưa chạy* — hai trạng thái khác nhau về bản chất trong mô hình cuốn-vòng-cung hai tầng.
+- **Bảng chương** — số liệu canh phải và dùng mono; trạng thái công đoạn dùng `đốm + chữ`; hàng được chọn đánh dấu bằng `inset box-shadow 1px`, **không** dùng viền màu dày bên trái.
+- **Inspector có tab** — Khế ước (yêu cầu chương) / Kiểm định (7 chiều) / Bản thảo. Kiểm định là hàng mảnh có kết luận kèm dẫn chứng, không phải thẻ điểm.
+- **Nhật ký phán quyết** — mỗi dòng: giờ, loại phán quyết, lý do dựa trên sự thật, nút xem lại. Đây là hiện thân của nguyên tắc "máy tất định phải nhìn thấy được".
+- **Transport** — các ô phân cách bằng viền 1px, số liệu mono. Thước ngữ cảnh có **vạch đỏ ở mốc 85%** để thấy ngưỡng nén sắp tới, không chỉ hiện một con số.
+
+## Motion
+
+Tối giản và có lý do. Không bounce, không elastic.
+
+- Easing chuẩn: `cubic-bezier(0.16, 1, 0.3, 1)` (ease-out-quint).
+- Transition giao diện 120–180ms, chỉ trên `background`, `color`, `border-color`, `filter`.
+- Chuyển động duy nhất mang thông tin: **nhịp đập của đốm trạng thái "đang chạy"** (2.2s, đổi `opacity`). Nó phân biệt *đang chạy* với *đã dừng ở trạng thái này* — điều mà ảnh tĩnh không nói được.
+- Không animate thuộc tính layout.
+- `prefers-reduced-motion: reduce` → tắt nhịp đập, mọi transition về `0.01ms`.
+- Nội dung **không** bị gate sau animation: hiển thị mặc định rồi mới thêm hiệu ứng.
+
+## Mẫu cho bề mặt GHI
+
+Studio thôi chỉ-đọc, nên có một nhóm mẫu mới. Ghi ra vì chúng là quyết định, không phải sở thích.
+
+### Nút nói ra hệ quả, không nói ra hành động
+
+Câu cảnh của bề mặt ghi: *người vận hành ngồi trước máy lúc khuya, sắp bấm một nút sẽ chạy 6 giờ và tiêu 35 đô*. Nên nhãn nút nói cái sẽ xảy ra, không nói cái nút làm:
+
+- ô can thiệp: `Tiêm vào lượt đang chạy` / `Đánh thức lượt mới` — hai hệ quả khác nhau, nên hai nhãn khác nhau, và nhãn đổi theo trạng thái thật của engine
+- tạo tác phẩm: câu *"bấm Bắt đầu là gọi model thật và tiêu tiền thật"* đứng **ngay trên** nút, không ở đầu trang — người dùng đọc dòng gần nút nhất trước khi bấm
+- KHÔNG hiện số tiền dự kiến trước khi Arbiter quyết số chương: mọi con số lúc đó là số bịa
+
+### Nút chỉ hiện khi nó làm được việc
+
+Không vẽ một nút rồi để nó thất bại với lỗi từ tầng dưới:
+
+- `Dừng` và `Chạy` loại trừ nhau theo `IsRunning`, không phải hai nút luôn hiện
+- `Cho đi tiếp 1 chương` chỉ có ở chế độ nghiệm thu — ở chế độ tự chạy engine không chờ giấy phép nào
+- chưa mở máy thì hiện ĐÚNG MỘT nút `Mở máy`, không hiện bốn nút cùng thất bại vì một lý do
+- nút `Lưu` của dải kênh vai chỉ bật khi có gì đổi thật: bốn nút luôn bật cạnh nhau mời bấm bừa, và mỗi cú bấm dựng lại model set của engine đang chạy
+
+### `disabled` khi đang gửi là bắt buộc
+
+Bấm đôi một nút ghi = hai lượt ghi chồng nhau. Với nút tạo tác phẩm thì đó là hai engine và tiền đôi.
+
+### Modal chỉ dùng khi hệ thống THẬT SỰ bị chặn
+
+Đúng một chỗ dùng modal: khi engine gọi `ask_user` rồi đứng chờ. Nó không đóng được bằng ESC hay bấm ra ngoài, và **không có nút Đóng** — đóng không làm engine đi tiếp, nên một nút như thế là nút hứa hẹn sai. Lớp phủ tối đặc (`0.86` alpha), không phải glass mờ: bề mặt phía sau đúng nghĩa là không dùng được lúc này.
+
+### Trạng thái bằng nền và màu chữ, không bằng dải cạnh
+
+Dải cạnh màu bị cấm (xem danh sách CẤM). Nên:
+
+- vai đã đặt riêng vs thừa hưởng: khác **nền** (`--panel-2` vs `--panel`)
+- dòng nhật ký lỗi/cảnh báo: khác **màu chữ**, không phải nền cả dòng — một dòng nền đỏ trong danh sách dài làm mắt nhảy tới nó rồi mất mạch đọc theo thời gian
+- `Dừng` mang viền amber, KHÔNG đỏ: đỏ nghĩa là lỗi, còn dừng có chủ ý không phải lỗi
+
+### Biểu mẫu tiếng Việt
+
+- cột nhãn **132px**, không 96px như phản xạ: `Nhà cung cấp`, `Địa chỉ gốc`, `Độ suy luận` dài hơn nhãn Anh 20–30%
+- dưới 560px thì gập xuống một cột — ô nhập bị bóp là lỗi tệ hơn nhãn xuống dòng
+- `line-height` **1.72** cho nhãn, **1.78** cho ô nhập nhiều dòng: dấu tiếng Việt xếp hai tầng
+- ô nhập chữ mono cho thứ **đối chiếu được** (khóa, địa chỉ, tên model) — chúng là định danh, và mono làm sai một ký tự nhìn ra được
+
+### Chữ trên `--gold` phải tối
+
+`--gold` ở L 0.805. Chữ sáng trên nó không đạt AA, nên nút chính dùng `oklch(0.19 0.02 74)`.
+
+### `min-width: 0` chỉ cho phép co; `max-width` mới buộc
+
+Một block con có `min-content` lớn hơn cha sẽ **tràn ra ngoài cha và đè** phần tử bên cạnh, và `text-overflow: ellipsis` không bao giờ chạy. Đo được ở thanh trên: khung bọc 150px mà picker 237px, tràn 88px, phủ lên nhãn `dòng sự kiện`. Cần cả hai.

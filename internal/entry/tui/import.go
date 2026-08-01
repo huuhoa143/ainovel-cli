@@ -10,8 +10,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"errors"
 	"github.com/voocel/ainovel-cli/internal/host"
 	"github.com/voocel/ainovel-cli/internal/host/imp"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // importState 是 /import 命令运行期间的模态状态。
@@ -108,24 +110,24 @@ func (s *importState) refresh(contentW int) {
 	stageStyle := lipgloss.NewStyle().Foreground(colorAccent2)
 
 	var b strings.Builder
-	b.WriteString(titleStyle.Render("导入外部小说"))
+	b.WriteString(titleStyle.Render(i18n.F("导入外部小说")))
 	b.WriteString("\n\n")
-	b.WriteString(dimStyle.Render("源文件 "))
+	b.WriteString(dimStyle.Render(i18n.F("源文件 ")))
 	b.WriteString(s.source)
 	b.WriteString("\n")
-	b.WriteString(dimStyle.Render("开始 "))
+	b.WriteString(dimStyle.Render(i18n.F("开始 ")))
 	b.WriteString(formatReportTime(s.startedAt))
 	if !s.finishedAt.IsZero() {
-		b.WriteString(dimStyle.Render("  完成 "))
+		b.WriteString(dimStyle.Render(i18n.F("  完成 ")))
 		b.WriteString(formatReportTime(s.finishedAt))
 	}
 	b.WriteString("\n\n")
 
 	// 当前阶段行
-	b.WriteString(mutedStyle.Render("阶段 "))
+	b.WriteString(mutedStyle.Render(i18n.F("阶段 ")))
 	b.WriteString(stageStyle.Render(string(s.stage)))
 	if s.total > 0 {
-		b.WriteString(mutedStyle.Render("  进度 "))
+		b.WriteString(mutedStyle.Render(i18n.F("  进度 ")))
 		if s.current > 0 {
 			b.WriteString(fmt.Sprintf("%d/%d", s.current, s.total))
 		} else {
@@ -136,12 +138,12 @@ func (s *importState) refresh(contentW int) {
 
 	// 历史日志。每行一个语义图标列（对齐事件面板形态）：
 	// ✗ 红=失败 · ↻ 橙=退避重试/校验重问（同键原地跳动） · ✓ 绿=完成 · · 灰=普通进度。
-	b.WriteString(titleStyle.Render("流程日志"))
+	b.WriteString(titleStyle.Render(i18n.F("流程日志")))
 	b.WriteString(" ")
 	if s.totalLines > len(s.history) {
-		b.WriteString(dimStyle.Render(fmt.Sprintf("(%d 条，仅显示最近 %d，全量见 logs/import.log)", s.totalLines, len(s.history))))
+		b.WriteString(dimStyle.Render(fmt.Sprintf(i18n.F("(%d 条，仅显示最近 %d，全量见 logs/import.log)"), s.totalLines, len(s.history))))
 	} else {
-		b.WriteString(dimStyle.Render(fmt.Sprintf("(%d 条)", s.totalLines)))
+		b.WriteString(dimStyle.Render(fmt.Sprintf(i18n.F("(%d 条)"), s.totalLines)))
 	}
 	b.WriteString("\n")
 	now := time.Now()
@@ -172,24 +174,24 @@ func (s *importState) refresh(contentW int) {
 	b.WriteString("\n\n")
 	switch {
 	case s.err != nil:
-		b.WriteString(errStyle.Render("导入失败"))
+		b.WriteString(errStyle.Render(i18n.F("导入失败")))
 		b.WriteString("\n")
-		b.WriteString(dimStyle.Render("Esc 关闭面板"))
+		b.WriteString(dimStyle.Render(i18n.F("Esc 关闭面板")))
 	case s.paused && s.stage == imp.StageAwaitingConfirmation:
-		b.WriteString(okStyle.Render("切分完成，等待你核对"))
+		b.WriteString(okStyle.Render(i18n.F("切分完成，等待你核对")))
 		b.WriteString("\n")
-		b.WriteString(dimStyle.Render("y 确认切分并继续；需调整切分可 Esc 后用 /import --guide=<自然语言说明>；Esc 关闭面板"))
+		b.WriteString(dimStyle.Render(i18n.F("y 确认切分并继续；需调整切分可 Esc 后用 /import --guide=<自然语言说明>；Esc 关闭面板")))
 	case s.paused:
 		// 管线在等待裁定处停下，通道已关闭：按面板内提示操作后 Esc 关闭。
-		b.WriteString(okStyle.Render("导入已暂停，等待你的操作"))
+		b.WriteString(okStyle.Render(i18n.F("导入已暂停，等待你的操作")))
 		b.WriteString("\n")
-		b.WriteString(dimStyle.Render("按上方提示继续（如 /import --story=open|closed）；Esc 关闭面板"))
+		b.WriteString(dimStyle.Render(i18n.F("按上方提示继续（如 /import --story=open|closed）；Esc 关闭面板")))
 	case s.done:
-		b.WriteString(okStyle.Render("导入完成，Foundation 与章节已就绪"))
+		b.WriteString(okStyle.Render(i18n.F("导入完成，Foundation 与章节已就绪")))
 		b.WriteString("\n")
-		b.WriteString(dimStyle.Render("Esc 关闭面板并接通续写门禁（引擎停在下一章边界，等你验收放行）"))
+		b.WriteString(dimStyle.Render(i18n.F("Esc 关闭面板并接通续写门禁（引擎停在下一章边界，等你验收放行）")))
 	default:
-		b.WriteString(dimStyle.Render("Esc 取消导入"))
+		b.WriteString(dimStyle.Render(i18n.F("Esc 取消导入")))
 	}
 
 	// 跟尾只在用户位于底部时生效：refresh 现在每 tick 都跑（动画/倒计时），
@@ -308,12 +310,12 @@ func renderImportModal(width, height int, s *importState, frame int) string {
 		s.viewport.Height = vpH
 	}
 
-	hint := "  ↑↓ 滚动 · Esc 取消/关闭"
+	hint := i18n.F("  ↑↓ 滚动 · Esc 取消/关闭")
 	switch {
 	case s.paused && s.stage == imp.StageAwaitingConfirmation:
-		hint = "  ↑↓ 滚动 · y 确认切分 · Esc 关闭"
+		hint = i18n.F("  ↑↓ 滚动 · y 确认切分 · Esc 关闭")
 	case running:
-		hint = "  ↑↓ 滚动 · Esc 取消"
+		hint = i18n.F("  ↑↓ 滚动 · Esc 取消")
 	}
 
 	body := strings.Split(s.viewport.View(), "\n")
@@ -325,10 +327,10 @@ func renderImportModal(width, height int, s *importState, frame int) string {
 		star := lipgloss.NewStyle().Foreground(colorAccent).Bold(true).
 			Render(streamCursorFrames[frame%len(streamCursorFrames)])
 		status := lipgloss.NewStyle().Foreground(colorMuted).
-			Render(fmt.Sprintf(" 进行中 · 已用时 %s", formatElapsed(time.Since(s.startedAt))))
+			Render(fmt.Sprintf(i18n.F(" 进行中 · 已用时 %s"), formatElapsed(time.Since(s.startedAt))))
 		body = append([]string{star + status, ""}, body...)
 	}
-	modal := renderPaddedModalFrame(boxW, boxH, "外部小说导入", hint, body)
+	modal := renderPaddedModalFrame(boxW, boxH, i18n.F("外部小说导入"), hint, body)
 	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, modal)
 }
 
@@ -394,7 +396,7 @@ func (m Model) confirmImportSegmentation() (tea.Model, tea.Cmd) {
 	state, listenCmd, err := startImportRun(m.runtime, m.importSeq, imp.Options{AcceptSegmentation: true}, m.width, m.height)
 	if err != nil {
 		m.applyEvent(host.Event{
-			Time: time.Now(), Category: "ERROR", Summary: "确认切分失败：" + err.Error(), Level: "error",
+			Time: time.Now(), Category: "ERROR", Summary: i18n.F("确认切分失败：") + err.Error(), Level: "error",
 		})
 		return m, nil
 	}
@@ -467,22 +469,22 @@ func parseImportArgs(args []string) (imp.Options, error) {
 		case strings.HasPrefix(a, "--story="):
 			v := strings.TrimPrefix(a, "--story=")
 			if v != "open" && v != "closed" {
-				return imp.Options{}, fmt.Errorf("--story 只能是 open 或 closed：%q", v)
+				return imp.Options{}, fmt.Errorf(i18n.F("--story 只能是 open 或 closed：%q"), v)
 			}
 			opts.StoryResolution = v
 		case strings.HasPrefix(a, "--guide="):
 			parts := append([]string{strings.TrimPrefix(a, "--guide=")}, args[i+1:]...)
 			g := strings.TrimSpace(strings.Join(parts, " "))
 			if g == "" {
-				return imp.Options{}, fmt.Errorf("--guide 需要自然语言切分指导，例如 --guide=幕间·X 也是独立章节")
+				return imp.Options{}, errors.New(i18n.F("--guide 需要自然语言切分指导，例如 --guide=幕间·X 也是独立章节"))
 			}
 			opts.Guidance = g
 			return opts, nil
 		case strings.HasPrefix(a, "--"):
-			return imp.Options{}, fmt.Errorf("未知选项 %q（支持：--yes / --story=open|closed / --continue / --guide=<切分指导>）", a)
+			return imp.Options{}, fmt.Errorf(i18n.F("未知选项 %q（支持：--yes / --story=open|closed / --continue / --guide=<切分指导>）"), a)
 		default:
 			if opts.SourcePath != "" {
-				return imp.Options{}, fmt.Errorf("只接受一个源文件路径：多了 %q", a)
+				return imp.Options{}, fmt.Errorf(i18n.F("只接受一个源文件路径：多了 %q"), a)
 			}
 			opts.SourcePath = a
 		}

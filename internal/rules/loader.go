@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"os"
 	"path/filepath"
 )
@@ -39,9 +40,10 @@ func DefaultHomeRulesDir() string {
 	return filepath.Join(home, ainovelDirName, "rules")
 }
 
-// homeRulesReadme 是首次引导时写入 ~/.ainovel/rules/README.txt 的说明。
+// homeRulesReadme() 是首次引导时写入 ~/.ainovel/rules/README.txt 的说明。
 // 刻意用 .txt 后缀而非 .md——扫描只认 .md，这份说明不会被当成规则归一化。
-const homeRulesReadme = `这里放全局写作偏好，跨所有书生效。
+func homeRulesReadme() string {
+	return i18n.F(`这里放全局写作偏好，跨所有书生效。
 
 新建一个 .md 文件（如 my-style.md），用大白话写要求就行——
 不需要任何格式、不需要 YAML：
@@ -62,7 +64,8 @@ const homeRulesReadme = `这里放全局写作偏好，跨所有书生效。
 常见 AI 套句、疲劳词的机械基线已内置，开箱即用，不写也没关系。
 
 加载优先级（高 → 低）：./.ainovel/rules/*.md（本书） > ~/.ainovel/rules/*.md（这里） > 内置默认
-`
+`)
+}
 
 // EnsureHomeRulesDir 尽力创建 ~/.ainovel/rules/ 目录并写入 README.txt 引导，
 // 让用户发现这个全局偏好扩展点、知道怎么写。
@@ -80,7 +83,7 @@ func ensureRulesDirAt(dir string) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, "README.txt"), []byte(homeRulesReadme), 0o644)
+	return os.WriteFile(filepath.Join(dir, "README.txt"), []byte(homeRulesReadme()), 0o644)
 }
 
 // DefaultOptions 根据当前工作目录构造常用 LoadOptions。

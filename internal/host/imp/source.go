@@ -9,6 +9,9 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"errors"
+	"github.com/voocel/ainovel-cli/internal/i18n"
+	"github.com/voocel/ainovel-cli/internal/utils"
 	"golang.org/x/text/encoding/simplifiedchinese"
 )
 
@@ -27,13 +30,33 @@ type decoded struct {
 	encoding string
 }
 
+// ErrEncodingUnreliable báo rằng không xác định được bảng mã của file một cách
+// đáng tin. Là sentinel để chỗ gọi (và test) phân loại được mà không phải so
+// chuỗi thông báo — chuỗi thông báo đi qua i18n nên đổi theo ngôn ngữ.
+var ErrEncodingUnreliable = errors.New("encoding unreliable")
+
 // decodeSource 按 UTF-8 / UTF-8 BOM / GB18030 顺序解码，返回所选编码。
 // 无法可靠解码或出现替换字符时直接失败，错误包含检测结果，不把「尝试 GB18030」藏成无声兜底。
+//
+// Hàng rào cho nhánh GB18030 là "kết quả có thật sự giống tiếng Trung không",
+// không phải "bộ giải mã có báo lỗi không" và cũng không chỉ là "có U+FFFD không".
+// Lý do: bộ giải mã GB18030 gần như luôn thành công trên byte bất kỳ (bảng mã có
+// nhánh 4 byte phủ hết không gian), nên hai tiêu chí cũ đều lọt. Cụ thể đã dựng
+// được ca byte 8-bit giải mã ra UTF-8 hợp lệ, KHÔNG một U+FFFD nào, mà nội dung
+// hoàn toàn là rác (tỉ lệ chữ Hán 0,023 — xem source_encoding_test.go). File
+// tiếng Việt sai bảng mã đi qua cửa đó sẽ thành chữ Hán vô nghĩa và chạy tiếp cả
+// pipeline phân tích/segment như dữ liệu thật.
+//
+// Vì sao chọn tiêu chí theo NỘI DUNG chứ không theo ngôn ngữ đang hoạt động:
+// người dùng chạy giao diện tiếng Việt vẫn có toàn quyền nhập một bộ truyện Trung
+// mã GBK — đó là ca hợp lệ, chặn theo locale sẽ chặn oan. Xét nội dung thì đúng
+// cho cả hai chiều: nhận truyện Trung thật, từ chối rác ở bất kỳ ngôn ngữ nào.
 func decodeSource(raw []byte) (decoded, error) {
 	if bytes.HasPrefix(raw, utf8BOM) {
 		body := raw[len(utf8BOM):]
 		if !utf8.Valid(body) {
-			return decoded{}, fmt.Errorf("声明 UTF-8 BOM 但内容不是合法 UTF-8")
+			return decoded{}, fmt.Errorf("%w: %s", ErrEncodingUnreliable,
+				i18n.F("声明 UTF-8 BOM 但内容不是合法 UTF-8"))
 		}
 		return decoded{text: string(body), encoding: encodingUTF8BOM}, nil
 	}
@@ -42,13 +65,30 @@ func decodeSource(raw []byte) (decoded, error) {
 	}
 	out, err := simplifiedchinese.GB18030.NewDecoder().Bytes(raw)
 	if err != nil {
-		return decoded{}, fmt.Errorf("既不是合法 UTF-8，GB18030 解码也失败：%w", err)
+		return decoded{}, fmt.Errorf("%w: "+i18n.F("既不是合法 UTF-8，GB18030 解码也失败：%v"),
+			ErrEncodingUnreliable, err)
 	}
 	if !utf8.Valid(out) {
-		return decoded{}, fmt.Errorf("GB18030 解码结果仍非合法 UTF-8，无法可靠解码")
+		return decoded{}, fmt.Errorf("%w: %s", ErrEncodingUnreliable,
+			i18n.F("GB18030 解码结果仍非合法 UTF-8，无法可靠解码"))
 	}
 	if i := bytes.IndexRune(out, utf8.RuneError); i >= 0 {
-		return decoded{}, fmt.Errorf("GB18030 解码出现替换字符（U+FFFD @ 字节 %d），无法可靠解码；请确认文件编码", i)
+		return decoded{}, fmt.Errorf("%w: "+i18n.F("GB18030 解码出现替换字符（U+FFFD @ 字节 %d），无法可靠解码；请确认文件编码"),
+			ErrEncodingUnreliable, i)
+	}
+	// Thông báo phải nói được ba điều để người dùng tự sửa được: file không phải
+	// UTF-8, thứ đã thử, và việc cần làm tiếp. Nói "không đọc được file" thì người
+	// dùng chỉ còn cách đoán.
+	// Ba mảnh phải dịch RỜI rồi mới nối. Bản trước nối trước rồi bọc một lần ở
+	// ngoài, nên đối số của i18n.F là chuỗi ghép lúc chạy: mảnh đầu (tiếng Trung)
+	// + hai mảnh đã dịch. Khóa đó không thể có trong catalog, F trả nguyên đối số,
+	// và người dùng nhận một câu nửa Trung nửa Việt. Đây là lớp lỗi mà bọc-lồng
+	// luôn tạo ra: F ngoài cùng tra một khóa do chính F trong tạo ra.
+	if text := string(out); !utils.LooksLikeChinese(text) {
+		return decoded{}, fmt.Errorf("%w: "+i18n.F("文件不是 UTF-8；按 GB18030 解码后仅 %.0f%% 是汉字，")+
+			i18n.F("判定为编码猜测错误而非中文原文（很可能是 Windows-1258/TCVN3 越南语文本或被截断的 UTF-8）。")+
+			i18n.F("请先转换为 UTF-8 再导入，例如：iconv -f WINDOWS-1258 -t UTF-8 原文件 > 新文件"),
+			ErrEncodingUnreliable, utils.HanRatio(text)*100)
 	}
 	return decoded{text: string(out), encoding: encodingGB18030}, nil
 }
@@ -67,10 +107,10 @@ func normalize(text string) string {
 func Ingest(bookDir, sourcePath string, in Intent) (*Workspace, *Manifest, error) {
 	raw, err := os.ReadFile(sourcePath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("读取源文件：%w", err)
+		return nil, nil, fmt.Errorf(i18n.F("读取源文件：%w"), err)
 	}
 	if len(bytes.TrimSpace(raw)) == 0 {
-		return nil, nil, fmt.Errorf("源文件为空：%s", sourcePath)
+		return nil, nil, fmt.Errorf(i18n.F("源文件为空：%s"), sourcePath)
 	}
 	dec, err := decodeSource(raw)
 	if err != nil {
@@ -173,17 +213,17 @@ func buildSourceUnits(normalized []byte, maxUnitBytes int) []SourceUnit {
 func resolveBoundaryByte(unitByID map[string]SourceUnit, unitID, anchor string) (int, error) {
 	u, ok := unitByID[unitID]
 	if !ok {
-		return 0, fmt.Errorf("边界引用不存在的 unit：%s", unitID)
+		return 0, fmt.Errorf(i18n.F("边界引用不存在的 unit：%s"), unitID)
 	}
 	if anchor == "" {
 		return u.StartByte, nil
 	}
 	switch strings.Count(u.Text, anchor) {
 	case 0:
-		return 0, fmt.Errorf("锚点 %q 不在 unit %s 内", anchor, unitID)
+		return 0, fmt.Errorf(i18n.F("锚点 %q 不在 unit %s 内"), anchor, unitID)
 	case 1:
 		return u.StartByte + strings.Index(u.Text, anchor), nil
 	default:
-		return 0, fmt.Errorf("锚点 %q 在 unit %s 内不唯一", anchor, unitID)
+		return 0, fmt.Errorf(i18n.F("锚点 %q 在 unit %s 内不唯一"), anchor, unitID)
 	}
 }

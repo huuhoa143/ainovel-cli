@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"strings"
 )
 
@@ -159,17 +160,17 @@ func NewChapterMemoryPolicy(progress *Progress, profile ContextProfile, currentO
 		SummaryWindow:       profile.SummaryWindow,
 		TimelineWindow:      profile.TimelineWindow,
 		LayeredSummaries:    profile.Layered,
-		WorkingRefresh:      "每次按章节加载时刷新",
-		EpisodicRefresh:     "随章节提交、评审和长篇状态变更刷新",
+		WorkingRefresh:      i18n.F("每次按章节加载时刷新"),
+		EpisodicRefresh:     i18n.F("随章节提交、评审和长篇状态变更刷新"),
 		PreviousTailChars:   800,
 		ChapterPlanEnabled:  true,
 		CurrentOutlineBound: currentOutlineBound,
 		ReadOnlyThreshold:   5,
 	}
 	if profile.Layered {
-		policy.SummaryStrategy = "卷摘要+弧摘要+最近章节摘要"
+		policy.SummaryStrategy = i18n.F("卷摘要+弧摘要+最近章节摘要")
 	} else {
-		policy.SummaryStrategy = "最近章节摘要"
+		policy.SummaryStrategy = i18n.F("最近章节摘要")
 	}
 	if progress != nil {
 		policy.TotalChapters = progress.TotalChapters
@@ -199,10 +200,10 @@ func NewChapterMemoryPolicy(progress *Progress, profile ContextProfile, currentO
 func NewArchitectMemoryPolicy() MemoryPolicy {
 	return MemoryPolicy{
 		Mode:               "architect",
-		PlanningRefresh:    "卷弧结构、指南针或摘要更新时刷新",
-		FoundationRefresh:  "角色、伏笔、设定变更时刷新",
-		PlanningFocus:      "分层大纲、指南针、卷摘要",
-		FoundationFocus:    "角色设定、角色快照、伏笔台账",
+		PlanningRefresh:    i18n.F("卷弧结构、指南针或摘要更新时刷新"),
+		FoundationRefresh:  i18n.F("角色、伏笔、设定变更时刷新"),
+		PlanningFocus:      i18n.F("分层大纲、指南针、卷摘要"),
+		FoundationFocus:    i18n.F("角色设定、角色快照、伏笔台账"),
 		HandoffPreferred:   true,
 		ChapterPlanEnabled: false,
 		ReadOnlyThreshold:  4,
@@ -244,7 +245,7 @@ type UnsupportedAdvanceModeError struct {
 }
 
 func (e *UnsupportedAdvanceModeError) Error() string {
-	return fmt.Sprintf("不支持的章节推进模式 %q，请使用创建该项目的新版 ainovel", e.Mode)
+	return fmt.Sprintf(i18n.F("不支持的章节推进模式 %q，请使用创建该项目的新版 ainovel"), e.Mode)
 }
 
 // AdvanceHoldAfter 是一次性暂停的确定性触发条件。

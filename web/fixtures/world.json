@@ -1,0 +1,87 @@
+{
+  "foreshadow": [
+    {
+      "id": "fs-chuong-thu-tu",
+      "description": "Tiếng chuông thứ tư đổ ngược từ lòng suối lên, trái với lệ làng ba tiếng một năm.",
+      "planted_at": 1,
+      "status": "advanced"
+    },
+    {
+      "id": "fs-thu-khong-ten",
+      "description": "Phong thư không đề tên người nhận, vết ngón tay ướt không khô.",
+      "planted_at": 1,
+      "status": "advanced"
+    },
+    {
+      "id": "fs-mon-no-17",
+      "description": "Câu 'ông còn nợ tôi mười bảy tiếng chuông nữa' — món nợ chưa được định nghĩa.",
+      "planted_at": 1,
+      "status": "planted"
+    },
+    {
+      "id": "fs-khuon-thu-tu",
+      "description": "Bản vẽ khuôn chuông thứ tư mà Hà Uyển Nhi giữ.",
+      "planted_at": 2,
+      "status": "planted"
+    },
+    {
+      "id": "fs-den-tat",
+      "description": "Đèn tắt trong lúc bấc còn đứng và dầu còn đầy.",
+      "planted_at": 1,
+      "status": "resolved",
+      "resolved_at": 2
+    }
+  ],
+  "relations": [
+    {
+      "character_a": "Lâm Thanh",
+      "character_b": "Người ướt",
+      "relation": "chủ nợ — con nợ, chưa rõ ai là bên nào",
+      "chapter": 1
+    },
+    {
+      "character_a": "Lâm Thanh",
+      "character_b": "Hà Uyển Nhi",
+      "relation": "quen mặt qua nghề, chưa tin nhau",
+      "chapter": 2
+    },
+    {
+      "character_a": "Hà Uyển Nhi",
+      "character_b": "Trưởng lão Vệ",
+      "relation": "đối đầu ngầm về bản vẽ khuôn chuông",
+      "chapter": 2
+    }
+  ],
+  "rules": [
+    {
+      "category": "magic",
+      "rule": "Chuông Hàn Sơn chỉ đổ ba lần một năm, và mỗi lần đổ đều phải có người nghe.",
+      "boundary": "Không có tiếng chuông thứ tư trong lệ làng; nếu nó đổ thì không phải chuông của Hàn Sơn."
+    },
+    {
+      "category": "magic",
+      "rule": "Người ướt không để lại nước ở nơi họ ngồi.",
+      "boundary": "Không bao giờ giải thích vì sao; ai giải thích là nói dối."
+    },
+    {
+      "category": "geography",
+      "rule": "Cầu đá có hai trăm bậc; bậc thứ hai trăm là ranh giới giữa làng và núi.",
+      "boundary": "Không ai đếm được quá hai trăm bậc trong một đêm."
+    },
+    {
+      "category": "society",
+      "rule": "Người gác cầu giữ ba điều không làm: không xuống suối sau canh ba, không nhận đồ của người ướt, không mở thứ không đề tên mình.",
+      "boundary": "Phá điều nào thì mất quyền gác cầu, không phải mất mạng."
+    },
+    {
+      "category": "technology",
+      "rule": "Khuôn chuông được đúc bằng đồng pha tro người; mỗi khuôn dùng đúng một lần.",
+      "boundary": "Không tái sử dụng khuôn — chuông đúc lần hai luôn lệch tiếng."
+    },
+    {
+      "category": "other",
+      "rule": "Thư không đề tên người nhận thì thuộc về người đọc nó.",
+      "boundary": "Đọc rồi thì không trả lại được."
+    }
+  ]
+}

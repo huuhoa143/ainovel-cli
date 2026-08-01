@@ -19,7 +19,7 @@ func TestBootstrapCompletedBookLandsOnDoneWorkbench(t *testing.T) {
 	if got.mode != modeDone {
 		t.Fatalf("完结书应落完成态工作台，得 mode=%v", got.mode)
 	}
-	if got.textarea.Placeholder != donePlaceholder {
+	if got.textarea.Placeholder != donePlaceholder() {
 		t.Fatalf("应给出完成态引导（含 /reopen），得 %q", got.textarea.Placeholder)
 	}
 

@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/tools"
 )
 
@@ -111,10 +112,10 @@ func (b *Bundle) OverrideVoice(raw string) {
 func resolveAppendable(builtin, name string, opts LoadOptions) string {
 	out := builtin
 	if s := readOverride(opts.HomeStyleDir, name); s != "" {
-		out += "\n\n## 用户全局文风覆盖（以下要求优先于项目默认）\n\n" + s
+		out += i18n.F("\n\n## 用户全局文风覆盖（以下要求优先于项目默认）\n\n") + s
 	}
 	if s := readOverride(opts.BookStyleDir, name); s != "" {
-		out += "\n\n## 本书文风覆盖（以下要求优先于以上全部）\n\n" + s
+		out += i18n.F("\n\n## 本书文风覆盖（以下要求优先于以上全部）\n\n") + s
 	}
 	return out
 }
@@ -205,7 +206,7 @@ func WithSimulationGuidance(prompt, role string) string {
 func (b *Bundle) OverridePrompt(file, raw string) error {
 	role, ok := promptRole[file]
 	if !ok {
-		return fmt.Errorf("不支持覆盖的 prompt 文件: %s（仅核心提示词可覆盖）", file)
+		return fmt.Errorf(i18n.F("不支持覆盖的 prompt 文件: %s（仅核心提示词可覆盖）"), file)
 	}
 	wrapped := WithSimulationGuidance(raw, role)
 	switch file {
@@ -229,11 +230,11 @@ var promptRole = map[string]string{
 	"editor.md":          "editor",
 }
 
-const simulationGuidance = `## 仿写画像
+const simulationGuidance = `## Hồ sơ mô phỏng
 
-当 novel_context 返回 simulation_profile 时，必须把它视为当前作品的仿写方向约束。{{role}} 应读取其中的 style、lexicon、plot_design、hook_design、pacing_density、reader_engagement 和 role_guidance。
+Khi novel_context trả về simulation_profile, buộc phải coi đó là ràng buộc về hướng mô phỏng của tác phẩm hiện tại. {{role}} phải đọc các phần style, lexicon, plot_design, hook_design, pacing_density, reader_engagement và role_guidance trong đó.
 
-使用原则：借鉴结构、节奏、钩子、信息释放和吸引读者的手法；不要复制原文句子、人物、地名、专有设定或固定桥段。若 simulation_profile 与用户显式要求冲突，优先服从用户要求。`
+Nguyên tắc sử dụng: học lấy cấu trúc, nhịp, móc, cách thả thông tin và thủ pháp hút người đọc; đừng copy câu chữ, nhân vật, địa danh, thiết lập riêng hay các mảng tình tiết cố định của nguyên tác. Nếu simulation_profile xung đột với yêu cầu hiển ngôn của người dùng, hãy ưu tiên phục tùng yêu cầu người dùng.`
 
 // loadStyles 枚举内置风格预设,再按 全局 → 本书 顺序叠加覆盖目录下 styles/*.md
 // (同名整文件替换,新文件名即新增风格;风格是整体声音,不做合并)。
@@ -275,7 +276,7 @@ func overlayStyles(styles map[string]string, dir string) {
 		}
 		name := strings.TrimSuffix(e.Name(), ".md")
 		if !styleNameRe.MatchString(name) {
-			slog.Warn("忽略非法风格文件名", "module", "assets", "dir", dir, "file", e.Name())
+			slog.Warn(i18n.F("忽略非法风格文件名"), "module", "assets", "dir", dir, "file", e.Name())
 			continue
 		}
 		data, err := os.ReadFile(filepath.Join(dir, "styles", e.Name()))

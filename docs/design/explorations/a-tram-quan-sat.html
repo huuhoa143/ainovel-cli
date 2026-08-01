@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ainovel — Hướng A: Trạm quan sát</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── Hướng A: TRẠM QUAN SÁT ─────────────────────────────────────────────
+   Bề mặt chính = theo dõi cỗ máy đang chạy. Mật độ cao, trạng thái realtime
+   là nhân vật chính.
+
+   Màu kế thừa bản sắc TUI (vàng #b8860b/#e5b449 + lam-lục #5fb8a3), chuyển
+   sang OKLCH. Nền KHÔNG dùng đen trung tính kiểu dashboard mặc định mà là
+   nâu-mực rất tối lệch về hue vàng của thương hiệu — cùng họ với tông sách cũ,
+   nên vàng đặt lên không bị chỏi như đặt trên đen lạnh.
+   -------------------------------------------------------------------- */
+:root {
+  --bg:        oklch(0.165 0.012 74);
+  --surface:   oklch(0.205 0.014 74);
+  --surface-2: oklch(0.245 0.015 74);
+  --line:      oklch(0.30 0.014 74);
+  --line-soft: oklch(0.25 0.012 74);
+
+  --ink:       oklch(0.93 0.016 82);   /* 14.8:1 trên --bg */
+  --ink-2:     oklch(0.76 0.018 82);   /* 7.9:1  — phụ, vẫn vượt 4.5 */
+  --ink-3:     oklch(0.62 0.016 82);   /* 4.6:1  — nhãn nhỏ, sát ngưỡng an toàn */
+
+  --gold:      oklch(0.80 0.132 80);
+  --teal:      oklch(0.76 0.088 176);
+  --green:     oklch(0.79 0.13 142);
+  --amber:     oklch(0.78 0.13 62);
+  --red:       oklch(0.70 0.16 25);
+  --violet:    oklch(0.74 0.10 300);
+
+  --sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --z-sticky: 10; --z-tooltip: 40;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 14px/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1240px; margin: 0 auto; padding: 28px 32px 64px; }
+
+/* ── thanh nhận diện ── */
+.top { display: flex; align-items: baseline; gap: 16px; padding-bottom: 18px; }
+.brand { font-weight: 600; letter-spacing: -0.01em; }
+.brand span { color: var(--ink-3); font-weight: 400; }
+.book { margin-left: auto; font-size: 13px; color: var(--ink-2); }
+.book b { color: var(--ink); font-weight: 500; }
+
+/* ── trạng thái sống: nhịp đập, không phải huy hiệu tĩnh ── */
+.pulse { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--gold); }
+.pulse i {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--gold);
+  box-shadow: 0 0 0 0 color-mix(in oklch, var(--gold) 60%, transparent);
+  animation: beat 2.4s var(--ease) infinite;
+}
+@keyframes beat {
+  0%   { box-shadow: 0 0 0 0 color-mix(in oklch, var(--gold) 55%, transparent); }
+  70%  { box-shadow: 0 0 0 9px color-mix(in oklch, var(--gold) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--gold) 0%, transparent); }
+}
+
+/* ── dải số liệu: hàng ngang mảnh, KHÔNG phải 4 card giống nhau ── */
+.metrics {
+  display: flex; flex-wrap: wrap; gap: 0;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  margin-bottom: 22px;
+}
+.metric { padding: 14px 26px 14px 0; margin-right: 26px; border-right: 1px solid var(--line-soft); }
+.metric:last-child { border-right: 0; }
+.metric dt { font-size: 11.5px; color: var(--ink-3); margin: 0 0 3px; }
+.metric dd { margin: 0; font: 500 21px/1.1 var(--mono); letter-spacing: -0.015em; }
+/* margin tường minh, không dựa vào khoảng trắng trong HTML: nguồn bị prettier
+   hay template engine cắt là mất luôn, thành "62%79k/128k". */
+.metric dd small { font-size: 12px; color: var(--ink-3); font-family: var(--sans); letter-spacing: 0; margin-left: 5px; font-weight: 400; }
+/* chữ in nghiêng nhô sang phải, dính vào chữ đứng ngay sau nó */
+.what i, .events i { padding-right: 2px; }
+
+/* ── tiến độ chương: từng chương một vạch, đọc được thật ── */
+.chapters { margin-bottom: 26px; }
+.chapters h2, .relay h2, .events h2 { font-size: 12.5px; font-weight: 500; color: var(--ink-3); margin: 0 0 9px; }
+.bar { display: flex; gap: 1.5px; height: 26px; align-items: stretch; }
+.bar i { flex: 1 1 0; border-radius: 1px; background: var(--surface-2); }
+.bar i.done  { background: color-mix(in oklch, var(--teal) 62%, var(--surface)); }
+.bar i.now   { background: var(--gold); }
+.bar i.rev   { background: color-mix(in oklch, var(--amber) 70%, var(--surface)); }
+.legend { display: flex; gap: 18px; margin-top: 8px; font-size: 11.5px; color: var(--ink-3); }
+.legend i { display: inline-block; width: 8px; height: 8px; border-radius: 1px; margin-right: 5px; vertical-align: middle; }
+
+/* ── tiếp sức agent: cỗ máy chuyền tay, không phải 3 card rời ── */
+.grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 30px; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+.relay { display: flex; flex-direction: column; gap: 0; }
+.hop { display: grid; grid-template-columns: 22px 1fr auto; gap: 12px; align-items: start; padding: 11px 0; }
+.hop + .hop { border-top: 1px solid var(--line-soft); }
+.rail { position: relative; height: 100%; display: flex; justify-content: center; }
+.rail::before {
+  content: ""; position: absolute; top: 16px; bottom: -13px; width: 1px; background: var(--line);
+}
+.hop:last-child .rail::before { display: none; }
+.dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; background: var(--surface-2); border: 1px solid var(--line); z-index: 1; }
+.dot.on  { background: var(--gold); border-color: var(--gold); }
+.dot.ok  { background: var(--teal); border-color: var(--teal); }
+.who { font-weight: 500; }
+.what { color: var(--ink-2); font-size: 13px; }
+.what code { font: 400 12.5px var(--mono); color: var(--violet); }
+.dur { font: 400 12px var(--mono); color: var(--ink-3); white-space: nowrap; padding-top: 2px; }
+
+/* ── dòng sự kiện ── */
+.events ul { list-style: none; margin: 0; padding: 0; }
+.events li { display: grid; grid-template-columns: 52px 62px 1fr; gap: 10px; padding: 6px 0; font-size: 13px; align-items: baseline; }
+.events time { font: 400 12px var(--mono); color: var(--ink-3); }
+.tag { font-size: 10.5px; letter-spacing: 0.02em; padding: 1px 6px; border-radius: 3px; text-align: center;
+       background: var(--surface-2); color: var(--ink-2); }
+.tag.dispatch { color: var(--gold);   background: color-mix(in oklch, var(--gold) 14%, var(--surface)); }
+.tag.tool     { color: var(--violet); background: color-mix(in oklch, var(--violet) 14%, var(--surface)); }
+.tag.check    { color: var(--green);  background: color-mix(in oklch, var(--green) 14%, var(--surface)); }
+.tag.decide   { color: var(--teal);   background: color-mix(in oklch, var(--teal) 14%, var(--surface)); }
+.events p { margin: 0; color: var(--ink-2); }
+.events b { color: var(--ink); font-weight: 500; }
+
+/* ── ô nhập can thiệp: việc chính người dùng làm ở đây ── */
+.steer { margin-top: 30px; border-top: 1px solid var(--line); padding-top: 18px; }
+.steer label { display: block; font-size: 12.5px; color: var(--ink-3); margin-bottom: 8px; }
+.steer .field { display: flex; gap: 10px; }
+.steer input {
+  flex: 1; background: var(--surface); border: 1px solid var(--line); border-radius: 7px;
+  padding: 10px 13px; color: var(--ink); font: 400 14px var(--sans);
+}
+.steer input::placeholder { color: var(--ink-3); }  /* đủ 4.6:1, không mờ hơn */
+.steer input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; border-color: transparent; }
+.steer button {
+  background: var(--gold); color: oklch(0.19 0.03 74); border: 0; border-radius: 7px;
+  padding: 10px 18px; font: 500 14px var(--sans); cursor: pointer;
+  transition: filter 0.18s var(--ease);
+}
+.steer button:hover { filter: brightness(1.08); }
+.hint { margin: 9px 0 0; font-size: 12px; color: var(--ink-3); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse i { animation: none; }
+  * { transition-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">ainovel <span>/ trạm quan sát</span></div>
+    <div class="pulse"><i></i> Writer đang soạn chương 47</div>
+    <div class="book">Đang viết <b>Trấn Yêu Ký</b> · tập 3, cung 2</div>
+  </header>
+
+  <dl class="metrics">
+    <div class="metric"><dt>Chương</dt><dd>47<small> / 300</small></dd></div>
+    <div class="metric"><dt>Số từ</dt><dd>128.400</dd></div>
+    <div class="metric"><dt>Chi phí</dt><dd>$2,14</dd></div>
+    <div class="metric"><dt>Ngữ cảnh</dt><dd style="color:var(--amber)">62%<small style="color:var(--ink-3)"> 79k/128k</small></dd></div>
+    <div class="metric"><dt>Đã chạy</dt><dd>6g 12p</dd></div>
+  </dl>
+
+  <section class="chapters">
+    <h2>Tiến độ từng chương</h2>
+    <div class="bar" role="img" aria-label="47 trong 300 chương đã xong, chương 47 đang viết, 2 chương đang chờ duyệt lại">
+      <!-- 60 vạch đại diện 300 chương, mỗi vạch 5 chương -->
+      <i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i>
+      <i class="done"></i><i class="rev"></i><i class="done"></i><i class="done"></i><i class="now"></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+    <div class="legend">
+      <span><i style="background:color-mix(in oklch, oklch(0.76 0.088 176) 62%, oklch(0.205 0.014 74))"></i>đã xong</span>
+      <span><i style="background:oklch(0.80 0.132 80)"></i>đang viết</span>
+      <span><i style="background:color-mix(in oklch, oklch(0.78 0.13 62) 70%, oklch(0.205 0.014 74))"></i>chờ viết lại</span>
+      <span><i style="background:oklch(0.245 0.015 74)"></i>chưa tới</span>
+    </div>
+  </section>
+
+  <div class="grid">
+    <section class="relay">
+      <h2>Cỗ máy chuyền tay — vòng hiện tại</h2>
+
+      <div class="hop">
+        <div class="rail"><span class="dot ok"></span></div>
+        <div><div class="who">Engine</div><div class="what">Route đọc sự thật từ Store, chọn <b>Writer</b> — không tốn lượt gọi mô hình</div></div>
+        <div class="dur">0,00s</div>
+      </div>
+
+      <div class="hop">
+        <div class="rail"><span class="dot ok"></span></div>
+        <div><div class="who">Writer</div><div class="what"><code>novel_context</code> → <code>read_chapter</code> → <code>plan_chapter</code></div></div>
+        <div class="dur">11,4s</div>
+      </div>
+
+      <div class="hop">
+        <div class="rail"><span class="dot on"></span></div>
+        <div><div class="who">Writer</div><div class="what"><code>draft_chapter</code> — đang viết chương 47 <i>“Tiếng chuông thứ ba”</i></div></div>
+        <div class="dur">4,2s</div>
+      </div>
+
+      <div class="hop">
+        <div class="rail"><span class="dot"></span></div>
+        <div><div class="who">Writer</div><div class="what"><code>check_consistency</code> rồi <code>commit_chapter</code></div></div>
+        <div class="dur">chờ</div>
+      </div>
+
+      <div class="hop">
+        <div class="rail"><span class="dot"></span></div>
+        <div><div class="who">Editor</div><div class="what">Duyệt 7 chiều khi hết cung 2 — còn 3 chương</div></div>
+        <div class="dur">chờ</div>
+      </div>
+    </section>
+
+    <section class="events">
+      <h2>Sự kiện</h2>
+      <ul>
+        <li><time>17:42</time><span class="tag tool">TOOL</span><p><b>draft_chapter</b> ghi 2.980 từ</p></li>
+        <li><time>17:41</time><span class="tag dispatch">PHÁI</span><p>Engine phái <b>Writer</b> — viết tiếp chương sau</p></li>
+        <li><time>17:40</time><span class="tag check">KIỂM</span><p>Chương 46 nhất quán — không lệch trạng thái nhân vật</p></li>
+        <li><time>17:38</time><span class="tag decide">PHÁN</span><p>Arbiter: mở rộng cung 3 bằng <b>architect_long</b></p></li>
+        <li><time>17:36</time><span class="tag tool">TOOL</span><p><b>save_arc_summary</b> tập 3 cung 1</p></li>
+        <li><time>17:31</time><span class="tag check">KIỂM</span><p>Phục bút <i>“ấn ngọc Hàn Sơn”</i> đã qua 9 chương chưa thu</p></li>
+      </ul>
+    </section>
+  </div>
+
+  <section class="steer">
+    <label for="steer">Can thiệp — gõ ý kiến bất cứ lúc nào, không cần dừng máy</label>
+    <div class="field">
+      <input id="steer" placeholder="ví dụ: Lâm Thanh nên do dự lâu hơn trước khi rút kiếm">
+      <button>Gửi</button>
+    </div>
+    <p class="hint">Arbiter sẽ phân loại phạm vi ảnh hưởng rồi tự viết lại các chương bị tác động.</p>
+  </section>
+
+</div>
+</body>
+</html>

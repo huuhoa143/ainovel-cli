@@ -34,7 +34,7 @@ func TestEnsureRulesDirAt(t *testing.T) {
 	if err := ensureRulesDirAt(dir); err != nil {
 		t.Fatal(err)
 	}
-	if again, _ := os.ReadFile(readme); string(again) != homeRulesReadme {
+	if again, _ := os.ReadFile(readme); string(again) != homeRulesReadme() {
 		t.Errorf("README.txt should be refreshed to latest template, got %q", again)
 	}
 

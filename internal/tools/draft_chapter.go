@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
-	"unicode/utf8"
 
 	"github.com/voocel/agentcore/schema"
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/errs"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -25,9 +25,9 @@ func NewDraftChapterTool(store *store.Store) *DraftChapterTool {
 
 func (t *DraftChapterTool) Name() string { return "draft_chapter" }
 func (t *DraftChapterTool) Description() string {
-	return "写入章节正文。mode=write 覆盖写入整章，mode=append 追加到现有草稿（续写/修改）"
+	return i18n.F("写入章节正文。mode=write 覆盖写入整章，mode=append 追加到现有草稿（续写/修改）")
 }
-func (t *DraftChapterTool) Label() string { return "写入章节" }
+func (t *DraftChapterTool) Label() string { return i18n.F("写入章节") }
 
 // 写工具，禁止并发（读-改-写竞态）。
 func (t *DraftChapterTool) ReadOnly(_ json.RawMessage) bool        { return false }
@@ -38,9 +38,9 @@ func (t *DraftChapterTool) Schema() map[string]any {
 	// 要求所有 properties 都在 required 列表中。原来的"省略 mode 走 write
 	// 默认"行为现在需要模型显式传 mode="write"，Execute 的 default 分支不变。
 	return schema.Object(
-		schema.Property("chapter", schema.Int("章节号")).Required(),
-		schema.Property("content", schema.String("章节正文")).Required(),
-		schema.Property("mode", schema.Enum("写入模式", "write", "append")).Required(),
+		schema.Property("chapter", schema.Int(i18n.F("章节号"))).Required(),
+		schema.Property("content", schema.String(i18n.F("章节正文"))).Required(),
+		schema.Property("mode", schema.Enum(i18n.F("写入模式"), "write", "append")).Required(),
 	)
 }
 
@@ -88,7 +88,7 @@ func (t *DraftChapterTool) Execute(_ context.Context, args json.RawMessage) (jso
 				"chapter":   a.Chapter,
 				"skipped":   true,
 				"completed": true,
-				"reason":    fmt.Sprintf("第 %d 章已提交完成，不能覆盖", a.Chapter),
+				"reason":    fmt.Sprintf(i18n.F("第 %d 章已提交完成，不能覆盖"), a.Chapter),
 			})
 		}
 	}
@@ -115,8 +115,8 @@ func (t *DraftChapterTool) Execute(_ context.Context, args json.RawMessage) (jso
 			"written":    true,
 			"chapter":    a.Chapter,
 			"mode":       "append",
-			"word_count": utf8.RuneCountInString(full),
-			"next_step":  "先 read_chapter(source=draft) 回读草稿，再调用 check_consistency，最后 commit_chapter",
+			"word_count": domain.WordCount(full),
+			"next_step":  i18n.F("先 read_chapter(source=draft) 回读草稿，再调用 check_consistency，最后 commit_chapter"),
 		})
 	default: // write
 		if err := t.store.Drafts.SaveDraft(a.Chapter, a.Content); err != nil {
@@ -132,8 +132,8 @@ func (t *DraftChapterTool) Execute(_ context.Context, args json.RawMessage) (jso
 			"written":    true,
 			"chapter":    a.Chapter,
 			"mode":       "write",
-			"word_count": utf8.RuneCountInString(a.Content),
-			"next_step":  "先 read_chapter(source=draft) 回读草稿，再调用 check_consistency，最后 commit_chapter",
+			"word_count": domain.WordCount(a.Content),
+			"next_step":  i18n.F("先 read_chapter(source=draft) 回读草稿，再调用 check_consistency，最后 commit_chapter"),
 		})
 	}
 }

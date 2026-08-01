@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 const checkpointsFile = "meta/checkpoints.jsonl"
@@ -54,7 +55,7 @@ func (cs *CheckpointStore) Append(scope domain.Scope, step, artifact, digest str
 	cs.io.mu.Lock()
 	defer cs.io.mu.Unlock()
 	if cs.loadErr != nil {
-		return nil, fmt.Errorf("checkpoint store 初始化失败: %w", cs.loadErr)
+		return nil, fmt.Errorf(i18n.F("checkpoint store 初始化失败: %w"), cs.loadErr)
 	}
 
 	if digest != "" {

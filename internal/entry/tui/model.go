@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/voocel/ainovel-cli/internal/host"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/tools"
 	"github.com/voocel/ainovel-cli/internal/utils"
 )
@@ -245,13 +246,12 @@ func (m *Model) flushStreamIfDirty() bool {
 
 // refreshEventViewport 重新渲染事件流内容并设置 viewport。
 func (m *Model) refreshEventViewport() {
-	centerW := m.eventFlowWidth()
-	content := renderEventContent(m.events, centerW, m.toolSpinnerIdx)
+	content := renderEventContent(m.events, m.eventContentWidth(), m.toolSpinnerIdx)
 	snap := m.snapshot
 	if m.starting {
 		snap.IsRunning = true
 	}
-	if activity := renderEventActivity(snap, m.spinnerIdx, centerW); activity != "" {
+	if activity := renderEventActivity(snap, m.spinnerIdx, m.eventContentWidth()); activity != "" {
 		if strings.TrimSpace(content) != "" {
 			content += "\n" + activity
 		} else {
@@ -292,13 +292,12 @@ func (m *Model) refreshStateViewport() {
 
 // updateViewportSize 根据当前窗口尺寸更新 viewport 大小。
 func (m *Model) updateViewportSize() {
-	centerW := m.eventFlowWidth()
 	rightW := m.detailWidth()
 	bodyH := m.bodyHeight()
 	eventH, streamH := m.splitHeights(bodyH)
-	m.viewport.Width = centerW - 2
+	m.viewport.Width = m.eventContentWidth()
 	m.viewport.Height = eventH - 1 // -1 为 event panel header 行
-	m.streamVP.Width = centerW - 2
+	m.streamVP.Width = m.eventContentWidth()
 	m.streamVP.Height = streamH - 1 // -1 为 stream panel header 行
 	m.detailVP.Width = rightW - 2
 	m.detailVP.Height = bodyH
@@ -455,46 +454,46 @@ func (m *Model) inputHints() string {
 	limitHint := m.inputLimitHint()
 	// 欢迎页(modeNew)不开鼠标上报，终端原生拖拽即可复制，无需 Ctrl+R 提示；
 	// 工作台才开上报，复制需 Ctrl+R 临时关闭。
-	suffix := limitHint + " · Ctrl+R 切到选中复制模式"
+	suffix := limitHint + i18n.F(" · Ctrl+R 切到选中复制模式")
 	if m.mode == modeNew {
 		suffix = limitHint
 	}
 	if m.mouseOff && m.mode != modeNew {
 		// 工作台手动切到选中复制：用强调色提示当前处于"自由拖拽选中"状态，按 Ctrl+R 恢复
 		return lipgloss.NewStyle().Foreground(colorAccent).Bold(true).
-			Render("✂ 选中复制模式：可拖拽选中文本复制 · Ctrl+R 退出恢复鼠标交互")
+			Render(i18n.F("✂ 选中复制模式：可拖拽选中文本复制 · Ctrl+R 退出恢复鼠标交互"))
 	}
 	if m.cocreate != nil {
-		scrollHint := " · Tab 滚动:对话"
+		scrollHint := i18n.F(" · Tab 滚动:对话")
 		if m.cocreate.focusPrompt {
-			scrollHint = " · Tab 滚动:创作指令"
+			scrollHint = i18n.F(" · Tab 滚动:创作指令")
 		}
 		switch {
 		case m.cocreate.awaiting:
-			return dimStyle.Render("等待 AI 回复 · Esc 退出共创" + scrollHint + suffix)
+			return dimStyle.Render(i18n.F("等待 AI 回复 · Esc 退出共创") + scrollHint + suffix)
 		case m.cocreate.canStart():
-			startLabel := "Ctrl+S 开始创作"
+			startLabel := i18n.F("Ctrl+S 开始创作")
 			if m.cocreate.stage {
-				startLabel = "Ctrl+S 应用并继续"
+				startLabel = i18n.F("Ctrl+S 应用并继续")
 			}
-			return dimStyle.Render("Enter 发送 · " + startLabel + " · Esc 退出共创" + scrollHint + suffix)
+			return dimStyle.Render(i18n.F("Enter 发送 · ") + startLabel + i18n.F(" · Esc 退出共创") + scrollHint + suffix)
 		default:
-			return dimStyle.Render("Enter 发送 · Esc 退出共创" + scrollHint + suffix)
+			return dimStyle.Render(i18n.F("Enter 发送 · Esc 退出共创") + scrollHint + suffix)
 		}
 	}
 	if m.mode == modeNew {
 		if m.startupMode == startupModeQuick {
-			return dimStyle.Render("Tab 切换启动模式 · 输入 / 搜索命令 · Enter 直接开始创作 · Esc 清空输入" + suffix)
+			return dimStyle.Render(i18n.F("Tab 切换启动模式 · 输入 / 搜索命令 · Enter 直接开始创作 · Esc 清空输入") + suffix)
 		}
-		return dimStyle.Render("Tab 切换启动模式 · 输入 / 搜索命令 · Enter 开始共创对话 · Esc 清空输入" + suffix)
+		return dimStyle.Render(i18n.F("Tab 切换启动模式 · 输入 / 搜索命令 · Enter 开始共创对话 · Esc 清空输入") + suffix)
 	}
 	switch m.snapshot.RuntimeState {
 	case "pausing":
-		return dimStyle.Render("正在暂停创作 · 请等待当前轮次结束" + suffix)
+		return dimStyle.Render(i18n.F("正在暂停创作 · 请等待当前轮次结束") + suffix)
 	case "paused":
-		return dimStyle.Render("输入 / 搜索命令 · Enter 继续创作 · Esc 清空输入" + suffix)
+		return dimStyle.Render(i18n.F("输入 / 搜索命令 · Enter 继续创作 · Esc 清空输入") + suffix)
 	}
-	return dimStyle.Render("输入 / 搜索命令 · 点击/Tab 切换面板 · ↑↓ 滚动 · End 跳底 · Ctrl+L 清屏 · Esc 暂停 · Enter 发送" + suffix)
+	return dimStyle.Render(i18n.F("输入 / 搜索命令 · 点击/Tab 切换面板 · ↑↓ 滚动 · End 跳底 · Ctrl+L 清屏 · Esc 暂停 · Enter 发送") + suffix)
 }
 
 func (m *Model) inputLimitHint() string {
@@ -506,7 +505,7 @@ func (m *Model) inputLimitHint() string {
 	if used < limit*4/5 {
 		return ""
 	}
-	return fmt.Sprintf(" · 输入 %d/%d", used, limit)
+	return fmt.Sprintf(i18n.F(" · 输入 %d/%d"), used, limit)
 }
 
 func (m *Model) eventFlowWidth() int {
@@ -516,6 +515,39 @@ func (m *Model) eventFlowWidth() int {
 	leftW := m.sidebarWidth()
 	rightW := m.detailWidth()
 	return m.width - leftW - rightW
+}
+
+// eventContentWidth là bề rộng LÒNG của khung luồng sự kiện — chỗ chữ thật sự nằm.
+//
+// # Vì sao phải có hàm này chứ không viết `centerW - 2` tại chỗ
+//
+// Số 2 là viền + đệm của khung; viewport bên trong luôn hẹp hơn khung đúng 2 cột
+// (xem detailVP cũng dùng `rightW - 2`). Nhưng bề rộng đó từng được viết ở SÁU chỗ
+// theo HAI công thức: bốn chỗ đặt viewport dùng `centerW - 2`, còn hai chỗ dàn nội
+// dung dùng `centerW`. Nội dung được dàn cho khung rộng rồi nhồi vào viewport hẹp.
+//
+// Hậu quả là MẤT DỮ LIỆU, không phải chữ bị cắt cho đẹp. Nhánh ERROR tính
+// `maxSumW = width - 12` với tiền tố đúng 12 cột, nên dòng đầu chiếm trọn bề rộng
+// khung — vượt viewport 2 cột, phần vượt bị cắt. Và vì ký tự bị cắt là ký tự CUỐI
+// dòng đầu của một câu đang ngắt tiếp, chỗ mất nằm GIỮA TỪ:
+//
+//	"chế độ nghiệm thu"  →  "chế độ nghim thu"     (mất `ệ`)
+//	"không có trong hàng đợi"  →  "không có rong hàng đợi"  (mất `t`)
+//
+// Ca thứ hai là ca tệ nhất: `rong` là một từ tiếng Việt thật, nên câu vẫn đọc được
+// và chỉ sai nghĩa. Người dùng sẽ báo đây là lỗi chính tả, không ai nghĩ tới layout.
+//
+// # Vì sao nó là lỗi do việt hóa đánh thức
+//
+// Khuyết điểm có sẵn từ trước nhưng nằm im ở tiếng Trung: đo được trên chính các
+// chuỗi đã bắt lỗi, đường zh dài 45 cột trong khung 61–76 cột nên gần như không bao
+// giờ chạm mốc ngắt, còn đường vi dài 75–99 cột nên chạm thường xuyên. Cùng họ với
+// những lỗi khác của lượt việt hóa này: không phải dịch sai, mà là dịch xong thì
+// một khuyết điểm cũ mới có điều kiện nổ.
+//
+// Trả về từ MỘT chỗ để bên dàn và bên render không thể lệch nhau lần nữa.
+func (m *Model) eventContentWidth() int {
+	return m.eventFlowWidth() - 2
 }
 
 func (m *Model) sidebarWidth() int {
@@ -552,7 +584,7 @@ func (m *Model) outputDir() string {
 }
 
 func defaultSteerPlaceholder() string {
-	return "输入剧情干预，例如：把感情线提前到第4章"
+	return i18n.F("输入剧情干预，例如：把感情线提前到第4章")
 }
 
 func (m *Model) syncRuntimePlaceholder() {
@@ -560,26 +592,26 @@ func (m *Model) syncRuntimePlaceholder() {
 		return
 	}
 	if m.starting {
-		m.textarea.Placeholder = "正在初始化创作..."
+		m.textarea.Placeholder = i18n.F("正在初始化创作...")
 		return
 	}
 	switch m.snapshot.RuntimeState {
 	case "completed":
-		m.textarea.Placeholder = donePlaceholder
+		m.textarea.Placeholder = donePlaceholder()
 	case "pausing":
-		m.textarea.Placeholder = "正在暂停创作..."
+		m.textarea.Placeholder = i18n.F("正在暂停创作...")
 	case "paused":
 		if m.snapshot.AdvanceMode == "review" && m.snapshot.Phase == "writing" {
-			m.textarea.Placeholder = "逐章验收等待中：输入修改意见，或 /next 放行下一章"
+			m.textarea.Placeholder = i18n.F("逐章验收等待中：输入修改意见，或 /next 放行下一章")
 		} else {
-			m.textarea.Placeholder = "创作已暂停，输入任意内容继续创作"
+			m.textarea.Placeholder = i18n.F("创作已暂停，输入任意内容继续创作")
 		}
 	default:
 		if !m.snapshot.IsRunning {
 			if m.snapshot.AdvanceMode == "review" && m.snapshot.Phase == "writing" {
-				m.textarea.Placeholder = "逐章验收等待中：输入修改意见，或 /next 放行下一章"
+				m.textarea.Placeholder = i18n.F("逐章验收等待中：输入修改意见，或 /next 放行下一章")
 			} else {
-				m.textarea.Placeholder = "运行中断，输入任意内容恢复创作"
+				m.textarea.Placeholder = i18n.F("运行中断，输入任意内容恢复创作")
 			}
 		} else {
 			m.textarea.Placeholder = defaultSteerPlaceholder()
@@ -617,14 +649,14 @@ func (m *Model) layoutHeights() (topH, inputH, bodyH int) {
 
 func (m Model) View() string {
 	if m.width == 0 || m.height == 0 {
-		return "加载中..."
+		return i18n.F("加载中...")
 	}
 	if m.width < 100 {
 		return lipgloss.NewStyle().
 			Width(m.width).Height(m.height).
 			AlignHorizontal(lipgloss.Center).
 			AlignVertical(lipgloss.Center).
-			Render("终端宽度不足，请至少扩展到 100 列")
+			Render(i18n.F("终端宽度不足，请至少扩展到 100 列"))
 	}
 	if m.askState != nil {
 		return renderAskUserModal(m.width, m.height, m.askState)
@@ -663,12 +695,12 @@ func (m Model) View() string {
 		centerW := m.width - leftW - rightW
 		eventH, streamH := m.splitHeights(bodyH)
 
-		if m.viewport.Width != centerW-2 || m.viewport.Height != eventH-1 {
-			m.viewport.Width = centerW - 2
+		if m.viewport.Width != m.eventContentWidth() || m.viewport.Height != eventH-1 {
+			m.viewport.Width = m.eventContentWidth()
 			m.viewport.Height = eventH - 1 // -1 为 event panel header 行
 		}
-		if m.streamVP.Width != centerW-2 || m.streamVP.Height != streamH-1 {
-			m.streamVP.Width = centerW - 2
+		if m.streamVP.Width != m.eventContentWidth() || m.streamVP.Height != streamH-1 {
+			m.streamVP.Width = m.eventContentWidth()
 			m.streamVP.Height = streamH - 1 // -1 为 stream panel header 行
 		}
 

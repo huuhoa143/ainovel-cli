@@ -8,6 +8,7 @@ import (
 
 	"github.com/voocel/agentcore"
 	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -132,7 +133,12 @@ func TestWriterStopGuard_StageAwareBlockMessage(t *testing.T) {
 		t.Fatalf("append consistency_check: %v", err)
 	}
 	d = guard(context.Background(), normalStop)
-	if !strings.Contains(d.InjectMessage, "commit_chapter") || !strings.Contains(d.InjectMessage, "错误") {
+	// Chốt vào ĐÚNG msgid mà subagent_guards.go phát ra, không chốt vào một từ lẻ.
+	// So với i18n.F("错误") thì sai: bản dịch của msgid độc lập ấy có dạng khác
+	// (viết hoa) với từ "lỗi" nằm giữa câu, nên điều kiện chết ở locale vi mà
+	// thông báo vẫn hoàn toàn đúng.
+	const msgReadyToCommit = "禁止结束：本章只差 commit_chapter 提交。请立即调用 commit_chapter；若它返回错误，先按错误信息处理（核对章节号、按提示补齐前置动作）再重试提交，不要在未提交的状态下结束。"
+	if d.InjectMessage != i18n.F(msgReadyToCommit) {
 		t.Fatalf("ready-to-commit message should mention commit and error handling, got %q", d.InjectMessage)
 	}
 }

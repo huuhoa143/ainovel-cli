@@ -1,0 +1,4363 @@
+/* ══ ainovel studio ═══════════════════════════════════════════════════════
+   Token và component lấy từ DESIGN.md, hình lấy từ bản mockup đã duyệt
+   docs/design/explorations/d-studio.html.
+
+   Hai lỗi của bản mockup chỉ ảnh chụp mới bắt được, nên ở đây chúng bị thiết
+   kế cho không xảy ra được:
+
+     1. `:first-of-type` khớp nhiều phần tử làm drop cap ăn vào dòng thông tin
+        ("2.980 từ" thành chữ "2." khổng lồ). → Drop cap CHỈ bám vào một lớp
+        đặt tay (`.mocua`), không bao giờ bám vào bộ chọn vị trí.
+     2. Khoảng trắng dựa vào whitespace HTML bị mất khi format lại
+        ("62%79k/128k"). → Mọi khoảng cách là `gap`/`margin`, không có chỗ nào
+        trông cậy vào dấu cách giữa hai thẻ.
+   ══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* bề mặt — trung tính đã nhuộm hue vàng của thương hiệu */
+  --bg: oklch(0.155 0.008 74);
+  --panel: oklch(0.185 0.009 74);
+  --panel-2: oklch(0.215 0.01 74);
+  --raised: oklch(0.245 0.011 74);
+  --line: oklch(0.275 0.01 74);
+  --line-2: oklch(0.225 0.009 74);
+
+  /* chữ — tỉ số tương phản so với --bg */
+  --ink: oklch(0.945 0.01 82); /* 16.1:1 */
+  --ink-2: oklch(0.755 0.012 82); /* 8.2:1 */
+  --ink-3: oklch(0.625 0.011 82); /* 4.9:1 — SÀN CỨNG, không hạ thêm */
+
+  /* ngữ nghĩa — màu cho dữ liệu, không cho khung */
+  --gold: oklch(0.805 0.128 80); /* đang chạy, tiêu điểm — tín hiệu duy nhất */
+  --teal: oklch(0.755 0.085 176); /* đã nghiệm thu */
+  --amber: oklch(0.785 0.125 62); /* cần chú ý, chờ viết lại */
+  --red: oklch(0.705 0.155 25); /* lỗi, mốc ngưỡng nén */
+  --violet: oklch(0.745 0.095 300); /* tên tool, cửa kiểm định */
+
+  /* chữ đặt trên nền màu đặc: đủ tối để đạt ngưỡng trên vàng và lam-lục */
+  --tren-mau: oklch(0.2 0.02 74);
+
+  /* Bề rộng tối thiểu của một khối trên trục. Đủ cho "T5 · chờ mở" ở màn hình
+     rộng; màn hình hẹp hạ xuống để trục còn nguyên hình dạng thay vì bị cắt —
+     hình dạng trục ("đang ở đâu trong công trình") là thông tin chính, chữ
+     trong khối là phụ và đã có ở chú giải khi trỏ chuột. */
+  --khoi-min: 72px;
+
+  --r: 5px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --z-sticky: 10;
+  --z-pop: 30;
+  --z-tip: 40;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 13px/1.5 var(--ui);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden; /* khung ứng dụng cố định, không phải trang cuộn */
+}
+
+::selection {
+  background: color-mix(in oklch, var(--gold) 30%, transparent);
+}
+
+/* Bàn phím là hạng nhất: mọi thứ hội tụ được phải thấy rõ. */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* ══ khung ứng dụng ═══════════════════════════════════════════════════ */
+
+/* Hàng transport là `minmax(30px, auto)` ở MỌI bề rộng, không chỉ dưới điểm ngắt.
+   30px khi vừa một hàng, cao thêm đúng phần cần khi đã xuống dòng.
+   ĐO ĐƯỢC vì sao không thể chốt theo điểm ngắt: với fixture mọi số liệu là "—"
+   thanh cần 944px, nhưng với số liệu THẬT của một phiên đang chạy
+   (`công đoạn soat_nhat_quan vừa xong` · `tổ Writer · gemini-2.5-pro` ·
+   `ngữ cảnh 78%` · `năng suất 3,4 chương/giờ` · `giá thành $0,420 / chương` ·
+   `tổng $128,45` · `đã chạy 6:12:04`) nó cần 1253px. Tức bề rộng nội dung phụ
+   thuộc DỮ LIỆU, không phụ thuộc bề rộng màn hình, và một điểm ngắt cố định luôn
+   sai ở nửa số ca: chốt ở 900px thì cả dải 900–1253px cắt mất `đã chạy` đúng lúc
+   engine bắt đầu có số thật để báo. Nên transport xuống dòng KHI CẦN, ở mọi
+   bề rộng. */
+.khung {
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: 44px 1fr minmax(30px, auto);
+  grid-template-columns: 194px 1fr 292px;
+  grid-template-areas:
+    'bar bar bar'
+    'rail canvas insp'
+    'trans trans trans';
+}
+
+/* Khu không dùng inspector: cột 292px không tồn tại thay vì tồn tại mà trống.
+   Bề mặt đọc và ba bề mặt hồ sơ tự mang chi tiết của mình, nên giữ lại một panel
+   không nói gì là lấy mất 1/5 bề rộng của chỗ cần bề rộng nhất. */
+.khung.rong {
+  grid-template-columns: 194px 1fr;
+  grid-template-areas: 'bar bar' 'rail canvas' 'trans trans';
+}
+
+@media (max-width: 1240px) {
+  .khung {
+    grid-template-columns: 194px 1fr;
+    grid-template-areas: 'bar bar' 'rail canvas' 'trans trans';
+  }
+  .insp {
+    display: none;
+  }
+}
+
+/* Không còn điểm ngắt riêng cho transport: nó xuống dòng khi nội dung không vừa,
+   ở mọi bề rộng. Lý do đo được nằm ở chú thích của `.khung` phía trên, và phần
+   biến nó thành nhiều hàng nằm trong mục transport ở dưới. */
+
+/* Điểm ngắt 860px: rail thôi làm CỘT, thành DẢI NGANG — không biến mất.
+
+   DESIGN.md viết "860px bỏ rail", và điều đó đúng khi rail chỉ là một danh sách
+   trang trí: bề mặt lúc đó có đúng một khu. Giờ rail là đường điều hướng DUY
+   NHẤT giữa sáu khu, nên bỏ nó đi ở màn hình hẹp là khóa người dùng lại trong
+   khu đang mở — không có cách nào sang bề mặt đọc, và không có dấu hiệu nào cho
+   biết có bề mặt đọc.
+   Tinh thần của điều khoản đó là "rail không được ăn bề rộng của canvas ở màn
+   hình hẹp"; một dải cao 38px giữ đúng tinh thần đó mà không mất đường đi. */
+@media (max-width: 860px) {
+  .khung,
+  .khung.rong {
+    /* Hàng transport là `minmax(30px, auto)` chứ không `30px`, cùng lý do như ở
+       khối 900px trên: dưới đây transport đã xuống dòng, và một hàng cố định
+       30px sẽ cắt mất các hàng sau. Khối này đứng SAU khối 900px nên nó ghi đè,
+       vì thế giá trị phải được lặp lại ở đây. */
+    grid-template-rows: 44px auto 1fr minmax(30px, auto);
+    grid-template-columns: 1fr;
+    grid-template-areas: 'bar' 'rail' 'canvas' 'trans';
+  }
+  /* Phần biến rail thành dải ngang nằm ở CUỐI tệp, không ở đây — xem khối
+     "@media (max-width: 860px) — rail dạng dải ngang" ở dưới và lý do vì sao
+     thứ tự trong tệp quyết định. */
+}
+
+/* Màn hình rất hẹp: giữ HÌNH DẠNG trục thay vì giữ chữ trong khối. */
+@media (max-width: 700px) {
+  :root {
+    --khoi-min: 40px;
+  }
+  .lanes {
+    grid-template-columns: 62px minmax(0, 1fr);
+    gap: 6px 8px;
+  }
+  .sect,
+  .head,
+  .canhbao {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  /* Khối quá hẹp thì bỏ phạm vi, GIỮ số hiệu tập/cung và ký hiệu trạng thái:
+     mất "1–18" còn đọc được trục, mất "T1" thì không biết đang xem khối nào. */
+  .blk .txt {
+    display: none;
+  }
+}
+
+/* ══ thanh trên ═══════════════════════════════════════════════════════ */
+
+.bar {
+  grid-area: bar;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+
+.logo {
+  font: 600 13px/1 var(--ui);
+  letter-spacing: -0.01em;
+  padding-right: 4px;
+  white-space: nowrap;
+}
+.logo em {
+  font-style: normal;
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+.picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  max-width: 320px;
+  min-width: 0;
+  padding: 0 9px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.16s var(--ease);
+}
+.picker:hover {
+  background: var(--raised);
+}
+.picker[disabled] {
+  cursor: default;
+  opacity: 1;
+}
+.picker b {
+  font-weight: 500;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.picker .meta {
+  color: var(--ink-3);
+  font: 400 11.5px var(--mono);
+  white-space: nowrap;
+}
+.picker .chev {
+  color: var(--ink-3);
+  font-size: 9px;
+  margin-left: 2px;
+}
+
+/* ── nút tạo tác phẩm trên thanh trên ─────────────────────────────────────
+   Đường vào chính cho việc bắt đầu một cuốn mới — xem lý do ở ThanhTren.tsx.
+
+   Viền vàng mờ chứ không nền vàng đặc: `PRODUCT.md` nguyên tắc 5 giữ vàng cho DỮ LIỆU
+   (đang chạy, tiêu điểm), nên một nút nền vàng ở thanh trên sẽ hét to hơn nhịp đập của
+   chính dây chuyền. Viền là đủ để nó là thứ sáng thứ hai trên thanh mà không tranh với
+   tín hiệu sống. */
+.nutMoi {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  height: 28px;
+  padding: 0 10px 0 8px;
+  background: color-mix(in oklch, var(--gold) 9%, var(--panel-2));
+  border: 1px solid color-mix(in oklch, var(--gold) 36%, var(--line));
+  border-radius: var(--r);
+  color: var(--ink);
+  font: 500 12.5px var(--ui);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.16s var(--ease), border-color 0.16s var(--ease);
+}
+.nutMoi:hover {
+  background: color-mix(in oklch, var(--gold) 16%, var(--panel-2));
+  border-color: color-mix(in oklch, var(--gold) 55%, var(--line));
+}
+.nutMoi[aria-current='page'] {
+  background: color-mix(in oklch, var(--gold) 20%, var(--panel-2));
+  border-color: var(--gold);
+}
+.nutMoi .ky {
+  color: var(--gold);
+  font: 400 15px/1 var(--mono);
+  margin-top: -1px;
+}
+
+/* Dưới 700px chỉ còn dấu `+`. ĐO ĐƯỢC ở 390px: sau khi đã ẩn `.slate`, thanh trên còn
+   đúng 12px dư (bộ chọn hết ở 262px, huy hiệu kết nối bắt đầu ở 274px), nên một nút mang
+   chữ đẩy huy hiệu ra ngoài mép của một khung không cuộn được. `aria-label` trên nút giữ
+   nguyên tên đầy đủ nên phần mất là hình, không phải nghĩa. */
+@media (max-width: 700px) {
+  .nutMoi .nhan {
+    display: none;
+  }
+  .nutMoi {
+    padding: 0 8px;
+  }
+  /* Tên sản phẩm nhường chỗ cho tên tác phẩm.
+     ĐO ĐƯỢC ở 390px: thêm nút `+` đẩy bộ chọn từ 150px xuống 111px, và "Ba đêm đèn tắt"
+     bị cắt thành "Ba đ…" — tức mất DỮ LIỆU để giữ một nhãn trang trí. Ứng dụng đang mở
+     rồi thì không ai còn hỏi nó là ứng dụng gì; thẻ trình duyệt cũng đã ghi tên đó.
+     `.logo` chiếm 88px cộng 12px gap, đúng phần bộ chọn vừa mất. */
+  .logo {
+    display: none;
+  }
+}
+
+/* danh sách tác phẩm — mở ra ngay dưới bộ chọn */
+.pickwrap {
+  position: relative;
+  /* `min-width: 0` CHO PHÉP bộ chọn co lại khi thanh trên hết chỗ; không có nó thì
+     `min-width: auto` của flex item giữ nguyên bề rộng nội dung và phần tử cuối
+     (huy hiệu kết nối) bị đẩy ra ngoài mép. Cặp đôi bắt buộc: `.picker b` đã có
+     `ellipsis` nhưng ellipsis chỉ chạy khi phần tử THẬT SỰ bị co. */
+  min-width: 0;
+}
+.picklist {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  z-index: var(--z-pop);
+  min-width: 288px;
+  max-height: 60dvh;
+  overflow-y: auto;
+  padding: 4px;
+  margin: 0;
+  list-style: none;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: 0 8px 24px oklch(0.1 0.008 74 / 0.55);
+}
+.picklist button {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  align-items: baseline;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 8px;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  color: var(--ink-2);
+  font: 400 12.5px var(--ui);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.picklist button:hover {
+  background: var(--raised);
+  color: var(--ink);
+}
+.picklist button[aria-current='true'] {
+  background: var(--raised);
+  color: var(--ink);
+}
+.picklist .ten {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.picklist .ten em {
+  font-style: italic;
+  color: var(--ink-3);
+}
+.picklist .sl {
+  font: 400 11.5px var(--mono);
+  color: var(--ink-3);
+}
+
+.slate {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  white-space: nowrap;
+  min-width: 0;
+}
+.slate .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  flex: none;
+}
+.slate .dot.running {
+  background: var(--gold);
+}
+.slate .dot.complete {
+  background: var(--teal);
+}
+.slate .dot.idle {
+  background: var(--line);
+}
+.slate .chu {
+  margin-left: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ĐO ĐƯỢC ở 400px: thanh trên cần 401px trong một khung KHÔNG cuộn được (body
+   overflow:hidden), nên viền phải của huy hiệu "dòng sự kiện" bị cắt — mất đúng
+   dấu hiệu cho biết dòng sự kiện còn sống. Tệ hơn: .slate bị nén về bề rộng 0
+   mà các đốm bên trong vẫn vẽ ra ngoài, đè lên huy hiệu.
+
+   Bỏ slate là lựa chọn đúng: nó là tin TỔNG HỢP của cả xưởng (mấy tác phẩm, mấy
+   cái đang chạy) và mở bộ chọn ra là thấy lại; còn tình trạng kết nối thì không
+   có chỗ nào khác nói. Bỏ slate thu lại 172px cho bộ chọn, vừa đủ cho bề rộng
+   thật 161px của nó.
+
+   Khối này phải nằm SAU `.slate { display: flex }`: cùng độ đặc hiệu thì thứ tự
+   trong tệp quyết định, và đặt nó cùng với các điểm ngắt ở đầu tệp thì rule
+   `display: flex` bên dưới ghi đè lại — đã thử và slate vẫn hiện. */
+@media (max-width: 700px) {
+  .slate {
+    display: none;
+  }
+}
+
+.bar .right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.kbd {
+  font: 400 11px var(--mono);
+  color: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 3px 6px;
+  white-space: nowrap;
+}
+.kbd.live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.kbd.live .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--line);
+}
+.kbd.live[data-tt='song'] .dot {
+  background: var(--gold);
+  animation: dapnhip 2.2s var(--ease) infinite;
+}
+.kbd.live[data-tt='mat'] {
+  color: var(--amber);
+  border-color: color-mix(in oklch, var(--amber) 40%, var(--line));
+}
+.kbd.live[data-tt='mat'] .dot {
+  background: var(--amber);
+}
+
+/* ══ rail trái ════════════════════════════════════════════════════════ */
+
+.rail {
+  grid-area: rail;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 4px 8px 10px;
+  overflow-y: auto;
+}
+.rail .grp {
+  font: 500 10.5px/1 var(--ui);
+  color: var(--ink-3);
+  padding: 12px 8px 7px;
+}
+
+/* ── nhóm thu gọn được ────────────────────────────────────────────────────
+   Xem Rail.tsx › Nhom cho lý do có nhóm thu gọn và vì sao thu bằng CSS.
+
+   Điểm mấu chốt của khối này: các mục VẪN Ở TRONG DOM khi nhóm đóng. Nhờ vậy
+   (a) effect tự-mở-nhóm đọc được `[aria-current]` của con để biết khu đang mở nằm ở
+   nhóm nào, và (b) dải ngang dưới 860px bật lại được toàn bộ mục bằng một `@media`. */
+.nhomrail[data-mo='0'] .mucnhom {
+  display: none;
+}
+
+/* Nhãn nhóm thành NÚT: cùng cỡ chữ, cùng màu, cùng khoảng đệm với nhãn nhóm tĩnh —
+   sự khác nhau duy nhất là mũi chỉ và trạng thái hover, tức đúng phần nói "bấm được". */
+.rail .grpnut {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  background: none;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--r);
+  transition: color 0.14s var(--ease);
+}
+.rail .grpnut:hover {
+  color: var(--ink-2);
+}
+/* 9.5px chứ không 8px: ở 8px mũi chỉ `▸` đọc thành một dấu chấm giữa dòng, nên hàng nhãn
+   nhóm trông như một mục danh sách có bullet chứ như một cái mở được.
+   KHÔNG kèm số mục vào nhãn nhóm đóng: cột số của rail đang mang nghĩa "còn tồn bao nhiêu
+   việc" (Kiểm định 9, Hàng chờ 1), nên một con số cùng chỗ mà nghĩa là "có 5 khu bên trong"
+   sẽ bị đọc thành việc tồn. Mũi chỉ cộng trạng thái hover là đủ để nói bấm được. */
+.rail .grpnut .chev {
+  width: 9px;
+  font-size: 9.5px;
+  line-height: 1;
+  flex: none;
+}
+.rail .grpnut .tenNhom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Dấu việc tồn của nhóm ĐANG ĐÓNG. Amber vì nó mang đúng nghĩa amber ở nơi khác trong
+   bề mặt này ("cần chú ý"), và nó phải ra được ngoài lớp thu gọn — thu một nhóm không
+   bao giờ được phép ẩn một hàng chờ thật. */
+.rail .grpnut .dauton {
+  margin-left: auto;
+  color: var(--amber);
+  font-size: 8px;
+  flex: none;
+}
+.rail a,
+.rail .muc,
+.rail .mucdi {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 8px;
+  border-radius: var(--r);
+  color: var(--ink-2);
+  text-decoration: none;
+  font-size: 12.5px;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+/* Mục điều hướng là <button>: bỏ toàn bộ nền/viền của user agent để nó nằm cùng
+   một hệ với các mục khác, nhưng GIỮ nó là button — bàn phím là hạng nhất, và
+   một <div onClick> thì Tab không tới được. */
+.rail .mucdi {
+  width: 100%;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.rail a:hover,
+.rail .mucdi:hover {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+.rail a[aria-current='page'],
+.rail .mucdi[aria-current='page'] {
+  background: var(--panel-2);
+  color: var(--ink);
+  font-weight: 500;
+}
+.rail .mucdi[aria-current='page'] .g {
+  color: var(--gold);
+}
+
+/* Mục chưa dựng bề mặt: KHÔNG phải nút, và phải thấy ngay là không phải nút.
+   Ba kênh cùng nói một điều — chữ mờ hơn, nhãn "chưa dựng", và không có trạng
+   thái hover.
+
+   Nhãn "chưa dựng" xuống DÒNG RIÊNG, không đứng cùng hàng với tên khu.
+   ĐO ĐƯỢC ở 1440px: rail rộng 194px, và đặt nhãn đó cùng hàng thì nó lấy 54px,
+   khiến "Kiểm định" bị cắt thành "Kiểm ...", "Hàng chờ viết lại" thành
+   "Hàng ...", "Văn phong" thành "Văn pho...". Đúng cái lỗi cột cố định cắt nhãn
+   tiếng Việt — và ở đây nó cắt mất chính TÊN của khu, tức phần mang tin, để
+   chừa chỗ cho phần chú thích. */
+.rail .chuadung {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  grid-template-areas:
+    'g nhan n'
+    'x tag tag';
+  gap: 3px 9px;
+  align-items: center;
+  color: var(--ink-3);
+  cursor: default;
+}
+.rail .chuadung .g {
+  grid-area: g;
+}
+.rail .chuadung .nhan {
+  grid-area: nhan;
+}
+/* Ô số vẫn hiện ở mục chưa dựng — con số là tin vận hành và nó đúng dù bề mặt
+   chưa có. */
+.rail .chuadung .n {
+  grid-area: n;
+  margin-left: 0;
+}
+.rail .chuadung .tag {
+  grid-area: tag;
+  justify-self: start;
+  font: 400 9.5px/1 var(--ui);
+  color: var(--ink-3);
+  border: 1px dashed var(--line);
+  border-radius: 3px;
+  padding: 3px 5px;
+}
+.rail .g {
+  width: 14px;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 12px;
+  flex: none;
+}
+.rail a[aria-current='page'] .g {
+  color: var(--gold);
+}
+.rail .nhan {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rail .n {
+  margin-left: auto;
+  font: 400 11px var(--mono);
+  color: var(--ink-3);
+  flex: none;
+}
+.rail .n.warn {
+  color: var(--amber);
+}
+
+/* ══ canvas ═══════════════════════════════════════════════════════════ */
+
+.canvas {
+  grid-area: canvas;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 15px 18px 11px;
+  border-bottom: 1px solid var(--line-2);
+  flex-wrap: wrap;
+}
+.head h1 {
+  font: 600 14.5px/1.2 var(--ui);
+  margin: 0;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.head .sub {
+  color: var(--ink-3);
+  font-size: 12px;
+  min-width: 0;
+}
+
+/* ── bộ chọn mức xem ── */
+/* Đẩy sang phải trong .head như bản mockup. `flex-wrap` của .head lo phần màn
+   hình hẹp: bộ chọn xuống dòng riêng thay vì nén tiêu đề. */
+.mucxem {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+}
+.mucxem .lbl {
+  color: var(--ink-3);
+  font-size: 11px;
+  padding: 0 6px 0 4px;
+  white-space: nowrap;
+}
+.mucxem button {
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  color: var(--ink-3);
+  font: 400 11.5px var(--ui);
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.mucxem button:hover:not(:disabled):not([aria-pressed='true']) {
+  color: var(--ink-2);
+}
+.mucxem button[aria-pressed='true'] {
+  background: var(--raised);
+  color: var(--ink);
+  font-weight: 500;
+}
+/* Mức chưa mở: nét đứt nói "không phải bạn bấm sai, dữ liệu chưa có". */
+.mucxem button:disabled {
+  color: var(--ink-3);
+  border: 1px dashed var(--line-2);
+  padding: 3px 9px;
+  cursor: not-allowed;
+}
+
+.sect {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line-2);
+  min-width: 0;
+}
+.sect:last-child {
+  border-bottom: 0;
+}
+.sect > h2 {
+  font: 500 11.5px/1.4 var(--ui);
+  color: var(--ink-3);
+  margin: 0 0 12px;
+}
+.sect > h2 .phu {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+/* ── dải việc tiếp theo ───────────────────────────────────────────────────
+   Xem ViecTiepTheo.tsx cho lý do dải này tồn tại.
+
+   Nó trông như một hàng của thanh transport, không như một tấm thẻ marketing: cùng nền
+   `--panel`, cùng đường kẻ, cùng đốm trạng thái. Đó là chủ ý — `PRODUCT.md` chốt giọng
+   "thiết bị công nghiệp", nên câu chỉ đường phải đến từ CÙNG cái máy đang chạy dây chuyền,
+   không từ một lớp hướng dẫn dán lên trên. */
+.vtt {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 18px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line-2);
+  min-width: 0;
+}
+
+/* Đốm trạng thái: cùng bộ ký hiệu với `.slate .dot` và `.kbd.live .dot` ở thanh trên —
+   vàng là đang chạy, lam-lục là đã nghiệm thu, xám là đứng yên. Một bộ quy ước cho cả
+   bề mặt, không phải một bộ riêng cho dải này. */
+.vttDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+  margin-top: 6px;
+  background: var(--line);
+}
+.vttDot.chay {
+  background: var(--gold);
+}
+.vttDot.xong {
+  background: var(--teal);
+}
+.vttDot.dap {
+  animation: dapnhip 2.2s var(--ease) infinite;
+}
+
+.vttChu {
+  min-width: 0;
+  flex: 1;
+}
+.vttCau {
+  margin: 0;
+  font: 500 13px/1.5 var(--ui);
+  color: var(--ink);
+}
+/* Lời chỉ đường: `--ink-3` là SÀN (4,9:1), và 1.72 là sàn dòng của DESIGN.md cho văn
+   nhiều dấu — câu này dài và mang đầy dấu tiếng Việt. */
+.vttHint {
+  margin: 3px 0 0;
+  font: 400 12px/1.72 var(--ui);
+  color: var(--ink-3);
+  max-width: 82ch;
+}
+
+/* Dòng "đang làm gì": vai · bước · tình trạng · đường tới dòng sự kiện.
+   Mono cho tên bước vì đó là mã của engine (`draft_chapter`), không phải chữ để đọc — cùng
+   quy ước với ô `công đoạn` ở transport và với `.picklist .ma`. */
+.vttLive {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 6px 0 0;
+  font: 400 11.5px/1.6 var(--ui);
+  color: var(--ink-3);
+}
+.vttLive b {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.vttLive .b {
+  font: 400 11px var(--mono);
+  color: var(--gold);
+}
+.vttNeo {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--ink-2);
+  font: 400 11.5px var(--ui);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.vttNeo:hover {
+  color: var(--ink);
+}
+
+.vttNut {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Nút chính của dải — hành vi ĐIỀU HƯỚNG, nên nó không được trông như nút chạy.
+   `.dkChay` ở transport là nút tiêu tiền và nó mang nền vàng; nút này mang nền trung tính
+   nổi để hai loại hành vi không bị học lẫn thành một. */
+.vttChinh {
+  height: 28px;
+  padding: 0 13px;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink);
+  font: 500 12.5px var(--ui);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.16s var(--ease), border-color 0.16s var(--ease);
+}
+.vttChinh:hover {
+  background: color-mix(in oklch, var(--gold) 14%, var(--raised));
+  border-color: color-mix(in oklch, var(--gold) 45%, var(--line));
+}
+
+.vttPhu {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink-2);
+  font: 400 12.5px var(--ui);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.16s var(--ease), color 0.16s var(--ease);
+}
+.vttPhu:hover {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+/* Việc tồn: amber, cùng nghĩa amber ở mọi chỗ khác. */
+.vttCanh {
+  color: var(--amber);
+  border-color: color-mix(in oklch, var(--amber) 34%, var(--line));
+}
+.vttCanh:hover {
+  color: var(--amber);
+  background: color-mix(in oklch, var(--amber) 11%, var(--bg));
+}
+.vttCanh .ky {
+  font-size: 8px;
+}
+
+/* Màn hình hẹp: nút xuống dòng riêng và trải hết bề rộng thay vì nén cạnh chữ.
+   Ở 390px một hàng ngang chỉ còn ~150px cho hai nút, tức cả hai đều bị cắt nhãn — mà nhãn
+   ở đây LÀ nội dung ("Đọc từ chương 1" mất phần số là mất chỗ nó dẫn tới). */
+@media (max-width: 700px) {
+  .vtt {
+    flex-wrap: wrap;
+    padding: 11px 12px;
+  }
+  .vttNut {
+    width: 100%;
+    justify-content: flex-start;
+    padding-left: 16px;
+  }
+}
+
+/* ── cảnh báo nhất quán của store ── */
+.canhbao {
+  margin: 0;
+  padding: 11px 18px;
+  background: color-mix(in oklch, var(--amber) 9%, var(--bg));
+  border-bottom: 1px solid color-mix(in oklch, var(--amber) 26%, var(--line-2));
+}
+.canhbao h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 6px;
+  font: 500 11.5px/1.4 var(--ui);
+  color: var(--amber);
+}
+.canhbao ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+.canhbao li {
+  font-size: 12.5px;
+  /* 1.72, sàn của DESIGN.md:84. Câu cảnh báo do engine/mô hình sinh ra nên không
+     kiểm soát được nó mang dấu gì — đúng lý do sàn tồn tại.
+     ĐO ĐƯỢC bằng TextMetrics của Inter đang render, ở 12.5px: ca xấu nhất
+     (`…ộng` / `Ầ`) để lại khe mực 3,49px ở 1.6 và 4,99px ở 1.72. Nói cho đúng:
+     3,49px KHÔNG phải ca chạm dấu như nhãn phụ 10.5px (0,31px) — đây là chỗ lệch
+     chuẩn, sửa để một sàn đã viết ra thì được thi hành ở mọi nơi, không phải để
+     cứu một va chạm sắp xảy ra. */
+  line-height: 1.72;
+  color: var(--ink-2);
+}
+
+/* ── trục sản xuất ── */
+/* Cột nhãn 96px, không phải 74px của bản mockup: "Cung, tập 3" bị ngắt hai
+   dòng ở 74px. Nhãn tiếng Việt dài hơn tiếng Anh 20–30%. */
+/* minmax(0, 1fr) chứ không phải 1fr: cột `1fr` không co xuống dưới min-content,
+   nên sáu khối tập (mỗi khối min-width 72px = 432px) từng kéo giãn cả lưới và
+   làm trục + bảng bị cắt mất bên phải ở 400px — cắt mà không cuộn được. */
+.lanes {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 6px 12px;
+  align-items: center;
+  min-width: 0;
+}
+.lane-lbl {
+  font: 400 11.5px/1.5 var(--ui);
+  color: var(--ink-3);
+  text-align: right;
+}
+/* Ô lane chương cao hơn hai ô trên (vạch 20px + thước + dòng nói về cửa sổ), nên
+   nhãn neo lên đầu ô rồi bù 1px để căn giữa so với DẢI VẠCH, không so với cả ô.
+   ĐO ĐƯỢC ở 400px: căn giữa cả ô đẩy chữ "Chương" xuống 57px so với dải vạch,
+   ngang hàng với dòng chú thích — nó đọc thành nhãn của dòng chú thích. */
+.lane-lbl.neo-dau {
+  align-self: start;
+  padding-top: 1px;
+}
+.lane {
+  display: flex;
+  gap: 3px;
+  height: 24px;
+  min-width: 0;
+}
+
+.blk {
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 6px;
+  min-width: var(--khoi-min);
+  font: 500 10.5px/1 var(--mono);
+  color: var(--tren-mau);
+  overflow: hidden;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  cursor: default;
+}
+.blk .ky {
+  font-family: var(--ui);
+  font-size: 9px;
+  flex: none;
+}
+.blk .idx {
+  flex: none;
+}
+.blk .txt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.blk.done {
+  background: color-mix(in oklch, var(--teal) 66%, var(--panel));
+}
+.blk.running {
+  background: var(--gold);
+}
+.blk.planned {
+  background: var(--panel-2);
+  color: var(--ink-3);
+  border-color: var(--line);
+}
+/* Vân sọc chéo phân biệt CHƯA QUY HOẠCH với ĐÃ QUY HOẠCH NHƯNG CHƯA CHẠY —
+   hai trạng thái khác nhau về bản chất trong mô hình cuốn-vòng-cung hai tầng. */
+.blk.unplanned {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--panel-2) 0 4px,
+    var(--panel) 4px 8px
+  );
+  color: var(--ink-3);
+  border-color: var(--line-2);
+}
+/* Khối chưa biết phạm vi: viền nét đứt nói rõ "độ rộng này không có nguồn". */
+.blk.chuabiet {
+  border-style: dashed;
+  border-color: var(--line);
+}
+
+/* lane chương: 1 vạch = 1 chương */
+.chlane {
+  display: flex;
+  height: 20px;
+  min-width: 0;
+}
+.chlane i {
+  flex: 1 1 0;
+  min-width: 0;
+  background: var(--panel-2);
+}
+.chlane i.done {
+  background: color-mix(in oklch, var(--teal) 62%, var(--panel));
+}
+.chlane i.running {
+  background: var(--gold);
+}
+.chlane i.rewrite {
+  background: color-mix(in oklch, var(--amber) 68%, var(--panel));
+}
+.chlane i.gate {
+  background: var(--violet);
+}
+
+/* Mốc đặt theo TỈ LỆ vị trí thật, không chia đều ô flex.
+   Bản trước cho mỗi mốc `flex: 1 1 0`, nên với bốn mốc [1, 100, 200, 300] mốc
+   "100" nằm ở giữa ô thứ hai = 37,5% bề rộng, trong khi chương 100 của 300 nằm
+   ở 33,1%. Sai 4,4% — trên lane 810px là 36px, tức nhãn chỉ lệch hơn một khối
+   chương. Một cái nhãn chỉ sai chỗ tệ hơn không có nhãn.
+
+   Mốc đầu/cuối dùng lớp ĐẶT TAY (`.dau`/`.cuoi`), không dùng
+   `:first-child`/`:last-child`: cùng lý do drop cap không bám vào bộ chọn vị
+   trí — bộ chọn vị trí khớp theo từng phần tử cha và sẽ trúng chỗ không ngờ khi
+   cấu trúc đổi. */
+.ruler {
+  position: relative;
+  height: 15px;
+  margin-top: 5px;
+  font: 400 10px var(--mono);
+  color: var(--ink-3);
+}
+.ruler span {
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+.ruler span.dau {
+  transform: none;
+}
+.ruler span.cuoi {
+  transform: translateX(-100%);
+}
+
+.keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 11px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+.keys span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.keys b {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  flex: none;
+}
+.keys .ky {
+  font-size: 9px;
+}
+
+/* ── bảng chương ── */
+/* Bảng có 6 cột không nén được (số liệu mono + nhãn trạng thái). Ở màn hình hẹp
+   nó phải cuộn ngang trong khung riêng, chứ không đẩy tràn cả canvas: ở 400px
+   các cột "Số từ" và "Thời lượng" từng bị cắt mất hẳn, không cách nào xem. */
+.bangwrap {
+  overflow-x: auto;
+  max-width: 100%;
+  /* Thanh cuộn mảnh nhưng THẤY ĐƯỢC, cùng lý do đã ghi ở rail và transport: cuộn
+     được mà không có dấu hiệu nào thì người dùng kết luận bảng chỉ có mấy cột
+     đầu. ĐO ĐƯỢC ở 400px trên khu Tổ sản xuất — cột Model nằm ngoài mép phải và
+     không có gì trên bề mặt nói rằng nó tồn tại. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.bangwrap::-webkit-scrollbar {
+  height: 4px;
+}
+.bangwrap::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 2px;
+}
+.bang {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.bang thead th {
+  text-align: left;
+  font: 500 11px/1.4 var(--ui);
+  color: var(--ink-3);
+  padding: 0 10px 8px;
+  border-bottom: 1px solid var(--line-2);
+  white-space: nowrap;
+}
+.bang thead th.num {
+  text-align: right;
+}
+.bang tbody td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line-2);
+  vertical-align: baseline;
+}
+.bang tbody tr {
+  transition: background 0.12s var(--ease);
+  cursor: pointer;
+}
+.bang tbody tr:hover {
+  background: var(--panel);
+}
+.bang tbody tr[aria-selected='true'] {
+  background: var(--panel-2);
+}
+/* Hàng chọn đánh dấu bằng inset box-shadow 1px, KHÔNG viền màu dày bên trái. */
+.bang tbody tr[aria-selected='true'] td:first-child {
+  box-shadow: inset 1px 0 0 var(--gold);
+}
+.bang tbody tr:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+}
+td.ch {
+  font: 500 12px var(--mono);
+  color: var(--ink-2);
+  width: 46px;
+}
+td.title {
+  font-weight: 400;
+  min-width: 140px;
+}
+td.title .draft {
+  color: var(--ink-3);
+  font-style: italic;
+}
+td.num {
+  text-align: right;
+  font: 400 12px var(--mono);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+td.who {
+  color: var(--ink-2);
+  font-size: 12px;
+  white-space: nowrap;
+}
+/* Giá trị không có nguồn: không bao giờ là 0, luôn là gạch ngang. */
+.trong {
+  color: var(--ink-3);
+}
+
+/* ── đốm + ký hiệu + chữ: ba kênh cho một trạng thái ── */
+.st {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.st .ky {
+  font-size: 9px;
+  line-height: 1;
+  flex: none;
+}
+.st.teal {
+  color: var(--teal);
+}
+.st.gold {
+  color: var(--gold);
+}
+.st.amber {
+  color: var(--amber);
+}
+.st.red {
+  color: var(--red);
+}
+.st.violet {
+  color: var(--violet);
+}
+.st.muted {
+  color: var(--ink-3);
+}
+/* Nhịp đập là chuyển động duy nhất mang thông tin: nó phân biệt ĐANG chạy với
+   ĐÃ DỪNG ở trạng thái này — điều ảnh tĩnh không nói được.
+
+   Vì thế nó bám vào `.dap`, KHÔNG bám vào tông màu. Tông `gold` chỉ nói công
+   đoạn đã được GHI VÀO STORE, không nói máy còn sống: một chương chết dở giữa
+   lúc soạn giữ `stage: drafting` mãi mãi.
+   ĐO ĐƯỢC ở bản trước, cùng một khung hình: transport `○ đang nghỉ`, thanh trên
+   `0 đang chạy`, mà hàng chương 3 `▶ đang soạn bản thảo` vẫn đập 2.2s vô hạn —
+   engine chết đọc ra thành khỏe, đúng thứ PRODUCT.md:27 lấy làm tiêu chí.
+   `.dap` chỉ được gắn từ một sự thật về liveness; xem lib/song.ts để biết sự
+   thật đó là gì và vì sao nó không thể lệch với thanh transport.
+   `gold` vẫn ở trong bộ chọn: nhịp đập không bao giờ được xuất hiện trên tông
+   khác, vì vàng là màu tín hiệu duy nhất (DESIGN.md:44). Cùng khuôn với
+   `.trans .ky.dap` ở thanh transport. */
+.st.gold.dap .ky {
+  animation: dapnhip 2.2s var(--ease) infinite;
+}
+@keyframes dapnhip {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ── nhật ký phán quyết ── */
+.log {
+  display: grid;
+  gap: 0;
+}
+.entry {
+  display: grid;
+  grid-template-columns: 52px 136px 1fr auto;
+  gap: 12px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line-2);
+  align-items: baseline;
+  font-size: 12.5px;
+}
+.entry:last-child {
+  border-bottom: 0;
+}
+.entry:hover {
+  background: var(--panel);
+}
+.entry time {
+  font: 400 11.5px var(--mono);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.entry .kind {
+  min-width: 0;
+}
+.entry .kind .ma {
+  display: block;
+  font: 400 11.5px/1.5 var(--mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.entry .kind .giai {
+  display: block;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+.entry .kind.violet .ma {
+  color: var(--violet);
+}
+.entry .kind.teal .ma {
+  color: var(--teal);
+}
+.entry .kind.red .ma {
+  color: var(--red);
+}
+.entry .kind.amber .ma {
+  color: var(--amber);
+}
+.entry .kind.muted .ma {
+  color: var(--ink-2);
+}
+.entry .why {
+  color: var(--ink-2);
+  line-height: 1.72;
+  min-width: 0;
+}
+.entry .why b {
+  color: var(--ink);
+  font-weight: 500;
+}
+.entry .why .loi {
+  display: block;
+  margin-top: 3px;
+  color: var(--red);
+  font: 400 11.5px/1.6 var(--mono);
+  word-break: break-word;
+}
+.entry .why .vao {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-3);
+  font-size: 11.5px;
+}
+.entry .replay {
+  font: 400 11.5px var(--ui);
+  color: var(--ink-3);
+  background: none;
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.14s var(--ease), border-color 0.14s var(--ease);
+}
+.entry .replay:hover {
+  color: var(--ink);
+  border-color: var(--line);
+}
+.entry .replay[hidden] {
+  display: none;
+}
+
+.thoBanQuyet {
+  margin: 8px 0 0;
+  padding: 10px 11px;
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  font: 400 11.5px/1.6 var(--mono);
+  color: var(--ink-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+/* ── dòng sự kiện trực tiếp ── */
+/* Cửa sổ cuộn riêng, KHÔNG để danh sách tự dài ra: engine đang chạy phát sự
+   kiện liên tục, và một danh sách không chặn sẽ đẩy ô can thiệp xuống ngoài
+   tầm với rồi dồn lại cả canvas mỗi lần có sự kiện mới. ĐO ĐƯỢC khi thử: sau
+   ~40 sự kiện, canvas cao 1890px và ô can thiệp bị transport che mất. */
+.dong {
+  display: grid;
+  gap: 0;
+  max-height: 216px;
+  overflow-y: auto;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+}
+.dong .sk {
+  display: grid;
+  grid-template-columns: 52px 84px 1fr;
+  gap: 12px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line-2);
+  align-items: baseline;
+  font-size: 12.5px;
+}
+.dong .sk:last-child {
+  border-bottom: 0;
+}
+.dong time {
+  font: 400 11.5px var(--mono);
+  color: var(--ink-3);
+}
+.dong .loai {
+  font: 400 11px var(--mono);
+  color: var(--violet);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dong .sk.loi .loai {
+  color: var(--red);
+}
+.dong .tt {
+  color: var(--ink-2);
+  line-height: 1.72;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.dong .tt .vai {
+  color: var(--ink-3);
+}
+
+/* ── ô can thiệp ── */
+.steerbox {
+  display: flex;
+  gap: 9px;
+  align-items: stretch;
+}
+.steerbox input {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 8px 11px;
+  color: var(--ink);
+  font: 400 13px/1.5 var(--ui);
+}
+.steerbox input::placeholder {
+  color: var(--ink-3); /* cùng ngưỡng 4.5:1 như thân bài */
+  opacity: 1;
+}
+.steerbox input:disabled {
+  background: var(--bg);
+  border-style: dashed;
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+.steerbox button {
+  background: var(--gold);
+  color: var(--tren-mau);
+  border: 0;
+  border-radius: var(--r);
+  padding: 8px 15px;
+  font: 500 12.5px var(--ui);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter 0.16s var(--ease);
+}
+.steerbox button:hover:not(:disabled) {
+  filter: brightness(1.07);
+}
+.steerbox button:disabled {
+  background: var(--panel-2);
+  color: var(--ink-3);
+  border: 1px dashed var(--line);
+  cursor: not-allowed;
+}
+/* ── dòng "n chương ngoài tập 3" ── */
+/* Phép lọc phải nói ra mình ẩn gì. Khi phần bị ẩn còn VIỆC TỒN thì dòng này đổi
+   sang tông cần-chú-ý kèm ký hiệu, vì lúc đó nó không còn là ghi chú mà là tin
+   vận hành: có chương chờ viết lại nằm ngoài tầm mắt. */
+.phamvihint {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  line-height: 1.72;
+  color: var(--ink-3);
+  max-width: 74ch;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.phamvihint.con-ton {
+  color: var(--amber);
+}
+.phamvihint .ky {
+  font-size: 9px;
+  flex: none;
+}
+.phamvihint button {
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 0;
+  color: var(--ink-2);
+  font: 400 11.5px var(--ui);
+  cursor: pointer;
+  transition: color 0.14s var(--ease), border-color 0.14s var(--ease);
+}
+.phamvihint button:hover {
+  color: var(--ink);
+  border-bottom-color: var(--ink-3);
+}
+
+.steerhint {
+  margin: 9px 0 0;
+  font-size: 11.5px;
+  line-height: 1.72;
+  color: var(--ink-3);
+  max-width: 74ch;
+}
+.steerhint .vidu {
+  color: var(--ink-2);
+  font: 400 11.5px var(--mono);
+}
+
+/* ══ inspector ════════════════════════════════════════════════════════ */
+
+.insp {
+  grid-area: insp;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  overflow-y: auto;
+  min-width: 0;
+}
+.insp .ihead {
+  padding: 13px 14px 11px;
+  border-bottom: 1px solid var(--line-2);
+}
+.insp .ihead .no {
+  font: 400 11px var(--mono);
+  color: var(--ink-3);
+}
+.insp .ihead h2 {
+  font: 500 14px/1.4 var(--ui);
+  margin: 4px 0 6px;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.insp .ihead h2 .draft {
+  color: var(--ink-3);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 8px 10px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+.tabs button {
+  background: none;
+  border: 0;
+  border-bottom: 1.5px solid transparent;
+  color: var(--ink-3);
+  font: 400 12px var(--ui);
+  padding: 6px 9px;
+  cursor: pointer;
+  transition: color 0.14s var(--ease);
+}
+.tabs button:hover {
+  color: var(--ink-2);
+}
+.tabs button[aria-selected='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--gold);
+  font-weight: 500;
+}
+
+.ibody {
+  padding: 13px 14px 22px;
+}
+/* Ba khối cùng chứa component BanDuyet, nên chúng phải tạo cùng một môi trường
+   cho nó. Component vẽ <h3>/<dl>/.qcrow và KHÔNG biết mình đang rộng bao nhiêu;
+   nếu chỉ .ibody có luật h3 thì khu Kiểm định nhận h3 mặc định của trình duyệt —
+   32px đậm đen giữa một bề mặt 11px, và không có lỗi nào để bắt vì HTML vẫn
+   đúng. Thêm bề mặt mới mà quên thêm vào đây là gặp lại đúng lỗi đó. */
+.ibody h3,
+.duyetthan h3,
+.hangthan h3 {
+  font: 500 11px/1.4 var(--ui);
+  color: var(--ink-3);
+  margin: 0 0 9px;
+}
+/* h3 nào không phải cái đầu tiên cũng cần khoảng thở, không chỉ h3 liền h3:
+   ở đây h3 đi sau <dl> nên bộ chọn h3+h3 không với tới. */
+.ibody h3:not(:first-child),
+.duyetthan h3:not(:first-child),
+.hangthan h3:not(:first-child) {
+  margin-top: 20px;
+}
+.ibody .trong {
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--ink-3);
+  margin: 0;
+}
+
+/* Câu "chưa có gì" NẰM TRONG một section của canvas: section đã có padding
+   riêng nên không được dùng lại .ibody (padding của inspector), nếu không câu
+   đó thụt vào sâu hơn tiêu đề section ngay trên nó. */
+.trongSect {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--ink-3);
+  max-width: 74ch;
+}
+
+/* Cột nhãn 104px: 82px làm "Nhịp bắt buộc" ngắt hai dòng. */
+.kv {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  gap: 7px 10px;
+  margin: 0;
+  font-size: 12.5px;
+}
+.kv dt {
+  color: var(--ink-3);
+  line-height: 1.72;
+}
+.kv dd {
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.72;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.kv dd.m {
+  font: 400 12px/1.72 var(--mono);
+}
+
+.canh {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 5px;
+}
+.canh li {
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--ink-2);
+}
+
+/* kiểm định: hàng mảnh có kết luận, không phải thẻ điểm */
+
+/* Vạch phân cách thuộc CẢ CHIỀU (hàng + lời bình), không thuộc riêng cái hàng.
+   ĐO ĐƯỢC ở 1440px trên khu Kiểm định, và chỉ ảnh mới bắt được vì HTML đã đúng
+   thứ tự từ đầu: khi vạch nằm dưới `.qcrow`, lời bình rơi xuống PHÍA SAU vạch và
+   đọc ra như thể nó thuộc chiều kế tiếp — "Ba điều không làm khớp với hành vi
+   chương 1" đứng ngay trên hàng "nhân vật" nên trông như lời bình của nhân vật,
+   trong khi nó là của "nhất quán". Bảy chiều liền nhau thì mọi lời bình đều bị
+   gán sai một bậc.
+
+   `:has(> .qcrow)` chứ không thêm class: cùng cấu trúc này còn nằm ở khu lề của
+   bề mặt đọc (DocTruyen dựng lại nó bằng chính các lớp đó), nên sửa bằng bộ chọn
+   cấu trúc thì cả hai chỗ hết lỗi cùng lúc — thêm class chỉ chữa được chỗ nào
+   mình sửa tay. */
+div:has(> .qcrow) {
+  border-bottom: 1px solid var(--line-2);
+  padding-bottom: 6px;
+}
+.qcrow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 6px 0 0;
+  font-size: 12.5px;
+  align-items: baseline;
+}
+.qcrow .ten {
+  line-height: 1.72;
+}
+.qcrow .v {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.qcrow .v .ky {
+  font-size: 9px;
+}
+.qcrow .v .diem {
+  font: 400 11.5px var(--mono);
+  color: var(--ink-3);
+}
+.qcrow .v.teal {
+  color: var(--teal);
+}
+.qcrow .v.amber {
+  color: var(--amber);
+}
+.qcrow .v.red {
+  color: var(--red);
+}
+.qcrow .v.muted {
+  color: var(--ink-3);
+}
+.qcnote {
+  margin: 5px 0 0;
+  font-size: 12px;
+  color: var(--ink-3);
+  line-height: 1.72;
+}
+.qcnote q {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--ink-2);
+}
+
+.vande {
+  border-bottom: 1px solid var(--line-2);
+  padding: 9px 0;
+}
+.vande:last-of-type {
+  border-bottom: 0;
+}
+.vande .dau {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.vande .loai {
+  font: 400 11px var(--mono);
+  color: var(--violet);
+}
+.vande .muc {
+  font-size: 11px;
+}
+.vande .muc.amber {
+  color: var(--amber);
+}
+.vande .muc.red {
+  color: var(--red);
+}
+.vande .muc.muted {
+  color: var(--ink-3);
+}
+.vande .ch {
+  font: 400 11px var(--mono);
+  color: var(--ink-3);
+  margin-left: auto;
+}
+.vande p {
+  margin: 5px 0 0;
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--ink-2);
+}
+.vande .dc {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--ink-2);
+}
+.vande .dx {
+  color: var(--ink-3);
+}
+
+/* ── văn tiểu thuyết: serif là dấu hiệu ngữ nghĩa ── */
+.excerpt {
+  margin: 0;
+  padding: 11px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  font: 400 13px/1.72 var(--serif);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+/* Khổ đọc dài: 1.78, cao hơn 1.72 của trích đoạn ngắn. */
+.banthao {
+  padding: 13px 14px 26px;
+}
+.banthao .doan {
+  margin: 0 0 1.1em;
+  font: 400 13px/1.78 var(--serif);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.banthao .doan:last-child {
+  margin-bottom: 0;
+}
+/* Drop cap bám vào MỘT lớp đặt tay, không bao giờ vào bộ chọn vị trí: ở bản
+   mockup `:first-of-type` khớp cả dòng thông tin và biến "2.980 từ" thành chữ
+   "2." khổng lồ. line-height 0.94 chứ không phải 0.86 — "Ấ", "Ế", "Ộ", "Ữ" cao
+   hơn Latin trơn và bị cắt ngọn. Lỗi này ẩn khi chương mở bằng "Đêm" vì "Đ"
+   không có dấu trên, nên phải chừa chỗ ngay từ đầu. */
+.banthao .doan.mocua::first-letter {
+  float: left;
+  font-size: 2.9em;
+  line-height: 0.94;
+  padding: 0.04em 0.09em 0 0;
+  color: var(--ink);
+  font-weight: 400;
+}
+
+.docthem {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 7px 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink-2);
+  font: 400 12px var(--ui);
+  cursor: pointer;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.docthem:hover {
+  background: var(--raised);
+  color: var(--ink);
+}
+
+/* ══ transport ════════════════════════════════════════════════════════ */
+
+.trans {
+  grid-area: trans;
+  display: flex;
+  align-items: stretch;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  font: 400 11.5px var(--ui);
+  color: var(--ink-2);
+  padding: 0 4px;
+  /* XUỐNG DÒNG, không cuộn ngang — DESIGN.md:108 "luôn hiện, không cuộn mất".
+     Không đặt sau một điểm ngắt: bề rộng nội dung phụ thuộc DỮ LIỆU (944px khi
+     mọi số là "—", 1253px khi phiên đang chạy có số thật), nên mọi điểm ngắt cố
+     định đều cắt mất `đã chạy` ở nửa dải bên trên nó. Xem chú thích `.khung`.
+
+     `overflow-x: auto` còn lại là lưới an toàn cho ca bệnh lý duy nhất mà xuống
+     dòng không cứu được: MỘT ô rộng hơn cả khung. Bình thường không có thanh
+     cuộn nào vì `scrollWidth === clientWidth`. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: wrap;
+  scrollbar-width: none;
+}
+.trans::-webkit-scrollbar {
+  display: none;
+}
+@media (max-width: 1240px) {
+  /* ⚠ Phần thanh cuộn dưới đây ĐANG NGỦ và cố ý giữ lại. Từ khi transport
+     `flex-wrap: wrap` ở mọi bề rộng, `scrollWidth === clientWidth` nên không có
+     thanh cuộn nào hiện ra — đã đo ở 365/390/901/1024/1240/1359/1440px, tràn 0px
+     ở tất cả.
+     GIỮ vì còn đúng MỘT ca xuống dòng không cứu được: một ô đơn lẻ rộng hơn cả
+     khung (ví dụ khung rất hẹp mà `.cell.buoc` đã ở mức chặn 216px). Lúc đó phải
+     THẤY được là còn nội dung bên phải, nếu không người dùng tưởng con số bị mất.
+     ĐỪNG đọc khối này thành "đường cuộn còn hoạt động", và cũng đừng dọn nó đi vì
+     "không bao giờ chạy" — nó là lưới an toàn, không phải mã chết.
+     Ngược lại, `.trans .token { display: none }` ở cuối khối thì KHÔNG ngủ: nó
+     vẫn chạy và vẫn cần. */
+  .trans {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+  }
+  .trans::-webkit-scrollbar {
+    display: block;
+    height: 4px;
+  }
+  .trans::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 2px;
+  }
+  .trans .cell {
+    padding: 0 9px;
+  }
+  /* ĐO ĐƯỢC ở 1240px: transport cần 1333px, tràn 93px, và ô cuối "đã chạy
+     6:12:04" bị cắt ngay ở mép phải. Ô ngữ cảnh là ô béo nhất (264px) và 110px
+     trong đó là cặp token phụ — bỏ nó đi thu lại nhiều hơn phần tràn, nên mọi
+     con số vận hành đều đọc được mà không phải cuộn ngang. Tỉ lệ % vẫn còn. */
+  .trans .token {
+    display: none;
+  }
+}
+/* `border-bottom` + `min-height` ở MỌI bề rộng, không chỉ dưới điểm ngắt: một hàng
+   đã xuống dòng là một hàng thật nên nó cần kẻ ngang của riêng nó — `border-right`
+   của ô cuối hàng dừng giữa khung và không chia được hàng nào. `min-height` để hàng
+   không bó sát chữ khi không còn chiều cao 30px của grid. Khi thanh vừa MỘT hàng,
+   kẻ dưới trùng mép đáy khung nên không thêm nét nào nhìn thấy được. */
+.trans .cell {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px;
+  border-right: 1px solid var(--line-2);
+  border-bottom: 1px solid var(--line-2);
+  min-height: 28px;
+  white-space: nowrap;
+  flex: none;
+}
+.trans .cell:last-child {
+  border-right: 0;
+}
+/* Ô công đoạn là ô DUY NHẤT có bề rộng không chặn: nội dung là câu mô tả tự do
+   từ dòng sự kiện ("soát nhất quán: không thấy xung đột"). ĐO ĐƯỢC ở 1240px:
+   ô này chiếm 324px và đẩy transport tràn 94px, cắt mất "đã chạy" — tức là một
+   câu mô tả dài làm mất con số vận hành. Chặn nó lại, câu đầy đủ vào chú giải. */
+.trans .cell.buoc {
+  /* ĐO ĐƯỢC ở 1240px: nội dung ô này muốn 324px và làm transport tràn 94px, cắt
+     mất "đã chạy" — tức một câu mô tả dài làm mất con số vận hành. Ngân sách an
+     toàn ở 1240px là 324 − 94 = 230px, nên mức chặn hẹp chỉ áp dưới điểm ngắt.
+     Ở màn hình rộng thì có chỗ, và chặn 216px ở đó lại cắt cả tên bước ngắn
+     ("commit_ch…", "soát nhất…") — mất đúng phần mang tin mà không cần thiết. */
+  max-width: 300px;
+  min-width: 0;
+}
+@media (max-width: 1240px) {
+  .trans .cell.buoc {
+    max-width: 216px;
+  }
+}
+.trans .cell.buoc .m {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Ô `tổ` chặn theo ĐÚNG luật của `.cell.buoc` ở trên — 300px / 216px dưới 1240px.
+   Trước đây nó là ô duy nhất còn `max-width: none` trong khi `.cell.buoc` đã bị
+   chặn vì cùng một lý do, tức hai ô cùng thanh chạy hai luật khác nhau.
+   ĐO ĐƯỢC: `tổ gemini-2.5-pro` 122px · `tổ Writer · gemini-2.5-pro` 172px ·
+   `tổ Writer · gemini-2.5-flash-thinking` 229px. Nên 216px cho ca thường đi qua
+   nguyên vẹn và chỉ cắt tên model dài; 300px ở màn hình rộng vì ở đó có chỗ và
+   chặn 216px sẽ cắt cả những tên vừa đủ dài mà không cần thiết — cùng lập luận
+   đã viết cho `.cell.buoc`.
+   Giờ transport xuống dòng nên tên model dài không còn cắt mất con số nào; nó chỉ
+   đẩy thêm một hàng vì một lý do thuần trang trí, và `title` giữ lại câu đầy đủ. */
+.trans .cell.to {
+  max-width: 300px;
+  min-width: 0;
+}
+@media (max-width: 1240px) {
+  .trans .cell.to {
+    max-width: 216px;
+  }
+}
+.trans .cell.to .model {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+/* `margin-left: auto` gom nhóm số liệu về mép phải — nhưng nó CHỈ an toàn khi thanh
+   chắc chắn vừa MỘT hàng. Sau khi xuống dòng, auto margin ăn hết chỗ trống còn lại
+   của hàng nó đang nằm và biến chỗ đó thành một khoảng hở giữa hai ô cùng hàng —
+   đọc ra như thể có ô bị thiếu. ĐO ĐƯỢC: hở 48px ở 390px, và 186px ở 1024px với
+   số liệu thật (hàng 1 kết bằng `ngữ cảnh`, rồi hở, rồi `năng suất`).
+
+   Nên mặc định là 0, và chỉ bật lại từ 1360px — trên ngưỡng đó nội dung rộng nhất
+   đo được (1253px khi ẩn cặp token, ~1303px khi hiện) vẫn vừa một hàng, nên không
+   có hàng thứ hai nào để tạo hở. Dưới 1360px nhóm số liệu chảy liền sau `ngữ cảnh`
+   thay vì dạt phải: đổi lấy việc KHÔNG BAO GIỜ cắt mất con số, đúng thứ tự ưu tiên
+   mà DESIGN.md:108 đặt ra. */
+.trans .cell.push {
+  margin-left: 0;
+}
+@media (min-width: 1360px) {
+  .trans .cell.push {
+    margin-left: auto;
+  }
+}
+.trans .m {
+  font: 500 11.5px var(--mono);
+  color: var(--ink);
+}
+.trans .lbl {
+  color: var(--ink-3);
+}
+.trans .ky {
+  font-size: 9px;
+  color: var(--gold);
+}
+.trans .ky.teal {
+  color: var(--teal);
+}
+.trans .ky.muted {
+  color: var(--ink-3);
+}
+.trans .ky.dap {
+  animation: dapnhip 2.2s var(--ease) infinite;
+}
+.trans .warn {
+  color: var(--amber);
+}
+
+/* thước ngữ cảnh: thấy được chỗ nén sắp xảy ra, không chỉ một con số */
+.ctxbar {
+  width: 62px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--raised);
+  overflow: hidden;
+  position: relative;
+  flex: none;
+}
+.ctxbar i {
+  display: block;
+  height: 100%;
+  background: var(--amber);
+  border-radius: 3px;
+}
+.ctxbar::after {
+  content: '';
+  position: absolute;
+  left: 85%;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--red);
+}
+
+/* ══ trạng thái rỗng và lỗi ═══════════════════════════════════════════ */
+
+.trangtrong {
+  grid-area: canvas;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 13px;
+  max-width: 62ch;
+  padding: 0 18px;
+  margin: 0 auto;
+}
+.trangtrong h1 {
+  font: 600 16px/1.4 var(--ui);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.trangtrong p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.78;
+  color: var(--ink-2);
+}
+.trangtrong .goc {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 7px 10px;
+  align-items: baseline;
+  font-size: 12.5px;
+}
+.trangtrong .goc dt {
+  color: var(--ink-3);
+}
+.trangtrong .goc dd {
+  margin: 0;
+  font: 400 12px var(--mono);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.trangtrong .lenh {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  font: 400 12px/1.6 var(--mono);
+  color: var(--ink-2);
+  overflow-x: auto;
+}
+.trangtrong .loi {
+  color: var(--red);
+  font: 400 12.5px/1.72 var(--mono);
+  overflow-wrap: anywhere;
+}
+.trangtrong button {
+  padding: 7px 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink);
+  font: 400 12.5px var(--ui);
+  cursor: pointer;
+  transition: background 0.14s var(--ease);
+}
+.trangtrong button:hover {
+  background: var(--raised);
+}
+
+/* ══ bề mặt đọc bản thảo ══════════════════════════════════════════════ */
+
+/* Khổ đọc: ba con số và cả ba đều có lý do bằng chữ trong DESIGN.md.
+
+     70ch    — nằm giữa khoảng 65–75ch. Dài hơn thì mắt mất dòng khi nhảy về
+               đầu dòng sau; ngắn hơn thì nhịp ngắt dòng phá nhịp câu.
+     1.80    — DESIGN.md đặt sàn 1.72 cho văn bản và ≥ 1.78 riêng cho khổ đọc
+               dài. Dấu tiếng Việt xếp hai tầng: "ế ộ ữ ỗ" ăn khoảng trên, dấu
+               nặng ăn khoảng dưới, nên 1.5 làm dấu huyền dòng dưới chạm dấu
+               nặng dòng trên.
+     14.5px  — lớn hơn 13px của trích đoạn trong inspector. Trích đoạn là số
+               liệu để tra; đây là chỗ đọc liền mấy nghìn từ, và bước cỡ chữ
+               chính là chỗ nói ra sự khác nhau đó.
+
+   Serif là dấu hiệu ngữ nghĩa, không phải lựa chọn thẩm mỹ: thấy serif là thấy
+   văn của tác phẩm, không phải chữ của công cụ. */
+.khudoc .head {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: var(--bg);
+}
+
+.docnav {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+.docnav button {
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  color: var(--ink-2);
+  font: 400 11.5px var(--ui);
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.docnav button:hover:not(:disabled) {
+  background: var(--raised);
+  color: var(--ink);
+}
+.docnav button:disabled {
+  color: var(--ink-3);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+/* Ba cột: chọn chương · văn · bản duyệt.
+   Cột giữa `minmax(0, 1fr)` chứ không `1fr`: cột `1fr` không co xuống dưới
+   min-content, và một dòng dẫn chứng dài không ngắt được sẽ kéo giãn cả lưới rồi
+   đẩy cột bản duyệt ra ngoài mép phải. */
+/* Cột chọn chương 214px, không phải 186px. ĐO ĐƯỢC ở 1440px: 186px chỉ chừa
+   104px cho tiêu đề chương, nên "Người gác cầu đá" bị cắt thành "Người gác cầu
+   ..." và "Thư không người nhận" thành "Thư không ngư...". Cột giữa có dư chỗ —
+   khổ đọc 70ch chỉ ăn ~518px trong 704px sẵn có — nên 28px này lấy từ chỗ dư,
+   không lấy từ khổ đọc. */
+.doclayout {
+  display: grid;
+  grid-template-columns: 214px minmax(0, 1fr) 296px;
+  align-items: start;
+  min-width: 0;
+}
+
+/* ── cột chọn chương ── */
+.dsChuong {
+  border-right: 1px solid var(--line-2);
+  padding: 14px 10px 22px;
+  min-width: 0;
+  position: sticky;
+  top: 47px;
+}
+.dsChuong h2 {
+  font: 500 11px/1.4 var(--ui);
+  color: var(--ink-3);
+  margin: 0 0 8px;
+  padding: 0 6px;
+}
+.dsChuong ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+  max-height: calc(100dvh - 190px);
+  overflow-y: auto;
+}
+.dsChuong button {
+  display: grid;
+  grid-template-columns: 10px 26px 1fr;
+  align-items: baseline;
+  gap: 7px;
+  width: 100%;
+  padding: 6px 6px;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  color: var(--ink-2);
+  font: 400 12.5px var(--ui);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.dsChuong button:hover {
+  background: var(--panel);
+  color: var(--ink);
+}
+.dsChuong button[aria-current='true'] {
+  background: var(--panel-2);
+  color: var(--ink);
+  font-weight: 500;
+}
+.dsChuong .ky {
+  font-size: 9px;
+  line-height: 1;
+}
+.dsChuong .ky.teal {
+  color: var(--teal);
+}
+.dsChuong .ky.gold {
+  color: var(--gold);
+}
+.dsChuong .ky.amber {
+  color: var(--amber);
+}
+.dsChuong .ky.muted {
+  color: var(--ink-3);
+}
+.dsChuong .so {
+  font: 400 11.5px var(--mono);
+  color: var(--ink-3);
+  text-align: right;
+}
+/* Tiêu đề chương NGẮT DÒNG chứ không cắt bằng ellipsis.
+   ĐO ĐƯỢC ở 1440px với cột 214px: "Người gác cầu đá" (105px) và "Tiếng chuông
+   thứ ba" (120px) vừa, nhưng "Thư không người nhận" cần 137px trong 132px sẵn có
+   → bị cắt thành "Thư không người n...".
+   Nới cột thêm nữa là chạy theo chuỗi dài nhất mãi mãi — tiêu đề chương do mô
+   hình đặt, không có giới hạn trên. Cho ngắt hai dòng thì cột đứng yên và không
+   tiêu đề nào bị mất chữ. */
+.dsChuong .ten {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  /* 1.72, sàn của DESIGN.md:84 — và chính chú thích trên đã nói vì sao ca xấu
+     nhất chắc chắn tới: tiêu đề chương do MÔ HÌNH đặt, không có giới hạn trên,
+     và rule này cố ý cho nó ngắt hai dòng.
+     ĐO ĐƯỢC bằng TextMetrics của Inter đang render: ở 1.45, dòng trên kết bằng
+     `ộng` và dòng dưới mở bằng `Ấ` để lại khe mực 1,61px; ở 1.72 là 4,99px.
+     Hôm nay fixture chưa chạm dấu ("Thư không người / nhận" còn 5,92px), nhưng
+     một tiêu đề có dấu hai tầng đúng chỗ ngắt là chuyện thời gian.
+     Hộp clamp hai dòng cao thêm 6,8px. */
+  line-height: 1.72;
+  overflow-wrap: break-word;
+}
+.dsChuong .ten em {
+  font-style: italic;
+  color: var(--ink-3);
+}
+.dsChuong .trong {
+  margin: 0;
+  padding: 0 6px;
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--ink-3);
+}
+
+/* ── cột văn ── */
+.khoDocWrap {
+  padding: 22px 30px 40px;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+.khoDoc {
+  width: 100%;
+  max-width: 70ch;
+  min-width: 0;
+}
+.chuongdau {
+  margin: 0 0 24px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line-2);
+}
+.chuongdau .no {
+  font: 400 11px var(--mono);
+  color: var(--ink-3);
+}
+.chuongdau h2 {
+  /* Tiêu đề chương là chữ của TÁC PHẨM nên nó mang serif, cùng họ với thân bài
+     ngay dưới. Nhãn "Chương 1" phía trên là chữ của công cụ nên vẫn là mono —
+     hai vai khác nhau, hai họ chữ khác nhau. */
+  font: 400 22px/1.32 var(--serif);
+  margin: 6px 0 0;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+.chuongdau h2 .draft {
+  color: var(--ink-3);
+  font-style: italic;
+}
+.chuongdau .chiso {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 9px;
+  font-size: 12px;
+  color: var(--ink-3);
+  flex-wrap: wrap;
+}
+.chuongdau .chiso .m {
+  font: 400 12px var(--mono);
+}
+
+.khoDoc .doan {
+  margin: 0 0 1.05em;
+  font: 400 14.5px/1.8 var(--serif);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.khoDoc .doan:last-child {
+  margin-bottom: 0;
+}
+/* Drop cap bám vào MỘT lớp đặt tay, không bao giờ vào bộ chọn vị trí:
+   `:first-of-type` khớp theo từng phần tử cha nên nó trúng cả dòng thông tin và
+   từng biến "2.980 từ" thành chữ "2." khổng lồ.
+
+   line-height 0.94, KHÔNG phải 0.86 — "Ế", "Ộ", "Ữ", "Ấ" cao hơn Latin trơn và
+   bị cắt ngọn. Lỗi này ẩn khi chương mở bằng "Đêm" vì "Đ" không có dấu trên,
+   nên phải chừa chỗ ngay từ đầu.
+
+   Lớp `mocua` còn được gắn CÓ ĐIỀU KIỆN ở phía JS: đoạn mở đầu bằng gạch đầu
+   dòng thoại ("— Có người dưới đó") thì không có drop cap, vì phóng to một dấu
+   gạch ngang lên ba dòng chỉ ra một vệt đen. */
+.khoDoc .doan.mocua::first-letter {
+  float: left;
+  font-size: 3em;
+  line-height: 0.94;
+  padding: 0.04em 0.1em 0 0;
+  color: var(--ink);
+  font-weight: 400;
+}
+
+/* ── khu lề: bản duyệt của Editor ── */
+/* Đây là thứ phân biệt studio với một trình đọc truyện. Nó nằm CẠNH văn, không
+   nằm ở trang khác: người vận hành đọc để kiểm, nên dẫn chứng phải ở ngay cạnh
+   câu bị nêu. Dùng lại đúng các lớp của D (.qcrow, .vande, .kv). */
+.benle {
+  border-left: 1px solid var(--line-2);
+  padding: 22px 16px 40px;
+  min-width: 0;
+  background: color-mix(in oklch, var(--panel) 55%, var(--bg));
+}
+.benle h3 {
+  font: 500 11px/1.4 var(--ui);
+  color: var(--ink-3);
+  margin: 0 0 9px;
+}
+.benle h3:not(:first-child) {
+  margin-top: 20px;
+}
+/* h4 cần khoảng thở phía trên: nó luôn đi SAU một <dl> hoặc một danh sách, và
+   không có margin-top thì "Cảnh trong chương" dính vào giá trị cuối của nhóm
+   trên rồi đọc như thể bốn cảnh đó là bốn "kiểu móc cuối". */
+.benle h4 {
+  font: 500 11px/1.4 var(--ui);
+  color: var(--ink-3);
+  margin: 15px 0 7px;
+}
+.benle .trong {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--ink-3);
+}
+/* ĐO ĐƯỢC ở 1440px: cột nhãn 78px làm "Kiểu móc cuối" ngắt thành hai dòng
+   ("Kiểu móc" / "cuối") trong khu lề rộng 296px. Nhãn tiếng Việt dài hơn tiếng
+   Anh 20–30%, và 92px là bề rộng thật của nhãn dài nhất ở đây cộng chỗ thở. */
+.kvle {
+  grid-template-columns: 92px 1fr;
+  font-size: 12px;
+}
+.canhle {
+  padding-left: 17px;
+}
+.canhle li {
+  font-size: 12px;
+  line-height: 1.72;
+}
+
+/* Điểm ngắt riêng của bề mặt đọc, KHÔNG phải điểm ngắt của khung — và hai con số
+   này TÍNH RA từ khổ đọc, không chọn theo cảm giác.
+
+   Ràng buộc: khổ đọc phải giữ trong khoảng 65–75ch. ĐO ĐƯỢC: 70ch của Noto Serif
+   14.5px là 574px, và khoảng đệm hai bên cột văn là 60px.
+
+   1320px — dưới mức này khu lề xuống dưới văn.
+     Ba cột cần: 214 (chọn chương) + 60 + 574 (văn) + 296 (khu lề) = 1144px canvas.
+     Canvas = viewport − 194 (rail), nên viewport phải ≥ 1338px.
+     ĐO ĐƯỢC ở 1240px khi còn ba cột: cột văn chỉ còn 476px = 58ch, TỤT RA NGOÀI
+     khoảng 65–75ch. Đây là lỗi không nhìn ảnh thì không thấy: không có chữ nào
+     tràn, không có nhãn nào ngắt xấu, chỉ là khổ đọc âm thầm hẹp lại.
+
+   1000px — dưới mức này cột chọn chương thành dải ngang.
+     Hai cột cần: 214 + 60 + 574 = 848px canvas → viewport ≥ 1042px. Lấy 1000px
+     làm mốc vì dưới 1042px phần hụt còn nhỏ, còn dưới 1000px thì cột chọn chương
+     đã ăn quá nhiều so với chỗ nó mang lại. */
+@media (max-width: 1320px) {
+  .doclayout {
+    grid-template-columns: 214px minmax(0, 1fr);
+  }
+  .benle {
+    grid-column: 2;
+    border-left: 0;
+    border-top: 1px solid var(--line-2);
+    background: none;
+    padding: 18px 30px 40px;
+  }
+  .kvle {
+    grid-template-columns: 104px 1fr;
+  }
+}
+
+@media (max-width: 1000px) {
+  .doclayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .benle {
+    grid-column: 1;
+    padding: 18px 14px 34px;
+  }
+  .khoDocWrap {
+    padding: 18px 14px 26px;
+  }
+  .dsChuong {
+    position: static;
+    border-right: 0;
+    border-bottom: 1px solid var(--line-2);
+    padding: 10px 14px;
+  }
+  .dsChuong h2 {
+    padding: 0;
+  }
+  .dsChuong ul {
+    display: flex;
+    gap: 4px;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+  }
+  .dsChuong li {
+    flex: none;
+  }
+  .dsChuong button {
+    grid-template-columns: 10px auto auto;
+    max-width: 200px;
+  }
+  .khudoc .head {
+    position: static;
+  }
+}
+
+/* ══ bề mặt hồ sơ tác phẩm ════════════════════════════════════════════ */
+
+/* Ba bề mặt (dàn ý / nhân vật / luật thế giới + phục bút) dùng chung một khổ
+   đọc: nội dung ở đây là câu văn mô tả, không phải bảng số, nên nó chịu cùng
+   giới hạn dòng như mọi văn bản dài. 82ch rộng hơn khổ đọc truyện vì đây là chữ
+   của công cụ (sans 13px) chứ không phải văn tác phẩm. */
+.khuhoso .sect > h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+/* Không `white-space: pre-line`: xuống dòng đơn trong premise.md là định dạng
+   của tệp, không phải của văn — giữ nó lại làm đoạn văn răng cưa ở màn hình hẹp.
+   Phía JS tách đoạn theo dòng trống và nối các dòng đơn lại. */
+.khuhoso .tiende {
+  margin: 0 0 0.9em;
+  max-width: 74ch;
+  font: 400 14px/1.8 var(--serif);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.khuhoso .tiende:last-child {
+  margin-bottom: 0;
+}
+
+/* ── dàn ý: ba mức thụt lồng nhau ── */
+/* Cấp bậc phải HIỆN RA là cấp bậc: mỗi mức thụt vào và có một đường dọc mảnh nối
+   các nhánh con, nên nhìn vào thấy được "chương này thuộc cung nào của tập nào"
+   mà không phải đọc mã. */
+.cayDanY,
+.cayCung,
+.cayChuong {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.cayCung,
+.cayChuong {
+  margin-top: 8px;
+  padding-left: 15px;
+  border-left: 1px solid var(--line-2);
+  display: grid;
+  gap: 10px;
+}
+.cayDanY {
+  display: grid;
+  gap: 18px;
+  max-width: 88ch;
+}
+.ntap > .nhanhdau .ma {
+  color: var(--ink);
+}
+.nhanhdau {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.nhanhdau .ma {
+  font: 500 11.5px var(--mono);
+  color: var(--ink-3);
+  flex: none;
+}
+.nhanhdau .ten {
+  font-size: 13px;
+  color: var(--ink);
+  min-width: 0;
+}
+.nhanhdau .ten em {
+  font-style: italic;
+  color: var(--ink-3);
+}
+/* Số chương đứng NGAY SAU tên cung, không bị đẩy về mép phải.
+   ĐO ĐƯỢC ở 1440px: `margin-left: auto` đẩy "3 chương đã mở" sang x≈890 trong
+   khi tên cung kết thúc ở x≈375 — hơn 500px trống ở giữa, và mắt phải nhảy qua
+   khoảng trống đó để nối một con số với cái tên của nó. Căn phải chỉ có ích khi
+   nhiều hàng xếp thành cột đếm; cây dàn ý thụt nhiều mức nên không có cột nào. */
+.nhanhdau .dem {
+  font: 400 11px var(--mono);
+  color: var(--ink-3);
+  flex: none;
+}
+.nhanhdau .cot {
+  font: 400 10px/1 var(--ui);
+  color: var(--tren-mau);
+  background: var(--gold);
+  border-radius: 3px;
+  padding: 3px 6px;
+  flex: none;
+}
+.khuhoso .phu {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--ink-3);
+  max-width: 78ch;
+}
+/* Bộ khung chưa mở: vân sọc chéo, cùng ngôn ngữ với khối `unplanned` trên trục
+   sản xuất — hai bề mặt nói cùng một trạng thái thì phải dùng cùng một dấu. */
+.ncung.chuamo > .nhanhdau .ma,
+.ntap.chuamo > .nhanhdau .ma {
+  color: var(--ink-3);
+}
+.chuamoNoi {
+  margin: 7px 0 0;
+  padding: 7px 10px;
+  font-size: 12px;
+  /* 1.72, sàn của DESIGN.md:84 — cùng lý lẽ như `.canhbao li`: chữ ở đây do mô
+     hình sinh ra nên không biết trước nó mang dấu gì.
+     ĐO ĐƯỢC ở 12px: ca xấu nhất (`…ộng` / `Ầ`) để lại 4,07px ở 1.66 và 4,79px ở
+     1.72. Cũng như trên, 4,07px không phải ca chạm dấu — chỉ là lệch chuẩn. */
+  line-height: 1.72;
+  color: var(--ink-3);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--panel-2) 0 4px,
+    var(--panel) 4px 8px
+  );
+  max-width: 66ch;
+}
+.kvcay {
+  grid-template-columns: 104px 1fr;
+  margin-top: 5px;
+  font-size: 12.5px;
+}
+.canhcay {
+  margin-top: 5px;
+  padding-left: 18px;
+}
+.canhcay li {
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--ink-3);
+}
+
+/* ── nhân vật ── */
+/* KHÔNG phải lưới thẻ giống nhau lặp vô hạn (anti-reference). Mỗi nhân vật là
+   một hàng có cấp bậc rõ, xếp theo hạng, vì hạng quyết định đọc ai trước. */
+.dsHoSo {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+  max-width: 88ch;
+}
+.nguoi {
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line-2);
+  min-width: 0;
+}
+.nguoi:first-child {
+  padding-top: 0;
+}
+.nguoi:last-child {
+  border-bottom: 0;
+}
+.nguoidau {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.nguoidau h3 {
+  font: 500 14px/1.3 var(--ui);
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.nguoi .hang {
+  font: 400 10px/1 var(--ui);
+  border-radius: 3px;
+  padding: 3px 6px;
+  flex: none;
+}
+/* Hạng dùng ĐỘ ĐẶC của viền, không chỉ màu: hạng là một thang bốn bậc và bốn
+   sắc độ của cùng một màu thì không đọc được trên ảnh đen trắng. */
+.nguoi .hang.h-core {
+  color: var(--tren-mau);
+  background: color-mix(in oklch, var(--teal) 72%, var(--panel));
+}
+.nguoi .hang.h-important {
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+}
+.nguoi .hang.h-secondary,
+.nguoi .hang.h-decorative {
+  color: var(--ink-3);
+  border: 1px dashed var(--line);
+}
+.nguoi .vai {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+/* `--ui`, KHÔNG `--serif`. Serif trong hệ này là một dấu hiệu ngữ nghĩa, không
+   phải một lựa chọn thẩm mỹ: DESIGN.md:62 nói "thấy serif là thấy văn của tác
+   phẩm, không phải chữ của công cụ". Phép thử là "chữ này có nằm trong bộ truyện
+   xuất bản hay không" — trích đoạn, bản thảo, tiêu đề chương thì có; dẫn chứng
+   của Editor có vì nó TRÍCH lại văn đó.
+   Mô tả nhân vật là bản ghi của engine VỀ tác phẩm, viết cho người vận hành đọc,
+   và người đọc truyện không bao giờ thấy nó — cùng loại với `core_event` của hợp
+   đồng hay `comment` của bản duyệt. Cho nó serif thì mỗi hồ sơ đọc như một trang
+   truyện, và tín hiệu serif loãng đi đúng chỗ nó cần sắc nhất.
+   1.78 giữ nguyên: đây vẫn là khổ đọc dài, và DESIGN.md:84 đặt ≥ 1.78 cho khổ
+   đọc dài bất kể họ chữ. */
+.nguoi .tavan {
+  margin: 7px 0 0;
+  font: 400 13px/1.78 var(--ui);
+  color: var(--ink-2);
+  max-width: 74ch;
+  text-wrap: pretty;
+}
+.kvnguoi {
+  grid-template-columns: 116px 1fr;
+  margin-top: 9px;
+  font-size: 12.5px;
+}
+.anhchup {
+  margin-top: 11px;
+  padding: 10px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+}
+.anhchup .m {
+  font: 400 11px var(--mono);
+  color: var(--ink-3);
+}
+.anhchup .kv {
+  margin-top: 0;
+}
+
+/* ── luật thế giới ── */
+.dsLuat {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+  max-width: 86ch;
+}
+.dsLuat li {
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+.dsLuat li:first-child {
+  padding-top: 0;
+}
+.dsLuat li:last-child {
+  border-bottom: 0;
+}
+.dsLuat .luat {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.72;
+  color: var(--ink);
+}
+/* Ranh giới cùng cỡ chữ với luật, khác tông — nó là nửa quan trọng hơn của
+   luật, không phải chú thích: Editor bắt lỗi `critical` dựa trên chính nó. */
+.dsLuat .ranh {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.72;
+  color: var(--amber);
+}
+.dsLuat .ranh .ky {
+  font-size: 9px;
+  flex: none;
+}
+.dsLuat .ranh .dx {
+  color: var(--ink-3);
+}
+
+/* ── lưới quan hệ ── */
+.dsQuanHe {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+  max-width: 82ch;
+}
+.dsQuanHe li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+.dsQuanHe li:first-child {
+  padding-top: 0;
+}
+.dsQuanHe li:last-child {
+  border-bottom: 0;
+}
+.dsQuanHe .cap {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.dsQuanHe .ten {
+  font-size: 13px;
+  color: var(--ink);
+}
+.dsQuanHe .noi {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+/* Cùng lý do với `.nhanhdau .dem`: căn phải ở đây tạo một khoảng trống ~500px
+   giữa tên cặp nhân vật và số chương của nó. Ba hàng thì không thành cột đếm,
+   nên số đứng ngay sau cặp tên. */
+/* `nowrap`: ĐO ĐƯỢC ở 400px, "ch. 1" bị xé thành "ch." / "1" khi nó rơi xuống
+   dòng riêng trong `.cap` — một nhãn năm ký tự thành hai dòng. */
+.dsQuanHe .ch {
+  font: 400 11px var(--mono);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* ── phục bút ── */
+/* 74ch, cùng bề rộng với `.dsPhucBut .tavan` bên dưới: mã phục bút căn phải nên
+   nó phải dừng ở đúng mép phải của khối chữ, không trôi ra xa hơn rồi để lại
+   một khoảng trống giữa mô tả và mã của chính nó. */
+.dsPhucBut {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+  max-width: 74ch;
+}
+.dsPhucBut li {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+.dsPhucBut li:first-child {
+  padding-top: 0;
+}
+.dsPhucBut li:last-child {
+  border-bottom: 0;
+}
+.pbdau {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+/* Mỗi mốc là một đơn vị không xé được; chỗ ngắt dòng nằm giữa hai mốc. */
+.pbdau .moc {
+  font: 400 11px var(--mono);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.pbdau .ma {
+  margin-left: auto;
+  font: 400 10.5px var(--mono);
+  color: var(--ink-3);
+}
+/* `--ui` vì cùng một lý do như `.nguoi .tavan` ở trên: mô tả phục bút là bản ghi
+   của engine VỀ tác phẩm — "vết nứt trên quả chuông là dấu hiệu đã có người đổ
+   tiếng thứ tư" là ghi chú sản xuất, không phải câu nào trong truyện. Người đọc
+   truyện không bao giờ thấy sổ phục bút. */
+.dsPhucBut .tavan {
+  margin: 6px 0 0;
+  font: 400 13px/1.78 var(--ui);
+  color: var(--ink-2);
+  max-width: 74ch;
+  text-wrap: pretty;
+}
+
+/* ══ trạng thái dùng chung cho các bề mặt mới ═════════════════════════ */
+
+/* Câu lỗi của server, KHÔNG bị hạ thành "chưa có dữ liệu": đó là hai chuyện
+   khác nhau và người vận hành sẽ hành động khác nhau. */
+.loiDoc {
+  margin: 0;
+  max-width: 78ch;
+  color: var(--red);
+  font: 400 12.5px/1.72 var(--mono);
+  overflow-wrap: anywhere;
+}
+
+/* Tiêu đề inspector khi chưa chọn chương: nói đúng trạng thái, không giả vờ có
+   một chương đang mở mà chưa được đặt tên. */
+.insp .ihead h2.chuachon {
+  color: var(--ink-3);
+  font-weight: 400;
+  margin: 0;
+}
+
+.tabs button:disabled {
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+.tabs button:disabled:hover {
+  color: var(--ink-3);
+}
+
+/* ══ @media (max-width: 860px) — rail dạng dải ngang ══════════════════ */
+
+/* Khối này PHẢI nằm sau `.rail .mucdi { width: 100% }` ở mục rail phía trên.
+   Cùng độ đặc hiệu (0,2,0) thì thứ tự trong tệp quyết định, và khi khối này còn
+   đứng cạnh các điểm ngắt ở đầu tệp thì `width: 100%` bên dưới ghi đè lại: mỗi
+   mục rộng đúng 860px và dải ngang hiện được một mục duy nhất.
+   ĐO ĐƯỢC ở 860px: chỉ thấy "Bản thảo", mười hai mục còn lại nằm ngoài mép phải
+   mà không có dấu hiệu nào — ở màn hình hẹp cả năm bề mặt kia thành thứ không
+   tìm thấy được, đúng cái mà dải ngang ra đời để tránh.
+   Đây là lần thứ hai tệp này gặp cùng cái bẫy; lần đầu là `.slate` ở thanh trên.
+
+   Vì sao rail thôi làm cột chứ không biến mất: DESIGN.md viết "860px bỏ rail", và
+   điều đó đúng khi rail chỉ là danh sách trang trí của một bề mặt duy nhất. Giờ
+   rail là đường điều hướng DUY NHẤT giữa sáu khu, nên bỏ nó là khóa người dùng
+   trong khu đang mở. Tinh thần của điều khoản là "rail không ăn bề rộng của
+   canvas ở màn hình hẹp"; một dải cao 38px giữ đúng tinh thần đó. */
+@media (max-width: 860px) {
+  .rail {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    padding: 4px 8px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+    overflow-y: hidden;
+    /* Thấy được là còn mục bên phải, nếu không người dùng tưởng rail chỉ có mấy
+       mục đầu — cùng lý do transport hiện thanh cuộn dưới điểm ngắt. */
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+  }
+  .rail::-webkit-scrollbar {
+    height: 4px;
+  }
+  .rail::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 2px;
+  }
+  /* Nhãn nhóm ("Truyện của bạn", "Thế giới truyện") mất nghĩa khi các mục xếp ngang: nó
+     không còn đứng TRÊN nhóm nào nữa. */
+  .rail .grp {
+    display: none;
+  }
+  /* Không còn nhóm thì không còn thu nhóm.
+     Đây là hệ quả bắt buộc của dòng trên, không phải một lựa chọn về hình: nhãn nhóm ẩn
+     đi tức là cái nút mở nhóm cũng ẩn, nên một nhóm đang đóng ở đây sẽ ẩn các mục của nó
+     mà KHÔNG còn cách nào mở lại — mười một khu thành không tới được, đúng cái mà dải
+     ngang ra đời để tránh. `display: contents` để các mục thành con trực tiếp của dải
+     flex; giữ `.mucnhom` là một hộp sẽ làm cả nhóm thành MỘT ô trong dải. */
+  .rail .nhomrail,
+  .rail .nhomrail[data-mo='0'] .mucnhom,
+  .rail .mucnhom {
+    display: contents;
+  }
+  .rail .mucdi,
+  .rail .muc {
+    width: auto;
+    flex: none;
+    white-space: nowrap;
+  }
+  .rail .nhan {
+    overflow: visible;
+  }
+  /* Ô số thôi bị đẩy về mép phải: trong một mục rộng vừa đủ nội dung, `auto` chỉ
+     tạo khoảng trống giữa tên khu và số của nó. */
+  .rail .n {
+    margin-left: 0;
+  }
+  /* Mục chưa dựng về một hàng. Xếp hai dòng ở đây làm cả dải cao gấp đôi để chứa
+     một chú thích, mà ở dải ngang không còn cột nào để cắt nhãn nên xếp một hàng
+     không gây lại lỗi cắt chữ. */
+  .rail .chuadung {
+    display: flex;
+    align-items: center;
+  }
+  .rail .chuadung .tag {
+    margin-left: 3px;
+  }
+}
+
+/* ══ bề mặt Kiểm định ═════════════════════════════════════════════════ */
+
+/* Hai cột: chọn chương · bản duyệt. Dùng lại .dsChuong của bề mặt đọc — cùng
+   một việc (chọn một chương trong một danh sách dài) thì cùng một hình, và
+   người vận hành không phải học hai bộ quy ước cho một hành vi. */
+.khukiem .head,
+.khuhang .head,
+.khuto .head {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: var(--bg);
+}
+
+.kiemlayout {
+  display: grid;
+  grid-template-columns: 214px minmax(0, 1fr);
+  align-items: start;
+  min-width: 0;
+}
+
+.duyetwrap {
+  padding: 16px 30px 26px;
+  min-width: 0;
+}
+
+/* Khổ đọc của bản duyệt: 74ch, cùng ngưỡng .trongSect đã dùng.
+   Dẫn chứng và đề xuất của Editor là CÂU VĂN, không phải ô bảng, nên chúng chịu
+   cùng ràng buộc như mọi khối chữ khác. Không chặn thì ở 1440px một đề xuất dài
+   thành một dòng ~150 ký tự và mắt mất dòng khi nhảy về đầu dòng sau — đúng lý
+   do khổ đọc của bề mặt đọc truyện bị chốt ở 70ch. */
+.duyetthan {
+  max-width: 74ch;
+}
+
+/* Câu nói về giới hạn của nguồn: thẳng hàng với cột bản duyệt, không với rail.
+   Thụt vào bằng MARGIN, không bằng padding. `.steerhint` mang `max-width: 74ch`
+   và `box-sizing: border-box`, nên padding nằm TRONG max-width: 214px padding ăn
+   mất 214px của 74ch và câu này co xuống ~260px, ngắt thành năm dòng cụt giữa
+   một khoảng trống 970px. Lỗi chỉ thấy bằng ảnh — không có chữ nào tràn, không
+   có gì tràn khung, chỉ là một cột chữ hẹp vô lý. */
+.kiemnguon {
+  margin: 0 30px 10px 244px;
+}
+
+/* ══ bề mặt Hàng chờ viết lại ═════════════════════════════════════════ */
+
+.dsHangCho {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.dsHangCho li + li {
+  border-top: 1px solid var(--line-2);
+}
+.dsHangCho li.mo {
+  background: color-mix(in oklch, var(--panel) 55%, var(--bg));
+}
+
+/* Hàng là một NÚT mở, nên nó phải trông bấm được: con trỏ, hover, focus rõ.
+   Bố cục `auto auto 1fr auto auto` chứ không cột cố định — nhãn trạng thái tiếng
+   Việt dài nhất ở đây là "đang soạn bản thảo" (17 ký tự) và một cột cố định đủ
+   cho "chờ viết lại" sẽ cắt nó. Để nội dung tự quyết bề rộng thì không có con số
+   nào để đoán sai. */
+.dsHangCho .hangdau {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  background: none;
+  border: 0;
+  text-align: left;
+  padding: 9px 12px;
+  cursor: pointer;
+  color: var(--ink);
+  font: 400 12.5px var(--ui);
+  transition: background 0.14s var(--ease);
+}
+.dsHangCho .hangdau:hover {
+  background: var(--panel-2);
+}
+.dsHangCho .hangdau:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+}
+.dsHangCho .ch {
+  font: 500 12px var(--mono);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.dsHangCho .ten {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dsHangCho .ten .draft {
+  color: var(--ink-3);
+  font-style: italic;
+}
+.dsHangCho .tu {
+  font: 400 11.5px var(--mono);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+/* Dấu mở/đóng dùng ký tự − và + chứ không mũi tên: chúng có trong Inter nên
+   không rơi sang font hệ thống rồi lệch đường chân chữ so với nhãn bên cạnh. */
+.dsHangCho .mocua {
+  font: 400 13px var(--mono);
+  color: var(--ink-3);
+  line-height: 1;
+}
+.dsHangCho .hangthan {
+  padding: 4px 12px 16px;
+  max-width: 74ch;
+}
+
+/* ══ bề mặt Tổ sản xuất ═══════════════════════════════════════════════ */
+
+/* Bảng này KHÔNG giãn full width. `.bang` mặc định `width: 100%` vì bảng chương
+   có cột tiêu đề cần mọi khoảng trống nó lấy được; ở đây năm cột đều là nhãn
+   ngắn và số ngắn, nên 100% biến bảng thành năm con số cách nhau 200px và mắt
+   phải lần theo cả bề rộng canvas để ghép "Writer" với "2". Để bảng tự co về
+   nội dung là cách duy nhất không phải đoán một bề rộng cột nào. */
+/* `max-content`, KHÔNG phải `auto` + `max-width: 100%`.
+   ĐO ĐƯỢC ở 400px: với `max-width: 100%` bảng bị ép co vào khung thay vì để
+   `.bangwrap` cuộn ngang, và cột hẹp nhất gánh phần co đó — "gemini-2.5-pro" bị
+   xé thành "gemi / 2.5-" giữa token. `.bangwrap` đã mang `overflow-x: auto`, nên
+   để bảng giữ bề rộng tự nhiên là đủ: hẹp thì cuộn, đúng như bảng chương. */
+.bangto {
+  width: max-content;
+}
+
+/* Hàng ở đây không bấm được — không có chương nào để chọn, không có panel nào để
+   mở. `.bang tbody tr` mang `cursor: pointer` cho bảng chương, và để nguyên nó ở
+   đây là hứa một hành vi không tồn tại. */
+.bangto tbody tr {
+  cursor: default;
+}
+.bangto tbody tr:hover {
+  background: none;
+}
+
+/* Cửa sổ của con số nằm TRONG đầu cột, trên dòng riêng.
+   Hai cột ở đây có hai phạm vi khác nhau (mọi chương / 20 phán quyết gần nhất),
+   và nhét phạm vi vào `title` thì phần lớn người đọc sẽ không bao giờ thấy —
+   trên máy cảm ứng thì không có hover nào để thấy. Nên nó là chữ thật, nhỏ hơn,
+   và vì thế đầu cột cao hai dòng: đó là cái giá của việc nói đủ. */
+.bangto thead th {
+  vertical-align: bottom;
+}
+.bangto thead th em {
+  display: block;
+  margin-top: 3px;
+  /* 1.72 là sàn của DESIGN.md:84, và ở đây nó không phải hình thức.
+     ĐO ĐƯỢC bằng TextMetrics của chính Inter đang render, không ước lượng: ở
+     1.35, ca xấu nhất (dòng trên kết bằng `ộng`, dòng dưới mở bằng `Ấ`) để lại
+     khe mực 0,31px — dưới một điểm ảnh vật lý ở DPR 2, tức hai tầng dấu chạm
+     nhau. Ở 1.72 khe đó là 4,19px. Nhãn phụ này CHẮC CHẮN ngắt hai dòng (đó là
+     chủ ý của `max-width: 26ch` ngay dưới), nên ca xấu nhất không phải giả định.
+     `max-width: 26ch` giữ nguyên nên bề rộng cột không đổi; cột chỉ cao thêm
+     ~3,9px mỗi dòng. */
+  font: 400 10.5px/1.72 var(--ui);
+  font-style: normal;
+  color: var(--ink-3);
+  text-transform: none;
+  letter-spacing: 0;
+  /* Nhãn phụ dài hơn nhãn cột nên nó là thứ quyết định bề rộng cột. 26ch giữ nó
+     xuống hai dòng thay vì kéo cột ngang ra chiếm cả bảng.
+     26 chứ không 22: ở 22ch nhãn "trong 20 phán quyết gần nhất" (28 ký tự) rơi
+     xuống dòng ba với một chữ "nhất" đứng lẻ. Con số này tính từ nhãn THẬT dài
+     nhất trong bảng, không chọn theo cảm giác. */
+  max-width: 26ch;
+  white-space: normal;
+}
+/* `margin-left: auto` chứ không trông vào `text-align: right` của ô.
+   ĐO ĐƯỢC ở 1440px: `em` là khối, và khối KHÔNG bị `text-align` của ô kéo sang
+   phải — chỉ chữ BÊN TRONG nó bị. Nên hộp `em` nằm ở mép TRÁI ô còn chữ trong
+   hộp dạt phải, và nhãn phụ hiện ra dưới cột bên cạnh: "trong 1 phán quyết gần
+   nhất" đứng dưới cột Chương tham gia, tức gán cửa sổ của cột này cho cột khác —
+   đúng loại lỗi mà cả việc ghi cửa sổ ra tồn tại để tránh. */
+.bangto thead th.num em {
+  margin-left: auto;
+}
+.bangto td.vai {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.bangto td.num .loi {
+  color: var(--red);
+}
+.bangto td.model {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+/* Tên model không bao giờ được ngắt giữa token: "gemini-2.5-pro" xé thành
+   "gemini-2.5-" / "pro" đọc ra như hai model khác nhau, và dấu gạch trong tên là
+   chỗ trình duyệt tự cho phép ngắt. */
+.bangto td.model .ma {
+  font: 400 11.5px var(--mono);
+  color: var(--violet);
+  white-space: nowrap;
+}
+
+/* Dưới 860px rail thành dải ngang và canvas được cả bề rộng, nhưng hai bề mặt có
+   cột chọn chương vẫn phải bỏ cột đó — cùng lý do và cùng mốc như bề mặt đọc. */
+@media (max-width: 1000px) {
+  .kiemlayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .duyetwrap {
+    padding: 16px 14px 24px;
+  }
+  .kiemnguon {
+    margin: 0 14px 10px;
+  }
+  .khukiem .head {
+    position: static;
+  }
+}
+
+@media (max-width: 700px) {
+  /* Ba mảnh phụ của một hàng hàng-chờ (số từ, dấu mở) không đáng một cột riêng
+     ở màn hình hẹp; tiêu đề chương thì đáng. Cho tiêu đề xuống dòng riêng và
+     tràn hết bề rộng thay vì bị ellipsis ở 40px cuối. */
+  .dsHangCho .hangdau {
+    grid-template-columns: auto auto 1fr;
+    gap: 6px 10px;
+  }
+  .dsHangCho .ten {
+    grid-column: 1 / -1;
+    white-space: normal;
+  }
+  .dsHangCho .tu {
+    grid-column: 1 / -1;
+  }
+  .dsHangCho .mocua {
+    grid-row: 1;
+    grid-column: 3;
+    justify-self: end;
+  }
+}
+
+/* ══ chuyển động ══════════════════════════════════════════════════════ */
+
+/* Không có animation nào không có đường tắt. */
+@media (prefers-reduced-motion: reduce) {
+  .st.gold.dap .ky,
+  .kbd.live[data-tt='song'] .dot,
+  .vttDot.dap,
+  .trans .ky.dap {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* ══ ba bề mặt xưởng: văn phong · chi phí · cài đặt ═══════════════════ */
+
+/* Ba bề mặt này là BẢN GHI CỦA ENGINE VỀ tác phẩm, viết cho người vận hành đọc.
+   Nên `--ui` toàn bộ, không một chỗ nào `--serif` — kể cả `preferences` của luật
+   người dùng và `start_prompt` của phiên chạy, hai khối dài và trông rất giống
+   chỗ đáng cho serif. Phép thử ở DESIGN.md:64 hỏi "chữ này có nằm trong bộ truyện
+   xuất bản không"; câu người vận hành dặn engine thì không, và người đọc truyện
+   không bao giờ thấy nó. Cho chúng serif là làm loãng tín hiệu serif đúng chỗ nó
+   cần sắc nhất. */
+
+/* ── nhãn báo trước ở rail: "vào được, nhưng chưa có số liệu" ── */
+
+/* Mục này VẪN là nút, khác `.chuadung`. Nhưng nó phải mượn đúng bố cục hai hàng
+   của `.chuadung`, và lý do là một phép đo đã ghi ở đó: rail rộng 194px, đặt nhãn
+   cùng hàng với tên khu thì nhãn ăn hết chỗ và cắt mất chính TÊN khu
+   ("Văn pho..."). Nhãn ở đây còn dài hơn "chưa dựng", nên nếu để inline trong
+   `display: flex` của `.mucdi` thì lỗi đó tái diễn nguyên vẹn.
+   `:has()` đã là thành ngữ sẵn trong tệp này (xem `div:has(> .qcrow)`). */
+.rail .mucdi:has(.tag.mo) {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  grid-template-areas:
+    'g nhan n'
+    'x tag tag';
+  gap: 3px 9px;
+  align-items: center;
+}
+.rail .mucdi:has(.tag.mo) .g {
+  grid-area: g;
+}
+.rail .mucdi:has(.tag.mo) .nhan {
+  grid-area: nhan;
+}
+.rail .mucdi:has(.tag.mo) .n {
+  grid-area: n;
+  margin-left: 0;
+}
+/* Viền LIỀN, không đứt — và đó là chỗ nhãn này tự phân biệt với `.chuadung`.
+   Nét đứt trong hệ này nghĩa là "chưa có, đừng chờ" (xem `.mucxem button:disabled`
+   và `.nguoi .hang.h-secondary`). Ở đây bề mặt CÓ và bấm được; chỉ nguồn là rỗng.
+   Hai câu khác nhau nên hai nét khác nhau. */
+.rail .mucdi:has(.tag.mo) .tag.mo {
+  grid-area: tag;
+  justify-self: start;
+  font: 400 9.5px/1 var(--ui);
+  color: var(--ink-3);
+  border: 1px solid var(--line-2);
+  border-radius: 3px;
+  padding: 3px 5px;
+}
+
+/* ── nhóm con trong một vùng ── */
+
+/* Ba bề mặt này có vùng chứa nhiều nhóm (lối kể / giọng nhân vật / điều cấm), nên
+   cần một cấp tiêu đề nữa dưới `.sect > h2`. Cấp này nhạt hơn và nhỏ hơn h2 nhưng
+   KHÔNG xuống tới `--ink-3`: nó là tiêu đề mang tin, không phải nhãn phụ. */
+/* Khoảng trên KHÔNG bỏ cho nhóm đầu tiên.
+   ĐO ĐƯỢC ở 1440px: khối "Luật đã khai" là `dl.kv` rồi tới nhóm "Cụm từ cấm", và
+   `:first-of-type { margin-top: 0 }` làm tiêu đề nhóm đó dính vào hàng giá trị
+   cuối của `dl` — đọc ra như thể "Cụm từ cấm" là một hàng nữa của danh sách
+   khoá-giá trị chứ không phải một nhóm mới. */
+.vpnhom {
+  margin-top: 18px;
+}
+.vpnhom > h3 {
+  font: 500 12px/1.4 var(--ui);
+  color: var(--ink-2);
+  margin: 0 0 8px;
+}
+.vpnhom > .steerhint {
+  margin-top: -2px;
+  margin-bottom: 9px;
+}
+
+/* ── danh sách luật có số thứ tự ── */
+
+/* Lối kể được Editor chắt ra thành 3–5 mục có thứ tự, và thứ tự đó là của dữ
+   liệu — nên `<ol>` chứ không `<ul>`. Số đặt ngoài lề bằng mono để nó không trôi
+   theo độ dài dòng. */
+.vpluat {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: vpl;
+  max-width: 78ch;
+  display: grid;
+  gap: 9px;
+}
+.vpluat li {
+  counter-increment: vpl;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  font-size: 13px;
+  /* 1.78: đây là khổ đọc dài (một luật lối kể dài tới ~50 chữ), và DESIGN.md:84
+     đặt sàn 1.78 cho khổ đọc dài bất kể họ chữ. */
+  line-height: 1.78;
+  color: var(--ink);
+}
+.vpluat li::before {
+  content: counter(vpl) '.';
+  font: 400 11.5px/1.78 var(--mono);
+  color: var(--ink-3);
+  text-align: right;
+}
+
+/* ── chip: cụm từ cấm, ký tự cấm, mục chưa chắc chắn ── */
+
+.vpthe {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 7px;
+}
+.vpthe li {
+  font: 400 12px/1.72 var(--ui);
+  color: var(--ink-2);
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: 3px;
+  padding: 3px 8px;
+}
+/* Mono và mỗi mục một chip riêng, vì một danh sách nối bằng `·` sẽ không phân
+   biệt được đâu là thứ bị cấm và đâu là dấu nối của giao diện — mà phần lớn mục ở
+   đây LÀ dấu câu (`—`, `…`, `"`).
+   KHÔNG `min-width` + `text-align: center`: `rules.ForbiddenChars` được kiểm như
+   chuỗi con bất kỳ (internal/rules/checker.go:55), không phải một ký tự đơn — dữ
+   liệu thật có cả tên riêng nhiều chữ. Căn giữa một chuỗi dài trong chip trông như
+   nhãn bị lỗi, và `min-width` chỉ hợp với glyph đơn. */
+.vpthe.vpky li {
+  font: 400 12.5px/1.72 var(--mono);
+}
+/* Mục chưa chắc chắn: nét đứt, vì đây đúng nghĩa "chưa chốt". */
+.vpthe.vpngo li {
+  border-style: dashed;
+  color: var(--ink-3);
+}
+
+/* ── từ mỏi: từ + hạn mức mỗi chương ── */
+
+/* Không phải danh sách cấm mà là HẠN MỨC, nên mỗi hàng phải mang con số của nó.
+   Xếp cùng kiểu chip với cụm từ cấm rồi để người đọc tự suy là cách một hạn mức
+   bị đọc thành một lệnh cấm. */
+.vpmoi {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 5px;
+  max-width: 52ch;
+}
+.vpmoi li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line-2);
+  font-size: 12.5px;
+  line-height: 1.72;
+}
+.vpmoi li:last-child {
+  border-bottom: 0;
+}
+.vpmoi .tu {
+  color: var(--ink);
+}
+.vpmoi .han {
+  margin-left: auto;
+  font: 400 11.5px var(--mono);
+  color: var(--amber);
+  white-space: nowrap;
+  flex: none;
+}
+
+/* ── giọng từng nhân vật ── */
+.vpgiong {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 14px;
+  max-width: 78ch;
+}
+.vpgiong > li > h4 {
+  font: 500 12.5px/1.3 var(--ui);
+  color: var(--ink);
+  margin: 0 0 5px;
+}
+.vpgiong > li > ul {
+  margin: 0;
+  padding-left: 16px;
+  display: grid;
+  gap: 4px;
+}
+.vpgiong > li > ul li {
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--ink-2);
+}
+
+/* ── điều cấm ── */
+
+/* `--amber` (cần chú ý), KHÔNG `--red`. Đỏ trong hệ này là LỖI đã xảy ra
+   (DESIGN.md:48); điều cấm là một ràng buộc đang có hiệu lực và bình thường. Tô
+   đỏ một danh sách luật thường trực làm màu lỗi mất nghĩa ở chỗ khác. */
+.vpcam {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 7px;
+  max-width: 78ch;
+}
+.vpcam li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--amber);
+}
+.vpcam li .ky {
+  font-size: 9px;
+  flex: none;
+}
+
+/* ── dòng hạ cấp / cảnh báo trong vùng ── */
+
+/* Dùng cho ba chỗ cùng một loại tin: luật người dùng bị hạ cấp, lượt gọi thiếu
+   số liệu usage, và ý định tạm dừng đang treo. Cả ba là "sự thật này làm những
+   con số/luật ở trên yếu đi", nên chúng dùng chung một hình.
+   Ba kênh, không chỉ màu: ký hiệu ■, tông amber, và chữ đậm ở mệnh đề đầu. */
+.vphacap {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 11px;
+  padding: 8px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-left: 2px solid var(--amber);
+  border-radius: var(--r);
+  font-size: 12.5px;
+  /* 1.72 là sàn của DESIGN.md:84, và ở đây nó không thương lượng được: `reason`
+     của một ý định tạm dừng do mô hình sinh ra, nên không biết trước nó mang dấu
+     gì — đúng lý do sàn tồn tại. */
+  line-height: 1.72;
+  color: var(--ink-2);
+  max-width: 82ch;
+}
+.vphacap .ky {
+  font-size: 9px;
+  color: var(--amber);
+  flex: none;
+}
+.vphacap strong {
+  color: var(--amber);
+  font-weight: 500;
+}
+
+/* ── cửa sổ của bộ luật văn phong ── */
+
+/* "Bộ luật này mô tả cung VỪA ĐÓNG" là một cửa sổ, không một chú thích — nếu
+   người vận hành đọc nó thành luật của chương đang viết thì mọi kết luận sau đó
+   sai. Nên nó nằm trên bề mặt, không trong `title`: một cửa sổ mà phải hover mới
+   biết thì phần lớn người đọc sẽ không biết (cùng lập luận đã viết cho đầu cột
+   của bảng Tổ sản xuất). */
+.vpcuaso {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.72;
+  color: var(--ink-3);
+  max-width: 78ch;
+}
+.vpcuaso .ky {
+  font-size: 8px;
+  color: var(--teal);
+  flex: none;
+}
+
+/* ── khối văn dài: preferences, start_prompt, pending_steer ── */
+.vpvan,
+.cdvan {
+  margin: 0;
+  max-width: 74ch;
+  /* `--ui`, không `--serif` — xem ghi chú ở đầu khối này. 1.78 vì đây là khổ đọc
+     dài, giữ nguyên sàn của khổ đọc dài bất kể họ chữ. */
+  font: 400 13px/1.78 var(--ui);
+  color: var(--ink-2);
+  text-wrap: pretty;
+  white-space: pre-wrap;
+}
+
+/* ── bảng chi phí ── */
+
+/* Tám cột, và bảng cuộn ngang trong `.bangwrap` khi hẹp thay vì nén cột — cùng
+   cách bảng Tổ sản xuất làm. Nén tám cột số vào 390px sẽ xé từng con số xuống
+   nhiều dòng, và một con số bị xé thì đọc ra sai. */
+.bangcp {
+  min-width: 660px;
+}
+/* Hàng KHÔNG bấm được ở bảng này: `.bang tbody tr` mặc định là `cursor: pointer`
+   vì bảng chương bấm được. Con trỏ bàn tay trên một hàng không làm gì là một lời
+   hứa hụt nhỏ nhưng có thật.
+   Giữ `hover` lại, và nó không phải trang trí: tám cột thì mắt cần một dải sáng
+   để đọc ngang mà không nhảy hàng. */
+.bangcp tbody tr {
+  cursor: default;
+}
+.bangcp td.vai {
+  font-weight: 500;
+  white-space: nowrap;
+}
+.bangcp td.num {
+  font: 400 12px var(--mono);
+  text-align: right;
+  white-space: nowrap;
+}
+/* Tên model không bao giờ ngắt giữa token — cùng luật đã viết cho `.bangto`:
+   "gemini-2.5-pro" xé thành "gemini-2.5-" / "pro" đọc ra như hai model khác nhau,
+   và dấu gạch là chỗ trình duyệt tự cho phép ngắt. */
+.bangcp td.model .ma {
+  font: 400 11.5px var(--mono);
+  color: var(--violet);
+  white-space: nowrap;
+}
+/* Chân bảng là MẪU SỐ của cột "Tỉ trọng" ngay trên nó, nên nó phải đọc ra là một
+   hàng khác loại: viền trên đặc hơn, chữ sáng hơn thân bảng. Đây là chỗ duy nhất
+   tổng chi phí được in ở bề mặt này — cố ý không phải một con số lớn ở đầu trang,
+   vì đó là hero-metric và PRODUCT.md:43 cấm. */
+.bangcp tfoot td {
+  padding: 9px 10px 0;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: 500;
+}
+.bangcp tfoot td.num {
+  font: 500 12px var(--mono);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ── danh sách khoá-giá trị của ba bề mặt ── */
+
+/* Cột nhãn rộng hơn `.kv` mặc định (104px), theo đúng luật 2 của DESIGN.md:85 —
+   nhãn tiếng Việt dài hơn phản xạ 20–30%.
+   ĐO ĐƯỢC ở 104px: "Chương được cấp phép" ngắt ba dòng, "Phán quyết khởi động"
+   ngắt hai, "Lượt thiếu số liệu" ngắt hai. 150px cho cả ba đi một dòng. */
+.kvvp,
+.kvcp,
+.kvcd {
+  grid-template-columns: 150px 1fr;
+}
+/* Chú thích cửa sổ đi kèm một giá trị: cùng hàng khi còn chỗ, xuống dòng khi
+   hết — nó là phần định nghĩa con số, nên không được biến mất, nhưng cũng không
+   được đẩy con số ra khỏi tầm mắt. */
+.kvcp dd .cua,
+.kvcd dd .cua {
+  margin-left: 8px;
+  font: 400 11.5px/1.72 var(--ui);
+  color: var(--ink-3);
+}
+/* "chưa cấp phép" là một sự thật, không một giá trị vắng — nên nó KHÔNG dùng
+   `.trong` (gạch ngang của giá trị không có nguồn). Ở chế độ review đây chính là
+   câu trả lời cho "vì sao dây chuyền đứng yên". */
+.kvcd dd .chuacap {
+  font: 400 12.5px/1.72 var(--ui);
+  color: var(--amber);
+}
+
+@media (max-width: 700px) {
+  /* Cột nhãn 150px trên 390px để lại 200px cho giá trị, và một `decision_id` hay
+     một dòng `declared_by` sẽ xé thành bốn dòng trong cái khe đó. Xếp dọc thì
+     nhãn được cả bề rộng và giá trị cũng vậy. */
+  .kvvp,
+  .kvcp,
+  .kvcd {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px 0;
+  }
+  .kvvp dt,
+  .kvcp dt,
+  .kvcd dt {
+    margin-top: 7px;
+  }
+  .kvvp dt:first-child,
+  .kvcp dt:first-child,
+  .kvcd dt:first-child {
+    margin-top: 0;
+  }
+  .kvcp dd .cua,
+  .kvcd dd .cua {
+    margin-left: 0;
+    display: block;
+  }
+}
+
+/* ── bộ chọn tác phẩm: tên + id, hai dòng ── */
+
+/* `id` hiện cùng tên thay vì thay cho tên — xem ghi chú tại ThanhTren.tsx.
+   Hai DÒNG, không cùng hàng: `.picklist .ten` đang `white-space: nowrap` +
+   `ellipsis`, nên nhồi thêm id vào cùng hàng sẽ cắt mất phần cuối của TÊN để chừa
+   chỗ cho id — tức hi sinh phần mang tin để hiện phần phân biệt. Xuống dòng thì cả
+   hai đọc được, và id là thứ ngắn nên nó không đẩy hàng cao thêm bao nhiêu. */
+.picklist .ten {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.picklist .ten .nb {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Mono và `--ink-3`: id là khoá để đối chiếu, không phải chữ để đọc. Cùng cách
+   `.bangcp td.model .ma` và `.anhchup .m` đã làm với mã máy. */
+.picklist .ten .ma {
+  font: 400 10.5px/1.4 var(--mono);
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Dòng "bảng còn cột bên phải" — chỉ ở bề rộng mà bảng chắc chắn không vừa.
+   Trên 700px thì `.bangcp` (min-width 660px) vừa khung, hoặc nếu còn cuộn thì
+   thanh cuộn của `.bangwrap` là thanh THẬT (không overlay) nên đã thấy được. Dưới
+   700px thì Chrome cảm ứng vẽ overlay và thanh đó vô hình cho tới khi đã cuộn —
+   đúng ca dòng chữ này tồn tại để cứu. */
+.bangkeongang {
+  display: none;
+}
+@media (max-width: 700px) {
+  .bangkeongang {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    margin: 8px 0 0;
+    font-size: 12px;
+    line-height: 1.72;
+    color: var(--ink-3);
+    max-width: 74ch;
+  }
+  .bangkeongang::before {
+    content: '→';
+    color: var(--ink-3);
+    flex: none;
+  }
+}
+
+/* `id` cạnh tên tác phẩm ở nút chọn đã đóng — xem ghi chú ở ThanhTren.tsx.
+   Mono + `--ink-3` + co lại trước tên: khi hết chỗ thì id bị cắt chứ không phải
+   tên, vì tên là phần mang tin còn id là phần phân biệt. Cả hai đều cần, nhưng nếu
+   phải hi sinh thì hi sinh id — người vận hành còn mở danh sách ra xem được. */
+.picker .ma {
+  font: 400 10.5px var(--mono);
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* ── cấu hình máy: biểu mẫu + dải kênh vai ──────────────────────────────── */
+
+/*
+ * Tiếng Việt là ràng buộc bố cục, không phải bản dịch (PRODUCT.md nguyên tắc 4).
+ * Nhãn ở đây dài hơn tiếng Anh 20–30% ("Nhà cung cấp", "Địa chỉ gốc", "Độ suy luận"),
+ * nên cột nhãn 132px chứ không phải 96px như phản xạ, và line-height 1.72 là SÀN vì dấu
+ * tiếng Việt xếp hai tầng.
+ */
+.bieuMau {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 620px;
+}
+
+.oNhap {
+  display: grid;
+  grid-template-columns: 132px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.oNhap > span {
+  font: 400 12px/1.72 var(--ui);
+  color: var(--ink-2);
+}
+
+.oNhap input,
+.oNhap select {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 7px 9px;
+  color: var(--ink);
+  font: 400 12.5px/1.5 var(--ui);
+  min-width: 0;
+}
+
+/* Ô nhập chữ mono cho thứ ĐỐI CHIẾU được: khóa, địa chỉ, tên model. Chúng là định
+   danh chứ không phải văn, và mono làm sai một ký tự nhìn ra được. */
+.oNhap input[type='password'],
+.oNhap input[list] {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.oNhap input:focus-visible,
+.oNhap select:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.oNhap input:read-only {
+  color: var(--ink-2);
+  background: var(--panel);
+}
+
+@media (max-width: 560px) {
+  /* Dưới 560px, cột nhãn 132px + ô nhập không còn đủ chỗ cho một địa chỉ gốc dài, và
+     ô nhập bị bóp là lỗi tệ hơn nhãn xuống dòng. */
+  .oNhap {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+.nutChinh,
+.nutPhu {
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 7px 13px;
+  font: 500 12px/1 var(--ui);
+  cursor: pointer;
+}
+
+.nutChinh {
+  background: var(--gold);
+  border-color: var(--gold);
+  /* Chữ tối trên vàng: --gold ở L 0.805 nên chữ sáng sẽ không đạt AA. */
+  color: oklch(0.19 0.02 74);
+}
+
+.nutPhu {
+  background: var(--raised);
+  color: var(--ink);
+}
+
+.nutPhu.nguyHiem {
+  color: var(--red);
+}
+
+.nutChinh:disabled,
+.nutPhu:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.nutChinh:hover:not(:disabled) {
+  background: oklch(0.855 0.128 80);
+}
+
+.nutPhu:hover:not(:disabled) {
+  border-color: var(--ink-3);
+}
+
+/* ── danh sách nhà cung cấp ─────────────────────────────────────────────── */
+
+.nccList {
+  list-style: none;
+  margin: 10px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Viền ĐỦ BỐN PHÍA, không phải border-left màu: dải cạnh là điều bị cấm thẳng trong
+   quy ước thiết kế của dự án. */
+.nccMuc {
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  padding: 11px 13px;
+  background: var(--panel);
+}
+
+.nccMuc.dangSua {
+  background: var(--panel-2);
+  border-color: var(--line);
+}
+
+.nccDau {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.nccTen {
+  font: 600 13px/1.5 var(--mono);
+  color: var(--ink);
+}
+
+.nccMd {
+  font: 500 10.5px/1 var(--ui);
+  letter-spacing: 0.02em;
+  color: oklch(0.19 0.02 74);
+  background: var(--gold);
+  border-radius: 2px;
+  padding: 3px 6px;
+}
+
+.nccKhoa {
+  font: 400 11.5px/1.5 var(--mono);
+  color: var(--teal);
+}
+
+/* Thiếu khóa là tin vận hành, không phải chi tiết: provider không có khóa sẽ làm mọi
+   lượt chạy hỏng, nên nó mang tông cảnh báo chứ không phải tông chữ mờ. */
+.nccKhoa.thieu {
+  color: var(--amber);
+}
+
+.nccNut {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+/* ── ba bước của luồng tạo tác phẩm ─────────────────────────────────────────
+   Số bước là số THẬT của engine (Arbiter → Architect → Writer), nên nó dùng `<ol>` và
+   counter của trình duyệt: một danh sách đánh số bằng chữ viết tay sẽ lệch nếu ai thêm bước.
+   Tên vai dùng mono + vàng như mọi chỗ khác gọi tên tác tử. */
+.baBuoc {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: buoc;
+  display: grid;
+  gap: 7px;
+  max-width: 74ch;
+}
+.baBuoc li {
+  counter-increment: buoc;
+  display: grid;
+  grid-template-columns: 18px auto 1fr;
+  align-items: baseline;
+  gap: 8px;
+  font: 400 12.5px/1.72 var(--ui);
+  color: var(--ink-2);
+}
+.baBuoc li::before {
+  content: counter(buoc) '.';
+  color: var(--ink-3);
+  font: 400 11.5px var(--mono);
+}
+.baBuoc .vai {
+  font: 500 12px var(--mono);
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+/* Dòng chờ trong lúc `POST /books` gọi Arbiter — xem TacPhamMoi.tsx cho vì sao nó phải nói
+   ra thời lượng. Đốm đập là chuyển động DUY NHẤT mang tin ở bề mặt này: nó phân biệt "đang
+   chờ" với "đứng hình", đúng thứ người dùng đang không phân biệt được. */
+.dangCho {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  max-width: 74ch;
+  background: color-mix(in oklch, var(--gold) 8%, var(--panel));
+  border: 1px solid color-mix(in oklch, var(--gold) 30%, var(--line));
+  border-radius: var(--r);
+  font: 400 12.5px/1.72 var(--ui);
+  color: var(--ink-2);
+}
+.dangCho b {
+  color: var(--ink);
+  font-weight: 500;
+}
+.dangCho .q {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex: none;
+  align-self: center;
+  animation: dapnhip 2.2s var(--ease) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dangCho .q {
+    animation: none;
+  }
+}
+
+/* ── dải kênh model theo vai ────────────────────────────────────────────── */
+
+/*
+ * Bốn kênh nằm CẠNH nhau, không xếp dọc: việc đáng làm ở đây là so vai này với vai kia
+ * theo cột (channel strip của bàn trộn), và xếp dọc thì mất đúng phép so sánh đó.
+ *
+ * auto-fit + minmax để không cần breakpoint: 4 cột trên màn rộng, 2 rồi 1 khi hẹp.
+ */
+.kenhDai {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(236px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.kenh {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  padding: 11px 12px;
+  background: var(--panel);
+  max-width: none;
+}
+
+/* Vai đã đặt riêng khác vai thừa hưởng — và khác bằng NỀN, không bằng dải cạnh. */
+.kenh.rieng {
+  background: var(--panel-2);
+  border-color: var(--line);
+}
+
+.kenhDau {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kenhTen {
+  font: 600 12.5px/1.5 var(--ui);
+  color: var(--ink);
+}
+
+.kenhNguon {
+  font: 400 10.5px/1.5 var(--ui);
+  color: var(--ink-3);
+}
+
+/* Trong kênh, cột nhãn hẹp lại vì khung chỉ 236px — nhưng vẫn xếp dọc thay vì bóp ô
+   nhập, vì tên model là thứ phải đọc được trọn. */
+.kenh .oNhap {
+  grid-template-columns: 1fr;
+  gap: 3px;
+}
+
+.kenh .nutChinh {
+  align-self: flex-start;
+}
+
+/* ── thanh trên ở khung hẹp ─────────────────────────────────────────────── */
+
+/*
+ * Sửa tràn ngang ĐO ĐƯỢC ở 390px: thanh trên rộng 466px, nên khối `.right` chứa nhãn
+ * "dòng sự kiện" nằm ngoài màn hình 76px và không bấm tới được.
+ *
+ * Nguyên nhân không phải `max-width` của picker mà là mặc định của flexbox:
+ * `min-width: auto` trên flex item khiến `.picker` không co xuống dưới bề rộng nội dung,
+ * nên `text-overflow: ellipsis` đã khai ở `.picker b` KHÔNG BAO GIỜ chạy. Ellipsis chỉ
+ * có tác dụng khi phần tử được phép hẹp hơn chữ của nó.
+ *
+ * Vì sao các lượt soát trước không thấy: chúng đo BỀ MẶT (`.canvas`) chứ không đo vỏ, và
+ * tên tác phẩm trong fixture ngắn hơn tên thật ("Dấu Nước Dưới Cầu Đá" — 20 ký tự). Cùng
+ * lớp với hai lỗi đã sống nhờ fixture giàu hơn đường thật.
+ */
+.bar .right {
+  /* Tình trạng dòng sự kiện là câu trả lời cho "dây chuyền còn sống không" — nó không
+     được là thứ bị đẩy ra ngoài trước tiên. */
+  flex-shrink: 0;
+}
+
+.picker,
+.pickwrap {
+  min-width: 0;
+}
+
+.picker b {
+  min-width: 0;
+}
+
+/* `.pickwrap` là block, nên `.picker` bên trong KHÔNG bị nó chặn: một block con có
+   min-content lớn hơn cha sẽ tràn ra ngoài cha và đè phần tử bên cạnh. Đo được: khung bọc
+   150px mà picker 237px, tràn 88px và phủ lên nhãn "dòng sự kiện".
+   `max-width: 100%` là vế còn thiếu — `min-width: 0` chỉ cho phép co, `max-width` mới buộc. */
+.picker {
+  max-width: 100%;
+}
+
+@media (max-width: 700px) {
+  .picker {
+    max-width: 100%;
+  }
+  /* Mã tác phẩm (`novel`) lặp lại thông tin của tên ngay bên cạnh. Ở khung hẹp thì tên
+     đáng chỗ hơn mã, và bỏ mã là cách duy nhất để tên còn đọc được trọn. */
+  .picker .ma {
+    display: none;
+  }
+  /* Đốm + "1 tác phẩm · 0 đang chạy" lặp lại điều mà picker và transport đã nói. Ở khung
+     hẹp thì chỗ đó đáng dành cho tên tác phẩm và tình trạng dòng sự kiện. */
+  .slate {
+    display: none;
+  }
+}
+
+/* ── điều khiển dây chuyền trong thanh transport ─────────────────────────── */
+
+/*
+ * Nút bấm sống trong transport vì đó là chỗ trả lời "dây chuyền còn sống không"
+ * (PRODUCT.md lấy bàn transport của DAW làm điểm neo, và ở DAW thì play–stop ở transport).
+ *
+ * `margin-left: auto` KHÔNG dùng ở đây: ô `.push` trong transport đã chiếm chỗ đó. Nhóm
+ * này đứng cuối theo thứ tự DOM và tự nằm bên phải.
+ */
+.dieukhien {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  flex-shrink: 0;
+}
+
+.dkNut {
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--ink);
+  font: 500 11.5px/1 var(--ui);
+  padding: 6px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dkNut:hover:not(:disabled) {
+  border-color: var(--ink-3);
+}
+
+.dkNut:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Chạy mang màu tín hiệu duy nhất (vàng) vì nó là hành động khởi động một việc TIÊU TIỀN.
+   Chữ tối trên vàng: --gold ở L 0.805 nên chữ sáng không đạt AA. */
+.dkNut.dkChay {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: oklch(0.19 0.02 74);
+}
+
+/* Dừng KHÔNG dùng đỏ: đỏ trong hệ này nghĩa là lỗi, và dừng có chủ ý không phải lỗi.
+   Viền amber nói "sắp có hệ quả" mà không nói "đã sai". */
+.dkNut.dkDung {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+/* Chế độ nghiệm thu đang BẬT là một trạng thái đáng thấy: nó nghĩa là dây chuyền sẽ đứng
+   chờ người. Nền teal (đã nghiệm thu) khớp nghĩa đó trong hệ màu đang dùng. */
+.dkNut.dkBat {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.dkNut.dkPhu {
+  color: var(--ink-2);
+}
+
+.dkLoi {
+  font: 400 11px/1.5 var(--ui);
+  color: var(--red);
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  /* Thanh transport đã chật ở khung hẹp. Cho nhóm nút xuống dòng thay vì bóp chúng: một
+     nút bị bóp mất chữ là nút bấm nhầm. */
+  .dieukhien {
+    flex-wrap: wrap;
+    padding: 6px 10px;
+  }
+  .dkLoi {
+    max-width: 100%;
+  }
+}
+
+/* ── ô nhập nhiều dòng (yêu cầu truyện) ─────────────────────────────────── */
+
+.oNhapCao {
+  align-items: start;
+}
+
+.oNhapCao > span {
+  padding-top: 7px;
+}
+
+.oNhap textarea {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 8px 10px;
+  color: var(--ink);
+  /* 1.78 chứ không 1.5: đây là ô người dùng viết văn xuôi tiếng Việt vào, và dấu xếp hai
+     tầng cần chỗ. Cùng con số với khổ đọc dài ở DESIGN.md. */
+  font: 400 13px/1.78 var(--ui);
+  resize: vertical;
+  min-height: 96px;
+  /* Khổ đọc: câu yêu cầu dài sẽ thành một khối dày, và 74ch là hạn đọc được. */
+  max-width: 74ch;
+}
+
+.oNhap textarea:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+/* ── modal khi engine hỏi (luồng CHẶN) ──────────────────────────────────── */
+
+/*
+ * Lớp phủ TỐI và đặc, không phải glass mờ trang trí: engine đang ĐỨNG, nên bề mặt phía sau
+ * đúng nghĩa là không dùng được lúc này. Một lớp phủ nhẹ nói "vẫn có thể bấm ra ngoài" —
+ * điều không đúng ở đây, vì đóng modal không làm dây chuyền đi tiếp.
+ */
+.hoiNen {
+  position: fixed;
+  inset: 0;
+  z-index: 400; /* trên transport (sticky) và dưới không gì cả — đây là lớp chặn */
+  background: oklch(0.12 0.008 74 / 0.86);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  overflow: auto;
+}
+
+.hoiHop {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 16px 48px oklch(0.08 0.006 74 / 0.7);
+  max-width: 640px;
+  width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  padding: 20px 22px;
+}
+
+.hoiDau h2 {
+  font: 600 15px/1.5 var(--ui);
+  color: var(--gold);
+  margin: 0 0 4px;
+}
+
+.hoiThan {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.hoiCau {
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  padding: 12px 14px;
+  margin: 0;
+}
+
+.hoiCau legend {
+  font: 500 13px/1.72 var(--ui);
+  color: var(--ink);
+  padding: 0 6px;
+}
+
+.hoiNhan {
+  display: inline-block;
+  font: 500 10.5px/1 var(--mono);
+  color: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 3px 5px;
+  margin-right: 8px;
+  vertical-align: 1px;
+}
+
+.hoiChon {
+  display: flex;
+  gap: 9px;
+  align-items: baseline;
+  padding: 7px 4px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.hoiChon:hover {
+  background: var(--panel-2);
+}
+
+.hoiChon input {
+  margin-top: 3px;
+  accent-color: var(--gold);
+  flex-shrink: 0;
+}
+
+.hoiChon strong {
+  font: 500 12.5px/1.72 var(--ui);
+  color: var(--ink);
+}
+
+.hoiChon em {
+  display: block;
+  font: 400 11.5px/1.6 var(--ui);
+  font-style: normal;
+  color: var(--ink-2);
+}
+
+.hoiTuNhap {
+  width: 100%;
+  margin-top: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 7px 9px;
+  color: var(--ink);
+  font: 400 12.5px/1.5 var(--ui);
+}
+
+.hoiTuNhap:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.hoiNut {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ── cùng dựng ──────────────────────────────────────────────────────────── */
+
+.cdList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 10px 0 14px;
+}
+
+.cdLuot {
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  padding: 10px 12px;
+  background: var(--panel);
+  /* Khổ đọc: đây là văn xuôi, và 74ch là hạn đọc được. */
+  max-width: 74ch;
+}
+
+/* Lượt người dùng phân biệt bằng NỀN, không bằng dải cạnh (dải cạnh bị cấm) và không
+   bằng cách đẩy sang phải kiểu bong bóng chat — đây là bàn làm việc, không phải tin nhắn. */
+.cdLuot.user {
+  background: var(--panel-2);
+  border-color: var(--line);
+}
+
+.cdVai {
+  display: block;
+  font: 500 10.5px/1 var(--ui);
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+  margin-bottom: 6px;
+}
+
+.cdChu {
+  margin: 0;
+  font: 400 13px/1.78 var(--ui);
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+
+.cdGoiY {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.cdGoiY .lbl {
+  font: 400 11px/1.5 var(--ui);
+  color: var(--ink-3);
+}
+
+/* ── nhật ký luồng tệp ──────────────────────────────────────────────────── */
+
+.nkLuong {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  background: var(--panel);
+  max-height: 340px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nkLuong li {
+  display: grid;
+  grid-template-columns: 128px 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+  font: 400 11.5px/1.6 var(--ui);
+  color: var(--ink-2);
+}
+
+/* Trạng thái bằng MÀU CHỮ, không bằng nền cả dòng: một dòng nhật ký nền đỏ trong danh sách
+   dài làm mắt nhảy tới nó rồi mất mạch đọc theo thứ tự thời gian. */
+.nkLuong li.loi .nkChu {
+  color: var(--red);
+}
+
+.nkLuong li.canh .nkChu {
+  color: var(--amber);
+}
+
+.nkCd {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nkChu {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.nkTd {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  /* Cột công đoạn 128px + tiến độ không còn chỗ cho chữ ở khung hẹp. Xếp dọc: đọc được
+     quan trọng hơn thẳng cột. */
+  .nkLuong li {
+    grid-template-columns: 1fr;
+    gap: 2px;
+    padding-bottom: 4px;
+  }
+}
+
+/* Ô nhập dạng đánh dấu: nhãn bên trái như mọi ô khác, nhưng hộp không giãn hết chiều ngang
+   vì một checkbox rộng 100% là một vùng bấm mà người dùng không đoán được biên. */
+.oNhapCheck input {
+  justify-self: start;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--gold);
+}
+
+.oNhap input[type='file'] {
+  font: 400 12px/1.5 var(--ui);
+  color: var(--ink-2);
+  background: none;
+  border: 1px dashed var(--line);
+  padding: 8px 9px;
+}

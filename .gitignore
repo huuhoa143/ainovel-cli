@@ -44,3 +44,6 @@ tasks
 refer/
 output*
 workspace/
+
+# công cụ i18n
+scripts/i18n/__pycache__/

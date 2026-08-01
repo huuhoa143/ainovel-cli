@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"slices"
 
+	"errors"
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/flow"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -32,16 +34,16 @@ func (g *ChapterAdvanceGate) HandleBoundary() bool {
 	}
 	meta, err := g.store.RunMeta.Load()
 	if err != nil {
-		return g.fail(fmt.Errorf("读取 RunMeta: %w", err))
+		return g.fail(fmt.Errorf(i18n.F("读取 RunMeta: %w"), err))
 	}
 	if meta == nil {
-		return g.fail(fmt.Errorf("RunMeta 未初始化"))
+		return g.fail(errors.New(i18n.F("RunMeta 未初始化")))
 	}
 	if !meta.AdvanceMode.Valid() {
 		return g.fail(&domain.UnsupportedAdvanceModeError{Mode: meta.AdvanceMode})
 	}
 	if meta.AdvanceMode == domain.ChapterAdvanceAuto && meta.AdvancePermitChapter != 0 {
-		return g.fail(fmt.Errorf("auto 模式残留第 %d 章许可", meta.AdvancePermitChapter))
+		return g.fail(fmt.Errorf(i18n.F("auto 模式残留第 %d 章许可"), meta.AdvancePermitChapter))
 	}
 
 	if meta.AdvanceHold != nil {
@@ -59,7 +61,7 @@ func (g *ChapterAdvanceGate) HandleBoundary() bool {
 func (g *ChapterAdvanceGate) handleHold(hold domain.AdvanceHold) bool {
 	progress, err := g.store.Progress.Load()
 	if err != nil {
-		return g.fail(fmt.Errorf("读取 Progress 解析一次性暂停: %w", err))
+		return g.fail(fmt.Errorf(i18n.F("读取 Progress 解析一次性暂停: %w"), err))
 	}
 	resolution, err := flow.ResolveAdvanceHold(&hold, progress)
 	if err != nil {
@@ -70,22 +72,22 @@ func (g *ChapterAdvanceGate) handleHold(hold domain.AdvanceHold) bool {
 		return false
 	case flow.AdvanceHoldConsume:
 		if err := g.store.RunMeta.ClearAdvanceHold(hold); err != nil {
-			return g.fail(fmt.Errorf("消费一次性暂停: %w", err))
+			return g.fail(fmt.Errorf(i18n.F("消费一次性暂停: %w"), err))
 		}
-		g.reportEvent("info", withAdvanceReason("全书已完结，一次性暂停意图已解除", hold.Reason))
+		g.reportEvent("info", withAdvanceReason(i18n.F("全书已完结，一次性暂停意图已解除"), hold.Reason))
 		return false
 	case flow.AdvanceHoldConsumeAndStop:
 		if err := g.store.RunMeta.ClearAdvanceHold(hold); err != nil {
-			return g.fail(fmt.Errorf("消费一次性暂停: %w", err))
+			return g.fail(fmt.Errorf(i18n.F("消费一次性暂停: %w"), err))
 		}
-		msg := "已按用户要求在当前工作边界暂停"
+		msg := i18n.F("已按用户要求在当前工作边界暂停")
 		if hold.After == domain.AdvanceHoldAfterRewritesDrained {
-			msg = "返工队列已排空，已暂停等待验收"
+			msg = i18n.F("返工队列已排空，已暂停等待验收")
 		}
 		g.pauseNow(withAdvanceReason(msg, hold.Reason))
 		return true
 	default:
-		return g.fail(fmt.Errorf("未知一次性暂停解析结果 %d", resolution))
+		return g.fail(fmt.Errorf(i18n.F("未知一次性暂停解析结果 %d"), resolution))
 	}
 }
 
@@ -94,37 +96,37 @@ func (g *ChapterAdvanceGate) reconcilePermit(permit int) bool {
 		return false
 	}
 	if permit < 0 {
-		return g.fail(fmt.Errorf("章节许可不能为负数: %d", permit))
+		return g.fail(fmt.Errorf(i18n.F("章节许可不能为负数: %d"), permit))
 	}
 	progress, err := g.store.Progress.Load()
 	if err != nil {
-		return g.fail(fmt.Errorf("读取 Progress 对账章节许可: %w", err))
+		return g.fail(fmt.Errorf(i18n.F("读取 Progress 对账章节许可: %w"), err))
 	}
 	if progress == nil {
-		return g.fail(fmt.Errorf("缺少 Progress，无法对账第 %d 章许可", permit))
+		return g.fail(fmt.Errorf(i18n.F("缺少 Progress，无法对账第 %d 章许可"), permit))
 	}
 	pending, err := g.store.Signals.LoadPendingCommit()
 	if err != nil {
-		return g.fail(fmt.Errorf("读取 PendingCommit 对账章节许可: %w", err))
+		return g.fail(fmt.Errorf(i18n.F("读取 PendingCommit 对账章节许可: %w"), err))
 	}
 	completed := slices.Contains(progress.CompletedChapters, permit)
 	if completed {
 		if pending != nil {
 			if pending.Chapter != permit {
-				return g.fail(fmt.Errorf("第 %d 章许可与第 %d 章 PendingCommit 冲突", permit, pending.Chapter))
+				return g.fail(fmt.Errorf(i18n.F("第 %d 章许可与第 %d 章 PendingCommit 冲突"), permit, pending.Chapter))
 			}
 			return false
 		}
 		if g.store.Checkpoints.LatestByStep(domain.ChapterScope(permit), "commit") == nil {
-			return g.fail(fmt.Errorf("第 %d 章已标记完成但缺少 commit checkpoint", permit))
+			return g.fail(fmt.Errorf(i18n.F("第 %d 章已标记完成但缺少 commit checkpoint"), permit))
 		}
 		if err := g.store.RunMeta.ClearAdvancePermit(permit); err != nil {
-			return g.fail(fmt.Errorf("消费第 %d 章许可: %w", permit, err))
+			return g.fail(fmt.Errorf(i18n.F("消费第 %d 章许可: %w"), permit, err))
 		}
 		return false
 	}
 	if permit != progress.NextChapter() {
-		return g.fail(fmt.Errorf("第 %d 章许可与当前下一章 %d 不一致", permit, progress.NextChapter()))
+		return g.fail(fmt.Errorf(i18n.F("第 %d 章许可与当前下一章 %d 不一致"), permit, progress.NextChapter()))
 	}
 	return false
 }
@@ -136,27 +138,27 @@ func (g *ChapterAdvanceGate) Allow(inst *flow.Instruction) (bool, error) {
 	}
 	meta, err := g.store.RunMeta.Load()
 	if err != nil {
-		return false, fmt.Errorf("读取 RunMeta: %w", err)
+		return false, fmt.Errorf(i18n.F("读取 RunMeta: %w"), err)
 	}
 	if meta == nil {
-		return false, fmt.Errorf("RunMeta 未初始化")
+		return false, errors.New(i18n.F("RunMeta 未初始化"))
 	}
 	if !meta.AdvanceMode.Valid() {
 		return false, &domain.UnsupportedAdvanceModeError{Mode: meta.AdvanceMode}
 	}
 	if meta.AdvanceMode == domain.ChapterAdvanceAuto {
 		if meta.AdvancePermitChapter != 0 {
-			return false, fmt.Errorf("auto 模式残留第 %d 章许可", meta.AdvancePermitChapter)
+			return false, fmt.Errorf(i18n.F("auto 模式残留第 %d 章许可"), meta.AdvancePermitChapter)
 		}
 		return true, nil
 	}
 	progress, err := g.store.Progress.Load()
 	if err != nil {
-		return false, fmt.Errorf("读取 Progress: %w", err)
+		return false, fmt.Errorf(i18n.F("读取 Progress: %w"), err)
 	}
 	pending, err := g.store.Signals.LoadPendingCommit()
 	if err != nil {
-		return false, fmt.Errorf("读取 PendingCommit: %w", err)
+		return false, fmt.Errorf(i18n.F("读取 PendingCommit: %w"), err)
 	}
 	if !flow.StartsForwardChapter(inst, progress, pending) {
 		return true, nil
@@ -169,19 +171,19 @@ func (g *ChapterAdvanceGate) Allow(inst *flow.Instruction) (bool, error) {
 		return true, nil
 	}
 	if meta.AdvancePermitChapter != 0 {
-		return false, fmt.Errorf("第 %d 章派发与第 %d 章许可不一致", target, meta.AdvancePermitChapter)
+		return false, fmt.Errorf(i18n.F("第 %d 章派发与第 %d 章许可不一致"), target, meta.AdvancePermitChapter)
 	}
 	latest := progress.LatestCompleted()
-	message := fmt.Sprintf("已完成至第 %d 章，逐章验收等待放行第 %d 章；使用 /next 生成，或输入修改意见", latest, target)
+	message := fmt.Sprintf(i18n.F("已完成至第 %d 章，逐章验收等待放行第 %d 章；使用 /next 生成，或输入修改意见"), latest, target)
 	if latest == 0 {
-		message = fmt.Sprintf("规划已就绪，逐章验收等待放行第 %d 章；使用 /next 生成，或输入修改意见", target)
+		message = fmt.Sprintf(i18n.F("规划已就绪，逐章验收等待放行第 %d 章；使用 /next 生成，或输入修改意见"), target)
 	}
 	g.pauseNow(message)
 	return false, nil
 }
 
 func (g *ChapterAdvanceGate) fail(err error) bool {
-	g.pauseNow("章节推进控制错误，已暂停：" + err.Error())
+	g.pauseNow(i18n.F("章节推进控制错误，已暂停：") + err.Error())
 	return true
 }
 
@@ -203,5 +205,8 @@ func withAdvanceReason(msg, reason string) string {
 	if reason == "" {
 		return msg
 	}
-	return msg + "（诉求：" + reason + "）"
+	// Một msgid cho cả cặp ngoặc, không tách mở/đóng: bản cũ bọc i18n phần mở mà
+	// để dấu đóng trần, nên tiếng Việt in ra " (yêu cầu: ...）" — lệch một nửa.
+	// Dấu đóng đứng lẻ cũng không thể là msgid có nghĩa cho người dịch.
+	return msg + fmt.Sprintf(i18n.F("（诉求：%s）"), reason)
 }

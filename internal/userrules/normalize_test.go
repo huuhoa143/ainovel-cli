@@ -47,7 +47,7 @@ func TestParseNormalizerJSON_FullOutput(t *testing.T) {
   "uncertain": ["少用比喻：无阈值"]
 }` + "\n```"
 	body := llmcontract.ExtractJSONObject(raw)
-	if err := llmcontract.ValidateJSON(normalizeContract.Schema, []byte(body)); err != nil {
+	if err := llmcontract.ValidateJSON(normalizeContract().Schema, []byte(body)); err != nil {
 		t.Fatalf("应解析成功: %v", err)
 	}
 	var out normalizerOutput
@@ -102,10 +102,10 @@ func TestParseNormalizerJSON_GarbageFails(t *testing.T) {
 
 // 契约测试(RFC §11.1):根为 object、全属性(含嵌套 structured/fatigue_words 条目)required。
 func TestNormalizeContractIsStrictReady(t *testing.T) {
-	if normalizeContract.Schema["type"] != "object" {
+	if normalizeContract().Schema["type"] != "object" {
 		t.Fatal("根必须是 object")
 	}
-	if err := llmcontract.ValidateStrictReady(normalizeContract.Schema); err != nil {
+	if err := llmcontract.ValidateStrictReady(normalizeContract().Schema); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -308,7 +308,7 @@ func TestNormalize_NativeSendsSchemaAndRejectsFences(t *testing.T) {
 	if rf == nil || rf.JSONSchema == nil || rf.JSONSchema.Name != "userrules_normalize" {
 		t.Fatalf("native 模式应发送 schema: %+v", rf)
 	}
-	if got := model.lastMsgs[0].TextContent(); got != normalizerSystemPrompt {
+	if got := model.lastMsgs[0].TextContent(); got != normalizerSystemPrompt() {
 		t.Fatalf("native 模式不应向提示词重复注入 schema:\n%s", got)
 	}
 

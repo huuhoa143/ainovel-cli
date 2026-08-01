@@ -1,0 +1,92 @@
+{
+  "chapter": 47,
+  "title": "Tiếng chuông thứ ba",
+  "words": 2980,
+  "text": "Ấy là lần thứ ba tiếng chuông đổ xuống trong đêm. Bước chân ấy đạp thẳng lên bậc thứ chín. Đá kêu một tiếng khô khốc, ngắn, không vọng lại. Lâm Thanh không đứng lên — chàng chỉ đưa tay lên vai, nơi bao kiếm vẫn còn ướt nước mưa đêm trước.\n\nNgười gác cầu ngồi thấp hơn chàng một bậc, lưng dựa vào cột đá đã nứt. Ông không quay lại. “Chín năm trước cũng có người đứng đúng chỗ ấy,” ông nói, “rồi đi xuống.”\n\nSương từ mặt nước dâng lên chậm, phủ kín bậc thứ nhất, rồi bậc thứ hai. Đến bậc thứ chín thì nó dừng, như thể có ai đã vạch một đường ở đó và sương biết mình không được vượt qua.\n\nLâm Thanh nhìn xuống tay mình. Ấn ngọc nằm im trong tay áo, lạnh như một lời chưa nói. Chàng đã mang nó qua hai tập đường núi mà chưa một lần lấy ra, và đêm nay cũng thế.\n\nTiếng chuông thứ ba tắt. Sương tan về phía tây, để lộ một khoảng trống trên cầu — chỗ mà lẽ ra phải có người.",
+  "contract": {
+    "chapter": 47,
+    "title": "Tiếng chuông thứ ba",
+    "core_event": "Hé lộ tiếng chuông thứ ba là tín hiệu người lạ, không phải núi mở",
+    "hook": "bỏ lửng hành động",
+    "scenes": [
+      "Lâm Thanh đứng lại ở bậc thứ chín",
+      "Người gác cầu nhắc chuyện chín năm trước",
+      "Chuông đổ lần thứ ba, sương tan về phía tây"
+    ]
+  },
+  "review": {
+    "chapter": 47,
+    "scope": "chapter",
+    "verdict": "revise",
+    "summary": "Chương đạt hợp đồng về sự kiện trọng tâm nhưng nhịp chậm và một phục bút treo quá lâu.",
+    "dimensions": [
+      {
+        "name": "setting_consistency",
+        "score": 8,
+        "verdict": "pass"
+      },
+      {
+        "name": "character_behavior",
+        "score": 8,
+        "verdict": "pass"
+      },
+      {
+        "name": "pacing",
+        "score": 5,
+        "verdict": "warn",
+        "comment": "Ba chương liền mở bằng cảnh đêm — nên đổi mốc thời gian ở chương 48."
+      },
+      {
+        "name": "narrative",
+        "score": 7,
+        "verdict": "pass"
+      },
+      {
+        "name": "foreshadowing",
+        "score": 4,
+        "verdict": "revise",
+        "comment": "Ấn ngọc Hàn Sơn đặt ở chương 38, đã qua 9 chương chưa nhắc lại."
+      },
+      {
+        "name": "hook",
+        "score": 8,
+        "verdict": "pass"
+      },
+      {
+        "name": "prose",
+        "score": 7,
+        "verdict": "pass"
+      }
+    ],
+    "issues": [
+      {
+        "type": "foreshadowing",
+        "severity": "major",
+        "description": "Phục bút Ấn ngọc Hàn Sơn treo quá lâu không nhắc lại",
+        "evidence": "Ấn ngọc nằm im trong tay áo, lạnh như một lời chưa nói.",
+        "suggestion": "Cho Lâm Thanh chạm vào ấn ngọc ở cảnh cuối chương 48, không cần giải thích.",
+        "chapters": [
+          38,
+          47
+        ],
+        "needs_change": true
+      },
+      {
+        "type": "pacing",
+        "severity": "minor",
+        "description": "Ba chương liền mở bằng cảnh đêm làm nhịp chậm lại",
+        "chapters": [
+          45,
+          46,
+          47
+        ],
+        "needs_change": false
+      }
+    ],
+    "contract_status": "partial",
+    "contract_misses": [
+      "Móc cuối chưa bỏ lửng hành động, còn giải thích thêm một câu",
+      "Thiếu một cảnh so với hợp đồng: sương tan về phía tây"
+    ]
+  }
+}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/voocel/agentcore"
 	corecontext "github.com/voocel/agentcore/context"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // contextManagerConfig 聚合 ContextManager 的全部配置参数。
@@ -77,6 +78,6 @@ func contextRewriteCallback(agent string) func(corecontext.RewriteEvent) {
 				"duration_ms", info.Duration.Milliseconds(),
 			)
 		}
-		slog.Warn("上下文重写", attrs...)
+		slog.Warn(i18n.F("上下文重写"), attrs...)
 	}
 }

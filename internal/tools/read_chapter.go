@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/voocel/agentcore/schema"
+	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -20,9 +22,9 @@ func NewReadChapterTool(store *store.Store) *ReadChapterTool {
 
 func (t *ReadChapterTool) Name() string { return "read_chapter" }
 func (t *ReadChapterTool) Description() string {
-	return "读取章节原文。可读终稿、草稿，或提取角色对话片段"
+	return i18n.F("读取章节原文。可读终稿、草稿，或提取角色对话片段")
 }
-func (t *ReadChapterTool) Label() string { return "读取章节" }
+func (t *ReadChapterTool) Label() string { return i18n.F("读取章节") }
 
 // 纯读工具，可被并发调度（editor 审阅时常一次读多章）。
 func (t *ReadChapterTool) ReadOnly(_ json.RawMessage) bool        { return true }
@@ -30,12 +32,12 @@ func (t *ReadChapterTool) ConcurrencySafe(_ json.RawMessage) bool { return true 
 
 func (t *ReadChapterTool) Schema() map[string]any {
 	return schema.Object(
-		schema.Property("chapter", schema.Int("章节号（读单章时必填）")),
-		schema.Property("from", schema.Int("起始章节号（读范围时使用）")),
-		schema.Property("to", schema.Int("结束章节号（读范围时使用）")),
-		schema.Property("source", schema.Enum("来源", "final", "draft")).Required(),
-		schema.Property("character", schema.String("角色名（提取对话片段时使用）")),
-		schema.Property("max_runes", schema.Int("每章最大字符数（范围读取时截取，默认 2000）")),
+		schema.Property("chapter", schema.Int(i18n.F("章节号（读单章时必填）"))),
+		schema.Property("from", schema.Int(i18n.F("起始章节号（读范围时使用）"))),
+		schema.Property("to", schema.Int(i18n.F("结束章节号（读范围时使用）"))),
+		schema.Property("source", schema.Enum(i18n.F("来源"), "final", "draft")).Required(),
+		schema.Property("character", schema.String(i18n.F("角色名（提取对话片段时使用）"))),
+		schema.Property("max_runes", schema.Int(i18n.F("每章最大字符数（范围读取时截取，默认 2000）"))),
 	)
 }
 
@@ -60,7 +62,7 @@ func (t *ReadChapterTool) Execute(_ context.Context, args json.RawMessage) (json
 		var warnings []string
 		warn := func(scope string, err error) {
 			if err != nil {
-				warnings = append(warnings, fmt.Sprintf("%s 读取失败: %v", scope, err))
+				warnings = append(warnings, fmt.Sprintf(i18n.F("%s 读取失败: %v"), scope, err))
 			}
 		}
 		chars, err := t.store.Characters.Load()
@@ -85,7 +87,7 @@ func (t *ReadChapterTool) Execute(_ context.Context, args json.RawMessage) (json
 			"samples":   samples,
 		}
 		if len(samples) == 0 {
-			result["hint"] = "该角色暂无可用的已提交对话样本"
+			result["hint"] = i18n.F("该角色暂无可用的已提交对话样本")
 		}
 		if len(warnings) > 0 {
 			result["status"] = "partial"
@@ -98,7 +100,13 @@ func (t *ReadChapterTool) Execute(_ context.Context, args json.RawMessage) (json
 	if a.From > 0 && a.To > 0 {
 		maxRunes := a.MaxRunes
 		if maxRunes <= 0 {
-			maxRunes = 2000
+			// 2000 được upstream chọn theo đơn vị chữ Hán, tức ~2000 âm tiết nội
+			// dung mỗi chương. Với tiếng Việt, 2000 rune chỉ chở ~420 chữ: model
+			// gọi read_chapter(from,to) để bắt mạch liên tục trước sau lại chỉ nhận
+			// 20% đầu mỗi chương và không có dấu hiệu gì cho biết đã bị cắt.
+			// Quy đổi để lượng nội dung tương đương ở cả hai ngôn ngữ; MaxRunes do
+			// model chỉ định thì tôn trọng nguyên văn (model tự tính ngân sách của nó).
+			maxRunes = domain.RuneBudgetForWords(2000)
 		}
 		var load func(int) (string, error)
 		if a.Source == "draft" {
@@ -150,7 +158,7 @@ func (t *ReadChapterTool) Execute(_ context.Context, args json.RawMessage) (json
 			"chapter": a.Chapter,
 			"source":  a.Source,
 			"exists":  false,
-			"hint":    "请求的来源中没有该章节；如需读取另一来源，请明确指定 source",
+			"hint":    i18n.F("请求的来源中没有该章节；如需读取另一来源，请明确指定 source"),
 		})
 	}
 
@@ -158,7 +166,7 @@ func (t *ReadChapterTool) Execute(_ context.Context, args json.RawMessage) (json
 		"chapter":    a.Chapter,
 		"source":     a.Source,
 		"content":    content,
-		"word_count": len([]rune(content)),
+		"word_count": domain.WordCount(content),
 	})
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/voocel/agentcore"
 	"github.com/voocel/ainovel-cli/internal/bootstrap"
 	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/models"
 	storepkg "github.com/voocel/ainovel-cli/internal/store"
 )
@@ -191,13 +192,13 @@ func (t *UsageTracker) noteCacheBreak(role, task string, u agentcore.Usage) {
 		return
 	}
 	gap := now.Sub(prevAt).Round(time.Second)
-	hint := "疑似服务端逐出/路由漂移（中转站轮询上游是常见原因）"
+	hint := i18n.F("疑似服务端逐出/路由漂移（中转站轮询上游是常见原因）")
 	if gap > time.Hour {
-		hint = "疑似 1h TTL 过期"
+		hint = i18n.F("疑似 1h TTL 过期")
 	} else if gap > 5*time.Minute {
-		hint = "疑似 5m TTL 过期"
+		hint = i18n.F("疑似 5m TTL 过期")
 	}
-	slog.Warn("缓存链断裂：前缀未缩短而命中骤降",
+	slog.Warn(i18n.F("缓存链断裂：前缀未缩短而命中骤降"),
 		"module", "usage", "role", role,
 		"cache_read", fmt.Sprintf("%d→%d", prevRead, u.CacheRead),
 		"prefix", fmt.Sprintf("%d→%d", prevPrefix, prefix),
@@ -221,7 +222,7 @@ func (t *UsageTracker) flagMissingUsage(agentName string) {
 	t.loggedMissingUsage = true
 	t.mu.Unlock()
 	if shouldLog {
-		slog.Warn("LLM 响应未携带 usage 数据，缓存/成本面板将无累计——通常是上游 streaming 未按 OpenAI include_usage 协议发 final usage chunk",
+		slog.Warn(i18n.F("LLM 响应未携带 usage 数据，缓存/成本面板将无累计——通常是上游 streaming 未按 OpenAI include_usage 协议发 final usage chunk"),
 			"module", "usage", "agent", agentName)
 		if t.onMissingUsage != nil {
 			t.onMissingUsage()
@@ -529,7 +530,7 @@ func (t *UsageTracker) autoSaveLoop(ctx context.Context) {
 	var pending bool
 	flush := func() {
 		if err := t.SaveNow(); err != nil {
-			slog.Warn("usage 落盘失败", "module", "usage", "err", err)
+			slog.Warn(i18n.F("usage 落盘失败"), "module", "usage", "err", err)
 		}
 		pending = false
 	}

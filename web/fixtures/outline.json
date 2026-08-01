@@ -1,0 +1,88 @@
+{
+  "flat": [
+    {
+      "chapter": 1,
+      "title": "Người gác cầu đá",
+      "core_event": "gặp người lạ",
+      "hook": "bỏ lửng",
+      "scenes": [
+        "Ếch nín tiếng dưới bậc thứ hai trăm",
+        "Tiếng chuông đổ ngược từ lòng suối",
+        "Đèn tắt trong lúc bấc còn đứng",
+        "Người ướt ngồi trên đá khô, đưa thư không đề tên"
+      ]
+    },
+    {
+      "chapter": 2,
+      "title": "Thư không người nhận",
+      "core_event": "nhận thư",
+      "hook": "câu hỏi",
+      "scenes": [
+        "Vết ngón tay ướt không khô sau một ngày một đêm",
+        "Ba điều không làm của người gác cầu",
+        "Mở thư ở giờ thứ hai mươi sáu"
+      ]
+    },
+    {
+      "chapter": 3,
+      "title": "Tiếng chuông thứ ba",
+      "core_event": "chuông đổ",
+      "hook": "bỏ lửng hành động",
+      "scenes": [
+        "Tiếng nắp đóng trước khi chuông đổ",
+        "Cả thung lũng im sau tiếng thứ ba"
+      ]
+    }
+  ],
+  "premise": "Ở Hàn Sơn, tiếng chuông chỉ đổ ba lần một năm: một lần gọi người sống, một lần\ntiễn người chết, một lần không ai biết gọi ai. Lâm Thanh gác cầu đá dưới chân\nnúi đã mười bảy năm, và đêm ấy chuông đổ lần thứ tư.\n",
+  "volumes": [
+    {
+      "index": 1,
+      "title": "Sương phủ Hàn Sơn",
+      "theme": "báo thù",
+      "arcs": [
+        {
+          "index": 1,
+          "title": "Ba tiếng chuông",
+          "goal": "hé lộ",
+          "chapters": [
+            {
+              "chapter": 1,
+              "title": "Người gác cầu đá",
+              "core_event": "gặp người lạ",
+              "hook": "bỏ lửng",
+              "scenes": null
+            },
+            {
+              "chapter": 2,
+              "title": "Thư không người nhận",
+              "core_event": "nhận thư",
+              "hook": "câu hỏi",
+              "scenes": null
+            },
+            {
+              "chapter": 3,
+              "title": "Tiếng chuông thứ ba",
+              "core_event": "chuông đổ",
+              "hook": "bỏ lửng hành động",
+              "scenes": null
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "title": "Vết dao cũ",
+          "goal": "đối đầu",
+          "estimated_chapters": 6,
+          "chapters": null
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "title": "Chờ Architect mở",
+      "theme": "chưa rõ",
+      "arcs": null
+    }
+  ]
+}

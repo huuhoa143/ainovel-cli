@@ -9,11 +9,13 @@ import (
 
 	"github.com/voocel/agentcore"
 	"github.com/voocel/ainovel-cli/internal/bootstrap"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
 // 冷启动共创：从零澄清需求，产出整本书的创作指令。
-const coCreateSystemPrompt = `你是一个小说共创助手。你的任务不是直接开始写小说，而是通过多轮简短对话帮助用户澄清创作需求，并持续整理出一段可直接交给创作引擎的中文创作指令。
+func coCreateSystemPrompt() string {
+	return i18n.F(`你是一个小说共创助手。你的任务不是直接开始写小说，而是通过多轮简短对话帮助用户澄清创作需求，并持续整理出一段可直接交给创作引擎的中文创作指令。
 
 每一轮回复严格按以下 XML 格式输出，包含四个标签，依次出现，每个标签都必须有正确的开闭标签：
 
@@ -24,11 +26,13 @@ const coCreateSystemPrompt = `你是一个小说共创助手。你的任务不�
 <draft>
 当前完整的创作指令草稿，使用 Markdown：直接从二级标题开始，例如 "## 主题"、"## 关键要素"、"## 待澄清信息"；用项目符号列出要点。每一轮都要在已有结论上**累积更新**，吸收用户最新意图；即使本轮没有新增也要把完整草稿原样再写一次——不要省略、不要写"（保持上一轮）"之类的占位。
 </draft>
-` + coCreateProtocolTail
+`) + coCreateProtocolTail()
+}
 
 // 阶段共创：小说已写了一部分，规划"后续阶段"的走向。调用方需把当前故事状态摘要
 // 追加到本 prompt 之后（"## 当前故事状态" 段），让模型在已写内容的基础上规划。
-const stageCoCreateSystemPrompt = `你是一个小说"阶段共创"助手。这本小说已经写了一部分（进度见下方"当前故事状态"）。用户暂停下来，想和你一起规划"后续阶段"的走向，再继续创作。
+func stageCoCreateSystemPrompt() string {
+	return i18n.F(`你是一个小说"阶段共创"助手。这本小说已经写了一部分（进度见下方"当前故事状态"）。用户暂停下来，想和你一起规划"后续阶段"的走向，再继续创作。
 
 你的任务不是续写正文，而是通过多轮简短对话帮用户想清楚后面这一段（接下来若干章 / 下一弧 / 下一卷）要往哪走，并持续整理出一段"后续方向 brief"，供创作引擎据此推进。
 
@@ -43,11 +47,13 @@ const stageCoCreateSystemPrompt = `你是一个小说"阶段共创"助手。这�
 <draft>
 当前完整的"后续方向 brief"，使用 Markdown：直接从二级标题开始，例如 "## 后续走向"、"## 关键转折"、"## 要收的伏笔"、"## 节奏与篇幅"；用项目符号列出要点。每一轮都要在已有结论上**累积更新**，吸收用户最新意图；即使本轮没有新增也要把完整 brief 原样再写一次——不要省略、不要写"（保持上一轮）"之类的占位。
 </draft>
-` + coCreateProtocolTail
+`) + coCreateProtocolTail()
+}
 
-// coCreateProtocolTail 是两种共创模式共用的输出协议尾部（<ready> / <suggestions> + 输出规范）。
+// coCreateProtocolTail() 是两种共创模式共用的输出协议尾部（<ready> / <suggestions> + 输出规范）。
 // 两模式只在开场语境与 <draft> 语义上不同，协议完全一致。
-const coCreateProtocolTail = `
+func coCreateProtocolTail() string {
+	return i18n.F(`
 <ready>false</ready>
 
 <suggestions>
@@ -66,7 +72,8 @@ const coCreateProtocolTail = `
 - 标签外不要添加任何说明、思考或代码围栏。
 - <draft> 内允许多行 Markdown，直接换行书写，不需要任何转义。
 - <ready> 只写 true 或 false。信息已足够时填 true。
-- <ready>true</ready> 时 <suggestions> 可以为空（保留空标签 <suggestions></suggestions> 即可）。`
+- <ready>true</ready> 时 <suggestions> 可以为空（保留空标签 <suggestions></suggestions> 即可）。`)
+}
 
 // CoCreateProgressKind 标识流式回调的内容类型。
 const (
@@ -127,7 +134,7 @@ func coCreateStream(ctx context.Context, models *bootstrap.ModelSet, sessions *s
 			ParsedSugs:   reply.Suggestions,
 			Error:        errString(err),
 		}); logErr != nil {
-			slog.Warn("共创会话日志落盘失败", "module", "cocreate", "err", logErr)
+			slog.Warn(i18n.F("共创会话日志落盘失败"), "module", "cocreate", "err", logErr)
 		}
 	}()
 

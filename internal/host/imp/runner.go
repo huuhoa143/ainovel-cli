@@ -11,6 +11,7 @@ import (
 
 	"github.com/voocel/agentcore"
 	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/logger"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
@@ -154,7 +155,7 @@ func budgetsFromDeps(d Deps) RunBudgets {
 func Run(ctx context.Context, deps Deps, opts Options) (<-chan Event, error) {
 	if deps.Store == nil || deps.CommitChapter == nil ||
 		deps.Segment.Model == nil || deps.Analyze.Model == nil || deps.Synthesize.Model == nil {
-		return nil, fmt.Errorf("deps 不完整")
+		return nil, errors.New(i18n.F("deps 不完整"))
 	}
 	if deps.Budgets == (RunBudgets{}) {
 		deps.Budgets = budgetsFromDeps(deps)
@@ -163,7 +164,7 @@ func Run(ctx context.Context, deps Deps, opts Options) (<-chan Event, error) {
 	// 引擎/TUI 日志混流，排查时只看这一个文件。创建失败须回显——面板会指引用户
 	// 查看 logs/import.log，静默回退等于指向一个不存在的文件（Debug-First）。
 	log, closeLog, logErr := logger.FileLogger(deps.Store.Dir(), "import.log")
-	log.Info("imp 导入模型运行时",
+	log.Info(i18n.F("imp 导入模型运行时"),
 		"segment_ctx", deps.Segment.Runtime.ContextTokens,
 		"analyze_ctx", deps.Analyze.Runtime.ContextTokens,
 		"synthesize_ctx", deps.Synthesize.Runtime.ContextTokens,
@@ -175,7 +176,7 @@ func Run(ctx context.Context, deps Deps, opts Options) (<-chan Event, error) {
 		defer closeLog()
 		r := &runner{deps: deps, opts: opts, events: events, ws: OpenWorkspace(deps.Store.Dir()), log: log}
 		if logErr != nil {
-			r.emit(StageIngesting, 0, 0, fmt.Sprintf("导入日志文件创建失败（%v），本次转录改走默认日志", logErr), nil)
+			r.emit(StageIngesting, 0, 0, fmt.Sprintf(i18n.F("导入日志文件创建失败（%v），本次转录改走默认日志"), logErr), nil)
 		}
 		r.run(ctx)
 	}()
@@ -289,7 +290,7 @@ func (r *runner) applyGuidance() error {
 	}
 	existing, err := r.ws.LoadGuidance()
 	if err != nil {
-		return fmt.Errorf("读取已有切分指导: %w", err)
+		return fmt.Errorf(i18n.F("读取已有切分指导: %w"), err)
 	}
 	if existing == g {
 		return nil
@@ -299,10 +300,10 @@ func (r *runner) applyGuidance() error {
 	// premise 是发布的第一笔写入，它非空即发布已开始（导入前置校验保证书原本为空）。
 	p, err := r.deps.Store.Outline.LoadPremise()
 	if err != nil {
-		return fmt.Errorf("读取正式 premise: %w", err)
+		return fmt.Errorf(i18n.F("读取正式 premise: %w"), err)
 	}
 	if p != "" {
-		return fmt.Errorf("正式 Foundation 已开始发布，--guide 重切会与已发布内容冲突而被拒绝覆盖，不再接受切分指导")
+		return errors.New(i18n.F("正式 Foundation 已开始发布，--guide 重切会与已发布内容冲突而被拒绝覆盖，不再接受切分指导"))
 	}
 	return r.ws.writeAtomic(fileGuidance, []byte(g))
 }
@@ -320,36 +321,36 @@ func (r *runner) checkSourceIdentity() error {
 	}
 	raw, err := os.ReadFile(r.opts.SourcePath)
 	if err != nil {
-		return fmt.Errorf("读取源文件 %s：%w", r.opts.SourcePath, err)
+		return fmt.Errorf(i18n.F("读取源文件 %s：%w"), r.opts.SourcePath, err)
 	}
 	if Digest(raw) != m.RawSHA256 {
-		return fmt.Errorf("已有 %q 的导入在进行中，本次源文件与其内容不同：请先完成或放弃旧导入（删除 meta/import/）再导入新书", m.SourceName)
+		return fmt.Errorf(i18n.F("已有 %q 的导入在进行中，本次源文件与其内容不同：请先完成或放弃旧导入（删除 meta/import/）再导入新书"), m.SourceName)
 	}
 	return nil
 }
 
 func (r *runner) run(ctx context.Context) {
 	if err := r.checkSourceIdentity(); err != nil {
-		r.fail("校验源文件身份", err)
+		r.fail(i18n.F("校验源文件身份"), err)
 		return
 	}
 	var previous *Facts
 	for {
 		if ctx.Err() != nil {
-			r.fail("用户取消", ctx.Err())
+			r.fail(i18n.F("用户取消"), ctx.Err())
 			return
 		}
 		if err := r.applyGuidance(); err != nil {
-			r.fail("写入切分指导", err)
+			r.fail(i18n.F("写入切分指导"), err)
 			return
 		}
 		facts, err := r.facts()
 		if err != nil {
-			r.fail("读取导入状态", err)
+			r.fail(i18n.F("读取导入状态"), err)
 			return
 		}
 		if previous != nil && facts == *previous {
-			r.fail("导入停滞", fmt.Errorf("动作执行后事实没有变化，下一动作仍为 %q", NextAction(facts)))
+			r.fail(i18n.F("导入停滞"), fmt.Errorf(i18n.F("动作执行后事实没有变化，下一动作仍为 %q"), NextAction(facts)))
 			return
 		}
 		snapshot := facts
@@ -377,13 +378,13 @@ func (r *runner) run(ctx context.Context) {
 		case ActionPublish:
 			err = r.publish(ctx)
 		case ActionDone:
-			r.emit(StageDone, 0, 0, "导入完成，等待验收后续写", nil)
+			r.emit(StageDone, 0, 0, i18n.F("导入完成，等待验收后续写"), nil)
 			return
 		default:
-			err = fmt.Errorf("未知动作 %q", act)
+			err = fmt.Errorf(i18n.F("未知动作 %q"), act)
 		}
 		if err != nil {
-			r.fail("导入失败", err)
+			r.fail(i18n.F("导入失败"), err)
 			return
 		}
 	}
@@ -394,20 +395,20 @@ func (r *runner) ingest(ctx context.Context) error {
 	// createWorkspace 会以「已存在（无参数 /import 可恢复）」拒绝，无参数重跑又因
 	// WorkspaceReady=false 回到这里要求源路径——两条提示互相打架，用户无路可走。
 	if r.ws.Active() {
-		return fmt.Errorf("meta/import/ 已存在但工作区身份不可用（manifest/source/intent 缺失或损坏），请人工确认后删除该目录再重新导入")
+		return errors.New(i18n.F("meta/import/ 已存在但工作区身份不可用（manifest/source/intent 缺失或损坏），请人工确认后删除该目录再重新导入"))
 	}
 	if err := checkImportPreconditions(r.deps.Store); err != nil {
 		return err
 	}
 	if r.opts.SourcePath == "" {
-		return fmt.Errorf("新导入需要源文件路径")
+		return errors.New(i18n.F("新导入需要源文件路径"))
 	}
-	r.emit(StageIngesting, 0, 0, "读取、解码、归一化并快照源文件...", nil)
+	r.emit(StageIngesting, 0, 0, i18n.F("读取、解码、归一化并快照源文件..."), nil)
 	_, m, err := Ingest(r.deps.Store.Dir(), r.opts.SourcePath, r.opts.intent())
 	if err != nil {
 		return err
 	}
-	r.emit(StageIngesting, 0, 0, fmt.Sprintf("源快照就绪：%s（编码 %s，%d 字节）", m.SourceName, m.Encoding, m.SizeBytes), nil)
+	r.emit(StageIngesting, 0, 0, fmt.Sprintf(i18n.F("源快照就绪：%s（编码 %s，%d 字节）"), m.SourceName, m.Encoding, m.SizeBytes), nil)
 	return nil
 }
 
@@ -419,9 +420,9 @@ func (r *runner) segment(ctx context.Context) error {
 	units := buildSourceUnits(src, r.deps.Budgets.MaxUnitBytes)
 	guidance, err := r.ws.LoadGuidance()
 	if err != nil {
-		return fmt.Errorf("读取切分指导: %w", err)
+		return fmt.Errorf(i18n.F("读取切分指导: %w"), err)
 	}
-	r.emit(StageSegmenting, 0, 0, fmt.Sprintf("语义识别章节边界（%d 个坐标单元）...", len(units)), nil)
+	r.emit(StageSegmenting, 0, 0, fmt.Sprintf(i18n.F("语义识别章节边界（%d 个坐标单元）..."), len(units)), nil)
 	digest := segmentInputDigest(Digest(src), guidance, segmentPromptVersion)
 	// 块缓存身份额外绑定 MaxUnitBytes：unit 表由（归一化源, MaxUnitBytes）唯一确定，换模型
 	// 档位改变 MaxUnitBytes 会重塑超长行的虚拟分片——ID 序列（L1.1…）与块端点可复现但字节
@@ -438,10 +439,10 @@ func (r *runner) segment(ctx context.Context) error {
 	}
 	// 最终切分已落盘，块级缓存完成使命；清理失败无碍正确性（digest 仍一致），但要留痕。
 	if cerr := r.ws.clearDir(dirSegmentChunks); cerr != nil {
-		r.emit(StageSegmenting, 0, 0, fmt.Sprintf("块级缓存清理失败（不影响切分结果）：%v", cerr), nil)
+		r.emit(StageSegmenting, 0, 0, fmt.Sprintf(i18n.F("块级缓存清理失败（不影响切分结果）：%v"), cerr), nil)
 	}
 	r.emit(StageSegmenting, len(seg.Chapters), len(seg.Chapters),
-		fmt.Sprintf("切分完成：%d 章、%d 个附属区域", len(seg.Chapters), len(seg.Matter)), nil)
+		fmt.Sprintf(i18n.F("切分完成：%d 章、%d 个附属区域"), len(seg.Chapters), len(seg.Matter)), nil)
 	return nil
 }
 
@@ -449,12 +450,12 @@ func (r *runner) segment(ctx context.Context) error {
 func (r *runner) confirm() bool {
 	seg, err := readArtifact[Segmentation](r.ws, fileSegmentation)
 	if err != nil {
-		r.fail("读取切分结果", err)
+		r.fail(i18n.F("读取切分结果"), err)
 		return false
 	}
 	in, err := r.ws.LoadIntent()
 	if err != nil {
-		r.fail("读取导入意图", err)
+		r.fail(i18n.F("读取导入意图"), err)
 		return false
 	}
 	accept := r.opts.AcceptSegmentation
@@ -469,23 +470,23 @@ func (r *runner) confirm() bool {
 	if !auto && !accept {
 		msg := buildConfirmPreview(&seg.Payload)
 		if blockedByNotes {
-			msg += "  ! 存在切分容错说明，--yes 未自动放行，请人工核对\n"
+			msg += i18n.F("  ! 存在切分容错说明，--yes 未自动放行，请人工核对\n")
 		}
 		r.emit(StageAwaitingConfirmation, len(seg.Payload.Chapters), len(seg.Payload.Chapters), msg, nil)
 		return false
 	}
 	raw, err := r.ws.readBytes(fileSegmentation)
 	if err != nil {
-		r.fail("读取切分工件", err)
+		r.fail(i18n.F("读取切分工件"), err)
 		return false
 	}
-	method, doneMsg := confirmMethodAuto, "已自动接受切分（--yes）"
+	method, doneMsg := confirmMethodAuto, i18n.F("已自动接受切分（--yes）")
 	if accept {
-		method, doneMsg = confirmMethodUser, "已确认切分（人工核对）"
+		method, doneMsg = confirmMethodUser, i18n.F("已确认切分（人工核对）")
 	}
 	conf := Confirmation{Method: method, Chapters: len(seg.Payload.Chapters)}
 	if err := writeArtifact(r.ws, fileConfirmation, Digest(raw), conf); err != nil {
-		r.fail("写确认工件", err)
+		r.fail(i18n.F("写确认工件"), err)
 		return false
 	}
 	r.emit(StageAwaitingConfirmation, len(seg.Payload.Chapters), len(seg.Payload.Chapters), doneMsg, nil)
@@ -496,22 +497,22 @@ func (r *runner) confirm() bool {
 // 全量列出，面板 viewport 可滚动查看；不设截断上限。
 func buildConfirmPreview(seg *Segmentation) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "已切分 %d 章", len(seg.Chapters))
+	fmt.Fprintf(&b, i18n.F("已切分 %d 章"), len(seg.Chapters))
 	if len(seg.Matter) > 0 {
-		fmt.Fprintf(&b, "、%d 个附属区域", len(seg.Matter))
+		fmt.Fprintf(&b, i18n.F("、%d 个附属区域"), len(seg.Matter))
 	}
 	if len(seg.Uncertain) > 0 {
-		fmt.Fprintf(&b, "（%d 章存疑）", len(seg.Uncertain))
+		fmt.Fprintf(&b, i18n.F("（%d 章存疑）"), len(seg.Uncertain))
 	}
-	b.WriteString("，请核对：\n")
+	b.WriteString(i18n.F("，请核对：\n"))
 	uncertain := make(map[int]bool, len(seg.Uncertain))
 	for _, n := range seg.Uncertain {
 		uncertain[n] = true
 	}
 	for _, c := range seg.Chapters {
-		fmt.Fprintf(&b, "  第%d章 %s", c.Number, c.Title)
+		fmt.Fprintf(&b, i18n.F("  第%d章 %s"), c.Number, c.Title)
 		if uncertain[c.Number] {
-			b.WriteString("  [存疑]")
+			b.WriteString(i18n.F("  [存疑]"))
 		}
 		b.WriteByte('\n')
 	}
@@ -551,7 +552,7 @@ func (r *runner) analyze(ctx context.Context) error {
 		if start >= total {
 			break
 		}
-		r.emit(StageAnalyzing, start, total, fmt.Sprintf("分析第 %d 章起的连续批次...", start+1), nil)
+		r.emit(StageAnalyzing, start, total, fmt.Sprintf(i18n.F("分析第 %d 章起的连续批次..."), start+1), nil)
 		done, err := AnalyzeNext(ctx, r.deps.Analyze.Model, r.deps.Prompts.Analyze, r.ws, src, seg, segArt.InputDigest, analyzePromptVersion, r.deps.Budgets.Analyze, r.profileFor(r.deps.Analyze, StageAnalyzing))
 		if err != nil {
 			return err
@@ -560,7 +561,7 @@ func (r *runner) analyze(ctx context.Context) error {
 			break
 		}
 	}
-	r.emit(StageAnalyzing, total, total, "逐章事实提取完成", nil)
+	r.emit(StageAnalyzing, total, total, i18n.F("逐章事实提取完成"), nil)
 	return nil
 }
 
@@ -572,9 +573,9 @@ func (r *runner) synthesize(ctx context.Context) error {
 	total := len(segArt.Payload.Chapters)
 	facts := loadPriorFacts(r.ws, total)
 	if len(facts) != total {
-		return fmt.Errorf("逐章分析不完整：%d/%d", len(facts), total)
+		return fmt.Errorf(i18n.F("逐章分析不完整：%d/%d"), len(facts), total)
 	}
-	r.emit(StageSynthesizing, 0, total, "分层归纳全书语义...", nil)
+	r.emit(StageSynthesizing, 0, total, i18n.F("分层归纳全书语义..."), nil)
 	syn, err := Synthesize(ctx, r.deps.Synthesize.Model, r.deps.Prompts.Synthesize, r.deps.Prompts.Range, r.ws, facts,
 		r.deps.Budgets.SynthesizeRangeBytes, r.deps.Budgets.SynthesizeMaxTokens, r.profileFor(r.deps.Synthesize, StageSynthesizing))
 	if err != nil {
@@ -583,7 +584,7 @@ func (r *runner) synthesize(ctx context.Context) error {
 	if err := writeArtifact(r.ws, fileSynthesis, synthesisInputDigest(facts), *syn); err != nil {
 		return err
 	}
-	r.emit(StageSynthesizing, total, total, fmt.Sprintf("综合完成：%d 卷、故事状态 %s", len(syn.Structure), syn.StoryStatus), nil)
+	r.emit(StageSynthesizing, total, total, fmt.Sprintf(i18n.F("综合完成：%d 卷、故事状态 %s"), len(syn.Structure), syn.StoryStatus), nil)
 	return nil
 }
 
@@ -604,7 +605,7 @@ func (r *runner) publish(ctx context.Context) error {
 	total := len(seg.Chapters)
 	facts := loadPriorFacts(r.ws, total)
 	if len(facts) != total {
-		return fmt.Errorf("发布前分析不完整：%d/%d", len(facts), total)
+		return fmt.Errorf(i18n.F("发布前分析不完整：%d/%d"), len(facts), total)
 	}
 	closed, err := r.resolveStory(&synArt.Payload)
 	if err != nil {
@@ -618,9 +619,9 @@ func (r *runner) publish(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	r.emit(StageValidating, 0, total, "Foundation 组装校验通过", nil)
+	r.emit(StageValidating, 0, total, i18n.F("Foundation 组装校验通过"), nil)
 
-	r.emit(StagePublishing, 0, total, "发布正式 Foundation...", nil)
+	r.emit(StagePublishing, 0, total, i18n.F("发布正式 Foundation..."), nil)
 	if err := publishFoundation(r.deps.Store, f); err != nil {
 		return err
 	}
@@ -629,13 +630,13 @@ func (r *runner) publish(ctx context.Context) error {
 	// 置于 publishFoundation（已初始化 RunMeta）之后、章节提交之前，彻底关闭该窗口；重跑发布时幂等
 	// 重设（--continue 不设 Hold，交由自动接力，RFC §12.4）。
 	if err := r.setCompletionHold(); err != nil {
-		return fmt.Errorf("建立导入完成 Hold：%w", err)
+		return fmt.Errorf(i18n.F("建立导入完成 Hold：%w"), err)
 	}
 	for i, c := range seg.Chapters {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		r.emit(StagePublishing, c.Number, total, fmt.Sprintf("发布第 %d/%d 章：%s", c.Number, total, c.Title), nil)
+		r.emit(StagePublishing, c.Number, total, fmt.Sprintf(i18n.F("发布第 %d/%d 章：%s"), c.Number, total, c.Title), nil)
 		if err := publishChapter(ctx, r.deps.Store, r.deps.CommitChapter, c.Number, seg.Content(src, i), facts[i]); err != nil {
 			return err
 		}
@@ -651,17 +652,17 @@ func (r *runner) storyChoice() (string, error) {
 		if art, aerr := readArtifact[StoryResolution](r.ws, fileStoryResolve); aerr == nil && art.InputDigest == Digest(raw) {
 			return art.Payload.Choice, nil
 		} else if aerr != nil && !os.IsNotExist(aerr) {
-			return "", fmt.Errorf("读取故事状态裁定: %w", aerr)
+			return "", fmt.Errorf(i18n.F("读取故事状态裁定: %w"), aerr)
 		}
 	} else {
-		return "", fmt.Errorf("读取综合工件: %w", err)
+		return "", fmt.Errorf(i18n.F("读取综合工件: %w"), err)
 	}
 	if r.opts.StoryResolution != "" {
 		return r.opts.StoryResolution, nil
 	}
 	in, err := r.ws.LoadIntent()
 	if err != nil {
-		return "", fmt.Errorf("读取导入意图: %w", err)
+		return "", fmt.Errorf(i18n.F("读取导入意图: %w"), err)
 	}
 	return in.StoryResolution, nil
 }
@@ -671,20 +672,20 @@ func (r *runner) storyChoice() (string, error) {
 func (r *runner) resolveStoryStatus() bool {
 	choice, err := r.storyChoice()
 	if err != nil {
-		r.fail("读取故事状态裁定", err)
+		r.fail(i18n.F("读取故事状态裁定"), err)
 		return false
 	}
 	if choice != storyOpen && choice != storyClosed {
-		r.emit(StageAwaitingStoryStatus, 0, 0, "综合判定故事状态为 uncertain，请用 --story=open|closed 明确后重试", nil)
+		r.emit(StageAwaitingStoryStatus, 0, 0, i18n.F("综合判定故事状态为 uncertain，请用 --story=open|closed 明确后重试"), nil)
 		return false
 	}
 	raw, err := r.ws.readBytes(fileSynthesis)
 	if err != nil {
-		r.fail("读取综合结果", err)
+		r.fail(i18n.F("读取综合结果"), err)
 		return false
 	}
 	if err := writeArtifact(r.ws, fileStoryResolve, Digest(raw), StoryResolution{Choice: choice}); err != nil {
-		r.fail("落盘故事状态裁定", err)
+		r.fail(i18n.F("落盘故事状态裁定"), err)
 		return false
 	}
 	return true
@@ -708,10 +709,10 @@ func (r *runner) resolveStory(syn *BookSynthesis) (bool, error) {
 		case storyOpen:
 			return false, nil
 		default:
-			return false, fmt.Errorf("故事状态 uncertain，需 --story=open|closed")
+			return false, errors.New(i18n.F("故事状态 uncertain，需 --story=open|closed"))
 		}
 	default:
-		return false, fmt.Errorf("未知 story_status：%q", syn.StoryStatus)
+		return false, fmt.Errorf(i18n.F("未知 story_status：%q"), syn.StoryStatus)
 	}
 }
 
@@ -720,13 +721,13 @@ func (r *runner) resolveStory(syn *BookSynthesis) (bool, error) {
 func (r *runner) setCompletionHold() error {
 	in, err := r.ws.LoadIntent()
 	if err != nil {
-		return fmt.Errorf("读取导入意图: %w", err)
+		return fmt.Errorf(i18n.F("读取导入意图: %w"), err)
 	}
 	if r.opts.ContinueAfter || (in != nil && in.ContinueAfterImport) {
 		return nil
 	}
 	return r.deps.Store.RunMeta.SetAdvanceHold(domain.AdvanceHold{
 		After:  domain.AdvanceHoldAtBoundary,
-		Reason: "外部小说导入完成，等待验收后续写",
+		Reason: i18n.F("外部小说导入完成，等待验收后续写"),
 	})
 }

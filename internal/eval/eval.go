@@ -11,6 +11,7 @@ import (
 
 	"github.com/voocel/ainovel-cli/assets"
 	"github.com/voocel/ainovel-cli/internal/bootstrap"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // Command 是 `ainovel-cli eval` 子命令入口，返回进程退出码：
@@ -19,24 +20,24 @@ import (
 // 清晰流程：加载配置 → 加载 case → 按 single/A-B 编排运行 → 采集 → 评分 → 聚合 → 报告。
 func Command(argv []string) int {
 	fs := flag.NewFlagSet("eval", flag.ContinueOnError)
-	casesPath := fs.String("cases", "", "case 目录或单个 .json 文件（必填）")
-	variantDir := fs.String("variant", "", "variant prompt 覆盖目录（含 writer.md 等核心提示词）")
-	configPath := fs.String("config", "", "配置文件路径（缺省用默认路径）")
-	outDir := fs.String("out", "", "报告输出目录（缺省 workspace/evals/<run_id>）")
-	maxChapters := fs.Int("max-chapters", -1, "覆盖所有 case 的章数上限（-1=不覆盖）")
-	timeout := fs.Duration("timeout", 30*time.Minute, "单 case 墙钟上限（0=不限）")
-	repeat := fs.Int("repeat", 1, "每个 case 重复运行次数（降低模型随机性影响）")
-	ci := fs.Bool("ci", false, "CI 模式：抑制逐事件进度输出，仅打印最终结论（退出码已反映门禁，无需此 flag 也生效）")
+	casesPath := fs.String("cases", "", i18n.F("case 目录或单个 .json 文件（必填）"))
+	variantDir := fs.String("variant", "", i18n.F("variant prompt 覆盖目录（含 writer.md 等核心提示词）"))
+	configPath := fs.String("config", "", i18n.F("配置文件路径（缺省用默认路径）"))
+	outDir := fs.String("out", "", i18n.F("报告输出目录（缺省 workspace/evals/<run_id>）"))
+	maxChapters := fs.Int("max-chapters", -1, i18n.F("覆盖所有 case 的章数上限（-1=不覆盖）"))
+	timeout := fs.Duration("timeout", 30*time.Minute, i18n.F("单 case 墙钟上限（0=不限）"))
+	repeat := fs.Int("repeat", 1, i18n.F("每个 case 重复运行次数（降低模型随机性影响）"))
+	ci := fs.Bool("ci", false, i18n.F("CI 模式：抑制逐事件进度输出，仅打印最终结论（退出码已反映门禁，无需此 flag 也生效）"))
 	if err := fs.Parse(argv); err != nil {
 		return 2
 	}
 	if strings.TrimSpace(*casesPath) == "" {
-		fmt.Fprintln(os.Stderr, "eval: 缺少 --cases")
+		fmt.Fprintln(os.Stderr, i18n.F("eval: 缺少 --cases"))
 		fs.Usage()
 		return 2
 	}
 	if *repeat <= 0 {
-		fmt.Fprintln(os.Stderr, "eval: --repeat 必须大于 0")
+		fmt.Fprintln(os.Stderr, i18n.F("eval: --repeat 必须大于 0"))
 		return 2
 	}
 
@@ -48,19 +49,19 @@ func Command(argv []string) int {
 	}
 	cfg, err := loadConfig()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "eval: 加载配置失败: %v\n", err)
+		fmt.Fprintf(os.Stderr, i18n.F("eval: 加载配置失败: %v\n"), err)
 		return 2
 	}
 
 	cases, err := LoadCases(*casesPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "eval: 加载 case 失败: %v\n", err)
+		fmt.Fprintf(os.Stderr, i18n.F("eval: 加载 case 失败: %v\n"), err)
 		return 2
 	}
 
 	variantPrompts, err := loadVariant(*variantDir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "eval: 加载 variant 失败: %v\n", err)
+		fmt.Fprintf(os.Stderr, i18n.F("eval: 加载 variant 失败: %v\n"), err)
 		return 2
 	}
 
@@ -122,7 +123,7 @@ func Command(argv []string) int {
 
 			varBundle := assets.Load(style, assets.LoadOptions{})
 			if err := applyVariant(&varBundle, variantPrompts); err != nil {
-				fmt.Fprintf(os.Stderr, "eval: variant 覆盖失败: %v\n", err)
+				fmt.Fprintf(os.Stderr, i18n.F("eval: variant 覆盖失败: %v\n"), err)
 				return 2
 			}
 			varDir := runDir(*outDir, c.ID, ArmVariant, i, *repeat)
@@ -138,11 +139,11 @@ func Command(argv []string) int {
 
 	suite := Aggregate(runID, mode, variantName, *repeat, caseResults)
 	if err := WriteReport(suite, *outDir); err != nil {
-		fmt.Fprintf(os.Stderr, "eval: 写报告失败: %v\n", err)
+		fmt.Fprintf(os.Stderr, i18n.F("eval: 写报告失败: %v\n"), err)
 		return 2
 	}
 
-	fmt.Fprintf(os.Stderr, "\n%s\n报告: %s\n", Summary(suite), filepath.Join(*outDir, "report.md"))
+	fmt.Fprintf(os.Stderr, i18n.F("\n%s\n报告: %s\n"), Summary(suite), filepath.Join(*outDir, "report.md"))
 	if suite.Gate == Fail {
 		return 1
 	}
@@ -193,7 +194,7 @@ func loadVariant(dir string) (map[string]string, error) {
 		out[e.Name()] = string(data)
 	}
 	if len(out) == 0 {
-		return nil, fmt.Errorf("variant 目录无 *.md 文件: %s", dir)
+		return nil, fmt.Errorf(i18n.F("variant 目录无 *.md 文件: %s"), dir)
 	}
 	return out, nil
 }

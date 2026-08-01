@@ -9,11 +9,11 @@ import (
 	"slices"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/voocel/agentcore/schema"
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/errs"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/llmcontract"
 	"github.com/voocel/ainovel-cli/internal/rules"
 	"github.com/voocel/ainovel-cli/internal/store"
@@ -55,10 +55,10 @@ type commitArgs struct {
 
 func (t *CommitChapterTool) Name() string { return "commit_chapter" }
 func (t *CommitChapterTool) Description() string {
-	return "提交章节终稿。加载草稿正文保存为终稿，更新时间线、伏笔、关系、角色状态和进度。" +
-		"返回结构化事实：next_chapter / review_required / arc_end / volume_end / needs_expansion / book_complete / flow 等"
+	return i18n.F("提交章节终稿。加载草稿正文保存为终稿，更新时间线、伏笔、关系、角色状态和进度。") +
+		i18n.F("返回结构化事实：next_chapter / review_required / arc_end / volume_end / needs_expansion / book_complete / flow 等")
 }
-func (t *CommitChapterTool) Label() string { return "提交章节" }
+func (t *CommitChapterTool) Label() string { return i18n.F("提交章节") }
 
 // 写工具（跨域可恢复 Saga：完整载荷→终稿/状态→进度→checkpoint），禁止并发。
 func (t *CommitChapterTool) ReadOnly(_ json.RawMessage) bool        { return false }
@@ -67,48 +67,48 @@ func (t *CommitChapterTool) StrictSchema() bool                     { return tru
 
 func (t *CommitChapterTool) Schema() map[string]any {
 	timelineSchema := schema.Object(
-		schema.Property("time", schema.String("故事内时间")).Required(),
-		schema.Property("event", schema.String("事件描述")).Required(),
-		schema.Property("characters", schema.Array("涉及角色；无则为空数组", schema.String(""))).Required(),
+		schema.Property("time", schema.String(i18n.F("故事内时间"))).Required(),
+		schema.Property("event", schema.String(i18n.F("事件描述"))).Required(),
+		schema.Property("characters", schema.Array(i18n.F("涉及角色；无则为空数组"), schema.String(""))).Required(),
 	)
 	foreshadowSchema := schema.Object(
-		schema.Property("id", schema.String("伏笔 ID")).Required(),
-		schema.Property("action", schema.Enum("操作", "plant", "advance", "resolve")).Required(),
-		schema.Property("description", llmcontract.Nullable(schema.String("伏笔描述；非 plant 时为 null"))).Required(),
+		schema.Property("id", schema.String(i18n.F("伏笔 ID"))).Required(),
+		schema.Property("action", schema.Enum(i18n.F("操作"), "plant", "advance", "resolve")).Required(),
+		schema.Property("description", llmcontract.Nullable(schema.String(i18n.F("伏笔描述；非 plant 时为 null")))).Required(),
 	)
 	relationshipSchema := schema.Object(
-		schema.Property("character_a", schema.String("角色 A")).Required(),
-		schema.Property("character_b", schema.String("角色 B")).Required(),
-		schema.Property("relation", schema.String("当前关系描述")).Required(),
+		schema.Property("character_a", schema.String(i18n.F("角色 A"))).Required(),
+		schema.Property("character_b", schema.String(i18n.F("角色 B"))).Required(),
+		schema.Property("relation", schema.String(i18n.F("当前关系描述"))).Required(),
 	)
 	stateChangeSchema := schema.Object(
-		schema.Property("entity", schema.String("角色名或实体名")).Required(),
-		schema.Property("field", schema.String("变化属性")).Required(),
-		schema.Property("old_value", llmcontract.Nullable(schema.String("变化前的值；未知时为 null"))).Required(),
-		schema.Property("new_value", schema.String("变化后的值")).Required(),
-		schema.Property("reason", llmcontract.Nullable(schema.String("变化原因；无需说明时为 null"))).Required(),
+		schema.Property("entity", schema.String(i18n.F("角色名或实体名"))).Required(),
+		schema.Property("field", schema.String(i18n.F("变化属性"))).Required(),
+		schema.Property("old_value", llmcontract.Nullable(schema.String(i18n.F("变化前的值；未知时为 null")))).Required(),
+		schema.Property("new_value", schema.String(i18n.F("变化后的值"))).Required(),
+		schema.Property("reason", llmcontract.Nullable(schema.String(i18n.F("变化原因；无需说明时为 null")))).Required(),
 	)
 	feedbackSchema := schema.Object(
-		schema.Property("deviation", schema.String("偏离大纲的描述")).Required(),
-		schema.Property("suggestion", schema.String("对后续大纲的调整建议")).Required(),
+		schema.Property("deviation", schema.String(i18n.F("偏离大纲的描述"))).Required(),
+		schema.Property("suggestion", schema.String(i18n.F("对后续大纲的调整建议"))).Required(),
 	)
-	feedbackSchema["description"] = "对后续大纲的建议对象；必须直接传 JSON object，不要传字符串化 JSON"
+	feedbackSchema["description"] = i18n.F("对后续大纲的建议对象；必须直接传 JSON object，不要传字符串化 JSON")
 	return schema.Object(
-		schema.Property("chapter", schema.Int("章节号")).Required(),
-		schema.Property("title", schema.String("与终稿正文一致的最终标题")).Required(),
-		schema.Property("summary", schema.String("本章内容摘要（200字以内）")).Required(),
-		schema.Property("characters", schema.Array("本章出场角色名", schema.String(""))).Required(),
-		schema.Property("key_events", schema.Array("本章关键事件", schema.String(""))).Required(),
-		schema.Property("timeline_events", schema.Array("本章时间线事件；无则为空数组", timelineSchema)).Required(),
-		schema.Property("foreshadow_updates", schema.Array("伏笔操作；无则为空数组", foreshadowSchema)).Required(),
-		schema.Property("relationship_changes", schema.Array("关系变化；无则为空数组", relationshipSchema)).Required(),
-		schema.Property("state_changes", schema.Array("角色/实体状态变化；无则为空数组", stateChangeSchema)).Required(),
-		schema.Property("cast_intros", schema.Array("本章首次引入且后续可能再出现的次要角色简介（不含主角及 characters.json 已有角色）", schema.Object(
-			schema.Property("name", schema.String("角色名")).Required(),
-			schema.Property("brief_role", schema.String("一句话定位（如：客栈老板/赌坊打手）")).Required(),
+		schema.Property("chapter", schema.Int(i18n.F("章节号"))).Required(),
+		schema.Property("title", schema.String(i18n.F("与终稿正文一致的最终标题"))).Required(),
+		schema.Property("summary", schema.String(i18n.F("本章内容摘要（200字以内）"))).Required(),
+		schema.Property("characters", schema.Array(i18n.F("本章出场角色名"), schema.String(""))).Required(),
+		schema.Property("key_events", schema.Array(i18n.F("本章关键事件"), schema.String(""))).Required(),
+		schema.Property("timeline_events", schema.Array(i18n.F("本章时间线事件；无则为空数组"), timelineSchema)).Required(),
+		schema.Property("foreshadow_updates", schema.Array(i18n.F("伏笔操作；无则为空数组"), foreshadowSchema)).Required(),
+		schema.Property("relationship_changes", schema.Array(i18n.F("关系变化；无则为空数组"), relationshipSchema)).Required(),
+		schema.Property("state_changes", schema.Array(i18n.F("角色/实体状态变化；无则为空数组"), stateChangeSchema)).Required(),
+		schema.Property("cast_intros", schema.Array(i18n.F("本章首次引入且后续可能再出现的次要角色简介（不含主角及 characters.json 已有角色）"), schema.Object(
+			schema.Property("name", schema.String(i18n.F("角色名"))).Required(),
+			schema.Property("brief_role", schema.String(i18n.F("一句话定位（如：客栈老板/赌坊打手）"))).Required(),
 		))).Required(),
-		schema.Property("hook_type", llmcontract.Nullable(schema.Enum("章末钩子类型；无明确类型时为 null", domain.HookTypes()...))).Required(),
-		schema.Property("dominant_strand", llmcontract.Nullable(schema.Enum("本章主导叙事线；无明确主线时为 null", domain.DominantStrands()...))).Required(),
+		schema.Property("hook_type", llmcontract.Nullable(schema.Enum(i18n.F("章末钩子类型；无明确类型时为 null"), domain.HookTypes()...))).Required(),
+		schema.Property("dominant_strand", llmcontract.Nullable(schema.Enum(i18n.F("本章主导叙事线；无明确主线时为 null"), domain.DominantStrands()...))).Required(),
 		schema.Property("feedback", llmcontract.Nullable(feedbackSchema)).Required(),
 	)
 }
@@ -126,27 +126,27 @@ func (t *CommitChapterTool) Execute(_ context.Context, args json.RawMessage) (js
 		return nil, fmt.Errorf("load pending commit: %w: %w", errs.ErrStoreRead, err)
 	}
 	if existingPending != nil && existingPending.Chapter != requested.Chapter {
-		return nil, fmt.Errorf("存在未恢复的章节提交：第 %d 章（阶段 %s），请先恢复或重新提交该章: %w", existingPending.Chapter, existingPending.Stage, errs.ErrToolConflict)
+		return nil, fmt.Errorf(i18n.F("存在未恢复的章节提交：第 %d 章（阶段 %s），请先恢复或重新提交该章: %w"), existingPending.Chapter, existingPending.Stage, errs.ErrToolConflict)
 	}
 	if existingPending != nil {
 		switch existingPending.Stage {
 		case domain.CommitStageStarted, domain.CommitStageStateApplied, domain.CommitStageProgressMarked, domain.CommitStageSignalSaved:
 		default:
-			return nil, fmt.Errorf("pending commit 阶段非法: %q: %w", existingPending.Stage, errs.ErrToolConflict)
+			return nil, fmt.Errorf(i18n.F("pending commit 阶段非法: %q: %w"), existingPending.Stage, errs.ErrToolConflict)
 		}
 	}
 
 	a := requested
 	if existingPending != nil && existingPending.Stage != domain.CommitStageProgressMarked && existingPending.Stage != domain.CommitStageSignalSaved {
 		if len(existingPending.Payload) == 0 {
-			return nil, fmt.Errorf("第 %d 章存在旧版未完成提交，但缺少可重放 payload；拒绝使用新生成参数覆盖，请从最近 checkpoint 恢复或人工核对 meta/pending_commit.json: %w",
+			return nil, fmt.Errorf(i18n.F("第 %d 章存在旧版未完成提交，但缺少可重放 payload；拒绝使用新生成参数覆盖，请从最近 checkpoint 恢复或人工核对 meta/pending_commit.json: %w"),
 				existingPending.Chapter, errs.ErrToolConflict)
 		}
 		if err := json.Unmarshal(existingPending.Payload, &a); err != nil {
 			return nil, fmt.Errorf("decode pending commit payload: %w: %w", errs.ErrStoreRead, err)
 		}
 		if a.Chapter != existingPending.Chapter {
-			return nil, fmt.Errorf("pending commit payload 章节不一致：记录=%d payload=%d: %w", existingPending.Chapter, a.Chapter, errs.ErrToolConflict)
+			return nil, fmt.Errorf(i18n.F("pending commit payload 章节不一致：记录=%d payload=%d: %w"), existingPending.Chapter, a.Chapter, errs.ErrToolConflict)
 		}
 	}
 
@@ -155,12 +155,12 @@ func (t *CommitChapterTool) Execute(_ context.Context, args json.RawMessage) (js
 		return nil, fmt.Errorf("load progress: %w: %w", errs.ErrStoreRead, err)
 	}
 	if progress == nil {
-		return nil, fmt.Errorf("progress 未初始化: %w", errs.ErrToolPrecondition)
+		return nil, fmt.Errorf(i18n.F("progress 未初始化: %w"), errs.ErrToolPrecondition)
 	}
 	completed := slices.Contains(progress.CompletedChapters, a.Chapter)
 	if existingPending != nil && (existingPending.Stage == domain.CommitStageProgressMarked || existingPending.Stage == domain.CommitStageSignalSaved) {
 		if !completed {
-			return nil, fmt.Errorf("pending commit 已到 %s，但 progress 未标记第 %d 章完成: %w", existingPending.Stage, a.Chapter, errs.ErrToolConflict)
+			return nil, fmt.Errorf(i18n.F("pending commit 已到 %s，但 progress 未标记第 %d 章完成: %w"), existingPending.Stage, a.Chapter, errs.ErrToolConflict)
 		}
 		return t.finishPendingCommit(*existingPending, progress)
 	}
@@ -172,7 +172,7 @@ func (t *CommitChapterTool) Execute(_ context.Context, args json.RawMessage) (js
 
 	if existingPending != nil && existingPending.Rewrite {
 		if !completed {
-			return nil, fmt.Errorf("返工提交要求第 %d 章已存在终稿: %w", a.Chapter, errs.ErrToolConflict)
+			return nil, fmt.Errorf(i18n.F("返工提交要求第 %d 章已存在终稿: %w"), a.Chapter, errs.ErrToolConflict)
 		}
 		return t.executeRewriteCommit(a, progress, *existingPending, true)
 	}
@@ -211,7 +211,7 @@ func (t *CommitChapterTool) Execute(_ context.Context, args json.RawMessage) (js
 			if errors.Is(err, errs.ErrToolConflict) {
 				return nil, err
 			}
-			return nil, fmt.Errorf("章节当前不允许提交: %w: %w", errs.ErrToolPrecondition, err)
+			return nil, fmt.Errorf(i18n.F("章节当前不允许提交: %w: %w"), errs.ErrToolPrecondition, err)
 		}
 	}
 
@@ -221,11 +221,11 @@ func (t *CommitChapterTool) Execute(_ context.Context, args json.RawMessage) (js
 	if progress.Layered {
 		b, bErr := t.store.Outline.CheckArcBoundary(a.Chapter)
 		if bErr != nil {
-			return nil, fmt.Errorf("弧边界检测失败 chapter=%d: %w: %w", a.Chapter, errs.ErrStoreRead, bErr)
+			return nil, fmt.Errorf(i18n.F("弧边界检测失败 chapter=%d: %w: %w"), a.Chapter, errs.ErrStoreRead, bErr)
 		}
 		if b == nil {
 			return nil, fmt.Errorf(
-				"第 %d 章不在分层大纲范围内：写作必须先 expand_arc 扩展弧或 append_volume 追加卷；若全书已完结请调 save_foundation type=complete_book: %w",
+				i18n.F("第 %d 章不在分层大纲范围内：写作必须先 expand_arc 扩展弧或 append_volume 追加卷；若全书已完结请调 save_foundation type=complete_book: %w"),
 				a.Chapter, errs.ErrToolPrecondition)
 		}
 		boundary = b
@@ -237,7 +237,7 @@ func (t *CommitChapterTool) Execute(_ context.Context, args json.RawMessage) (js
 	if existingPending != nil {
 		content = existingPending.DraftContent
 		if content == "" {
-			return nil, fmt.Errorf("第 %d 章未完成提交缺少 draft_content，无法证明恢复正文与原提交一致: %w",
+			return nil, fmt.Errorf(i18n.F("第 %d 章未完成提交缺少 draft_content，无法证明恢复正文与原提交一致: %w"),
 				a.Chapter, errs.ErrToolConflict)
 		}
 	} else {
@@ -250,7 +250,7 @@ func (t *CommitChapterTool) Execute(_ context.Context, args json.RawMessage) (js
 	if content == "" {
 		return nil, fmt.Errorf("no content found for chapter %d: %w", a.Chapter, errs.ErrToolPrecondition)
 	}
-	wordCount := utf8.RuneCountInString(content)
+	wordCount := domain.WordCount(content)
 
 	var pending domain.PendingCommit
 	if existingPending != nil {
@@ -326,7 +326,7 @@ func (t *CommitChapterTool) Execute(_ context.Context, args json.RawMessage) (js
 				return nil, fmt.Errorf("load core characters for cast ledger: %w: %w", errs.ErrStoreRead, err)
 			}
 			if err := t.store.Cast.MergeAppearances(a.Chapter, a.Characters, a.CastIntros, coreNames); err != nil {
-				slog.Warn("配角名册累加失败，跳过", "module", "commit", "chapter", a.Chapter, "err", err)
+				slog.Warn(i18n.F("配角名册累加失败，跳过"), "module", "commit", "chapter", a.Chapter, "err", err)
 			}
 		}
 
@@ -427,7 +427,7 @@ func (t *CommitChapterTool) Execute(_ context.Context, args json.RawMessage) (js
 		if err := t.store.Outline.AppendOutlineFeedback(store.ChapterFeedback{
 			Chapter: a.Chapter, Deviation: a.Feedback.Deviation, Suggestion: a.Feedback.Suggestion,
 		}); err != nil {
-			slog.Warn("大纲反馈落盘失败", "module", "tools", "chapter", a.Chapter, "err", err)
+			slog.Warn(i18n.F("大纲反馈落盘失败"), "module", "tools", "chapter", a.Chapter, "err", err)
 		}
 	}
 
@@ -468,7 +468,7 @@ func (t *CommitChapterTool) Execute(_ context.Context, args json.RawMessage) (js
 	// 持久化违规事实:editor 评审经 novel_context 消费(返回值只是镜像——
 	// writer 在 commit 后立即硬停,返回值无人可读)。best-effort。
 	if err := t.store.World.SaveRuleViolations(a.Chapter, violations); err != nil {
-		slog.Warn("机械违规落盘失败", "module", "tools", "chapter", a.Chapter, "err", err)
+		slog.Warn(i18n.F("机械违规落盘失败"), "module", "tools", "chapter", a.Chapter, "err", err)
 	}
 	return output, nil
 }
@@ -516,12 +516,32 @@ func (t *CommitChapterTool) validateRewriteDraft(chapter int, title string, prog
 	if changed {
 		return content, nil
 	}
-	mode := "重写"
+	return "", loiKhongCoThayDoi(chapter, progress)
+}
+
+// loiKhongCoThayDoi dựng lỗi "lượt gia công/viết lại không đổi gì", dịch CẢ CÂU
+// theo từng luồng.
+//
+// Hai lý do tách thành hàm, và lý do thứ hai mới là lý do chính:
+//
+//  1. Câu này trước đây được chép ở HAI chỗ trong cùng tệp (rewriteChanged và
+//     nhánh kiểm sau đó). Hai bản chép của cùng một câu sẽ lệch nhau ngay lần
+//     đổi từ ngữ đầu tiên.
+//  2. Bản trước lấy `mode := i18n.F("重写")` rồi chèn vào `未检测到%s改动`. Nhưng
+//     msgid `重写` cũng là NHÃN đứng riêng ở entry/tui/panels_sidebar.go:335 nên
+//     bản dịch phải hoa đầu — "Viết lại". Chèn giữa câu thì ra "không thấy thay
+//     đổi Viết lại nào", sai chính tả. Một msgid không thể có hai bản dịch, nên
+//     chỗ ghép mới là chỗ sai.
+//
+// Lớp lỗi này tiếng Trung không bao giờ gặp vì chữ Hán không có hoa/thường, và
+// không phép đo nào trên catalog thấy được: cả hai mảnh đều đã dịch, chỉ câu ghép
+// ra là sai.
+func loiKhongCoThayDoi(chapter int, progress *domain.Progress) error {
+	msg := i18n.F("第 %d 章正文和标题均未发生变化，未检测到重写改动: %w")
 	if progress != nil && progress.Flow == domain.FlowPolishing {
-		mode = "打磨"
+		msg = i18n.F("第 %d 章正文和标题均未发生变化，未检测到打磨改动: %w")
 	}
-	return "", fmt.Errorf("第 %d 章正文和标题均未发生变化，未检测到%s改动: %w",
-		chapter, mode, errs.ErrToolPrecondition)
+	return fmt.Errorf(msg, chapter, errs.ErrToolPrecondition)
 }
 
 func (t *CommitChapterTool) rewriteChanged(chapter int, content, title string) (bool, error) {
@@ -567,9 +587,9 @@ func (t *CommitChapterTool) executeRewriteCommit(a commitArgs, progress *domain.
 	// 1. 只使用首次提交时冻结的返工正文，崩溃恢复不得采用随后被覆盖的 draft。
 	content := pending.DraftContent
 	if content == "" {
-		return nil, fmt.Errorf("第 %d 章返工提交缺少 draft_content，无法安全恢复: %w", chapter, errs.ErrToolConflict)
+		return nil, fmt.Errorf(i18n.F("第 %d 章返工提交缺少 draft_content，无法安全恢复: %w"), chapter, errs.ErrToolConflict)
 	}
-	wordCount := utf8.RuneCountInString(content)
+	wordCount := domain.WordCount(content)
 
 	// 2. 正文或标题至少一项发生变化；标题打磨无需伪造正文改动。
 	if !recovering {
@@ -578,12 +598,7 @@ func (t *CommitChapterTool) executeRewriteCommit(a commitArgs, progress *domain.
 			return nil, err
 		}
 		if !changed {
-			mode := "重写"
-			if progress != nil && progress.Flow == domain.FlowPolishing {
-				mode = "打磨"
-			}
-			return nil, fmt.Errorf("第 %d 章正文和标题均未发生变化，未检测到%s改动: %w",
-				chapter, mode, errs.ErrToolPrecondition)
+			return nil, loiKhongCoThayDoi(chapter, progress)
 		}
 	}
 
@@ -703,7 +718,7 @@ func (t *CommitChapterTool) executeRewriteCommit(a commitArgs, progress *domain.
 	}
 
 	if err := t.store.World.SaveRuleViolations(chapter, violations); err != nil {
-		slog.Warn("机械违规落盘失败", "module", "tools", "chapter", chapter, "err", err)
+		slog.Warn(i18n.F("机械违规落盘失败"), "module", "tools", "chapter", chapter, "err", err)
 	}
 	return output, nil
 }

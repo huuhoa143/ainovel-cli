@@ -25,10 +25,11 @@ func renderPaddedModalFrame(boxW, boxH int, title, hint string, bodyLines []stri
 
 	innerW := max(0, boxW-2)
 	contentW := paddedModalContentWidth(boxW)
-	// hint 落在下边框内，过长会把边框顶出框宽——截断到内宽，保证上下边框对齐。
-	if lipgloss.Width(hint) > innerW {
-		hint = truncateWidth(hint, innerW)
-	}
+	// hint 落在下边框内，过长会把边框顶出框宽——必须收进内宽，保证上下边框对齐。
+	// Bỏ theo MỤC (" · ") chứ không cắt theo cột: bản cũ cắt cứng nên gợi ý tiếng Việt
+	// (dài hơn bản Hán) hiện ra "… · Esc quay lạ" — mất đúng ký tự cuối, không dấu
+	// hiệu gì. Thấy ở /config danh sách model tại 100 cột.
+	hint = fitHintToWidth(hint, innerW)
 	titleView := titleStyle.Render(title)
 	hintView := hintStyle.Render(hint)
 

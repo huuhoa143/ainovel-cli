@@ -7,8 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"errors"
 	"github.com/voocel/agentcore"
 	"github.com/voocel/ainovel-cli/internal/bootstrap"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 type APIKeyAction string
@@ -162,10 +164,10 @@ func (h *Host) prepareProviderDraftLocked(draft ModelConfigurationDraft) (prepar
 	draft.BaseURL = strings.TrimSpace(draft.BaseURL)
 	draft.APIKey = strings.TrimSpace(draft.APIKey)
 	if draft.Provider == "" {
-		return preparedProviderDraft{}, fmt.Errorf("provider 不能为空")
+		return preparedProviderDraft{}, errors.New(i18n.F("provider 不能为空"))
 	}
 	if len(draft.Models) == 0 {
-		return preparedProviderDraft{}, fmt.Errorf("请至少配置一个模型")
+		return preparedProviderDraft{}, errors.New(i18n.F("请至少配置一个模型"))
 	}
 
 	candidate := bootstrap.CloneConfig(h.cfg)
@@ -179,13 +181,13 @@ func (h *Host) prepareProviderDraftLocked(draft ModelConfigurationDraft) (prepar
 	for _, model := range draft.Models {
 		model.Name = strings.TrimSpace(model.Name)
 		if model.Name == "" {
-			return preparedProviderDraft{}, fmt.Errorf("模型名称不能为空")
+			return preparedProviderDraft{}, errors.New(i18n.F("模型名称不能为空"))
 		}
 		if model.ContextWindow < 0 {
-			return preparedProviderDraft{}, fmt.Errorf("模型 %q 的上下文窗口不能为负数", model.Name)
+			return preparedProviderDraft{}, fmt.Errorf(i18n.F("模型 %q 的上下文窗口不能为负数"), model.Name)
 		}
 		if seen[model.Name] {
-			return preparedProviderDraft{}, fmt.Errorf("模型 %q 重复", model.Name)
+			return preparedProviderDraft{}, fmt.Errorf(i18n.F("模型 %q 重复"), model.Name)
 		}
 		seen[model.Name] = true
 		configuredModels = append(configuredModels, model)
@@ -200,10 +202,10 @@ func (h *Host) prepareProviderDraftLocked(draft ModelConfigurationDraft) (prepar
 	case APIKeyClear:
 		pc.APIKey = ""
 	default:
-		return preparedProviderDraft{}, fmt.Errorf("未知 API Key 操作 %q", draft.APIKeyAction)
+		return preparedProviderDraft{}, fmt.Errorf(i18n.F("未知 API Key 操作 %q"), draft.APIKeyAction)
 	}
 	if pc.RequiresAPIKey(draft.Provider) && pc.APIKey == "" {
-		return preparedProviderDraft{}, fmt.Errorf("Provider %q 必须配置 API Key", draft.Provider)
+		return preparedProviderDraft{}, fmt.Errorf(i18n.F("Provider %q 必须配置 API Key"), draft.Provider)
 	}
 
 	if candidate.Providers == nil {
@@ -245,7 +247,7 @@ func (h *Host) ConfigureModels(draft ModelConfigurationDraft) error {
 			continue
 		}
 		if refs := h.modelReferencesLocked(draft.Provider, old.Name); len(refs) > 0 {
-			return fmt.Errorf("模型 %q 仍被 %s 引用，请先在 /model 切换后再删除", old.Name, strings.Join(refs, "、"))
+			return fmt.Errorf(i18n.F("模型 %q 仍被 %s 引用，请先在 /model 切换后再删除"), old.Name, i18n.JoinList(refs))
 		}
 	}
 
@@ -255,14 +257,14 @@ func (h *Host) ConfigureModels(draft ModelConfigurationDraft) error {
 	}
 	prepared, err := bootstrap.NewModelSet(candidate)
 	if err != nil {
-		return fmt.Errorf("创建模型客户端失败: %w", err)
+		return fmt.Errorf(i18n.F("创建模型客户端失败: %w"), err)
 	}
 
 	if h.configPath == "" {
-		return fmt.Errorf("无法定位配置文件路径")
+		return errors.New(i18n.F("无法定位配置文件路径"))
 	}
 	if err := h.saveModelConfigurationLocked(candidate, draft.Provider, pc, len(renames) > 0); err != nil {
-		return fmt.Errorf("保存配置失败: %w", err)
+		return fmt.Errorf(i18n.F("保存配置失败: %w"), err)
 	}
 
 	h.models.ApplyPrepared(prepared)
@@ -270,9 +272,9 @@ func (h *Host) ConfigureModels(draft ModelConfigurationDraft) error {
 	// 模型客户端被重建后重新下发推理强度：applyThinkingLocked 按各角色的新模型能力钳制生效值，
 	// 存储的强度意图保持不变。
 	h.applyThinkingLocked("default")
-	summary := fmt.Sprintf("Provider 配置已保存：%s → %s", draft.Provider, h.configPath)
+	summary := fmt.Sprintf(i18n.F("Provider 配置已保存：%s → %s"), draft.Provider, h.configPath)
 	if draft.Provider != h.cfg.Provider {
-		summary += "；使用 /model 切换"
+		summary += i18n.F("；使用 /model 切换")
 	}
 	h.emitEvent(Event{
 		Time: time.Now(), Category: "SYSTEM", Level: "info",
@@ -296,22 +298,22 @@ func validateModelRenames(requested []ModelRename, oldModels, newModels []bootst
 		from := strings.TrimSpace(rename.From)
 		to := strings.TrimSpace(rename.To)
 		if from == "" || to == "" {
-			return nil, fmt.Errorf("模型重命名的原名称和新名称不能为空")
+			return nil, errors.New(i18n.F("模型重命名的原名称和新名称不能为空"))
 		}
 		if from == to {
 			continue
 		}
 		if !oldNames[from] {
-			return nil, fmt.Errorf("无法重命名不存在的模型 %q", from)
+			return nil, fmt.Errorf(i18n.F("无法重命名不存在的模型 %q"), from)
 		}
 		if !newNames[to] {
-			return nil, fmt.Errorf("重命名目标模型 %q 不在当前模型列表中", to)
+			return nil, fmt.Errorf(i18n.F("重命名目标模型 %q 不在当前模型列表中"), to)
 		}
 		if _, exists := renames[from]; exists {
-			return nil, fmt.Errorf("模型 %q 被重复重命名", from)
+			return nil, fmt.Errorf(i18n.F("模型 %q 被重复重命名"), from)
 		}
 		if targets[to] {
-			return nil, fmt.Errorf("多个模型不能同时重命名为 %q", to)
+			return nil, fmt.Errorf(i18n.F("多个模型不能同时重命名为 %q"), to)
 		}
 		renames[from] = to
 		targets[to] = true
@@ -380,7 +382,7 @@ func (h *Host) TestModelConnection(ctx context.Context, draft ModelConfiguration
 		}
 	}
 	if !found {
-		return fmt.Errorf("连接测试模型 %q 不在当前模型列表中", modelName)
+		return fmt.Errorf(i18n.F("连接测试模型 %q 不在当前模型列表中"), modelName)
 	}
 
 	testConfig := preparedDraft.candidate
@@ -392,10 +394,10 @@ func (h *Host) TestModelConnection(ctx context.Context, draft ModelConfiguration
 	}
 	models, err := bootstrap.NewModelSet(testConfig)
 	if err != nil {
-		return fmt.Errorf("创建测试模型客户端失败: %w", err)
+		return fmt.Errorf(i18n.F("创建测试模型客户端失败: %w"), err)
 	}
 	if _, err := models.Default.Generate(ctx, []agentcore.Message{agentcore.UserMsg("Reply OK.")}, nil); err != nil {
-		return fmt.Errorf("连接测试失败（%s/%s）: %w", preparedDraft.draft.Provider, modelName, err)
+		return fmt.Errorf(i18n.F("连接测试失败（%s/%s）: %w"), preparedDraft.draft.Provider, modelName, err)
 	}
 	return nil
 }

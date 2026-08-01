@@ -3,6 +3,8 @@ package host
 import (
 	"strings"
 	"unicode/utf8"
+
+	"github.com/voocel/ainovel-cli/internal/i18n"
 )
 
 // toolDisplays 配置每个工具在流面板上的展示策略。不在此表中的工具不参与流式
@@ -37,6 +39,24 @@ var toolDisplays = map[string]toolDisplay{
 type toolDisplay struct {
 	header   string
 	nakedKey string
+}
+
+// headerText trả về tiêu đề đã dịch của lời gọi tool này.
+//
+// Dịch ở CHỖ DÙNG, không ở bảng toolDisplays: bảng là var cấp package nên chạy
+// xong trước khi locale được đặt, và giá trị sẽ đóng băng theo locale lúc nạp —
+// đúng cái bẫy mà statusDisplay ở internal/entry/tui/theme.go đã mắc một lần.
+//
+// Chỉ phần NHÃN được dịch; tiền tố "✻ " nằm trong msgid và mọi bản dịch phải
+// giữ nó. Đó không phải chuyện thẩm mỹ: renderStreamContent nhận khối điều phối
+// agent bằng HasPrefix(text, "✻") (internal/entry/tui/panels_activity.go), mất
+// tiền tố thì cả đoạn rơi xuống đường văn bản thường và tiêu đề bị vẽ bằng màu
+// mặc định của terminal. Bộ canh khế ước này ở TestTieuDeStreamLuonGiuTienTo.
+func (e *jsonFieldExtractor) headerText() string {
+	if e.cfg.header == "" {
+		return ""
+	}
+	return i18n.F(e.cfg.header)
 }
 
 // jsonFieldExtractor 是流式 JSON tokenizer。逐字节驱动状态机，把 LLM 的工具
@@ -229,8 +249,8 @@ func (e *jsonFieldExtractor) emitKeyLine(out *strings.Builder, key string) {
 		return
 	}
 	if !e.started {
-		if e.cfg.header != "" {
-			out.WriteString(e.cfg.header)
+		if h := e.headerText(); h != "" {
+			out.WriteString(h)
 			out.WriteByte('\n')
 		}
 		e.started = true
@@ -249,8 +269,8 @@ func (e *jsonFieldExtractor) emitArrayItem(out *strings.Builder) {
 		return
 	}
 	if !e.started {
-		if e.cfg.header != "" {
-			out.WriteString(e.cfg.header)
+		if h := e.headerText(); h != "" {
+			out.WriteString(h)
 			out.WriteByte('\n')
 		}
 		e.started = true
@@ -347,8 +367,8 @@ func (e *jsonFieldExtractor) closeContainer(out *strings.Builder) {
 	if len(e.stack) == 0 {
 		// 空 args（如 novel_context 不传参）兜底：emitKeyLine 没机会输出 header，
 		// 这里补一次，避免落到"既没标题也没内容"。
-		if !e.started && e.cfg.nakedKey == "" && e.cfg.header != "" {
-			out.WriteString(e.cfg.header)
+		if h := e.headerText(); !e.started && e.cfg.nakedKey == "" && h != "" {
+			out.WriteString(h)
 			out.WriteByte('\n')
 			e.started = true
 		}

@@ -1,111 +1,111 @@
-# 重构提案：Hybrid Coordinator — Host 路由 × LLM 裁定
+# Đề án tái cấu trúc: Hybrid Coordinator — Host định tuyến × LLM phán quyết
 
-> **历史文档，已废弃。** Hybrid Coordinator 于 2026-07-12 被 Engine + Arbiter 架构取代；现行设计见 `docs/architecture.md`、`docs/engine-rfc.md`。本文仅保留决策演进记录，不得作为实现依据。
+> **Tài liệu lịch sử, đã bỏ.** Hybrid Coordinator bị kiến trúc Engine + Arbiter thay thế vào 2026-07-12; thiết kế hiện hành xem `docs/architecture.md`, `docs/engine-rfc.md`. Bài này chỉ giữ lại biên bản tiến hóa quyết định, không được dùng làm căn cứ hiện thực.
 >
-> 原状态：**已采纳并落地**（2026-04-20）
-> 调研时间：2026-04-20
-> 对应现行文档：`docs/architecture.md` §2 / §3 / §7 / §8 / §13 已同步更新
+> Trạng thái gốc: **đã chấp nhận và đáp đất** (2026-04-20)
+> Thời gian khảo sát: 2026-04-20
+> Tài liệu hiện hành tương ứng: `docs/architecture.md` §2 / §3 / §7 / §8 / §13 đã cập nhật đồng bộ
 >
-> **本文档是第二稿。**第一稿激进方案（完全删除 Coordinator）的问题详见附录 A，保留该节避免重走弯路。
+> **Tài liệu này là bản thảo thứ hai.** Vấn đề của phương án cấp tiến ở bản thảo thứ nhất (xóa hoàn toàn Coordinator) xem chi tiết ở phụ lục A, giữ mục đó để không đi lại đường vòng.
 >
-> 落地结果：
-> - `internal/host/flow/` 新建（router.go / state.go / dispatcher.go / router_test.go，15 个分支单测全通过）
-> - `internal/host/reminder/` 删除 `flow.go` / `queue_guard.go` / `book_complete.go`；保留 StopGuard 与子代理 Guard
-> - `assets/prompts/coordinator.md` 从 88 行压到 ~45 行（职责收窄到执行 Host 指令 + 裁定 + 启动选型）
-> - `internal/host/resume.go` 大幅简化，只生成 label 与简短 prompt，具体下一步由 Router 在首次 TurnEnd 后派发
-> - `internal/store/` 新增 `HasArcReview` / `HasArcSummary` / `HasVolumeSummary` / `CheckConsistency` 辅助方法
-> - `observer.go` agent state 不再停在 working 的 bug 一并修复
+> Kết quả đáp đất:
+> - `internal/host/flow/` được tạo mới (router.go / state.go / dispatcher.go / router_test.go, 15 kiểm thử đơn vị theo nhánh đều qua)
+> - `internal/host/reminder/` xóa `flow.go` / `queue_guard.go` / `book_complete.go`; giữ StopGuard và Guard của tác tử con
+> - `assets/prompts/coordinator.md` nén từ 88 dòng xuống ~45 dòng (trách nhiệm thu về việc thi hành chỉ thị của Host + phán quyết + chọn loại lúc khởi động)
+> - `internal/host/resume.go` đơn giản hóa mạnh, chỉ sinh label và prompt ngắn, còn bước sau cụ thể do Router phái sau lần TurnEnd đầu tiên
+> - `internal/store/` thêm các phương thức hỗ trợ `HasArcReview` / `HasArcSummary` / `HasVolumeSummary` / `CheckConsistency`
+> - Bug agent state của `observer.go` không còn dừng ở working cũng được khắc phục cùng lúc
 
 ---
 
-## 1. 背景
+## 1. Bối cảnh
 
-### 1.1 项目定位
+### 1.1 Định vị dự án
 
 ```
-agentcore       — 通用 agent 框架
-litellm         — 通用 LLM 网关
-ainovel-cli     — 小说创作垂直 agent（本项目）
+agentcore       — framework agent tổng quát
+litellm         — cổng LLM tổng quát
+ainovel-cli     — agent dọc cho việc sáng tác tiểu thuyết (dự án này)
 ```
 
-垂类 agent 的决策空间是**封闭的**：流程图固定，分支有限，事实驱动。通用 agent 的设计哲学（"押注模型能力"）套到垂类场景有过度纯粹的嫌疑。
+Không gian quyết định của agent dọc là **đóng**: sơ đồ luồng cố định, nhánh có hạn, sự thật lái. Triết lý thiết kế của agent tổng quát ("đặt cược vào năng lực model") mà áp vào tình huống dọc thì có phần thuần khiết quá mức.
 
-### 1.2 用户目标（按优先级）
+### 1.2 Mục tiêu của người dùng (theo ưu tiên)
 
-1. **稳定性** — 持续不断写下去，不因路由错误中断
-2. **吃 LLM 升级福利** — 架构不对抗模型能力
-3. **充分利用多 agent 能力** — 职能分工清晰
+1. **Tính ổn định** — viết tiếp liên tục, không bị ngắt vì định tuyến sai
+2. **Ăn phần lợi từ việc nâng cấp LLM** — kiến trúc không đối kháng với năng lực model
+3. **Dùng đủ năng lực nhiều agent** — phân công chức năng rõ ràng
 
-本提案在三者之间做**帕累托改进**（不牺牲任一目标换取另一目标）。
+Đề án này làm một **cải thiện Pareto** giữa ba mục tiêu đó (không hy sinh mục tiêu nào để đổi lấy mục tiêu khác).
 
 ---
 
-## 2. 现状调研
+## 2. Khảo sát hiện trạng
 
-### 2.1 Coordinator 的决策点分类
+### 2.1 Phân loại các điểm quyết định của Coordinator
 
-逐条提取 `coordinator.md` 决策点：
+Trích từng điểm quyết định trong `coordinator.md`:
 
-| # | 决策点 | 性质 | 频率 |
+| # | Điểm quyết định | Bản chất | Tần suất |
 |---|---|---|---|
-| 1 | 启动时选 architect_long / short | 裁定（语义理解）| 一本书 1 次 |
-| 2 | 输入扩展（<20 字自动补充）| 裁定（创作性）| 一本书 0-1 次 |
-| 3 | 规划补齐循环 | 路由（事实驱动）| 1-3 次 |
-| 4 | 每章 commit 后下一步 | **路由** | **每章 1-2 次** |
-| 5 | 弧末评审分步执行 | 路由 | 每弧 3-5 次 |
-| 6 | 评审 verdict 分叉 | 路由（已代码化，见 §2.3）| 每弧 1 次 |
-| 7 | 用户干预处理 | 裁定（必须 LLM）| 任意 |
-| 8 | 子代理报错重派 | 路由 | 偶发 |
-| 9 | 全书完成输出总结 | 路由 | 1 次 |
+| 1 | Chọn architect_long / short lúc khởi động | Phán quyết (hiểu ngữ nghĩa) | 1 lần một cuốn sách |
+| 2 | Mở rộng đầu vào (<20 từ thì tự bồi thêm) | Phán quyết (mang tính sáng tác) | 0-1 lần một cuốn sách |
+| 3 | Vòng bồi đủ quy hoạch | Định tuyến (sự thật lái) | 1-3 lần |
+| 4 | Bước sau mỗi lần commit chương | **Định tuyến** | **1-2 lần mỗi chương** |
+| 5 | Thi hành theo bước việc duyệt cuối cung | Định tuyến | 3-5 lần mỗi cung |
+| 6 | Phân nhánh theo verdict của việc duyệt | Định tuyến (đã code hóa, xem §2.3) | 1 lần mỗi cung |
+| 7 | Xử lý can thiệp của người dùng | Phán quyết (buộc phải LLM) | tùy ý |
+| 8 | Tác tử con báo lỗi thì phái lại | Định tuyến | thỉnh thoảng |
+| 9 | Cả sách xong thì xuất tổng kết | Định tuyến | 1 lần |
 
-**结论**：9 个决策点里 6 个是纯路由（查表），3 个是真正需要 LLM 的裁定。**路由发生频率远高于裁定**（每章 1-2 次 vs 一本书几次）。
+**Kết luận**: trong 9 điểm quyết định thì 6 cái là định tuyến thuần (tra bảng), 3 cái là phán quyết thật sự cần LLM. **Tần suất xảy ra của định tuyến cao hơn phán quyết rất nhiều** (1-2 lần mỗi chương so với vài lần một cuốn sách).
 
-### 2.2 Reminder 通道已经是流程代码化的半成品
+### 2.2 Kênh Reminder vốn đã là một bán thành phẩm của việc code hóa luồng
 
-`internal/host/reminder/` 下的生成器每轮根据事实生成**具体到动作的指令**：
+Các bộ sinh dưới `internal/host/reminder/` mỗi lượt dựa trên sự thật để sinh ra **chỉ thị cụ thể tới từng động tác**:
 
-- `flow.go` → `"当前 flow=writing，next_chapter=37。请直接调 subagent(writer, \"写第 37 章\")..."`
-- `queue_guard.go` → `"当前 flow=rewriting，待处理队列：[3,5]。请立即调 writer 逐章重写..."`
-- `book_complete.go` → `"全书已完成。请输出全书总结..."`
+- `flow.go` → `"flow hiện tại=writing, next_chapter=37. Hãy gọi thẳng subagent(writer, \"viết chương 37\")..."`
+- `queue_guard.go` → `"flow hiện tại=rewriting, hàng đợi chờ xử lý: [3,5]. Hãy gọi writer ngay để viết lại từng chương..."`
+- `book_complete.go` → `"Cả sách đã xong. Hãy xuất bản tổng kết cả sách..."`
 
-**当前架构存在 double dispatch**：
+**Kiến trúc hiện tại có double dispatch**:
 ```
-规则层：coordinator.md 定义"如果 A 则 B"
+Tầng luật: coordinator.md định nghĩa "nếu A thì B"
   ↓
-Reminder 层：每轮根据事实把规则具体化 → 生成"现在请做 B"
+Tầng Reminder: mỗi lượt dựa trên sự thật để cụ thể hóa luật → sinh ra "giờ hãy làm B"
   ↓
-LLM 层：读 reminder 生成 tool_call（基本就是复述 reminder）
+Tầng LLM: đọc reminder rồi sinh tool_call (về cơ bản là thuật lại reminder)
   ↓
-SubAgent 执行
+SubAgent thi hành
 ```
 
-**LLM 实际上只是在"执行" Reminder 给它的指令**。这中间环节既消耗 tokens，又引入不确定性（LLM 可能不完全遵守 reminder，比如观察到的 mid 路由错误）。
+**LLM thực chất chỉ đang "thi hành" cái chỉ thị mà Reminder đưa cho nó**. Khâu trung gian này vừa tốn token, vừa đưa vào tính bất định (LLM có thể không tuân thủ hoàn toàn reminder, ví dụ lỗi định tuyến của mid đã quan sát được).
 
-### 2.3 工具层曾承担过多语义判断
+### 2.3 Tầng tool từng gánh quá nhiều phán đoán ngữ nghĩa
 
-- `save_review` 旧实现曾按固定评分阈值和 contract 状态覆盖 Editor verdict；现已删除，文学裁定归 Editor，工具只做协议校验与原子状态映射
-- `commit_chapter.CheckArcBoundary()`：即时计算 `arc_end / needs_expansion / needs_new_volume`
-- `commit_chapter.applyCompletion()`：即时判定 `book_complete`
-- `CommitResult` 返回 17 个事实字段
+- Bản hiện thực cũ của `save_review` từng ghi đè verdict của Editor theo ngưỡng điểm cố định và trạng thái contract; nay đã xóa, phán quyết văn học thuộc về Editor, tool chỉ kiểm giao thức và ánh xạ trạng thái nguyên tử
+- `commit_chapter.CheckArcBoundary()`: tính ngay `arc_end / needs_expansion / needs_new_volume`
+- `commit_chapter.applyCompletion()`: phán ngay `book_complete`
+- `CommitResult` trả về 17 trường sự thật
 
-**结论**：确定性的存储与阶段不变量留在工具层，文学和语义判断交给模型。
+**Kết luận**: phần lưu trữ tất định và các bất biến về giai đoạn thì để lại tầng tool, còn phán đoán văn học và ngữ nghĩa thì giao cho model.
 
-### 2.4 现状的实际成本
+### 2.4 Chi phí thực tế của hiện trạng
 
-每章 Coordinator LLM 轮次：
-- **每章 1-2 turns**（读 system prompt ~3000 tokens + reminder ~200 tokens + 历史 + CommitResult ~500 tokens → 生成 tool_call ~50 tokens）
-- 200 章长篇约 **200-400 turns** Coordinator LLM 调用
-- 其中 **~90% 是纯路由**（LLM 复述 reminder），**~10% 是裁定**
+Số lượt LLM của Coordinator mỗi chương:
+- **1-2 turn mỗi chương** (đọc system prompt ~3000 token + reminder ~200 token + lịch sử + CommitResult ~500 token → sinh tool_call ~50 token)
+- Truyện dài 200 chương thì khoảng **200-400 turn** lời gọi LLM của Coordinator
+- Trong đó **~90% là định tuyến thuần** (LLM thuật lại reminder), **~10% là phán quyết**
 
-**每章 ~3500-7000 tokens 花在 Coordinator 决策上，95% 是冗余**（Reminder 已经算出答案）。
+**Mỗi chương tốn ~3500-7000 token cho việc quyết định của Coordinator, 95% là dư thừa** (Reminder đã tính ra đáp án rồi).
 
 ---
 
-## 3. 设计方案：Hybrid Coordinator
+## 3. Phương án thiết kế: Hybrid Coordinator
 
-### 3.1 核心思路
+### 3.1 Ý tưởng cốt lõi
 
-**把流程决策从 LLM 搬到 Host，但保留 Coordinator 作为裁定节点和指令执行通道**。
+**Chuyển việc quyết định luồng từ LLM sang Host, nhưng giữ Coordinator làm nút phán quyết và kênh thi hành chỉ thị**.
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -116,28 +116,32 @@ SubAgent 执行
 │                            Host                            │
 │                                                             │
 │   ┌──────────────────────────────────────────────────┐     │
-│   │  Flow Router（新增核心）                           │     │
+│   │  Flow Router (nhân mới thêm)                      │     │
 │   │  ───────────                                      │     │
-│   │  订阅 Coordinator 事件：subagent tool 返回时触发    │     │
-│   │  纯函数：route(Progress, Checkpoint, Boundary)     │     │
+│   │  Đăng ký sự kiện Coordinator: kích hoạt khi tool   │     │
+│   │  subagent trả về                                   │     │
+│   │  Hàm thuần: route(Progress, Checkpoint, Boundary)  │     │
 │   │      → NextInstruction                             │     │
-│   │  有指令 → coordinator.FollowUp(指令)                │     │
-│   │  无指令（裁定场景）→ 不干预，让 LLM 自主            │     │
+│   │  Có chỉ thị → coordinator.FollowUp(chỉ thị)         │     │
+│   │  Không chỉ thị (tình huống phán quyết) → không can  │     │
+│   │  thiệp, để LLM tự chủ                              │     │
 │   └──────────────────────────────────────────────────┘     │
 │                                                             │
-│   保留：生命周期 API / Observer / Usage Tracker             │
-│   保留：resume.go（简化，不变核心逻辑）                       │
+│   Giữ: API vòng đời / Observer / Usage Tracker              │
+│   Giữ: resume.go (đơn giản hóa, không đổi logic nhân)        │
 └────────────────────────────────┬─────────────────────────┘
                                  │
 ┌────────────────────────────────▼─────────────────────────┐
 │                    Coordinator Agent (LLM)                  │
 │                                                             │
-│   职责收窄到两类：                                             │
-│   1. 接收 Host FollowUp 指令 → 生成对应 tool_call             │
-│   2. 用户 Steer 到达时自主裁定（查询/修改评估）                  │
+│   Trách nhiệm thu về hai loại:                               │
+│   1. Nhận chỉ thị FollowUp của Host → sinh tool_call tương ứng│
+│   2. Khi Steer của người dùng tới thì tự chủ phán quyết       │
+│      (truy vấn/lượng định việc sửa)                          │
 │                                                             │
-│   coordinator.md: 88 行 → ~25 行                             │
-│   MaxTurns: 1000 保留（响应用户 steer + 执行 Host 指令）      │
+│   coordinator.md: 88 dòng → ~25 dòng                         │
+│   MaxTurns: giữ 1000 (đáp ứng steer của người dùng + thi hành │
+│   chỉ thị của Host)                                          │
 └────────────────────────────────┬─────────────────────────┘
                                  │
                                  ▼
@@ -148,134 +152,134 @@ SubAgent 执行
     └────────┘             └────────┘             └────────┘
 ```
 
-### 3.2 职责重新划分
+### 3.2 Phân định lại trách nhiệm
 
-| 层 | 做什么 | 不做什么 |
+| Tầng | Làm gì | Không làm gì |
 |---|---|---|
-| **Host / Flow Router** | 读事实 → 纯函数路由 → FollowUp 指令 | 自己调 SubAgent（仍通过 Coordinator）|
-| **Coordinator** | 执行 Host 指令 + 裁定用户干预 + 启动时选规划师 | 自主决策"下一步做什么" |
-| **SubAgent（A/W/E）** | 各自本职工作 | 无变化 |
-| **工具层** | 原子落盘 + 返回事实 | 无变化 |
+| **Host / Flow Router** | Đọc sự thật → định tuyến bằng hàm thuần → chỉ thị FollowUp | Tự gọi SubAgent (vẫn qua Coordinator) |
+| **Coordinator** | Thi hành chỉ thị của Host + phán quyết can thiệp của người dùng + chọn kiến trúc sư lúc khởi động | Tự chủ quyết "bước sau làm gì" |
+| **SubAgent (A/W/E)** | Việc bổn phận của mỗi bên | Không đổi |
+| **Tầng tool** | Ghi xuống đĩa nguyên tử + trả sự thật | Không đổi |
 
-**关键不变性**：
-- ✅ Coordinator 仍然是一个连续的 agent run，保留全书"连续感知"
-- ✅ 用户 Steer 仍通过 `coordinator.Inject()`，立即打断能力保留
-- ✅ SubAgentTool 仍由 LLM 调用（走 agentcore 原生路径），事件流 / ContextManager / 模型切换都不变
-- ✅ agentcore 零修改
+**Các bất biến then chốt**:
+- ✅ Coordinator vẫn là một agent run liên tục, giữ được "sự cảm nhận liên tục" cả sách
+- ✅ Steer của người dùng vẫn qua `coordinator.Inject()`, năng lực ngắt ngay được giữ
+- ✅ SubAgentTool vẫn do LLM gọi (đi qua đường nguyên bản của agentcore), dòng sự kiện / ContextManager / việc đổi model đều không đổi
+- ✅ agentcore không phải sửa gì
 
-### 3.3 Flow Router 的具体逻辑
+### 3.3 Logic cụ thể của Flow Router
 
 ```go
 // internal/host/flow/router.go
 
 type NextInstruction struct {
     Agent  string   // architect_long / architect_short / writer / editor
-    Task   string   // 给子代理的任务描述
-    Reason string   // 给 Coordinator 看的理由（可选，方便调试）
+    Task   string   // mô tả tác vụ đưa cho tác tử con
+    Reason string   // lý do cho Coordinator xem (tùy chọn, tiện debug)
 }
 
 type RouterState struct {
     Progress        *domain.Progress
     LatestCheckpoint *domain.Checkpoint
-    // 分层模式的弧边界（上一章已完成时计算）
+    // Biên cung của chế độ phân tầng (tính khi chương trước đã hoàn thành)
     LastCompleted   int
     ArcBoundary     *store.ArcBoundary
     HasArcReview    bool
     HasArcSummary   bool
-    // 基础设定缺项
+    // Các mục thiết định nền còn khuyết
     FoundationMissing []string
 }
 
-// Route 返回下一步指令。返回 nil 表示让 Coordinator 自主裁定（裁定场景）。
+// Route trả về chỉ thị bước sau. Trả nil nghĩa là để Coordinator tự chủ phán quyết (tình huống phán quyết).
 func Route(s RouterState) *NextInstruction {
     p := s.Progress
 
-    // 0. 终态：让 LLM 输出总结，不路由
+    // 0. Trạng thái cuối: để LLM xuất bản tổng kết, không định tuyến
     if p.Phase == domain.PhaseComplete {
         return nil
     }
 
-    // 1. 规划阶段：裁定（选规划师）由 LLM 做，不路由
+    // 1. Giai đoạn quy hoạch: phán quyết (chọn kiến trúc sư) do LLM làm, không định tuyến
     if p.Phase != domain.PhaseWriting {
         return nil
     }
 
-    // 2. 写作阶段
-    // 2a. 重写/打磨队列优先
+    // 2. Giai đoạn viết
+    // 2a. Hàng đợi viết lại/gia công ưu tiên
     if len(p.PendingRewrites) > 0 {
         ch := p.PendingRewrites[0]
-        verb := "重写"
+        verb := "viết lại"
         if p.Flow == domain.FlowPolishing {
-            verb = "打磨"
+            verb = "gia công"
         }
         return &NextInstruction{
             Agent:  "writer",
-            Task:   fmt.Sprintf("%s第 %d 章", verb, ch),
-            Reason: fmt.Sprintf("PendingRewrites 队列剩余 %d 章", len(p.PendingRewrites)),
+            Task:   fmt.Sprintf("%s chương %d", verb, ch),
+            Reason: fmt.Sprintf("hàng đợi PendingRewrites còn %d chương", len(p.PendingRewrites)),
         }
     }
 
-    // 2b. 审阅中：不路由，让 Coordinator 根据 save_review 结果走 verdict 分叉
+    // 2b. Đang duyệt: không định tuyến, để Coordinator phân nhánh verdict theo kết quả save_review
     if p.Flow == domain.FlowReviewing {
         return nil
     }
 
-    // 2c. 分层模式的弧末后处理
+    // 2c. Hậu xử lý cuối cung của chế độ phân tầng
     if p.Layered && s.ArcBoundary != nil && s.ArcBoundary.IsArcEnd {
         b := s.ArcBoundary
         if !s.HasArcReview {
             return &NextInstruction{
                 Agent:  "editor",
-                Task:   fmt.Sprintf("对第 %d 卷第 %d 弧做弧级评审", b.Volume, b.Arc),
-                Reason: "弧末评审未完成",
+                Task:   fmt.Sprintf("duyệt cấp cung cho cung %d của tập %d", b.Arc, b.Volume),
+                Reason: "việc duyệt cuối cung chưa hoàn thành",
             }
         }
         if !s.HasArcSummary {
             return &NextInstruction{
                 Agent:  "editor",
-                Task:   fmt.Sprintf("生成第 %d 卷第 %d 弧摘要", b.Volume, b.Arc),
-                Reason: "弧摘要未完成",
+                Task:   fmt.Sprintf("sinh tóm tắt cho cung %d của tập %d", b.Arc, b.Volume),
+                Reason: "tóm tắt cung chưa hoàn thành",
             }
         }
         if b.NeedsExpansion {
             return &NextInstruction{
                 Agent:  "architect_long",
-                Task:   fmt.Sprintf("展开第 %d 卷第 %d 弧（save_foundation type=expand_arc）", b.NextVolume, b.NextArc),
-                Reason: "下一弧骨架待展开",
+                Task:   fmt.Sprintf("mở rộng cung %d của tập %d (save_foundation type=expand_arc)", b.NextArc, b.NextVolume),
+                Reason: "khung của cung sau chờ mở rộng",
             }
         }
         if b.NeedsNewVolume {
             return &NextInstruction{
                 Agent:  "architect_long",
-                Task:   "评估并执行 save_foundation(type=append_volume) 或 mark_final",
-                Reason: "卷结束需决定追加新卷",
+                Task:   "lượng định rồi thi hành save_foundation(type=append_volume) hoặc mark_final",
+                Reason: "tập kết thúc nên cần quyết việc nối thêm tập mới",
             }
         }
     }
 
-    // 2d. 正常续写
+    // 2d. Viết tiếp bình thường
     next := p.NextChapter()
     return &NextInstruction{
         Agent:  "writer",
-        Task:   fmt.Sprintf("写第 %d 章", next),
-        Reason: "续写",
+        Task:   fmt.Sprintf("viết chương %d", next),
+        Reason: "viết tiếp",
     }
 }
 ```
 
-**函数特性**：
-- 纯函数（输入 RouterState，输出 NextInstruction）
-- 可单测（给定状态，断言路由结果）
-- **返回 nil 是合法的**——表示"这是裁定场景，请让 LLM 自主"
+**Đặc tính của hàm**:
+- Hàm thuần (vào RouterState, ra NextInstruction)
+- Kiểm thử đơn vị được (cho một trạng thái, khẳng định kết quả định tuyến)
+- **Trả nil là hợp pháp** — nghĩa là "đây là tình huống phán quyết, hãy để LLM tự chủ"
 
-### 3.4 触发时机
+### 3.4 Thời điểm kích hoạt
 
-Host 订阅 `agentcore.EventToolExecEnd` 事件：
+Host đăng ký sự kiện `agentcore.EventToolExecEnd`:
 
 ```go
 coordinator.Subscribe(func(ev agentcore.Event) {
     if ev.Type == agentcore.EventToolExecEnd && ev.Tool == "subagent" && !ev.IsError {
-        // SubAgent 刚返回 → 读最新状态 → 路由
+        // SubAgent vừa trả về → đọc trạng thái mới nhất → định tuyến
         h.flowRouter.Dispatch()
     }
 })
@@ -286,7 +290,7 @@ func (r *FlowRouter) Dispatch() {
     state := r.loadState()
     instruction := Route(state)
     if instruction == nil {
-        return // 裁定场景，让 LLM 自主
+        return // tình huống phán quyết, để LLM tự chủ
     }
     msg := formatInstruction(instruction)
     _ = r.coordinator.FollowUp(agentcore.UserMsg(msg))
@@ -294,362 +298,362 @@ func (r *FlowRouter) Dispatch() {
 
 func formatInstruction(i *NextInstruction) string {
     return fmt.Sprintf(
-        "[Host 下达指令] 下一步：调用 subagent(%s, %q)\n"+
-        "理由：%s\n"+
-        "这是流程层的明确指令，请立即执行，不要先调 novel_context，不要先输出推理。",
+        "[Host ra chỉ thị] Bước sau: gọi subagent(%s, %q)\n"+
+        "Lý do: %s\n"+
+        "Đây là chỉ thị rõ ràng của tầng luồng, hãy thi hành ngay, đừng gọi novel_context trước, đừng xuất phần suy luận trước.",
         i.Agent, i.Task, i.Reason,
     )
 }
 ```
 
-### 3.5 响应性与并发
+### 3.5 Tính đáp ứng và đồng thời
 
-**用户 Steer 路径**（无变化）：
+**Đường Steer của người dùng** (không đổi):
 ```
-Steer → coordinator.Inject(UserMsg("[用户干预] xxx"))
+Steer → coordinator.Inject(UserMsg("[người dùng can thiệp] xxx"))
 ```
 
-- 正在运行：消息插入当前 run 队列
-- Idle：resume run
-- Paused：排队
+- Đang chạy: tin nhắn chèn vào hàng đợi của run hiện tại
+- Idle: resume run
+- Paused: xếp hàng
 
-**路由指令 + Steer 的并发**：
-- 都进入 Coordinator 的消息队列，按 agentcore 原生顺序处理
-- 如果 Host 刚发 `FollowUp("[Host 指令] 写第 37 章")`，紧接着用户 Steer `"停一下，调整风格"`
-  - Coordinator 先处理 Host 指令？还是先处理 Steer？
-  - **`Inject` 的语义是插队到当前队列头部**，所以 Steer 先被处理
-  - 这是期望行为：用户干预优先级高于 Host 例行调度
+**Việc đồng thời của chỉ thị định tuyến + Steer**:
+- Cả hai đều vào hàng đợi tin nhắn của Coordinator, xử lý theo thứ tự nguyên bản của agentcore
+- Nếu Host vừa gửi `FollowUp("[Host chỉ thị] viết chương 37")`, ngay sau đó người dùng Steer `"dừng chút, chỉnh văn phong"`
+  - Coordinator xử lý chỉ thị của Host trước? Hay xử lý Steer trước?
+  - **Ngữ nghĩa của `Inject` là chèn lên đầu hàng đợi hiện tại**, nên Steer được xử lý trước
+  - Đây là hành vi mong đợi: can thiệp của người dùng có ưu tiên cao hơn việc điều phối thường lệ của Host
 
-**避免 Host 指令与 Steer 冲突**：
-- Flow Router 在收到"Steer 已注入"信号后**短暂暂停**几 turn（让 Coordinator 处理完 Steer 再路由）
-- 通过订阅 `agentcore.EventMessageEnd` + 检查 Progress 状态变化感知 Steer 处理结果
+**Tránh xung đột giữa chỉ thị Host và Steer**:
+- Flow Router sau khi nhận tín hiệu "Steer đã được tiêm" thì **tạm dừng ngắn** vài turn (để Coordinator xử lý xong Steer rồi mới định tuyến)
+- Nhận biết kết quả xử lý Steer bằng cách đăng ký `agentcore.EventMessageEnd` + kiểm biến động trạng thái Progress
 
-### 3.6 coordinator.md 简化示例
+### 3.6 Ví dụ đơn giản hóa coordinator.md
 
-从 88 行砍到约 25 行：
+Từ 88 dòng chặt xuống khoảng 25 dòng:
 
 ```markdown
-你是小说创作总协调者。
+Bạn là tổng điều phối việc sáng tác tiểu thuyết.
 
-## 你的工作模式
+## Cách làm việc của bạn
 
-**主线**：Host 会在每次子代理返回后下达 `[Host 下达指令]` 消息，告诉你下一步调哪个子代理做什么。收到指令立即生成对应 tool_call，不要先调 novel_context 推理，不要复述。
+**Trục chính**: Host sẽ ra tin nhắn `[Host ra chỉ thị]` sau mỗi lần tác tử con trả về, nói cho bạn biết bước sau gọi tác tử con nào làm gì. Nhận chỉ thị thì sinh tool_call tương ứng ngay, đừng gọi novel_context để suy luận trước, đừng thuật lại.
 
-**裁定**：遇到以下情况时你需要自主判断（Host 不会下达指令，你必须主动行动）：
+**Phán quyết**: gặp các trường hợp sau thì bạn cần tự phán đoán (Host sẽ không ra chỉ thị, bạn buộc phải chủ động hành động):
 
-### 启动时：选规划师
+### Lúc khởi động: chọn kiến trúc sư
 
-- 默认 → `architect_long`
-- 仅当用户显式要求短篇/单卷/小品且篇幅限定在 25 章内 → `architect_short`
+- Mặc định → `architect_long`
+- Chỉ khi người dùng yêu cầu tường minh truyện ngắn/một tập/tiểu phẩm và độ dài giới hạn trong 25 chương → `architect_short`
 
-如用户输入 < 20 字，先在 task 描述里补充差异化方向、目标读者、至少一个非常规故事钩子，再派发。
+Nếu đầu vào của người dùng < 20 từ, hãy bồi thêm hướng khác biệt, đối tượng đọc, và ít nhất một móc truyện phi thường quy vào phần mô tả task trước, rồi mới phái.
 
-### 用户 Steer
+### Steer của người dùng
 
-格式：`[用户干预] xxx`
+Định dạng: `[người dùng can thiệp] xxx`
 
-- **查询类**（问状态/设定）：直接输出文字答案，无需再调工具；Host 会继续派发。
-- **修改类**（要求改设定/重写/调整风格）：评估影响范围：
-  - 涉及设定变更 → 调 architect_* 做 `save_foundation(type=...)`
-  - 涉及已写章节 → 让工具自动把目标章节写入 `PendingRewrites`（可通过再次调 writer 时说明重写意图）
-  - 仅影响后续风格 → 把要求简短描述后，下次收到 Host 指令时附加到 writer 的 task 描述里
+- **Loại truy vấn** (hỏi trạng thái/thiết định): xuất câu trả lời bằng chữ luôn, không cần gọi tool nữa; Host sẽ tiếp tục phái việc.
+- **Loại sửa** (yêu cầu sửa thiết định/viết lại/chỉnh văn phong): lượng định phạm vi ảnh hưởng:
+  - Liên quan việc đổi thiết định → gọi architect_* làm `save_foundation(type=...)`
+  - Liên quan chương đã viết → để tool tự ghi chương mục tiêu vào `PendingRewrites` (có thể nói rõ ý định viết lại khi gọi writer lần nữa)
+  - Chỉ ảnh hưởng văn phong về sau → mô tả ngắn gọn yêu cầu rồi lần sau nhận chỉ thị của Host thì gắn kèm vào phần mô tả task của writer.
 
-## 工具
+## Tool
 
-- `subagent(agent, task)`：调用子代理
-- `novel_context`：仅在用户查询需要时使用，不要在 Host 指令到达后先调
+- `subagent(agent, task)`: gọi tác tử con
+- `novel_context`: chỉ dùng khi truy vấn của người dùng cần, đừng gọi trước khi chỉ thị của Host tới
 
-## 子代理
+## Tác tử con
 
 - `architect_long` / `architect_short` / `writer` / `editor`
 
-## 禁止
+## Cấm
 
-- 在 Host 指令到达时先调 novel_context 再行动
-- 在没有用户 Steer 且没有 Host 指令的情况下自行决定下一步
+- Gọi novel_context trước rồi mới hành động khi chỉ thị của Host tới
+- Tự quyết bước sau khi không có Steer của người dùng và cũng không có chỉ thị của Host
 ```
 
-### 3.7 Reminder 通道大幅瘦身
+### 3.7 Kênh Reminder gầy đi mạnh
 
-**删除**：
-- `flow.go`（Host FollowUp 已经下达具体指令，Reminder 的路由提醒失去价值）
-- `queue_guard.go`（队列由 Host Router 保证）
-- `book_complete.go`（Host 在 Phase=Complete 时 FollowUp 输出总结指令）
+**Xóa**:
+- `flow.go` (FollowUp của Host đã ra chỉ thị cụ thể, phần nhắc định tuyến của Reminder mất giá trị)
+- `queue_guard.go` (hàng đợi do Host Router bảo đảm)
+- `book_complete.go` (Host FollowUp chỉ thị xuất tổng kết khi Phase=Complete)
 
-**保留**：
-- `subagent_guards.go`（Writer/Architect/Editor 的 StopGuard，确保子代理不空手结束）
-- 新增一个轻量 `foundation_reminder.go`：规划阶段告知 Coordinator 缺项（这是**裁定需要的信息**而非路由指令）
+**Giữ**:
+- `subagent_guards.go` (StopGuard của Writer/Architect/Editor, bảo đảm tác tử con không kết thúc tay không)
+- Thêm mới một `foundation_reminder.go` nhẹ: giai đoạn quy hoạch thì báo cho Coordinator các mục còn khuyết (đây là **thông tin mà việc phán quyết cần** chứ không phải chỉ thị định tuyến)
 
-**StopGuard 保留**：
-- Coordinator 的 StopGuard 保留（`Phase != Complete` 时拦 end_turn 作兜底）
-- 新增"收到 Host 指令但本轮未调对应 subagent"时注入提醒
+**StopGuard được giữ**:
+- StopGuard của Coordinator được giữ (khi `Phase != Complete` thì chặn end_turn để đỡ lưng)
+- Thêm mới phần tiêm nhắc khi "đã nhận chỉ thị của Host mà lượt này không gọi subagent tương ứng"
 
-### 3.8 resume.go 小幅简化
+### 3.8 resume.go đơn giản hóa chút ít
 
-当前 `buildResumePrompt` 按 checkpoint 生成精确到 step 的自然语言指令（121 行）。
+`buildResumePrompt` hiện tại sinh chỉ thị bằng ngôn ngữ tự nhiên chính xác tới từng step theo checkpoint (121 dòng).
 
-新架构：
-- Resume 时先读 Progress，Flow Router 算出 `NextInstruction`
-- Coordinator 收到一个**非常简短**的 resume prompt，然后等 Host 的 FollowUp 指令
+Kiến trúc mới:
+- Khi Resume thì đọc Progress trước, Flow Router tính ra `NextInstruction`
+- Coordinator nhận một resume prompt **rất ngắn**, rồi đợi chỉ thị FollowUp của Host
 
 ```
-[恢复] 本书「xxx」已完成 N 章，进入 XX 阶段。
-请等待 Host 下一步指令，或处理可能在停机期间留下的用户干预。
+[Khôi phục] Sách «xxx» đã hoàn thành N chương, đang ở giai đoạn XX.
+Hãy đợi chỉ thị bước sau của Host, hoặc xử lý phần can thiệp của người dùng có thể còn sót lại trong lúc dừng máy.
 ```
 
-几乎所有分支逻辑下沉到 Flow Router（Router 本来就要按状态路由，Resume 不需要特殊路径）。
+Gần như toàn bộ logic phân nhánh chìm xuống Flow Router (Router vốn đã phải định tuyến theo trạng thái, Resume không cần một đường riêng).
 
 ---
 
-## 4. 目标达成度评估
+## 4. Đánh giá mức đạt mục tiêu
 
-### 4.1 稳定性
+### 4.1 Tính ổn định
 
-| 风险 | 当前 | 新架构 |
+| Rủi ro | Hiện tại | Kiến trúc mới |
 |---|---|---|
-| Coordinator 选错 architect | 发生过（mid 路由错）| 启动时仍是裁定，但 prompt 从三档变二元（已做），错误面大幅缩小 |
-| Coordinator 不遵守"只说写第 N 章" | 发生过 | Host 下达固定格式指令，不再需要 LLM 生成 task 描述 |
-| Coordinator 漏掉 queue_drained 检查 | 发生过 | Host Router 强制按顺序走 |
-| 弧末 commit 后 Coordinator 忘记调 editor | 可能 | Host Router 检测到 IsArcEnd && !HasArcReview 直接派发 |
-| 崩溃恢复分支遗漏 | 已知缺口 | Flow Router 的状态机天然覆盖所有分支 |
-| StopGuard 连续拦 5 次升级 fatal | 存在 | Host 指令明确后 LLM 很难连续拦（除非 prompt 严重失灵）|
+| Coordinator chọn sai architect | Đã xảy ra (lỗi định tuyến của mid) | Lúc khởi động vẫn là phán quyết, nhưng prompt từ ba bậc xuống nhị phân (đã làm), mặt lỗi thu nhỏ mạnh |
+| Coordinator không tuân "chỉ nói viết chương N" | Đã xảy ra | Host ra chỉ thị theo định dạng cố định, không cần LLM sinh mô tả task nữa |
+| Coordinator bỏ sót phép kiểm queue_drained | Đã xảy ra | Host Router cưỡng chế đi theo thứ tự |
+| Sau commit cuối cung Coordinator quên gọi editor | Có thể | Host Router phát hiện IsArcEnd && !HasArcReview là phái luôn |
+| Nhánh khôi phục sau sập bị bỏ sót | Chỗ hụt đã biết | Máy trạng thái của Flow Router bao phủ mọi nhánh một cách tự nhiên |
+| StopGuard chặn liên tiếp 5 lần thì leo thang fatal | Tồn tại | Chỉ thị của Host đã rõ thì LLM rất khó bị chặn liên tiếp (trừ khi prompt hỏng nặng) |
 
-### 4.2 LLM 升级红利
+### 4.2 Phần lợi từ việc nâng cấp LLM
 
-| 维度 | 保留度 |
+| Chiều | Mức giữ lại |
 |---|---|
-| Writer 模型升级 → 写作质量 | 100% |
-| Editor 模型升级 → 评审准确 | 100% |
-| Architect 模型升级 → 规划精致 | 100% |
-| **Coordinator 模型升级 → 裁定更准** | **100%**（裁定场景保留）|
-| ~~Coordinator 模型升级 → 路由更准~~ | 放弃（路由错误率本来就应该是 0，不需要 LLM 变聪明）|
+| Nâng model Writer → chất lượng viết | 100% |
+| Nâng model Editor → duyệt chính xác | 100% |
+| Nâng model Architect → quy hoạch tinh tế | 100% |
+| **Nâng model Coordinator → phán quyết chính xác hơn** | **100%** (tình huống phán quyết được giữ) |
+| ~~Nâng model Coordinator → định tuyến chính xác hơn~~ | Bỏ (tỉ lệ lỗi định tuyến vốn đã phải bằng 0, không cần LLM thông minh lên) |
 
-**重要保留**：用户干预评估、规划师选型、verdict 边界判断等裁定场景仍由 LLM 处理，模型升级直接受益。
+**Phần giữ lại quan trọng**: các tình huống phán quyết như lượng định can thiệp của người dùng, chọn loại kiến trúc sư, phán đoán biên của verdict thì vẫn do LLM xử lý, việc nâng model hưởng lợi trực tiếp.
 
-### 4.3 多 agent 能力
+### 4.3 Năng lực nhiều agent
 
-- SubAgent 数量、职能、装配方式**完全不变**
-- 模型异构（coordinator/architect/writer/editor 独立配置）**完全不变**
-- Coordinator 仍是连续 run，保留"全书视角"
-- 协作媒介（Store 中的产物）不变
+- Số lượng, chức năng, cách lắp ghép của SubAgent **hoàn toàn không đổi**
+- Model không đồng nhất (coordinator/architect/writer/editor cấu hình độc lập) **hoàn toàn không đổi**
+- Coordinator vẫn là một run liên tục, giữ được "góc nhìn cả sách"
+- Môi giới phối hợp (các sản phẩm trong Store) không đổi
 
-### 4.4 响应性
+### 4.4 Tính đáp ứng
 
-- 用户 Steer 通过 `coordinator.Inject` 打断的能力**完全保留**
-- Host Router 在 SubAgent 返回时派发指令，和用户 Steer 走同一条消息通道
-- Inject 的优先级高于 FollowUp（`Inject` 语义是插队），Steer 不会被 Host 指令挤掉
+- Năng lực dùng `coordinator.Inject` để ngắt bằng Steer của người dùng **được giữ hoàn toàn**
+- Host Router phái chỉ thị khi SubAgent trả về, và đi cùng một kênh tin nhắn với Steer của người dùng
+- Ưu tiên của Inject cao hơn FollowUp (ngữ nghĩa của `Inject` là chèn hàng), nên Steer không bị chỉ thị của Host đè mất
 
-### 4.5 Token 成本
+### 4.5 Chi phí token
 
-当前每章：Coordinator ~3500-7000 tokens × 1-2 turns = 3500-14000 tokens
+Hiện tại mỗi chương: Coordinator ~3500-7000 token × 1-2 turn = 3500-14000 token
 
-新架构每章：
-- Coordinator prompt 从 ~3000 tokens 压到 ~800 tokens
-- 每章仍需 1 个 turn（Coordinator 读 FollowUp 指令 + 生成 tool_call）
-- 总计 ~1000-1500 tokens
+Kiến trúc mới mỗi chương:
+- prompt của Coordinator nén từ ~3000 token xuống ~800 token
+- Mỗi chương vẫn cần 1 turn (Coordinator đọc chỉ thị FollowUp + sinh tool_call)
+- Tổng cộng ~1000-1500 token
 
-**节省 60-80%**。200 章长篇节省约 400k-1M tokens（不如激进方案的 100%，但不牺牲响应性和全书视角）。
-
----
-
-## 5. 对 docs/architecture.md 的影响
-
-### 5.1 §2 核心原则调整
-
-**原则一**（LLM 驱动主循环）→ 调整为：
-```
-LLM 驱动创作与裁定，Host 驱动流程路由。
-
-- 创作与裁定（需要语义理解、质量判断、意图识别的决策）仍留给 LLM
-- 流程路由（读事实→查表→发指令）由 Host 代码承担
-- Host 不绕过 Coordinator 直接调 SubAgent，而是通过 FollowUp 下达明确指令，
-  保留 Coordinator 作为指令执行通道和裁定节点
-```
-
-**原则二**（押注模型能力，不押注硬编码）→ 调整为：
-```
-在创作与裁定维度押注模型（Writer/Editor/Architect/Coordinator 裁定能力），
-在流程路由维度用代码表达（垂类 agent 的决策空间是封闭的，查表任务 LLM 无红利）。
-```
-
-### 5.2 §13 禁止列表调整
-
-- §13.13 "不做 Host 读信号文件 → 注入下一步指令的确定性控制面" →
-  **修正措辞**："不用信号文件做 IPC（直接读 Progress + Checkpoint 即可），Host 读事实后通过 `coordinator.FollowUp` 下达明确的子代理调用指令，是合理的垂类路由"
-- §13.14 "不做状态机硬编码 Flow 迁移" →
-  **修正措辞**："Flow 标签仍只由工具更新（不在 Host 里写'如果 A 则 SetFlow(B)'的状态机），但 Flow Router 可以根据 Flow 和其他事实决定下一步调谁"
-
-### 5.3 §7 Agent 装配调整
-
-- 保留 Coordinator 装配
-- `coordinator.md` 从 88 行砍到 ~25 行
-- Reminder 通道缩减（删 flow/queue_guard/book_complete，保留 foundation/subagent_guards）
-- 新增 `internal/host/flow/` 包
+**Tiết kiệm 60-80%**. Truyện dài 200 chương tiết kiệm khoảng 400k-1M token (không bằng 100% của phương án cấp tiến, nhưng không hy sinh tính đáp ứng và góc nhìn cả sách).
 
 ---
 
-## 6. 已知弱点（诚实列出）
+## 5. Ảnh hưởng tới docs/architecture.md
 
-### 6.1 Flow Router 的长期演化
+### 5.1 Điều chỉnh các nguyên tắc cốt lõi ở §2
 
-- 随着新场景加入（新 flow 状态、新的弧末后处理），Router 的 switch-case 会变长
-- 需要严格约束：**只处理路由，不处理业务逻辑**；决策规则写单测
-- 类似 v0.0.1 `handleSubAgentDone` 的警示永远有效；但本方案通过"纯函数 + 单测 + 只调用纯事实"避免滑向上帝对象
+**Nguyên tắc một** (LLM lái vòng lặp chính) → điều chỉnh thành:
+```
+LLM lái việc sáng tác và phán quyết, Host lái việc định tuyến luồng.
 
-### 6.2 用户干预的复杂性
+- Sáng tác và phán quyết (những quyết định cần hiểu ngữ nghĩa, phán chất lượng, nhận biết ý định) vẫn để cho LLM
+- Định tuyến luồng (đọc sự thật → tra bảng → ra chỉ thị) do code của Host gánh
+- Host không lách Coordinator để gọi SubAgent trực tiếp, mà ra chỉ thị rõ ràng qua FollowUp,
+  giữ Coordinator làm kênh thi hành chỉ thị và nút phán quyết
+```
 
-- 当前设计把 Steer 完全交给 Coordinator 的 LLM 裁定
-- 但某些 Steer 跨多个类别（如"把角色 A 前几章改清楚 + 后面给他加支线"）
-- 需要依赖 LLM 的能力来拆解，prompt 需要给出清晰指引
-- **这部分模型升级直接受益**（比起硬编码 InterventionAgent 的 enum 分类，LLM 灵活裁定更匹配真实场景）
+**Nguyên tắc hai** (đặt cược vào năng lực model, không cược vào code cứng) → điều chỉnh thành:
+```
+Ở chiều sáng tác và phán quyết thì cược vào model (năng lực phán quyết của Writer/Editor/Architect/Coordinator),
+ở chiều định tuyến luồng thì diễn đạt bằng code (không gian quyết định của agent dọc là đóng, tác vụ tra bảng thì LLM không có phần lợi).
+```
 
-### 6.3 事实层一致性的前置依赖
+### 5.2 Điều chỉnh danh sách cấm ở §13
 
-- Router 基于 Progress + Checkpoint 做决策，事实层必须可靠
-- 单文件 `withWriteLock` + tmp/rename 保证原子替换；`commit_chapter` 跨文件步骤由 PendingCommit 完整载荷、正文快照和阶段化幂等重放恢复，结构操作则按同参数修复派生视图；均不宣称数据库式原子事务
-- 但如果事实层出现不一致（如 Progress 说第 3 章完成但 chapters/ 下没有），Router 会做错决策
-- 建议：启动时加一次**事实层一致性检查**（如发现 Progress.CompletedChapters 与 chapters/ 目录对不上，报 warning）
+- §13.13 "Không làm mặt điều khiển tất định kiểu Host đọc tệp tín hiệu → tiêm chỉ thị bước sau" →
+  **sửa cách diễn đạt**: "Không dùng tệp tín hiệu để làm IPC (đọc thẳng Progress + Checkpoint là đủ); Host đọc sự thật rồi ra chỉ thị gọi tác tử con rõ ràng qua `coordinator.FollowUp` là việc định tuyến dọc hợp lý"
+- §13.14 "Không làm việc chuyển Flow bằng máy trạng thái đóng cứng" →
+  **sửa cách diễn đạt**: "Nhãn Flow vẫn chỉ do tool cập nhật (không viết máy trạng thái kiểu 'nếu A thì SetFlow(B)' trong Host), nhưng Flow Router được phép quyết bước sau gọi ai dựa trên Flow và các sự thật khác"
 
-### 6.4 Coordinator 仍保留 LLM 路由可能性
+### 5.3 Điều chỉnh phần lắp ghép Agent ở §7
 
-- 即使指令明确，LLM 可能"创造性"地不执行（比如生成一段思考文字后才调工具）
-- StopGuard 兜底：收到 Host 指令但本轮未调 subagent 则注入提醒
-- 这是兜底，不是禁止——强模型偶尔的"多一步思考"也不是坏事
-
-### 6.5 测试覆盖要求提高
-
-- Flow Router 是纯函数，必须有完备单测（覆盖所有 Phase × Flow × Boundary 组合）
-- 集成测试：模拟"commit → router → FollowUp → coordinator 响应 → subagent"的完整链路
-- 崩溃恢复测试：kill 进程后 resume，断言 Router 推导出正确的下一步
-
----
-
-## 7. 实施路线
-
-### 阶段 1：事实层强化（约 0.5 天）
-
-- 补齐 §6.3 的一致性检查：启动/Resume 时扫描一次，生成 warning
-- 确保 `store.HasArcReview(vol, arc)` 和 `HasArcSummary(vol, arc)` API 可用（如没有就加）
-
-### 阶段 2：引入 Flow Router 骨架（约 1 天）
-
-- 新建 `internal/host/flow/` 包：
-  - `route.go` — 纯函数 `Route(state) → *NextInstruction`
-  - `dispatcher.go` — 订阅事件 + FollowUp 下达
-  - `route_test.go` — 覆盖所有分支的单测
-- 通过 config 开关 `flow_driven: true/false` 控制是否激活
-- 默认关闭（false），先做对照运行
-
-### 阶段 3：激活并验证（约 1 天）
-
-- 打开 `flow_driven: true`
-- 跑一本 30-50 章的小说，对比指标：
-  - Coordinator LLM 调用次数
-  - 路由错误数（应为 0）
-  - 响应性（steer 打断是否正常）
-- 修 bug，调整 Router 规则
-
-### 阶段 4：coordinator.md 简化 + Reminder 瘦身（约 0.5 天）
-
-- 按 §3.6 改 coordinator.md
-- 删除 `reminder/flow.go / queue_guard.go / book_complete.go`
-- 保留必要的 foundation reminder
-- 更新 subagent StopGuard 如需（一般不用）
-
-### 阶段 5：resume.go 简化（约 0.5 天）
-
-- 删除 `buildResumePrompt` 的大部分分支
-- 替换为简短通用的 "[恢复] 请等待 Host 指令" 消息
-- Resume 后 Router 自然推导出继续的动作
-
-### 阶段 6：架构文档更新（约 0.5 天）
-
-- 按 §5 修改 `docs/architecture.md` §2 / §13 / §7
-- 把本提案文档状态改为"已采纳"，归档到 `docs/history/`
-
-### 阶段 7：观察期（2-4 周）
-
-- 连续跑 2-3 本长篇（各 100+ 章）
-- 记录所有路由错误（如有）、响应性问题、Coordinator 意外行为
-- 根据观察微调 Router 规则和 coordinator.md
-
-**总计约 4 天实施 + 观察期**。
+- Giữ phần lắp ghép Coordinator
+- `coordinator.md` chặt từ 88 dòng xuống ~25 dòng
+- Kênh Reminder co lại (xóa flow/queue_guard/book_complete, giữ foundation/subagent_guards)
+- Thêm mới package `internal/host/flow/`
 
 ---
 
-## 8. 对比表
+## 6. Các điểm yếu đã biết (liệt kê trung thực)
 
-| 维度 | 当前架构 | Hybrid（本方案）| 激进方案（附录 A）|
+### 6.1 Sự tiến hóa lâu dài của Flow Router
+
+- Khi có tình huống mới thêm vào (trạng thái flow mới, hậu xử lý cuối cung mới), phần switch-case của Router sẽ dài ra
+- Cần ràng buộc nghiêm: **chỉ xử lý định tuyến, không xử lý logic nghiệp vụ**; luật quyết định thì viết kiểm thử đơn vị
+- Lời cảnh báo tương tự `handleSubAgentDone` của v0.0.1 luôn còn hiệu lực; nhưng phương án này tránh trượt thành đối tượng thần thánh bằng "hàm thuần + kiểm thử đơn vị + chỉ gọi sự thật thuần"
+
+### 6.2 Độ phức tạp của can thiệp người dùng
+
+- Thiết kế hiện tại giao hoàn toàn Steer cho LLM của Coordinator phán quyết
+- Nhưng một số Steer trải nhiều loại (như "sửa nhân vật A ở mấy chương đầu cho rõ + về sau thêm cho anh ta một tuyến phụ")
+- Cần dựa vào năng lực của LLM để tách ra, prompt cần cho chỉ dẫn rõ ràng
+- **Phần này hưởng lợi trực tiếp từ việc nâng model** (so với việc đóng cứng phân loại bằng enum của InterventionAgent, việc LLM phán quyết linh hoạt khớp hơn với tình huống thật)
+
+### 6.3 Phụ thuộc tiền đề về tính nhất quán của tầng sự thật
+
+- Router quyết định dựa trên Progress + Checkpoint, nên tầng sự thật buộc phải đáng tin
+- Một tệp đơn lẻ thì `withWriteLock` + tmp/rename bảo đảm thay thế nguyên tử; các bước xuyên tệp của `commit_chapter` thì khôi phục bằng payload đầy đủ của PendingCommit, ảnh chụp chính văn và phát lại bất biến theo pha, còn tác vụ kết cấu thì sửa các view phái sinh theo cùng tham số; cả hai đều không tuyên bố là giao dịch nguyên tử kiểu cơ sở dữ liệu
+- Nhưng nếu tầng sự thật xuất hiện bất nhất (như Progress nói chương 3 đã xong mà dưới chapters/ thì không có), Router sẽ quyết định sai
+- Đề xuất: lúc khởi động thêm một lần **kiểm tính nhất quán của tầng sự thật** (nếu thấy Progress.CompletedChapters không khớp thư mục chapters/ thì báo warning)
+
+### 6.4 Coordinator vẫn còn khả năng định tuyến bằng LLM
+
+- Dù chỉ thị đã rõ, LLM vẫn có thể "sáng tạo" mà không thi hành (ví dụ sinh một đoạn văn suy nghĩ rồi mới gọi tool)
+- StopGuard đỡ lưng: đã nhận chỉ thị của Host mà lượt này không gọi subagent thì tiêm nhắc
+- Đây là phần đỡ lưng, không phải phép cấm — model mạnh mà thỉnh thoảng "nghĩ thêm một bước" cũng không phải chuyện tệ
+
+### 6.5 Yêu cầu về độ bao phủ kiểm thử tăng lên
+
+- Flow Router là hàm thuần, buộc phải có kiểm thử đơn vị đầy đủ (bao phủ mọi tổ hợp Phase × Flow × Boundary)
+- Kiểm thử tích hợp: mô phỏng trọn chuỗi "commit → router → FollowUp → coordinator đáp ứng → subagent"
+- Kiểm thử khôi phục sau sập: kill process rồi resume, khẳng định Router suy ra đúng bước sau
+
+---
+
+## 7. Lộ trình thi hành
+
+### Giai đoạn 1: gia cố tầng sự thật (khoảng 0,5 ngày)
+
+- Bồi đủ phép kiểm nhất quán ở §6.3: lúc khởi động/Resume thì quét một lần, sinh warning
+- Bảo đảm API `store.HasArcReview(vol, arc)` và `HasArcSummary(vol, arc)` dùng được (không có thì thêm)
+
+### Giai đoạn 2: đưa vào bộ khung Flow Router (khoảng 1 ngày)
+
+- Tạo mới package `internal/host/flow/`:
+  - `route.go` — hàm thuần `Route(state) → *NextInstruction`
+  - `dispatcher.go` — đăng ký sự kiện + ra chỉ thị FollowUp
+  - `route_test.go` — kiểm thử đơn vị bao phủ mọi nhánh
+- Điều khiển việc kích hoạt bằng công tắc config `flow_driven: true/false`
+- Mặc định tắt (false), làm phần chạy đối chứng trước
+
+### Giai đoạn 3: kích hoạt và kiểm chứng (khoảng 1 ngày)
+
+- Bật `flow_driven: true`
+- Chạy một cuốn tiểu thuyết 30-50 chương, đối chiếu chỉ số:
+  - Số lần gọi LLM của Coordinator
+  - Số lỗi định tuyến (phải bằng 0)
+  - Tính đáp ứng (việc steer ngắt có bình thường không)
+- Vá bug, chỉnh luật của Router
+
+### Giai đoạn 4: đơn giản hóa coordinator.md + làm gầy Reminder (khoảng 0,5 ngày)
+
+- Sửa coordinator.md theo §3.6
+- Xóa `reminder/flow.go / queue_guard.go / book_complete.go`
+- Giữ phần foundation reminder cần thiết
+- Cập nhật StopGuard của subagent nếu cần (thường thì không cần)
+
+### Giai đoạn 5: đơn giản hóa resume.go (khoảng 0,5 ngày)
+
+- Xóa phần lớn các nhánh của `buildResumePrompt`
+- Thay bằng tin nhắn ngắn gọn dùng chung "[Khôi phục] hãy đợi chỉ thị của Host"
+- Sau Resume thì Router tự nhiên suy ra động tác tiếp tục
+
+### Giai đoạn 6: cập nhật tài liệu kiến trúc (khoảng 0,5 ngày)
+
+- Sửa `docs/architecture.md` §2 / §13 / §7 theo §5
+- Đổi trạng thái tài liệu đề án này thành "đã chấp nhận", lưu vào `docs/history/`
+
+### Giai đoạn 7: kỳ quan sát (2-4 tuần)
+
+- Chạy liên tục 2-3 truyện dài (mỗi cuốn 100+ chương)
+- Ghi lại mọi lỗi định tuyến (nếu có), vấn đề về tính đáp ứng, hành vi ngoài dự kiến của Coordinator
+- Tinh chỉnh luật của Router và coordinator.md theo phần quan sát
+
+**Tổng cộng khoảng 4 ngày thi hành + kỳ quan sát.**
+
+---
+
+## 8. Bảng đối chiếu
+
+| Chiều | Kiến trúc hiện tại | Hybrid (phương án này) | Phương án cấp tiến (phụ lục A) |
 |---|---|---|---|
-| 稳定性 | 中（LLM 偶尔路由错）| **高** | 高 |
-| 响应性 | 高 | **高** | **低**（Host 直调 SubAgent 无法打断）|
-| LLM 红利 | 100% | **100%** | 85%（路由维度放弃）|
-| Token 节省 | 0 | ~70% | ~95% |
-| 全书视角 | 有 | **有** | 无（每次 SubAgent 独立）|
-| 实施成本 | - | 中（约 4 天）| 高（约 1 周 + 改 agentcore）|
-| 文档更新 | - | 小（§2/§13 微调）| 大（§2 原则重写）|
-| 需要改 agentcore | - | 否 | 可能（直接调 SubAgent）|
-| 回滚难度 | - | 低（config 开关）| 高 |
+| Tính ổn định | Trung (LLM thỉnh thoảng định tuyến sai) | **Cao** | Cao |
+| Tính đáp ứng | Cao | **Cao** | **Thấp** (Host gọi SubAgent trực tiếp thì không ngắt được) |
+| Phần lợi từ LLM | 100% | **100%** | 85% (bỏ chiều định tuyến) |
+| Tiết kiệm token | 0 | ~70% | ~95% |
+| Góc nhìn cả sách | Có | **Có** | Không (mỗi lần SubAgent độc lập) |
+| Chi phí thi hành | - | Trung (khoảng 4 ngày) | Cao (khoảng 1 tuần + sửa agentcore) |
+| Cập nhật tài liệu | - | Nhỏ (tinh chỉnh §2/§13) | Lớn (viết lại nguyên tắc §2) |
+| Có phải sửa agentcore | - | Không | Có thể (gọi SubAgent trực tiếp) |
+| Độ khó rollback | - | Thấp (công tắc config) | Cao |
 
 ---
 
-## 9. 决策点
+## 9. Các điểm cần quyết
 
-1. **是否采纳本提案（Hybrid Coordinator）？** [ ] 采纳 · [ ] 修改后采纳 · [ ] 不采纳
-2. 阶段 3 是否作为独立 PR 先落地验证？ [ ]
-3. `docs/architecture.md` §2 / §13 调整是否一并在本次处理？ [ ]
-4. 观察期长度：[ ] 2 周 · [ ] 4 周 · [ ] 更长
-
----
-
-## 附录 A：已评估的激进方案（完全删除 Coordinator）
-
-> 第一稿方案。因响应性退步、技术可行性存疑、Coordinator 全书视角丢失等问题降级为参考。
-
-激进方案的核心：Host 直接调 `SubAgentTool.Execute`，不经过 Coordinator LLM。
-
-**已识别的问题**：
-
-1. **响应性倒退**：`SubAgentTool.Execute` 是阻塞同步调用，用户 Steer 必须等当前 SubAgent 返回后才能处理。当前架构的 `Inject` 可以立即打断。
-2. **技术可行性存疑**：
-   - Host 直接调 SubAgentTool 违反 agentcore 使用惯例
-   - 事件流（`Subscribe` 的 Event）可能不会正确冒泡给 observer
-   - SubAgent 的 `ContextManagerFactory` / `OnMessage` 回调路径未知
-   - 需要改 agentcore 或大改 observer
-3. **Coordinator 全书视角丢失**：每次 SubAgent 独立 run，没有"连续 LLM 守望者"。长跑中风格漂移、角色割裂等问题少了一层隐形守护。
-4. **InterventionAgent 简化过度**：激进方案用 enum（query/modify_setting/rewrite_chapters/adjust_style/noop）分类用户意图，真实 Steer 可能横跨多类别，强制 schema 会误分类。
-5. **架构文档重写工作量大**：§2 核心原则推翻，文档 30% 论述受影响。
-6. **FlowDriver 会长成上帝对象**：一个循环塞所有路由逻辑，每加场景都要改，和 v0.0.1 `handleSubAgentDone` 同构。
-
-Hybrid 方案规避了前 4 条问题，第 5 条降为微调，第 6 条通过"纯函数 + 单测"管控。
+1. **Có chấp nhận đề án này (Hybrid Coordinator) không?** [ ] Chấp nhận · [ ] Sửa rồi chấp nhận · [ ] Không chấp nhận
+2. Giai đoạn 3 có làm một PR độc lập để đáp đất kiểm chứng trước không? [ ]
+3. Việc điều chỉnh §2 / §13 của `docs/architecture.md` có xử luôn trong lần này không? [ ]
+4. Độ dài kỳ quan sát: [ ] 2 tuần · [ ] 4 tuần · [ ] dài hơn
 
 ---
 
-## 附录 B：决策点落位明细
+## Phụ lục A: phương án cấp tiến đã lượng định (xóa hoàn toàn Coordinator)
 
-| 决策点 | 当前位置 | 新架构位置 | 类型 |
+> Phương án của bản thảo thứ nhất. Do tính đáp ứng thoái bộ, tính khả thi kỹ thuật còn ngờ, mất góc nhìn cả sách của Coordinator v.v. nên bị hạ xuống thành tài liệu tham khảo.
+
+Cốt lõi của phương án cấp tiến: Host gọi trực tiếp `SubAgentTool.Execute`, không qua LLM của Coordinator.
+
+**Các vấn đề đã nhận diện**:
+
+1. **Tính đáp ứng thoái bộ**: `SubAgentTool.Execute` là lời gọi đồng bộ có chặn, Steer của người dùng buộc phải đợi SubAgent hiện tại trả về mới xử lý được. `Inject` của kiến trúc hiện tại thì ngắt được ngay.
+2. **Tính khả thi kỹ thuật còn ngờ**:
+   - Host gọi SubAgentTool trực tiếp là trái quy ước dùng agentcore
+   - Dòng sự kiện (Event của `Subscribe`) có thể không nổi lên đúng cho observer
+   - Đường callback `ContextManagerFactory` / `OnMessage` của SubAgent thì chưa rõ
+   - Phải sửa agentcore hoặc sửa lớn observer
+3. **Mất góc nhìn cả sách của Coordinator**: mỗi lần SubAgent là một run độc lập, không có "người canh LLM liên tục". Trong lúc chạy dài thì các vấn đề như văn phong trôi, nhân vật bị cắt rời sẽ mất một lớp bảo vệ vô hình.
+4. **InterventionAgent đơn giản hóa quá mức**: phương án cấp tiến dùng enum (query/modify_setting/rewrite_chapters/adjust_style/noop) để phân loại ý định người dùng, mà Steer thật có thể trải nhiều loại, cưỡng chế schema sẽ phân loại sai.
+5. **Khối lượng viết lại tài liệu kiến trúc lớn**: các nguyên tắc cốt lõi ở §2 bị phủ định, 30% phần luận trong tài liệu bị ảnh hưởng.
+6. **FlowDriver sẽ phình thành đối tượng thần thánh**: một vòng lặp nhét hết logic định tuyến, thêm tình huống nào cũng phải sửa, đồng dạng với `handleSubAgentDone` của v0.0.1.
+
+Phương án Hybrid né được 4 vấn đề đầu, vấn đề thứ 5 hạ xuống thành tinh chỉnh, vấn đề thứ 6 được quản bằng "hàm thuần + kiểm thử đơn vị".
+
+---
+
+## Phụ lục B: chi tiết chỗ đặt của các điểm quyết định
+
+| Điểm quyết định | Vị trí hiện tại | Vị trí ở kiến trúc mới | Loại |
 |---|---|---|---|
-| 选规划师 | coordinator.md L26-29 | Coordinator LLM 裁定（启动时）| 裁定 |
-| 输入扩展 | coordinator.md L31 | Coordinator LLM 裁定（启动时）| 裁定 |
-| 规划补齐循环 | coordinator.md L36-38 | Host Router Phase=Premise/Outline 分支（返回 nil 放 LLM 自主 or 显式 FollowUp architect）| 混合 |
-| 每章下一步 | coordinator.md L46-51 + reminder/flow | **Host Router 2d 分支**（FollowUp writer）| 路由 |
-| 弧末评审 | coordinator.md L78-82 | **Host Router 2c 分支**（FollowUp editor/architect）| 路由 |
-| verdict 分叉 | coordinator.md L59-61 + save_review 工具 | 工具层已代码化，Router 只读 Flow | 路由（已完成）|
-| 用户干预 | coordinator.md L67-70 | Coordinator LLM 裁定（收到 Inject 消息时）| 裁定 |
-| 规划师报错重派 | coordinator.md L40 | Host Router 检测到 FoundationMissing 未变化，重试计数 | 路由 |
-| 全书完成总结 | coordinator.md L63-65 + reminder/book_complete | Host Router 检测 Phase=Complete → FollowUp "输出总结" | 路由 |
+| Chọn kiến trúc sư | coordinator.md L26-29 | LLM Coordinator phán quyết (lúc khởi động) | Phán quyết |
+| Mở rộng đầu vào | coordinator.md L31 | LLM Coordinator phán quyết (lúc khởi động) | Phán quyết |
+| Vòng bồi đủ quy hoạch | coordinator.md L36-38 | Nhánh Phase=Premise/Outline của Host Router (trả nil để LLM tự chủ, hoặc FollowUp architect tường minh) | Lai |
+| Bước sau mỗi chương | coordinator.md L46-51 + reminder/flow | **Nhánh 2d của Host Router** (FollowUp writer) | Định tuyến |
+| Duyệt cuối cung | coordinator.md L78-82 | **Nhánh 2c của Host Router** (FollowUp editor/architect) | Định tuyến |
+| Phân nhánh verdict | coordinator.md L59-61 + tool save_review | Tầng tool đã code hóa, Router chỉ đọc Flow | Định tuyến (đã xong) |
+| Can thiệp người dùng | coordinator.md L67-70 | LLM Coordinator phán quyết (khi nhận tin nhắn Inject) | Phán quyết |
+| Kiến trúc sư báo lỗi thì phái lại | coordinator.md L40 | Host Router phát hiện FoundationMissing không đổi, rồi đếm số lần thử lại | Định tuyến |
+| Tổng kết khi cả sách xong | coordinator.md L63-65 + reminder/book_complete | Host Router phát hiện Phase=Complete → FollowUp "xuất tổng kết" | Định tuyến |
 
 ---
 
-## 附录 C：参考源码位置
+## Phụ lục C: các vị trí mã nguồn tham chiếu
 
-- `assets/prompts/coordinator.md` — 待简化
-- `internal/host/reminder/flow.go` / `queue_guard.go` / `book_complete.go` — 待删除
-- `internal/host/reminder/subagent_guards.go` — 保留
-- `internal/host/reminder/stop_guard.go` — 保留 + 加"收到 Host 指令必须执行"检查
-- `internal/host/resume.go` — 大幅简化
-- `internal/host/observer.go` — 新订阅 EventToolExecEnd 触发 Router
-- `internal/host/flow/` — 新增包
-- `internal/tools/commit_chapter.go` L220-280 — CommitResult 17 字段已完备
-- `internal/tools/save_review.go` — Editor verdict 到 Flow/返工队列的原子映射
-- `internal/store/outline.go` `CheckArcBoundary` — 弧边界事实 API
+- `assets/prompts/coordinator.md` — chờ đơn giản hóa
+- `internal/host/reminder/flow.go` / `queue_guard.go` / `book_complete.go` — chờ xóa
+- `internal/host/reminder/subagent_guards.go` — giữ
+- `internal/host/reminder/stop_guard.go` — giữ + thêm phép kiểm "đã nhận chỉ thị của Host thì buộc phải thi hành"
+- `internal/host/resume.go` — đơn giản hóa mạnh
+- `internal/host/observer.go` — đăng ký mới EventToolExecEnd để kích hoạt Router
+- `internal/host/flow/` — package thêm mới
+- `internal/tools/commit_chapter.go` L220-280 — 17 trường của CommitResult đã đủ
+- `internal/tools/save_review.go` — ánh xạ nguyên tử từ verdict của Editor sang Flow/hàng đợi viết lại
+- `internal/store/outline.go` `CheckArcBoundary` — API sự thật về biên cung

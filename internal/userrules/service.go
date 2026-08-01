@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/voocel/agentcore"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/rules"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
@@ -32,7 +33,7 @@ func NewService(st *store.Store, model agentcore.ChatModel, opts rules.LoadOptio
 func (s *Service) normalizeOrDegrade(ctx context.Context, source, text string) rules.Candidate {
 	cand, err := s.norm.Normalize(ctx, source, text)
 	if err != nil {
-		slog.Warn("规则归一化失败，降级为原文偏好", "module", "rules", "source", source, "err", err)
+		slog.Warn(i18n.F("规则归一化失败，降级为原文偏好"), "module", "rules", "source", source, "err", err)
 		return degraded(source, text)
 	}
 	return cand

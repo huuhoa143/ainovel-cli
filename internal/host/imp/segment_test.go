@@ -548,7 +548,7 @@ func TestBuildProjectionContextByteCap(t *testing.T) {
 
 func TestCallStructuredTruncation(t *testing.T) {
 	m := &mockModel{responses: []string{`{"boundaries":[]}`}, stop: agentcore.StopReasonLength}
-	_, err := callStructured[boundaryBatch](context.Background(), m, segmentContract, "s", "p", 16, callProfile{}, nil)
+	_, err := callStructured[boundaryBatch](context.Background(), m, segmentContract(), "s", "p", 16, callProfile{}, nil)
 	var trunc *errTruncated
 	if err == nil || !asTruncated(err, &trunc) {
 		t.Fatalf("长度截断应返回 *errTruncated，得 %v", err)

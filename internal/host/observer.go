@@ -10,6 +10,7 @@ import (
 
 	"github.com/voocel/agentcore"
 	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	storepkg "github.com/voocel/ainovel-cli/internal/store"
 	"sync/atomic"
 )
@@ -212,7 +213,7 @@ func (o *observer) persistEvent(ev Event) {
 		Summary:  ev.Summary,
 		Payload:  ev,
 	}); err != nil {
-		slog.Warn("运行事件持久化失败", "module", "observer", "category", ev.Category, "err", err)
+		slog.Warn(i18n.F("运行事件持久化失败"), "module", "observer", "category", ev.Category, "err", err)
 	}
 }
 

@@ -2,6 +2,7 @@ package diag
 
 import (
 	"fmt"
+	"github.com/voocel/ainovel-cli/internal/i18n"
 	"math"
 	"sort"
 	"strings"
@@ -39,9 +40,9 @@ func ChronicLowDimension(snap *Snapshot) []Finding {
 			Confidence: ConfMedium,
 			AutoLevel:  AutoNone,
 			Target:     "prompt.writer",
-			Title:      fmt.Sprintf("维度 [%s] 持续低分 (均值 %.0f)", name, avg),
-			Evidence:   fmt.Sprintf("共 %d 次评审，均分 %.1f", count, avg),
-			Suggestion: fmt.Sprintf("检查 Writer prompt 中关于 %s 的指引是否清晰，或 Editor prompt 的 %s 评分标准是否合理。", name, name),
+			Title:      fmt.Sprintf(i18n.F("维度 [%s] 持续低分 (均值 %.0f)"), name, avg),
+			Evidence:   fmt.Sprintf(i18n.F("共 %d 次评审，均分 %.1f"), count, avg),
+			Suggestion: fmt.Sprintf(i18n.F("检查 Writer prompt 中关于 %s 的指引是否清晰，或 Editor prompt 的 %s 评分标准是否合理。"), name, name),
 		})
 	}
 	return findings
@@ -76,9 +77,9 @@ func ContractMissPattern(snap *Snapshot) []Finding {
 		Confidence: ConfMedium,
 		AutoLevel:  AutoNone,
 		Target:     "prompt.writer",
-		Title:      fmt.Sprintf("合同履约率低 (%.0f%% 未达成)", rate*100),
-		Evidence:   fmt.Sprintf("未达成: [%s]，共 %d/%d", strings.Join(missedChapters, ", "), missed, total),
-		Suggestion: "Writer 可能未读 contract，或 contract required_beats 过于激进。检查 plan_chapter 和 writer.md 的配合。",
+		Title:      fmt.Sprintf(i18n.F("合同履约率低 (%.0f%% 未达成)"), rate*100),
+		Evidence:   fmt.Sprintf(i18n.F("未达成: [%s]，共 %d/%d"), strings.Join(missedChapters, ", "), missed, total),
+		Suggestion: i18n.F("Writer 可能未读 contract，或 contract required_beats 过于激进。检查 plan_chapter 和 writer.md 的配合。"),
 	}}
 }
 
@@ -122,9 +123,9 @@ func HookWeakChain(snap *Snapshot) []Finding {
 		Confidence: ConfMedium,
 		AutoLevel:  AutoNone,
 		Target:     "prompt.writer",
-		Title:      fmt.Sprintf("章末钩子连续偏弱（连续 %d 章）", len(weakChain)),
+		Title:      fmt.Sprintf(i18n.F("章末钩子连续偏弱（连续 %d 章）"), len(weakChain)),
 		Evidence:   strings.Join(parts, ", "),
-		Suggestion: "检查 writer.md 中 hook_goal 的执行是否清晰，必要时在 plan_chapter 中明确本章追读欲望，并校准 Editor 对 hook 的举证标准。",
+		Suggestion: i18n.F("检查 writer.md 中 hook_goal 的执行是否清晰，必要时在 plan_chapter 中明确本章追读欲望，并校准 Editor 对 hook 的举证标准。"),
 	}}
 }
 
@@ -143,7 +144,7 @@ func PayoffMissPattern(snap *Snapshot) []Finding {
 		total++
 		if review.ContractStatus == "partial" || review.ContractStatus == "missed" {
 			missed++
-			details = append(details, fmt.Sprintf("ch%d(%d项 payoff)", ch, len(plan.Contract.PayoffPoints)))
+			details = append(details, fmt.Sprintf(i18n.F("ch%d(%d项 payoff)"), ch, len(plan.Contract.PayoffPoints)))
 		}
 	}
 	if total < 2 {
@@ -161,9 +162,9 @@ func PayoffMissPattern(snap *Snapshot) []Finding {
 		Confidence: ConfMedium,
 		AutoLevel:  AutoNone,
 		Target:     "prompt.writer",
-		Title:      fmt.Sprintf("爽点/情节点兑现率偏低 (%.0f%% 未达成)", rate*100),
-		Evidence:   fmt.Sprintf("未兑现章节: [%s]，共 %d/%d", strings.Join(details, ", "), missed, total),
-		Suggestion: "检查 plan_chapter 的 payoff_points 是否过多或过空，确保 Writer 在正文里明确兑现，而不是只做铺垫。",
+		Title:      fmt.Sprintf(i18n.F("爽点/情节点兑现率偏低 (%.0f%% 未达成)"), rate*100),
+		Evidence:   fmt.Sprintf(i18n.F("未兑现章节: [%s]，共 %d/%d"), strings.Join(details, ", "), missed, total),
+		Suggestion: i18n.F("检查 plan_chapter 的 payoff_points 是否过多或过空，确保 Writer 在正文里明确兑现，而不是只做铺垫。"),
 	}}
 }
 
@@ -194,35 +195,52 @@ func ExcessiveRewrites(snap *Snapshot) []Finding {
 		Confidence: ConfMedium,
 		AutoLevel:  AutoNone,
 		Target:     "prompt.editor",
-		Title:      fmt.Sprintf("改写率过高 (%d/%d = %.0f%%)", rewrites, total, rate*100),
-		Evidence:   fmt.Sprintf("共 %d 次评审，%d 次 rewrite", total, rewrites),
-		Suggestion: "Writer 持续产出低于 Editor 阈值的内容。检查 Writer prompt 的质量标准是否与 Editor 的评审标准对齐。",
+		Title:      fmt.Sprintf(i18n.F("改写率过高 (%d/%d = %.0f%%)"), rewrites, total, rate*100),
+		Evidence:   fmt.Sprintf(i18n.F("共 %d 次评审，%d 次 rewrite"), total, rewrites),
+		Suggestion: i18n.F("Writer 持续产出低于 Editor 阈值的内容。检查 Writer prompt 的质量标准是否与 Editor 的评审标准对齐。"),
 	}}
 }
 
 // WordCountAnomaly 检测章节字数异常。
+//
+// Mốc so sánh là TRUNG VỊ, không phải trung bình. Hai lý do:
+//
+//   - Trung bình bị kéo bởi chính những chương ngoại lệ mà quy tắc này đi tìm.
+//     Một chương dài gấp 5 lần đủ để nâng mốc lên tới mức nhóm chương bình
+//     thường tụt xuống dưới ThresholdWordShortRatio — quy tắc quay ra tố cáo
+//     nhóm lành và bỏ qua chương thật sự bất thường.
+//   - Cụ thể với bản việt hóa: các cuốn viết dở vắt qua thời điểm đổi cách đếm
+//     chữ (xem domain.WordCount) có ChapterWordCounts trộn hai đơn vị — chương
+//     cũ còn đếm bằng rune nên phồng ~4,75 lần. Với trung bình, một cuốn như thế
+//     hoặc im bặt hoàn toàn hoặc báo động sai hàng loạt.
+//
+// Trung vị không cứu được cuốn có QUÁ NỬA số chương còn đếm bằng đơn vị cũ;
+// trường hợp đó cần đếm lại từ nội dung ở tầng store.
 func WordCountAnomaly(snap *Snapshot) []Finding {
 	if snap.Progress == nil || len(snap.Progress.ChapterWordCounts) < 3 {
 		return nil
 	}
 	wc := snap.Progress.ChapterWordCounts
 
-	var sum float64
-	for _, w := range wc {
-		sum += float64(w)
-	}
-	avg := sum / float64(len(wc))
-	if avg == 0 {
+	baseline := medianOf(wc)
+	if baseline == 0 {
 		return nil
 	}
 
+	// Lặp theo chương đã sắp thứ tự: map trong Go trả về thứ tự ngẫu nhiên, và
+	// Evidence đổi chỗ mỗi lần chạy làm hai báo cáo giống nhau trông như khác nhau.
+	chapters := make([]int, 0, len(wc))
+	for ch := range wc {
+		chapters = append(chapters, ch)
+	}
+	sort.Ints(chapters)
+
 	var anomalies []string
-	for ch, w := range wc {
-		ratio := float64(w) / avg
-		if ratio < ThresholdWordShortRatio {
-			anomalies = append(anomalies, fmt.Sprintf("ch%d(%d字,%.0f%%)", ch, w, ratio*100))
-		} else if ratio > ThresholdWordLongRatio {
-			anomalies = append(anomalies, fmt.Sprintf("ch%d(%d字,%.0f%%)", ch, w, ratio*100))
+	for _, ch := range chapters {
+		w := wc[ch]
+		ratio := float64(w) / baseline
+		if ratio < ThresholdWordShortRatio || ratio > ThresholdWordLongRatio {
+			anomalies = append(anomalies, fmt.Sprintf(i18n.F("ch%d(%d字,%.0f%%)"), ch, w, ratio*100))
 		}
 	}
 	if len(anomalies) == 0 {
@@ -235,10 +253,25 @@ func WordCountAnomaly(snap *Snapshot) []Finding {
 		Confidence: ConfLow,
 		AutoLevel:  AutoNone,
 		Target:     "context.window",
-		Title:      fmt.Sprintf("章节字数异常 (均值 %d 字)", int(math.Round(avg))),
+		Title:      fmt.Sprintf(i18n.F("章节字数异常 (中位数 %d 字)"), int(math.Round(baseline))),
 		Evidence:   strings.Join(anomalies, "; "),
-		Suggestion: "极短章节可能是输出截断（token 限制），极长章节可能消耗过多上下文窗口。检查模型 max_tokens 配置。",
+		Suggestion: i18n.F("极短章节可能是输出截断（token 限制），极长章节可能消耗过多上下文窗口。检查模型 max_tokens 配置。"),
 	}}
+}
+
+// medianOf trả về trung vị của các giá trị trong map (số chẵn phần tử thì lấy
+// trung bình hai phần tử giữa).
+func medianOf(wc map[int]int) float64 {
+	values := make([]int, 0, len(wc))
+	for _, w := range wc {
+		values = append(values, w)
+	}
+	sort.Ints(values)
+	mid := len(values) / 2
+	if len(values)%2 == 1 {
+		return float64(values[mid])
+	}
+	return float64(values[mid-1]+values[mid]) / 2
 }
 
 func sortedChapterReviews(snap *Snapshot) []int {

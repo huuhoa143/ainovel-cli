@@ -1,0 +1,356 @@
+package serve
+
+import (
+	"errors"
+	"fmt"
+	"io"
+	"mime/multipart"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+
+	"github.com/voocel/ainovel-cli/internal/host/exp"
+	"github.com/voocel/ainovel-cli/internal/host/imp"
+	"github.com/voocel/ainovel-cli/internal/host/sim"
+)
+
+// Ba luồng cần tệp: nhập truyện ngoài, mô phỏng văn phong, xuất bản.
+//
+// # Vì sao TẢI LÊN chứ không chọn đường dẫn trên máy chủ
+//
+// Người dùng chọn tải lên, và lý do đứng vững: `PRODUCT.md` ghi bối cảnh là engine chạy
+// "trên máy mình HOẶC trên VPS riêng". Với ca VPS thì tệp nằm ở máy người dùng còn studio ở
+// máy khác, nên một cây thư mục của máy chủ sẽ chỉ vào những tệp họ không có.
+//
+// # Vì sao đợi xong rồi trả, không stream
+//
+// Ba luồng này trả `<-chan Event`. Bản này VÉT cạn channel rồi trả toàn bộ nhật ký một lượt.
+// Chức năng đủ — chỉ là hiện muộn hơn. Stream đòi một kênh SSE thứ hai có vòng đời riêng và
+// phải hòa với kênh sự kiện đang có; đó là việc mua sự mượt, không mua tính năng.
+//
+// Cái giá ĐO ĐƯỢC và được nói ra: nhập một cuốn dài có thể chạy vài phút, nên yêu cầu HTTP
+// treo lâu. Đây là lý do `handleNhap` không đặt hạn thời gian riêng — hạn duy nhất là
+// `ReadHeaderTimeout` của server, cố ý không phủ phần thân.
+
+// gioiHanTaiLen là hạn kích thước một lượt tải lên.
+//
+// 64 MiB: một cuốn tiểu thuyết dạng .txt hiếm khi quá 5 MiB, còn thư mục ngữ liệu mô phỏng
+// nhiều chương có thể lớn hơn. Không giới hạn thì một yêu cầu duy nhất ăn hết RAM của process
+// đang giữ cả engine — và ở đây engine chạy CÙNG process, nên hết RAM là mất cả cuốn sách
+// đang viết, không chỉ mất một request.
+const gioiHanTaiLen = 64 << 20
+
+// nhanTep nhận các tệp tải lên vào một thư mục tạm.
+//
+// Trả cả thư mục để bên gọi dọn: `defer os.RemoveAll` ở bên gọi chứ không ở đây, vì tệp còn
+// phải sống qua cả lượt chạy của engine.
+func nhanTep(r *http.Request, truong string) (thuMuc string, duong []string, err error) {
+	if err := r.ParseMultipartForm(gioiHanTaiLen); err != nil {
+		return "", nil, fmt.Errorf("đọc tệp tải lên: %w", err)
+	}
+	tep := r.MultipartForm.File[truong]
+	if len(tep) == 0 {
+		return "", nil, fmt.Errorf("không có tệp nào ở trường %q", truong)
+	}
+	thuMuc, err = os.MkdirTemp("", "ainovel-taiLen-*")
+	if err != nil {
+		return "", nil, err
+	}
+	for _, h := range tep {
+		p, err := luuMotTep(thuMuc, h)
+		if err != nil {
+			_ = os.RemoveAll(thuMuc)
+			return "", nil, err
+		}
+		duong = append(duong, p)
+	}
+	return thuMuc, duong, nil
+}
+
+// luuMotTep ghi một tệp tải lên, dùng tên đã LÀM SẠCH.
+//
+// `filepath.Base` là phần bắt buộc: `Filename` do client đặt nên nó có thể là
+// `../../.ssh/authorized_keys`. Không có nó thì một lượt tải lên ghi được ra ngoài thư mục
+// tạm — và server này chạy dưới quyền người dùng thật.
+func luuMotTep(thuMuc string, h *multipart.FileHeader) (string, error) {
+	ten := filepath.Base(filepath.FromSlash(h.Filename))
+	if ten == "" || ten == "." || ten == string(filepath.Separator) {
+		ten = "tai-len"
+	}
+	src, err := h.Open()
+	if err != nil {
+		return "", err
+	}
+	defer src.Close()
+
+	duong := filepath.Join(thuMuc, ten)
+	dst, err := os.OpenFile(duong, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err != nil {
+		return "", err
+	}
+	defer dst.Close()
+	if _, err := io.Copy(dst, io.LimitReader(src, gioiHanTaiLen)); err != nil {
+		return "", err
+	}
+	return duong, nil
+}
+
+// vetSuKien vét cạn một channel sự kiện thành nhật ký đọc được.
+//
+// Dùng chung cho cả ba luồng vì cả ba trả cùng kiểu `sim.Event`/`imp.Event` với cùng hình
+// dạng ba trường. Một hàm cho cả ba là để nhật ký của chúng nhìn giống nhau trên giao diện —
+// người vận hành không phải học ba cách đọc.
+type dongNhatKy struct {
+	// CongDoan là `Stage` của luồng — tên công đoạn, không phải mức nghiêm trọng.
+	CongDoan string `json:"stage"`
+	Chu      string `json:"text"`
+	// HienTai/Tong là tiến độ trong công đoạn. Giữ lại vì nhập một cuốn dài chạy vài phút
+	// và một nhật ký không có tiến độ thì không phân biệt được "đang chạy" với "treo".
+	HienTai int    `json:"current,omitempty"`
+	Tong    int    `json:"total,omitempty"`
+	Muc     string `json:"level,omitempty"`
+	Loi     bool   `json:"error,omitempty"`
+}
+
+// handleNhap — POST /api/books/{book}/import (multipart: file)
+func (s *server) handleNhap(w http.ResponseWriter, r *http.Request) {
+	p, err := s.may.dangMo(r.PathValue("book"))
+	if err != nil {
+		writeErr(w, maLoi(err), err)
+		return
+	}
+	thuMuc, duong, err := nhanTep(r, "file")
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+	defer os.RemoveAll(thuMuc)
+	if len(duong) != 1 {
+		writeErr(w, http.StatusBadRequest,
+			fmt.Errorf("nhập truyện nhận đúng MỘT tệp, được %d", len(duong)))
+		return
+	}
+
+	opts := imp.Options{
+		SourcePath: duong[0],
+		// AutoConfirm theo lựa chọn tường minh của người dùng. KHÔNG mặc định true: `--yes`
+		// là uỷ quyền mù (chấp nhận cách chia chương mà chưa xem), và bật ngầm nó sẽ khiến
+		// một cuốn bị chia sai mà không ai kịp thấy.
+		AutoConfirm:     r.FormValue("auto_confirm") == "true",
+		StoryResolution: strings.TrimSpace(r.FormValue("story")),
+		ContinueAfter:   r.FormValue("continue") == "true",
+		Guidance:        strings.TrimSpace(r.FormValue("guide")),
+	}
+	if opts.StoryResolution != "" && opts.StoryResolution != "open" && opts.StoryResolution != "closed" {
+		writeErr(w, http.StatusBadRequest,
+			fmt.Errorf("story chỉ nhận open hoặc closed, được %q", opts.StoryResolution))
+		return
+	}
+
+	ch, err := p.eng.ImportFrom(r.Context(), opts)
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+	nk, coLoi := vetImp(ch)
+	writeJSON(w, map[string]any{"log": nk, "failed": coLoi})
+}
+
+// handleMoPhong — POST /api/books/{book}/simulate (multipart: file, nhiều tệp)
+func (s *server) handleMoPhong(w http.ResponseWriter, r *http.Request) {
+	p, err := s.may.dangMo(r.PathValue("book"))
+	if err != nil {
+		writeErr(w, maLoi(err), err)
+		return
+	}
+	thuMuc, _, err := nhanTep(r, "file")
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+	defer os.RemoveAll(thuMuc)
+
+	// `SimulateFrom` thay vì `Simulate`: bản gốc đọc `<CWD>/simulate` — một thư mục CHUNG
+	// cho mọi tác phẩm và mọi lượt. Với web thì ngữ liệu do người dùng tải lên cho đúng lượt
+	// này, nên nó phải nằm ở thư mục tạm riêng.
+	ch, err := p.eng.SimulateFrom(r.Context(), thuMuc)
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+	nk, coLoi := vetSim(ch)
+	writeJSON(w, map[string]any{"log": nk, "failed": coLoi})
+}
+
+// handleNhapHoSoMoPhong — POST /api/books/{book}/simulate/profile (multipart: file)
+func (s *server) handleNhapHoSoMoPhong(w http.ResponseWriter, r *http.Request) {
+	p, err := s.may.dangMo(r.PathValue("book"))
+	if err != nil {
+		writeErr(w, maLoi(err), err)
+		return
+	}
+	thuMuc, duong, err := nhanTep(r, "file")
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+	defer os.RemoveAll(thuMuc)
+	if len(duong) != 1 {
+		writeErr(w, http.StatusBadRequest,
+			fmt.Errorf("nhập hồ sơ mô phỏng nhận đúng MỘT tệp, được %d", len(duong)))
+		return
+	}
+	ch, err := p.eng.ImportSimulationProfile(r.Context(), duong[0])
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+	nk, coLoi := vetSim(ch)
+	writeJSON(w, map[string]any{"log": nk, "failed": coLoi})
+}
+
+// handleXuatBan — POST /api/books/{book}/export → TẢI VỀ
+//
+// # Vì sao trả thẳng tệp chứ không trả đường dẫn
+//
+// `exp.Run` ghi ra một tệp trên máy CHỦ. Trả đường dẫn cho trình duyệt là trả một chuỗi vô
+// dụng khi studio chạy trên VPS — đúng bối cảnh mà `PRODUCT.md` ghi. Nên xuất vào thư mục
+// tạm rồi đẩy nội dung về theo phản hồi, và xóa tệp tạm sau đó.
+func (s *server) handleXuatBan(w http.ResponseWriter, r *http.Request) {
+	p, err := s.may.dangMo(r.PathValue("book"))
+	if err != nil {
+		writeErr(w, maLoi(err), err)
+		return
+	}
+
+	dinhDang := exp.Format(strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("format"))))
+	if dinhDang != exp.FormatTXT && dinhDang != exp.FormatEPUB {
+		dinhDang = exp.FormatTXT
+	}
+	tu, _ := strconv.Atoi(r.URL.Query().Get("from"))
+	den, _ := strconv.Atoi(r.URL.Query().Get("to"))
+
+	thuMuc, err := os.MkdirTemp("", "ainovel-xuat-*")
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer os.RemoveAll(thuMuc)
+
+	duoi := "txt"
+	if dinhDang == exp.FormatEPUB {
+		duoi = "epub"
+	}
+	raTep := filepath.Join(thuMuc, "xuat."+duoi)
+
+	kq, err := p.eng.Export(r.Context(), exp.Options{
+		Format: dinhDang, OutPath: raTep, From: tu, To: den,
+		// Overwrite: thư mục là tạm và tên do ta đặt, nên không có tệp nào của người dùng
+		// để ghi đè. Đặt true để không hỏng vì một lần chạy trước sót lại.
+		Overwrite: true,
+	})
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+
+	b, err := os.ReadFile(raTep)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, fmt.Errorf("đọc tệp vừa xuất: %w", err))
+		return
+	}
+
+	ten := tenTepXuat(p.id, duoi)
+	w.Header().Set("Content-Type", loaiTep(duoi))
+	// `filename*` dạng RFC 5987 để tên tiếng Việt có dấu không bị hỏng. Header HTTP là
+	// latin-1, nên một tên như "Ba đêm đèn tắt.txt" đặt thẳng vào `filename=` sẽ ra rác.
+	w.Header().Set("Content-Disposition",
+		fmt.Sprintf("attachment; filename=%q; filename*=UTF-8''%s", ten, urlHoa(ten)))
+	// Số chương bị bỏ qua đi theo header: chúng KHÔNG phải lỗi (chương chưa viết xong thì
+	// exp.Run bỏ qua có chủ ý), nhưng người dùng cần biết bản tải về thiếu gì.
+	if len(kq.Skipped) > 0 {
+		w.Header().Set("X-Ainovel-Skipped", boQuaThanhChu(kq.Skipped))
+	}
+	w.Header().Set("X-Ainovel-Chapters", strconv.Itoa(kq.Chapters))
+	if _, err := w.Write(b); err != nil {
+		return // header đã gửi; chỉ còn cách im lặng
+	}
+}
+
+func tenTepXuat(id, duoi string) string { return id + "." + duoi }
+
+func loaiTep(duoi string) string {
+	if duoi == "epub" {
+		return "application/epub+zip"
+	}
+	return "text/plain; charset=utf-8"
+}
+
+func urlHoa(s string) string {
+	var b strings.Builder
+	for _, c := range []byte(s) {
+		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+			c == '-' || c == '.' || c == '_' || c == '~' {
+			b.WriteByte(c)
+			continue
+		}
+		fmt.Fprintf(&b, "%%%02X", c)
+	}
+	return b.String()
+}
+
+func boQuaThanhChu(n []int) string {
+	s := make([]string, 0, len(n))
+	for _, v := range n {
+		s = append(s, strconv.Itoa(v))
+	}
+	return strings.Join(s, ",")
+}
+
+var errKenhRong = errors.New("luồng không phát sự kiện nào")
+
+func vetSim(ch <-chan sim.Event) ([]dongNhatKy, bool) {
+	var nk []dongNhatKy
+	coLoi := false
+	for ev := range ch {
+		d := dongNhatKy{
+			CongDoan: string(ev.Stage), Chu: ev.Message,
+			HienTai: ev.Current, Tong: ev.Total,
+		}
+		if ev.Err != nil {
+			d.Loi = true
+			d.Chu = strings.TrimSpace(d.Chu + " " + ev.Err.Error())
+			coLoi = true
+		}
+		nk = append(nk, d)
+	}
+	if len(nk) == 0 {
+		nk = append(nk, dongNhatKy{CongDoan: "system", Chu: errKenhRong.Error(), Loi: true})
+		coLoi = true
+	}
+	return nk, coLoi
+}
+
+func vetImp(ch <-chan imp.Event) ([]dongNhatKy, bool) {
+	var nk []dongNhatKy
+	coLoi := false
+	for ev := range ch {
+		d := dongNhatKy{
+			CongDoan: string(ev.Stage), Chu: ev.Message,
+			HienTai: ev.Current, Tong: ev.Total, Muc: ev.Level,
+		}
+		if ev.Err != nil {
+			d.Loi = true
+			d.Chu = strings.TrimSpace(d.Chu + " " + ev.Err.Error())
+			coLoi = true
+		}
+		nk = append(nk, d)
+	}
+	if len(nk) == 0 {
+		nk = append(nk, dongNhatKy{CongDoan: "system", Chu: errKenhRong.Error(), Loi: true})
+		coLoi = true
+	}
+	return nk, coLoi
+}
