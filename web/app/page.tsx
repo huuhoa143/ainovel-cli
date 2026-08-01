@@ -188,6 +188,7 @@ export default function Trang() {
         song={s.song}
         suKien={s.suKien}
         trong={xuongTrong}
+        mayChay={mayDangChay(s.snapshot)}
       >
         {/* Điều khiển sống TRONG transport: đó là chỗ trả lời "dây chuyền còn sống không",
             nên nút bấm phải ở cùng chỗ với câu trả lời. Đặt nó trong một bề mặt riêng sẽ

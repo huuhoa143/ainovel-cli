@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { Khu } from '@/lib/khu';
 import { CHU, GIAI_THICH } from '@/lib/nhan';
 import type { Profile, Snapshot, TinhTrangNguon } from '@/lib/types';
+import { useDauDoi, useDauToi } from '@/lib/dauDoi';
+import { useTruot } from '@/lib/truot';
 
 /**
  * Rail trái: các khu vực sản xuất, kèm số đếm việc tồn.
@@ -64,6 +66,10 @@ export function Rail({
   onChonKhu: (k: Khu) => void;
 }) {
   const oRail = useRef<HTMLElement>(null);
+
+  /* Dấu chỉ khu đang mở TRƯỢT theo trục DỌC. Nâng cấp tiệm tiến: nền của `[aria-current]` vẫn
+     là thứ nói đúng cho tới khi hook đo được — xem lib/truot.ts. */
+  const hopTruot = useTruot<HTMLElement>('.mucdi[aria-current="page"]', 'doc', khu);
   /** Neo cần cuộn tới sau khi khu đích đã render. */
   const neoCho = useRef<string>(undefined);
 
@@ -120,7 +126,16 @@ export function Rail({
   const dangSoan = rows.filter((r) => r.stage === 'drafting').length;
 
   return (
-    <nav className="rail" aria-label="Khu vực sản xuất" ref={oRail}>
+    <nav
+      className="rail"
+      aria-label="Khu vực sản xuất"
+      /* HAI ref trên một thẻ: `oRail` cho effect tự-mở-nhóm (đọc `[aria-current]` từ DOM),
+         `hopTruot` cho dấu chỉ trượt. Gộp bằng callback ref vì React chỉ nhận một `ref`. */
+      ref={(el) => {
+        oRail.current = el;
+        hopTruot.current = el;
+      }}
+    >
       {/* Nhóm 1 mở sẵn và không thu được: đây là nhóm chứa bề mặt đang mở ở mọi lần vào
           đầu tiên, nên thu nó lại là để người dùng đối diện một rail rỗng. */}
       <Nhom ma="truyen" ten={CHU.nhomTruyen} luonMo>
@@ -501,6 +516,13 @@ function MucDi({
   // `phu` = mục trỏ vào một phần của khu khác, nên nó KHÔNG sáng lên như mục
   // chính của khu đó; nếu không thì hai mục cùng sáng và không biết đang ở đâu.
   const dangMo = !phu && khu === di;
+  /* Hai dấu, hai nghĩa: `vuaDoi` = số đổi (có thêm việc đã xong), `vuaToi` = chip cảnh báo
+     xuất hiện từ không có gì (từ "không có gì cần bạn" sang "có việc cần bạn"). Ưu tiên
+     `vuaToi` vì nó là loại tin mạnh hơn. */
+  const dauDem = useDauDoi(dem);
+  const dauToi = useDauToi(!!canhBao);
+  const nhanDem = dauToi > 0 ? ' vuaToi' : dauDem > 0 ? ' vuaDoi' : '';
+
 
   return (
     <button
@@ -524,7 +546,15 @@ function MucDi({
       </span>
       <span className="nhan">{nhan}</span>
       {dem !== undefined ? (
-        <span className={`n${canhBao ? ' warn' : ''}`}>{dem}</span>
+        /* `key` là thứ làm animation chạy LẠI: CSS chỉ phát keyframes khi phần tử được dựng,
+           nên một lớp bật-rồi-tắt không đủ. Dấu 0 = chưa đổi lần nào → không lớp nào, tức mở
+           trang không nhấp. Xem lib/dauDoi.ts. */
+        <span
+          key={`${dauToi}-${dauDem}`}
+          className={`n${canhBao ? ' warn' : ''}${nhanDem}`}
+        >
+          {dem}
+        </span>
       ) : null}
       {nhanPhu ? <span className="tag mo">{nhanPhu}</span> : null}
     </button>

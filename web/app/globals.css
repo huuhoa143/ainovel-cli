@@ -102,9 +102,9 @@ button {
   grid-template-rows: 44px 1fr minmax(30px, auto);
   grid-template-columns: 194px 1fr 292px;
   grid-template-areas:
-    'bar bar bar'
-    'rail canvas insp'
-    'trans trans trans';
+    "bar bar bar"
+    "rail canvas insp"
+    "trans trans trans";
 }
 
 /* Khu không dùng inspector: cột 292px không tồn tại thay vì tồn tại mà trống.
@@ -112,13 +112,13 @@ button {
    không nói gì là lấy mất 1/5 bề rộng của chỗ cần bề rộng nhất. */
 .khung.rong {
   grid-template-columns: 194px 1fr;
-  grid-template-areas: 'bar bar' 'rail canvas' 'trans trans';
+  grid-template-areas: "bar bar" "rail canvas" "trans trans";
 }
 
 @media (max-width: 1240px) {
   .khung {
     grid-template-columns: 194px 1fr;
-    grid-template-areas: 'bar bar' 'rail canvas' 'trans trans';
+    grid-template-areas: "bar bar" "rail canvas" "trans trans";
   }
   .insp {
     display: none;
@@ -147,7 +147,7 @@ button {
        vì thế giá trị phải được lặp lại ở đây. */
     grid-template-rows: 44px auto 1fr minmax(30px, auto);
     grid-template-columns: 1fr;
-    grid-template-areas: 'bar' 'rail' 'canvas' 'trans';
+    grid-template-areas: "bar" "rail" "canvas" "trans";
   }
   /* Phần biến rail thành dải ngang nằm ở CUỐI tệp, không ở đây — xem khối
      "@media (max-width: 860px) — rail dạng dải ngang" ở dưới và lý do vì sao
@@ -262,13 +262,15 @@ button {
   font: 500 12.5px var(--ui);
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.16s var(--ease), border-color 0.16s var(--ease);
+  transition:
+    background 0.16s var(--ease),
+    border-color 0.16s var(--ease);
 }
 .nutMoi:hover {
   background: color-mix(in oklch, var(--gold) 16%, var(--panel-2));
   border-color: color-mix(in oklch, var(--gold) 55%, var(--line));
 }
-.nutMoi[aria-current='page'] {
+.nutMoi[aria-current="page"] {
   background: color-mix(in oklch, var(--gold) 20%, var(--panel-2));
   border-color: var(--gold);
 }
@@ -301,7 +303,9 @@ button {
   font: 500 12.5px var(--ui);
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.16s var(--ease), border-color 0.16s var(--ease);
+  transition:
+    background 0.16s var(--ease),
+    border-color 0.16s var(--ease);
 }
 .hieunghiemthu:hover {
   background: color-mix(in oklch, var(--amber) 18%, var(--panel-2));
@@ -392,13 +396,15 @@ button {
   font: 400 12.5px var(--ui);
   text-align: left;
   cursor: pointer;
-  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+  transition:
+    background 0.14s var(--ease),
+    color 0.14s var(--ease);
 }
 .picklist button:hover {
   background: var(--raised);
   color: var(--ink);
 }
-.picklist button[aria-current='true'] {
+.picklist button[aria-current="true"] {
   background: var(--raised);
   color: var(--ink);
 }
@@ -490,15 +496,15 @@ button {
   border-radius: 50%;
   background: var(--line);
 }
-.kbd.live[data-tt='song'] .dot {
+.kbd.live[data-tt="song"] .dot {
   background: var(--gold);
   animation: dapnhip 2.2s var(--ease) infinite;
 }
-.kbd.live[data-tt='mat'] {
+.kbd.live[data-tt="mat"] {
   color: var(--amber);
   border-color: color-mix(in oklch, var(--amber) 40%, var(--line));
 }
-.kbd.live[data-tt='mat'] .dot {
+.kbd.live[data-tt="mat"] .dot {
   background: var(--amber);
 }
 
@@ -523,7 +529,7 @@ button {
    Điểm mấu chốt của khối này: các mục VẪN Ở TRONG DOM khi nhóm đóng. Nhờ vậy
    (a) effect tự-mở-nhóm đọc được `[aria-current]` của con để biết khu đang mở nằm ở
    nhóm nào, và (b) dải ngang dưới 860px bật lại được toàn bộ mục bằng một `@media`. */
-.nhomrail[data-mo='0'] .mucnhom {
+.nhomrail[data-mo="0"] .mucnhom {
   display: none;
 }
 
@@ -580,7 +586,9 @@ button {
   color: var(--ink-2);
   text-decoration: none;
   font-size: 12.5px;
-  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+  transition:
+    background 0.14s var(--ease),
+    color 0.14s var(--ease);
 }
 /* Mục điều hướng là <button>: bỏ toàn bộ nền/viền của user agent để nó nằm cùng
    một hệ với các mục khác, nhưng GIỮ nó là button — bàn phím là hạng nhất, và
@@ -598,13 +606,13 @@ button {
   background: var(--panel-2);
   color: var(--ink);
 }
-.rail a[aria-current='page'],
-.rail .mucdi[aria-current='page'] {
+.rail a[aria-current="page"],
+.rail .mucdi[aria-current="page"] {
   background: var(--panel-2);
   color: var(--ink);
   font-weight: 500;
 }
-.rail .mucdi[aria-current='page'] .g {
+.rail .mucdi[aria-current="page"] .g {
   color: var(--gold);
 }
 
@@ -622,8 +630,8 @@ button {
   display: grid;
   grid-template-columns: 14px 1fr auto;
   grid-template-areas:
-    'g nhan n'
-    'x tag tag';
+    "g nhan n"
+    "x tag tag";
   gap: 3px 9px;
   align-items: center;
   color: var(--ink-3);
@@ -657,7 +665,7 @@ button {
   font-size: 12px;
   flex: none;
 }
-.rail a[aria-current='page'] .g {
+.rail a[aria-current="page"] .g {
   color: var(--gold);
 }
 .rail .nhan {
@@ -731,12 +739,14 @@ button {
   padding: 4px 10px;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+  transition:
+    background 0.14s var(--ease),
+    color 0.14s var(--ease);
 }
-.mucxem button:hover:not(:disabled):not([aria-pressed='true']) {
+.mucxem button:hover:not(:disabled):not([aria-pressed="true"]) {
   color: var(--ink-2);
 }
-.mucxem button[aria-pressed='true'] {
+.mucxem button[aria-pressed="true"] {
   background: var(--raised);
   color: var(--ink);
   font-weight: 500;
@@ -879,7 +889,9 @@ button {
   font: 500 12.5px var(--ui);
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.16s var(--ease), border-color 0.16s var(--ease);
+  transition:
+    background 0.16s var(--ease),
+    border-color 0.16s var(--ease);
 }
 .vttChinh:hover {
   background: color-mix(in oklch, var(--gold) 14%, var(--raised));
@@ -899,7 +911,9 @@ button {
   font: 400 12.5px var(--ui);
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.16s var(--ease), color 0.16s var(--ease);
+  transition:
+    background 0.16s var(--ease),
+    color 0.16s var(--ease);
 }
 .vttPhu:hover {
   background: var(--panel-2);
@@ -1305,11 +1319,11 @@ button {
 .bang tbody tr:hover {
   background: var(--panel);
 }
-.bang tbody tr[aria-selected='true'] {
+.bang tbody tr[aria-selected="true"] {
   background: var(--panel-2);
 }
 /* Hàng chọn đánh dấu bằng inset box-shadow 1px, KHÔNG viền màu dày bên trái. */
-.bang tbody tr[aria-selected='true'] td:first-child {
+.bang tbody tr[aria-selected="true"] td:first-child {
   box-shadow: inset 1px 0 0 var(--gold);
 }
 .bang tbody tr:focus-visible {
@@ -1489,7 +1503,9 @@ td.who {
   padding: 2px 8px;
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.14s var(--ease), border-color 0.14s var(--ease);
+  transition:
+    color 0.14s var(--ease),
+    border-color 0.14s var(--ease);
 }
 .entry .replay:hover {
   color: var(--ink);
@@ -1636,7 +1652,9 @@ td.who {
   color: var(--ink-2);
   font: 400 11.5px var(--ui);
   cursor: pointer;
-  transition: color 0.14s var(--ease), border-color 0.14s var(--ease);
+  transition:
+    color 0.14s var(--ease),
+    border-color 0.14s var(--ease);
 }
 .phamvihint button:hover {
   color: var(--ink);
@@ -1830,7 +1848,7 @@ td.who {
 }
 .vach::before,
 .vach::after {
-  content: '';
+  content: "";
   height: 1px;
   background: var(--line-2);
   flex: 1;
@@ -1865,7 +1883,9 @@ td.who {
   font: 400 11.5px var(--ui);
   cursor: pointer;
   box-shadow: 0 2px 8px oklch(0.1 0 0 / 0.45);
-  transition: background 0.16s var(--ease), border-color 0.16s var(--ease);
+  transition:
+    background 0.16s var(--ease),
+    border-color 0.16s var(--ease);
 }
 .vecuoi:hover {
   background: color-mix(in oklch, var(--gold) 16%, var(--raised));
@@ -2274,7 +2294,7 @@ td.who {
 .tabs button:hover {
   color: var(--ink-2);
 }
-.tabs button[aria-selected='true'] {
+.tabs button[aria-selected="true"] {
   color: var(--ink);
   border-bottom-color: var(--gold);
   font-weight: 500;
@@ -2521,7 +2541,9 @@ div:has(> .qcrow) {
   color: var(--ink-2);
   font: 400 12px var(--ui);
   cursor: pointer;
-  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+  transition:
+    background 0.14s var(--ease),
+    color 0.14s var(--ease);
 }
 .docthem:hover {
   background: var(--raised);
@@ -2719,7 +2741,7 @@ div:has(> .qcrow) {
   border-radius: 3px;
 }
 .ctxbar::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 85%;
   top: -2px;
@@ -2834,7 +2856,9 @@ div:has(> .qcrow) {
   padding: 4px 10px;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+  transition:
+    background 0.14s var(--ease),
+    color 0.14s var(--ease);
 }
 .docnav button:hover:not(:disabled) {
   background: var(--raised);
@@ -2899,13 +2923,15 @@ div:has(> .qcrow) {
   font: 400 12.5px var(--ui);
   text-align: left;
   cursor: pointer;
-  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+  transition:
+    background 0.14s var(--ease),
+    color 0.14s var(--ease);
 }
 .dsChuong button:hover {
   background: var(--panel);
   color: var(--ink);
 }
-.dsChuong button[aria-current='true'] {
+.dsChuong button[aria-current="true"] {
   background: var(--panel-2);
   color: var(--ink);
   font-weight: 500;
@@ -3604,7 +3630,9 @@ div:has(> .qcrow) {
   color: var(--ink-3);
   font: 400 10.5px/1 var(--mono);
   cursor: pointer;
-  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+  transition:
+    background 0.14s var(--ease),
+    color 0.14s var(--ease);
 }
 .dsvach .vach1 .ky {
   font-family: var(--ui);
@@ -3744,7 +3772,7 @@ div:has(> .qcrow) {
      ngang ra đời để tránh. `display: contents` để các mục thành con trực tiếp của dải
      flex; giữ `.mucnhom` là một hộp sẽ làm cả nhóm thành MỘT ô trong dải. */
   .rail .nhomrail,
-  .rail .nhomrail[data-mo='0'] .mucnhom,
+  .rail .nhomrail[data-mo="0"] .mucnhom,
   .rail .mucnhom {
     display: contents;
   }
@@ -4029,7 +4057,7 @@ div:has(> .qcrow) {
 /* Không có animation nào không có đường tắt. */
 @media (prefers-reduced-motion: reduce) {
   .st.gold.dap .ky,
-  .kbd.live[data-tt='song'] .dot,
+  .kbd.live[data-tt="song"] .dot,
   .vttDot.dap,
   .trans .ky.dap {
     animation: none;
@@ -4065,8 +4093,8 @@ div:has(> .qcrow) {
   display: grid;
   grid-template-columns: 14px 1fr auto;
   grid-template-areas:
-    'g nhan n'
-    'x tag tag';
+    "g nhan n"
+    "x tag tag";
   gap: 3px 9px;
   align-items: center;
 }
@@ -4143,7 +4171,7 @@ div:has(> .qcrow) {
   color: var(--ink);
 }
 .vpluat li::before {
-  content: counter(vpl) '.';
+  content: counter(vpl) ".";
   font: 400 11.5px/1.78 var(--mono);
   color: var(--ink-3);
   text-align: right;
@@ -4493,7 +4521,7 @@ div:has(> .qcrow) {
     max-width: 74ch;
   }
   .bangkeongang::before {
-    content: '→';
+    content: "→";
     color: var(--ink-3);
     flex: none;
   }
@@ -4552,7 +4580,7 @@ div:has(> .qcrow) {
 
 /* Ô nhập chữ mono cho thứ ĐỐI CHIẾU được: khóa, địa chỉ, tên model. Chúng là định
    danh chứ không phải văn, và mono làm sai một ký tự nhìn ra được. */
-.oNhap input[type='password'],
+.oNhap input[type="password"],
 .oNhap input[list] {
   font-family: var(--mono);
   font-size: 12px;
@@ -4706,7 +4734,7 @@ div:has(> .qcrow) {
   color: var(--ink-2);
 }
 .baBuoc li::before {
-  content: counter(buoc) '.';
+  content: counter(buoc) ".";
   color: var(--ink-3);
   font: 400 11.5px var(--mono);
 }
@@ -5229,7 +5257,7 @@ div:has(> .qcrow) {
   accent-color: var(--gold);
 }
 
-.oNhap input[type='file'] {
+.oNhap input[type="file"] {
   font: 400 12px/1.5 var(--ui);
   color: var(--ink-2);
   background: none;
@@ -5571,5 +5599,547 @@ div:has(> .qcrow) {
   }
   .bangxuong tbody td.lam .nutPhu {
     padding: 6px 11px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CHUYỂN ĐỘNG MANG THÔNG TIN
+   Duyệt từ `docs/design/explorations/e-chuyen-dong.html`, cường độ **Rõ**.
+
+   Trước bản này, cả giao diện có 23 transition (chỉ đổi màu) và ĐÚNG MỘT
+   keyframes — nhịp đập. Chữ chảy thì có động, còn chương chốt, tiền tăng, cửa
+   mở, vai đổi tool đều là cú thay giá trị tức thời, không dấu vết: một cỗ máy
+   chạy hàng giờ được vẽ như một bức ảnh tĩnh.
+
+   Điều khoản "chuyển động duy nhất mang thông tin là nhịp đập" ở mục Motion vì
+   thế được MỞ RỘNG, không bị phá: mỗi họ dưới đây mang một tin cụ thể, và bỏ nó
+   đi là mất tin đó. Không họ nào là trang trí.
+
+   Mười họ, MỘT tiêu điểm (đầu đọc). Không họ nào animate thuộc tính layout.
+   Mọi họ có nhánh `prefers-reduced-motion` GIỮ NGUYÊN thông tin, chỉ bỏ động.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Biên độ tập trung một chỗ. Người duyệt xoay núm ba mức trên preview và chốt
+   mức "Rõ"; các số dưới đây là mức đó. Không họ nào tự khai số — muốn chỉnh
+   toàn hệ thì chỉnh ở đây, và cả mười họ đi cùng nhau, không lệch nhịp. */
+:root {
+  --a-day: 2px; /* dày đầu đọc */
+  --a-day-nut: 3px; /* dày vệt trong nút đang gửi */
+  --a-nhap: 40%; /* nồng độ nhấp của ô số vừa đổi */
+  --a-nhap-dem: 52%; /* nồng độ nhấp của chip đếm ở rail */
+  --a-lau: 1.3s; /* nhấp giữ bao lâu */
+  --a-tho-lo: 30%; /* thở: viền lúc nhạt */
+  --a-tho-hi: 88%; /* thở: viền lúc đậm */
+  --a-tho-nen-lo: 9%; /* thở: nền lúc nhạt */
+  --a-tho-nen-hi: 12%; /* thở: nền lúc đậm — TRẦN, xem chú thích dưới */
+  --a-tho-day: 1.5px; /* thở: dày viền */
+  --a-dich: 4px; /* trạng thái đổi: dịch dọc */
+  --a-mo: 0.25; /* trạng thái đổi: mờ ban đầu */
+  --a-vach-day: 2px; /* dày gạch chân tab đang mở */
+  --a-pop: 1.16; /* chip đếm nảy tới đâu */
+  --a-cao-chot: 1.3; /* vạch chương cao thêm bao nhiêu khi chốt */
+}
+
+/* TRẦN CỦA NỀN AMBER — `--a-tho-nen-hi` KHÔNG được vượt 13%.
+   Đo trên chính token của dự án: `--ink-3` trên `color-mix(amber X%, bg)` cho
+     9% → 4,96 · 12% → 4,75 · 13% → 4,65 · 14% → 4,58 · 15% → 4,48 · 19% → 4,17
+   Sàn AA là 4,5, và `--ink-3` là SÀN CỨNG không hạ (xem mục Color). Bản đầu của
+   mức "Rất rõ" đặt 19% và ĐÃ PHÁ sàn — đo được 4,17. Mức Rõ chốt 12% (dư 0,25).
+   Muốn dải nghiệm thu "to" hơn thì tăng `--a-tho-day` hoặc `--a-tho-hi`: viền
+   không chở chữ nào nên nó to bao nhiêu cũng không đổi tương phản của một chữ. */
+
+/* ── 01 · ĐẦU ĐỌC — tiêu điểm ─────────────────────────────────────────────
+   Vệt sáng chạy dọc mép trên transport, CHỈ khi engine chạy.
+
+   Thuộc về thế giới đã chọn chứ không phải hiệu ứng mượn: điểm neo là bàn dựng
+   phim / DAW, và ở DAW thứ nói "đang chạy" là ĐẦU ĐỌC di chuyển, không phải một
+   biểu tượng xoay. Cảnh dùng thật là màn hình phụ cạnh terminal — một đốm 6px
+   nhấp nháy không đọc được từ hai mét, một vệt chạy hết bề ngang thì đọc được.
+
+   `data-chay` do `Transport` đặt từ `mayDangChay(snapshot)`, tức từ `runtime`
+   của engine — KHÔNG từ `stage` đã ghi vào store. Cùng một sự thật liveness với
+   nhịp đập, vì một đầu đọc chạy trên dây chuyền đã chết là lỗi tệ nhất ở đây. */
+.trans {
+  position: relative;
+}
+.trans[data-chay="1"]::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: var(--a-day);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 38%,
+    color-mix(in oklch, var(--gold) 92%, transparent) 50%,
+    transparent 62%,
+    transparent 100%
+  );
+  background-size: 260% 100%;
+  background-repeat: no-repeat;
+  animation: dauDoc 3.6s linear infinite;
+  pointer-events: none;
+}
+@keyframes dauDoc {
+  from {
+    background-position: -80% 0;
+  }
+  to {
+    background-position: 180% 0;
+  }
+}
+
+/* ── 02 · SỐ VỪA ĐỔI ──────────────────────────────────────────────────────
+   Ô nhấp một lần khi con số của nó đổi. Đây là câu trả lời cho tiêu chí thành
+   công ở PRODUCT.md — "mở studio sau 6 giờ đi vắng và trong vòng 5 giây biết
+   dây chuyền khỏe hay bệnh": nếu bạn không nhìn đúng ô đó, bạn không biết nó
+   vừa đổi.
+
+   Hai màu, hai nghĩa, theo bảng ngữ nghĩa: teal = tiến độ, gold = tiền. Nhấp CẢ
+   nền lẫn con số vì "màu dành cho dữ liệu, không cho khung" — nền một mình ở
+   nồng độ này bắt đầu đọc ra như một khối trang trí.
+
+   Lớp được gắn qua `key` từ `useDauDoi`, nên nó KHÔNG chạy ở lần render đầu:
+   mở trang mà cả bề mặt nhấp một lượt thì cái nhấp đó mất hết nghĩa. */
+@keyframes vuaDoiTien {
+  0% {
+    background-color: color-mix(
+      in oklch,
+      var(--gold) var(--a-nhap),
+      transparent
+    );
+    color: var(--gold);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+@keyframes vuaDoiChot {
+  0% {
+    background-color: color-mix(
+      in oklch,
+      var(--teal) var(--a-nhap),
+      transparent
+    );
+    color: var(--teal);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.vuaDoi-tien {
+  animation: vuaDoiTien var(--a-lau) var(--ease);
+}
+.vuaDoi-chot {
+  animation: vuaDoiChot var(--a-lau) var(--ease);
+}
+
+/* ── 03 · ĐANG CHỜ BẠN ────────────────────────────────────────────────────
+   Dải nghiệm thu và huy hiệu thở 2.6s — CỐ Ý chậm hơn nhịp máy 2.2s.
+
+   Sự khác nhịp chính là thông tin: nhanh = máy đang làm, chậm = máy đang đợi
+   BẠN. Hai trạng thái đó đối lập về việc phải làm — một cái bảo "đừng động
+   vào", cái kia bảo "chỉ bạn mới đi tiếp được" — mà trước bản này chúng trông
+   giống nhau vì đều tĩnh.
+
+   Ký hiệu ■ thở lệch pha nửa vòng: hai kênh cùng nói một điều nhưng không cùng
+   lúc, nên mắt bắt được cả khi đang nhìn chỗ khác. Ký hiệu là kênh KHÔNG phải
+   màu, nên luật "màu không bao giờ là kênh duy nhất" vẫn đứng. */
+@keyframes thoCho {
+  0%,
+  100% {
+    border-color: color-mix(
+      in oklch,
+      var(--amber) var(--a-tho-lo),
+      var(--line-2)
+    );
+    background-color: color-mix(
+      in oklch,
+      var(--amber) var(--a-tho-nen-lo),
+      var(--bg)
+    );
+  }
+  50% {
+    border-color: color-mix(
+      in oklch,
+      var(--amber) var(--a-tho-hi),
+      var(--line-2)
+    );
+    background-color: color-mix(
+      in oklch,
+      var(--amber) var(--a-tho-nen-hi),
+      var(--bg)
+    );
+  }
+}
+@keyframes thoKy {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.cuanghiemthu {
+  border-top-width: var(--a-tho-day);
+  border-bottom-width: var(--a-tho-day);
+  animation: thoCho 2.6s var(--ease) infinite;
+}
+.hieunghiemthu {
+  animation: thoCho 2.6s var(--ease) infinite;
+}
+.cuanghiemthu .ky,
+.hieunghiemthu .ky {
+  animation: thoKy 2.6s var(--ease) 1.3s infinite;
+}
+
+/* ── 04 · NÚT ĐANG GỬI ────────────────────────────────────────────────────
+   Vệt chạy trong lòng nút suốt lúc lệnh còn trên đường.
+
+   Đổi chữ thành "Đang gửi…" là một sự kiện TĨNH; thứ người dùng cần biết là "nó
+   CÒN đang đi". Với một nút tiêu tiền, thiếu điều đó nghĩa là họ bấm lại — và ở
+   cửa nghiệm thu bấm hai lần là cấp phép hai chương.
+
+   Vệt nằm TRONG nút, không phải một spinner cạnh nút: nguồn của trạng thái là
+   chính cái nút đó. */
+@keyframes dangGui {
+  from {
+    background-position: -60% 0;
+  }
+  to {
+    background-position: 160% 0;
+  }
+}
+button[aria-busy="true"] {
+  position: relative;
+  overflow: hidden;
+}
+button[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: var(--a-day-nut);
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklch, var(--gold) 88%, transparent),
+    transparent
+  );
+  background-size: 55% 100%;
+  background-repeat: no-repeat;
+  animation: dangGui 1.1s linear infinite;
+}
+
+/* ── 05 · VẠCH NGĂN TỚI ───────────────────────────────────────────────────
+   Vạch ngăn lượt mở ra từ giữa, rồi nhãn lắng từ màu tín hiệu về `--ink-3`.
+
+   Ranh giới lượt là một SỰ KIỆN — máy vừa xong một việc và bắt đầu việc khác.
+   Với nhịp mẩu chữ đo được là 2ms, một vạch chỉ "xuất hiện" sẽ trôi qua mắt như
+   một đường kẻ vô nghĩa trong khu đang tự cuộn. */
+@keyframes vachToi {
+  from {
+    transform: scaleX(0.04);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+@keyframes vachNhan {
+  0% {
+    color: var(--gold);
+  }
+  100% {
+    color: var(--ink-3);
+  }
+}
+.vsthan .vach {
+  transform-origin: center;
+  animation: vachToi 0.24s var(--ease) both;
+}
+.vsthan .vach span {
+  animation: vachNhan calc(var(--a-lau) * 1.1) var(--ease) both;
+}
+
+/* ── 06 · TRẠNG THÁI VỪA ĐỔI ──────────────────────────────────────────────
+   Ký hiệu lắng xuống vị trí, chữ hiện lên — áp cho MỌI `.st` và `.blk`: hàng
+   bảng chương, khối trục, nhãn inspector, ô transport.
+
+   Chọn LẮNG XUỐNG chứ không giao nhau: giao nhau đòi cả trạng thái cũ và mới
+   cùng có trong DOM một lúc, tức bề mặt nói ra hai trạng thái cùng lúc trong
+   200ms — một bề mặt nói dối. Lắng xuống chỉ khẳng định "cái đang thấy vừa tới".
+
+   KHÔNG đụng vào nhịp đập (`.st.gold.dap .ky`): hai chuyển động trả lời hai câu
+   khác nhau — "vừa đổi" và "còn đang chạy" — nên chúng cùng tồn tại được. */
+@keyframes doiTT {
+  from {
+    transform: translateY(calc(var(--a-dich) * -1)) scale(0.72);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+@keyframes hienNhe {
+  from {
+    opacity: var(--a-mo);
+  }
+  to {
+    opacity: 1;
+  }
+}
+.st.vuaDoi {
+  animation: hienNhe 0.22s var(--ease) both;
+}
+.st.vuaDoi .ky {
+  animation: doiTT 0.22s var(--ease) both;
+}
+.blk.vuaDoi {
+  animation: hienNhe 0.26s var(--ease) both;
+}
+
+/* ── 07 · TRƯỢT ───────────────────────────────────────────────────────────
+   Dấu chỉ mục đang mở TRƯỢT giữa các vị trí thay vì nhảy. Ba chỗ cùng một bài
+   toán: tab inspector, bộ chọn mức xem, khu đang mở ở rail.
+
+   Chuyển động mang QUAN HỆ KHÔNG GIAN — bạn vừa đi từ đâu tới đâu; một cú nhảy
+   xoá mất chính điều đó.
+
+   NÂNG CẤP TIỆM TIẾN: lớp `truot` do `useTruot` bật SAU khi đo được. Trước đó
+   nền/viền tĩnh của `aria-selected`/`aria-pressed`/`aria-current` là thứ đang
+   nói đúng, nên JS chết hay chưa kịp chạy thì bề mặt đọc được y như cũ. Đây là
+   họ duy nhất cần JS, nên nó phải là họ chịu được việc JS không có. */
+.tabs.truot {
+  position: relative;
+}
+.tabs.truot button[aria-selected="true"] {
+  border-bottom-color: transparent;
+}
+.tabs.truot::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  height: var(--a-vach-day);
+  left: var(--x, 0);
+  width: var(--w, 0);
+  background: var(--gold);
+  transition:
+    left 0.22s var(--ease),
+    width 0.22s var(--ease);
+}
+.mucxem.truot {
+  position: relative;
+}
+.mucxem.truot button[aria-pressed="true"] {
+  background: none;
+}
+.mucxem.truot button {
+  position: relative;
+  z-index: 1;
+}
+.mucxem.truot::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: var(--x, 0);
+  width: var(--w, 0);
+  background: var(--raised);
+  border-radius: 3px;
+  transition:
+    left 0.22s var(--ease),
+    width 0.22s var(--ease);
+  z-index: 0;
+}
+.rail.truot {
+  position: relative;
+}
+.rail.truot .mucdi[aria-current="page"] {
+  background: none;
+}
+.rail.truot .mucdi,
+.rail.truot a {
+  position: relative;
+  z-index: 1;
+}
+.rail.truot::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: var(--y, 0);
+  height: var(--h, 0);
+  background: var(--panel-2);
+  border-radius: var(--r);
+  transition:
+    top 0.24s var(--ease),
+    height 0.24s var(--ease);
+  z-index: 0;
+}
+
+/* ── 08 · NHÃN CÓ SỐ ĐẾM ──────────────────────────────────────────────────
+   Chip đếm ở rail là dấu hiệu DUY NHẤT trên rail cho biết engine vừa ghi ra cái
+   gì mới, và ở khu nào.
+
+   HAI hành vi, và phân biệt chúng chính là thông tin:
+     · số đổi (8 → 9)       = NHẤP. Có thêm việc đã xong.
+     · việc tồn tới (0 → 1) = TỚI.  Chip amber xuất hiện từ không có gì.
+   Cái thứ hai không phải "số đổi mạnh hơn": nó là từ "không có gì cần bạn" sang
+   "có việc cần bạn". Nên nó vào bằng scale, không bằng nhấp. */
+@keyframes nhapDem {
+  0% {
+    background: color-mix(in oklch, var(--teal) var(--a-nhap-dem), transparent);
+    color: var(--ink);
+    transform: scale(var(--a-pop));
+  }
+  100% {
+    background: var(--panel-2);
+    transform: scale(1);
+  }
+}
+@keyframes tonToi {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.rail .n.vuaDoi {
+  animation: nhapDem var(--a-lau) var(--ease);
+}
+.rail .n.warn.vuaToi {
+  animation: tonToi 0.26s var(--ease) both;
+}
+
+/* ── 09 · CHƯƠNG CHỐT ─────────────────────────────────────────────────────
+   Vạch chương trên lane đổ đầy từ TRÁI, rồi cao thêm và nhấp.
+
+   Đây là sự kiện quan trọng nhất của cả sản phẩm: một đơn vị sản xuất vừa hoàn
+   thành — thứ người vận hành chờ suốt sáu giờ. Trước bản này nó là một vạch vài
+   pixel đổi màu, không dấu vết.
+
+   Đổ đầy TỪ TRÁI vì lane là một trục thời gian: chương chạy trái sang phải nên
+   nó cũng phải đầy theo chiều đó. Đổ từ giữa hay mờ dần vào đều là chuyển động
+   không cùng hướng với dữ liệu.
+
+   `background-size` và `transform`, KHÔNG `width`: không animate layout, nên nó
+   không đẩy các vạch bên cạnh. */
+@keyframes chotDay {
+  from {
+    background-size: 0% 100%;
+  }
+  to {
+    background-size: 100% 100%;
+  }
+}
+@keyframes chotNhap {
+  0%,
+  100% {
+    box-shadow: none;
+  }
+  30%,
+  70% {
+    box-shadow: inset 0 0 0 2px
+      color-mix(in oklch, var(--teal) 92%, transparent);
+  }
+  50% {
+    box-shadow: none;
+  }
+}
+@keyframes chotCao {
+  0% {
+    transform: scaleY(1);
+  }
+  38% {
+    transform: scaleY(var(--a-cao-chot));
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+.chlane i.vuaChot {
+  background-image: linear-gradient(90deg, var(--teal), var(--teal));
+  background-repeat: no-repeat;
+  animation:
+    chotDay 0.42s var(--ease) both,
+    chotNhap calc(var(--a-lau) * 1.1) var(--ease) 0.42s,
+    chotCao 0.5s var(--ease) 0.38s;
+}
+
+/* ── 10 · ĐỒNG THANH ──────────────────────────────────────────────────────
+   Một chương chốt thì BA chỗ nhấp cùng lúc: vạch trên lane, chip đếm ở rail, và
+   ô tiến độ ở transport.
+
+   Nó DẠY một điều mà không con số nào tự nói: ba chỗ đó là MỘT sự thật nhìn từ
+   ba góc. Học một lần rồi từ đó chỉ cần nhìn một trong ba.
+
+   Không thành màn trình diễn đèn vì cả ba nhấp CÙNG màu, CÙNG thời điểm, CÙNG
+   thời lượng — ba chỗ nhấp khác nhịp mới là trình diễn; cùng nhịp thì đọc ra là
+   một sự kiện. */
+@keyframes dongThanh {
+  0% {
+    background-color: color-mix(
+      in oklch,
+      var(--teal) var(--a-nhap),
+      transparent
+    );
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.dongThanh {
+  animation: dongThanh var(--a-lau) var(--ease);
+}
+
+/* ── Đường tắt: không có animation nào không có đường tắt ─────────────────
+   Mỗi nhánh dưới đây GIỮ NGUYÊN thông tin, chỉ bỏ chuyển động: đầu đọc thành
+   một dải tĩnh, thở thành viền đậm cố định, chương chốt giữ màu đã đầy, dấu
+   trượt nhảy tới đúng chỗ. Không trạng thái nào biến mất. */
+@media (prefers-reduced-motion: reduce) {
+  .trans[data-chay="1"]::before,
+  .vuaDoi-tien,
+  .vuaDoi-chot,
+  .cuanghiemthu,
+  .hieunghiemthu,
+  .cuanghiemthu .ky,
+  .hieunghiemthu .ky,
+  .vsthan .vach,
+  .vsthan .vach span,
+  .st.vuaDoi,
+  .st.vuaDoi .ky,
+  .blk.vuaDoi,
+  .rail .n.vuaDoi,
+  .rail .n.warn.vuaToi,
+  .chlane i.vuaChot,
+  .dongThanh,
+  button[aria-busy="true"]::after {
+    animation: none;
+  }
+  .trans[data-chay="1"]::before {
+    background-image: none;
+    background-color: color-mix(in oklch, var(--gold) 42%, transparent);
+  }
+  .cuanghiemthu,
+  .hieunghiemthu {
+    border-color: color-mix(
+      in oklch,
+      var(--amber) var(--a-tho-hi),
+      var(--line-2)
+    );
+  }
+  .chlane i.vuaChot {
+    background-size: 100% 100%;
+  }
+  .tabs.truot::after,
+  .mucxem.truot::after,
+  .rail.truot::after {
+    transition: none;
   }
 }

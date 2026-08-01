@@ -5,6 +5,7 @@ import type { Khu } from '@/lib/khu';
 import { CHU, GIAI_THICH, nhanPhase } from '@/lib/nhan';
 import type { Book } from '@/lib/types';
 import { tongXuong } from '@/lib/xuong';
+import { useDauDoi } from '@/lib/dauDoi';
 
 /**
  * Xưởng: mọi tác phẩm trong thư mục gốc, và tổng của cả xưởng.
@@ -65,21 +66,11 @@ export function Xuong({
           mở bề mặt này để hỏi. Bắt cuộn qua một bảng mười dòng rồi mới thấy tổng là bắt họ
           tự cộng trong lúc cuộn. */}
       <div className="xtong">
-        <span className="o">
-          {so(t.soTacPham)} <em>{CHU.donViTacPham}</em>
-        </span>
-        <span className="o">
-          {so(t.chuongDaChot)} <em>{CHU.donViChuongDaChot}</em>
-        </span>
-        <span className="o">
-          {so(t.soTu)} <em>{CHU.donViTu}</em>
-        </span>
-        <span className="o">
-          {tongTien(t.chiPhi)} <em>{CHU.donViDaTieu}</em>
-        </span>
-        <span className="o">
-          {so(t.engineDangMo)} <em>{CHU.engineDangMo}</em>
-        </span>
+        <OTong so={t.soTacPham} chu={so(t.soTacPham)} nhan={CHU.donViTacPham} loai="chot" />
+        <OTong so={t.chuongDaChot} chu={so(t.chuongDaChot)} nhan={CHU.donViChuongDaChot} loai="chot" />
+        <OTong so={t.soTu} chu={so(t.soTu)} nhan={CHU.donViTu} loai="chot" />
+        <OTong so={t.chiPhi} chu={tongTien(t.chiPhi)} nhan={CHU.donViDaTieu} loai="tien" />
+        <OTong so={t.engineDangMo} chu={so(t.engineDangMo)} nhan={CHU.engineDangMo} loai="chot" />
       </div>
 
       <div className="bangwrap">
@@ -238,6 +229,44 @@ function Trong({ viSao }: { viSao?: string }) {
   return (
     <span className="trong" title={viSao}>
       {CHU.khongCo}
+    </span>
+  );
+}
+
+
+/**
+ * Một ô của dải tổng, nhấp MỘT lần khi con số của nó đổi.
+ *
+ * Đây là câu trả lời cho tiêu chí thành công ở PRODUCT.md — "mở studio sau 6 giờ đi vắng và
+ * trong vòng 5 giây biết dây chuyền khỏe hay bệnh". Trước bản này, một chương chốt và một đô
+ * tiêu thêm đều là cú thay giá trị tức thời: không nhìn đúng ô đó thì không biết nó vừa đổi.
+ *
+ * Nhấp theo `so` (giá trị THẬT) chứ không theo `chu` (chuỗi đã định dạng): `tongTien` làm tròn
+ * hai chữ số, nên hai giá trị khác nhau có thể cho cùng một chuỗi và cú nhấp sẽ mất đúng những
+ * lần đổi nhỏ — mà tiền thì đổi từng xu.
+ *
+ * `key` là thứ làm animation chạy lại; xem lib/dauDoi.ts.
+ */
+function OTong({
+  so: giaTri,
+  chu,
+  nhan,
+  loai,
+}: {
+  so: number;
+  /**
+   * Chuỗi đã định dạng. `undefined` là ca THẬT: `so()` trả undefined cho giá trị vắng hoặc
+   * không hữu hạn — giữ đúng kiểu đó thay vì ép, vì bề mặt phải vẽ được ca không có số.
+   */
+  chu: string | undefined;
+  nhan: string;
+  /** `chot` = tiến độ (teal) · `tien` = tiền (gold). Hai nghĩa, theo bảng ngữ nghĩa đã chốt. */
+  loai: 'chot' | 'tien';
+}) {
+  const dau = useDauDoi(giaTri);
+  return (
+    <span key={dau} className={`o${dau > 0 ? ` vuaDoi-${loai}` : ''}`}>
+      {chu} <em>{nhan}</em>
     </span>
   );
 }
