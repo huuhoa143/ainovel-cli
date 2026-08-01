@@ -835,3 +835,58 @@ kiệm pixel nào mà bài kiểm vẫn xanh).
 **`tsc` bắt được thứ `npm test` không bắt, lần thứ TƯ trong dự án:** fixture của
 `KiemDinh.test.tsx` dùng `note` cho một `Dimension` mà hợp đồng khai `comment`. `npm test` xanh
 188/188 vì bài đó không đọc trường ấy — nó chỉ đếm `.duyetthan`. Chạy CẢ HAI trước khi commit.
+
+---
+
+## Task 8 — cổng cuối + E2E (người điều phối tự làm)
+
+Gộp `--ff-only` từ `thuc-thi/nghiem-thu`, merge-base kiểm trước = `cc77990` (đúng bằng HEAD của
+`feat/viet-hoa-i18n`). Cổng trên cây ĐÃ GỘP: `go build` 0 · `go vet` 0 · `gofmt -l` rỗng ·
+`go test -count=1 ./...` **30 gói / 0 FAIL** · `npm test` **207/207** · `tsc` 0 · `npm run build` 0.
+
+### E2E trên cuốn thật `mac-the-bien-di-vo` (không fixture)
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 1 | bật `review`, chạy tới biên chương | engine viết xong chương 4 rồi DỪNG · `runtime: "paused"` |
+| 2 | huy hiệu ở thanh trên | hiện ở buồng lái **và** ở `?khu=chi-phi` |
+| 3 | dải amber | hiện ở buồng lái **và** ở `?khu=kiem-dinh` — một component, hai bề mặt |
+| 4 | `hold_reason` vắng | dải nói "Editor chưa ghi kết luận nào", KHÔNG bịa lý do |
+| 5 | bấm `Cho đi tiếp 1 chương` | `runtime` paused→running · `permit_chapter: 5` · Writer vào chương 5 |
+| 6 | engine chạy lại | huy hiệu VÀ dải cùng biến mất |
+| 7 | đóng máy | cả sáu trường sống `null`, `runtime: ""` |
+| 8 | 1440 + 390 | 0 tràn ngang cả hai |
+
+### Lỗi E2E lộ ra và đã sửa (`3fda982`)
+
+**Spec chiếu SAI tín hiệu của cửa.** Chi tiết trong thông điệp commit. Ba thay đổi: `/studio`
+mang thêm `runtime`; `trangThaiCua` nhận nó; `mayDangChay` cho nó thắng `book.activity`.
+
+---
+
+## Việc tồn sau khi cả bốn kế hoạch hạ cánh
+
+Ghi ra thay vì để người sau tự phát hiện.
+
+1. **Cây vai LUÔN PHẲNG với dữ liệu thật.** `host.AgentSnapshot` (`internal/host/events.go:147`)
+   không có trường depth, nên `anhXaVai` gán cứng `Depth: 0`. Spec §7.2 vẽ
+   `└ writer → novel_context` và điều đó chưa hiện ra được. `cayVai` dựng đúng theo hợp đồng và
+   tự suy biến về phẳng, nên không phải sửa web.
+   **Đường sửa nếu muốn:** payload của `ui_event` ĐÃ có `Depth` (đo được: `Depth: 0` cho arbiter,
+   `Depth: 1` cho `novel_context`), nên nguồn tồn tại — chỉ cần observer mang nó sang
+   `AgentSnapshot`. Đó là sửa engine, và spec §3 cố ý loại việc đó khỏi phạm vi.
+
+2. **HAI nút `Cho đi tiếp 1 chương` trên cùng một màn hình** — một ở dải nghiệm thu, một ở
+   transport (`DieuKhien`, có từ trước). Đúng lớp rủi ro mà quyết định 4 của spec nêu để CẤM
+   Xưởng có nút chạy: hai nút không thấy trạng thái khóa-lúc-đang-gửi của nhau, nên bấm cả hai
+   là cấp phép hai chương. Chưa sửa vì nó là quyết định phạm vi, không phải lỗi cài đặt: bỏ nút
+   nào là câu hỏi cho người dùng.
+
+3. **`pending_steer` không bao giờ là `null`.** `internal/serve/model.go` khai `omitempty`, nên
+   chuỗi rỗng rụng khỏi JSON và hai ca "không có việc tồn" với "engine đóng" đến web y hệt nhau.
+   Spec §6.1 nói ngược. Dải vì vậy không vẽ dấu "không đo được" cho việc tồn — vẽ là khẳng định
+   một điều dữ liệu không nói.
+
+4. **Thước ngữ cảnh chưa lần nào hiện ra trên cuốn thật.** `ContextWindow` là 0 suốt cả bốn lượt
+   E2E, nên `context` luôn `null` và cả dải lẫn transport đều hiện "không đo được" — đúng hợp
+   đồng, nhưng nghĩa là nhánh VẼ THƯỚC chỉ có bài kiểm đơn vị chống lưng, chưa có phép đo sống.
