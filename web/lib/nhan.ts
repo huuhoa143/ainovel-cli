@@ -528,6 +528,7 @@ export const CHU = {
     `${tong} tác phẩm · ${dangChay} đang chạy`,
 
   // rail
+  xuong: 'Xưởng',
   dongSanXuat: 'Dòng sản xuất',
   banThao: 'Bản thảo',
   kiemDinh: 'Kiểm định',
@@ -995,6 +996,29 @@ export const CHU = {
   chuongMoiGio: 'chương/giờ',
   moiChuong: '/ chương',
 
+  /* ── màn Xưởng ─────────────────────────────────────────────────────────
+   *
+   * Nhãn dải tổng viết THƯỜNG và đứng SAU con số: chúng là đơn vị của một con số, không phải
+   * tiêu đề của một ô. "12 tác phẩm · 47 chương đã chốt" đọc thành một câu; "Tác phẩm 12"
+   * thì phải dừng lại một nhịp để biết 12 là gì.
+   */
+  donViTacPham: 'tác phẩm',
+  donViChuongDaChot: 'chương đã chốt',
+  donViTu: 'từ',
+  donViDaTieu: 'đã tiêu',
+  /** Dùng ở CẢ dải tổng ("3 engine đang mở") lẫn huy hiệu trên dòng. Một câu, một khóa. */
+  engineDangMo: 'engine đang mở',
+
+  colTacPham: 'Tác phẩm',
+  colGiaiDoan: 'Giai đoạn',
+  colTienDo: 'Tiến độ',
+  colNhip: 'Nhịp',
+  colSuaLanCuoi: 'Sửa lần cuối',
+  colHanhDong: 'Hành động',
+
+  moTacPham: 'Mở',
+  docTacPham: 'Đọc',
+
   // trạng thái chung
   khongCo: '—',
   dangTai: 'đang đọc store…',
@@ -1008,6 +1032,46 @@ export const CHU = {
 /* ── câu giải thích dài, giọng điềm tĩnh của PRODUCT.md ───────────────── */
 
 export const GIAI_THICH = {
+  /* ── màn Xưởng ───────────────────────────────────────────────────────────
+   *
+   * Ba câu đầu đều nói cùng một điều theo ba ô khác nhau: `0` là một PHÉP ĐO cho kết quả
+   * không, còn ô trống là "chưa đo được". Cùng luật `null` khác `0` mà cả hợp đồng
+   * `/studio` giữ (spec §6.1) — ở đây nó rơi vào `chapters_per_hour` và `cost_per_chapter`,
+   * hai trường mà server trả `0` cho cuốn chưa chạy lần nào. Hiện `0 ch/giờ` là nói cuốn đó
+   * CÓ chạy mà chạy chậm tới mức không viết nổi một chương trong một giờ.
+   */
+  xuongChuaDoDuocNhip:
+    'Chưa đo được nhịp: cuốn này chưa có lượt chạy nào trong dữ liệu đã ghi. Khác với ' +
+    '0 chương/giờ — con số đó nói máy có chạy mà chưa xong chương nào.',
+  xuongChuaDoDuocGiaThanh:
+    'Chưa đo được giá thành mỗi chương: chưa có chương nào được nghiệm thu để chia. Khác ' +
+    'với $0,000 — con số đó nói đã có chương mà không tốn gì.',
+  xuongChuaBietSuaLucNao:
+    'Store không ghi mốc sửa cho cuốn này. Không có nguồn thì để trống, vì một ngày giờ bịa ' +
+    'ra sẽ được dùng để quyết định cuốn nào đáng mở trước.',
+  xuongEngineDangMo:
+    'Engine của cuốn này đang mở, nên số của nó có thể đổi ngay trong lúc bạn đọc bảng. ' +
+    'Mở cuốn đó ra để xem dây chuyền đang chạy tới đâu.',
+  /**
+   * Vì sao Xưởng KHÔNG có nút chạy — quyết định 4 của spec §4, chép nguyên lý do.
+   *
+   * Câu này hiện ra dưới bảng chứ không nằm trong một chú thích mã: người vận hành nhìn một
+   * bảng liệt kê mọi cuốn sẽ đi tìm nút chạy ở đó, và không tìm thấy mà không có lời giải
+   * thích là một khoảng lặng họ phải tự lấp bằng phỏng đoán.
+   */
+  xuongKhongCoNutChay:
+    'Chạy và dừng chỉ có ở thanh dưới, trên cuốn đang mở — một đường tiêu tiền duy nhất. ' +
+    'Hai nút cùng gọi một lượt chạy thì trạng thái khóa-lúc-đang-gửi của chúng không thấy ' +
+    'nhau, nên bấm cả hai là trả tiền hai lần. Bảng này để quét mắt, không để tiêu tiền.',
+  /** Vì sao không xóa/đổi tên ở đây — quyết định 8 của spec §4. */
+  xuongKhongXoaDoiTen:
+    'Xoá hay đổi tên một tác phẩm làm ở thư mục gốc của xưởng, không làm ở đây: xoá một ' +
+    'cuốn là xoá hàng giờ chạy và hàng chục đô, nên nó nên xảy ra ở nơi thấy rõ mình đang ' +
+    'phá cái gì.',
+  xuongRailGiaiThich:
+    'Mọi tác phẩm trong xưởng, kèm tổng chi phí đã tiêu. Đây là bề mặt mức MÁY — nội dung ' +
+    'của nó không đổi theo cuốn đang mở.',
+
   /* cấu hình máy */
   cauHinhLaMucMay:
     'Đây là cấu hình của MÁY, không phải của một tác phẩm. Nó áp cho mọi lượt chạy sau — ' +

@@ -5069,3 +5069,340 @@ div:has(> .qcrow) {
   border: 1px dashed var(--line);
   padding: 8px 9px;
 }
+
+/* ══ Xưởng ════════════════════════════════════════════════════════════
+   Bề mặt `?khu=xuong`: dải tổng của cả xưởng, rồi một bảng một dòng một cuốn.
+
+   Hai ràng buộc chi phối mọi quyết định dưới đây:
+
+   1. **Một màu tín hiệu duy nhất (vàng)** — luật 5 của PRODUCT.md. Nên vàng ở bề
+      mặt này chỉ dùng cho ĐÚNG một thứ: cuốn đang có engine mở. Thanh tiến độ,
+      dù là hình khối bắt mắt nhất bảng, đi màu trung tính: tiến độ là một PHÉP ĐO
+      có ở mọi dòng, và tô nó bằng màu tín hiệu thì mười dòng vàng làm dòng vàng
+      thật không còn nghĩa gì.
+   2. **`--ink-3` là sàn cứng.** Nhãn cột, đơn vị và ô "chưa đo được" đều dừng ở
+      đó, không có ngoại lệ "nhạt hơn cho thanh thoát".
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── dải tổng ── */
+/* Dạng ô-phân-cách-bằng-viền của thanh transport, không phải dạng thẻ số-to-nhãn-nhỏ:
+   PRODUCT.md cấm thẳng hero-metric của landing page SaaS. Năm con số này là số VẬN HÀNH,
+   và chúng đọc theo hàng ngang như một hàng đồng hồ trên bàn máy.
+   `flex-wrap` chứ không cuộn ngang: dải này trả lời câu người ta mở bề mặt để hỏi, nên
+   không con số nào được nằm ngoài mép phải. */
+.xtong {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  padding: 0 4px;
+}
+.xtong .o {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 7px 12px;
+  border-right: 1px solid var(--line-2);
+  white-space: nowrap;
+  font: 500 12px var(--mono);
+  color: var(--ink);
+}
+.xtong .o:last-child {
+  border-right: 0;
+}
+/* `<em>` mang ĐƠN VỊ, không mang nhấn mạnh — nên bỏ nghiêng. Chữ nghiêng có dấu tiếng Việt
+   xếp hai tầng đọc nặng hơn hẳn chữ đứng ở cỡ 11.5px, và ở đây nó chỉ là nhãn của con số
+   đứng ngay trước. Cùng vai với `.trans .lbl`, nên cùng màu. */
+.xtong .o em {
+  font: 400 11.5px/1.72 var(--ui);
+  font-style: normal;
+  color: var(--ink-3);
+}
+
+/* ── bảng ── */
+/* `table-layout: fixed`: bề rộng cột do BẢNG quyết, không do dữ liệu. Với bảng tự động, một
+   tên tác phẩm dài hoặc một mốc thời gian đầy đủ kéo cột của nó rộng ra và bóp cột số bên
+   cạnh — tức bảng đổi hình mỗi lần dữ liệu đổi, và hai lần mở trang cho hai bố cục khác nhau.
+   Nó cũng là thứ giữ lời hứa "không tràn ngang": cột không nở được thì bảng không đẩy `.bangwrap`
+   quá 100%. */
+.bangxuong {
+  table-layout: fixed;
+}
+/* Cột tên KHÔNG khai bề rộng — nó nhận phần còn lại (29%). Bảy tỉ lệ dưới đây rộng hơn phản
+   xạ 20–30% vì nhãn tiếng Việt dài hơn nhãn Anh (DESIGN.md, ràng buộc tiếng Việt số 2):
+   "Sửa lần cuối" và "Giai đoạn" là hai chỗ dễ ngắt hai dòng nhất.
+
+   # Vì sao PHẦN TRĂM chứ không phải px, khác `.bangto` và `.bangcp`
+
+   Hai bảng kia khai px và để `.bangwrap` cuộn ngang khi hẹp — đúng cho chúng, vì thứ bị đẩy
+   ra ngoài là một tên model không nên bị xé giữa token. Ở đây thì KHÔNG: ĐO ĐƯỢC ở 880px
+   (ngay trên điểm ngắt, rail vẫn là cột 194px nên canvas còn 686px) — bộ px cộng lại 868px,
+   `.bangwrap` cuộn 182px, và hai cột bị đẩy ra ngoài mép phải là `Sửa lần cuối` và
+   `Hành động`. Tức nút `Mở` — đường DUY NHẤT vào một cuốn từ bề mặt này — nằm sau một thanh
+   cuộn mà không có gì trên màn hình nói rằng nó tồn tại. Tỉ lệ thì cột chỉ chật đi, không
+   biến mất; và dải chật đó chỉ rộng khoảng 200px trước khi bảng thành thẻ dọc. */
+.bangxuong thead th:nth-child(2) {
+  width: 9%;
+}
+.bangxuong thead th:nth-child(3) {
+  width: 10%;
+}
+.bangxuong thead th:nth-child(4) {
+  width: 9%;
+}
+.bangxuong thead th:nth-child(5) {
+  width: 9%;
+}
+/* 11%, rộng hơn các cột số khác: đơn vị "chương/giờ" là MỘT token không ngắt được, và ĐO ĐƯỢC
+   ở 880px nó cần 57px trong khi 9% chỉ cho 50px — tràn 3px sang cột `Sửa lần cuối`. */
+.bangxuong thead th:nth-child(6) {
+  width: 11%;
+}
+.bangxuong thead th:nth-child(7) {
+  width: 11%;
+}
+.bangxuong thead th:nth-child(8) {
+  width: 17%;
+}
+
+/* Dải chật giữa điểm ngắt 860px và khoảng 1100px: rail vẫn ăn 194px, mà bảng đã phải gánh
+   đủ tám cột. ĐO ĐƯỢC ở 880px với đệm 10px: "138.412" cần 52px trong một ô nội dung 42px,
+   nên nó TRÀN sang ô `Chi phí` bên cạnh và hai con số dính vào nhau — một bảng số mà hai số
+   chạm nhau thì không đọc được cái nào. Số không xuống dòng được (không có khoảng trắng
+   trong "138.412"), nên thứ phải nhường là đệm. */
+@media (max-width: 1100px) {
+  .bangxuong thead th,
+  .bangxuong tbody td {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+}
+
+/* Hàng KHÔNG bấm được: chỉ các nút trong ô hành động bấm được. Chép nguyên luật của
+   `.bangcp` — kể cả vế thứ hai của nó: `hover` GIỮ lại, vì tám cột thì mắt cần một dải sáng
+   để đọc ngang mà không nhảy hàng. */
+.bangxuong tbody tr {
+  cursor: default;
+}
+
+/* Dòng có engine đang mở. Nền vàng NHẠT, không phải dải cạnh màu — dải cạnh bị cấm thẳng
+   trong DESIGN.md.
+
+   Nồng độ 12% là kết quả của một cái kẹp hai đầu, và cả hai đầu đều đo được:
+
+   - **Sàn dưới.** `color-mix(gold 9%, bg)` — nồng độ mà các nền vàng khác của tệp này dùng —
+     ra `oklch(0.2135 0.019 80)`, tức sáng hơn `--panel-2` (0.215) đúng bằng sai số làm tròn.
+     Trên màn hình nó đọc ra là "một hàng được tô nền", không phải "một hàng VÀNG". Các nền 9%
+     kia đứng trên `--panel-2`/`--raised` nên đã có sẵn tương phản với thứ quanh chúng; hàng
+     này đứng trên `--bg`, cạnh những hàng cũng `--bg`.
+   - **Trần trên.** Nền càng sáng thì chữ `--ink-3` trên nó càng tụt. ĐO ĐƯỢC bằng bộ đo tương
+     phản ép màu qua canvas: ở **14%** thì `.ma`, `.donGia` và đơn vị `chương/giờ` của hàng này
+     xuống **4,55:1** — qua sàn AA đúng 0,05, tức một lần chỉnh token nữa là thủng. Ở **12%**
+     chúng ở **4,71:1**. `--ink-3` là sàn cứng nên không có đường nào khác: hoặc hạ nồng độ
+     nền, hoặc bỏ luôn nền vàng.
+
+   Tự khai luôn ca `:hover` của mình. `.bang tbody tr:hover` đặt nền `--panel`, và nó thắng
+   theo thứ tự nguồn nếu không khai — tức rê chuột qua đúng dòng đang chạy sẽ XÓA tín hiệu mà
+   dòng đó tồn tại để mang. */
+.bangxuong tbody tr.engmo,
+.bangxuong tbody tr.engmo:hover {
+  background: color-mix(in oklch, var(--gold) 12%, var(--bg));
+}
+
+/* Tên + mã: hai DÒNG, không cùng hàng — chép luật của `.picklist .ten` và cùng lý do. Nhồi
+   mã vào cùng hàng với tên thì phần bị cắt để chừa chỗ là phần MANG TIN. */
+.bangxuong td.ten {
+  min-width: 0;
+  color: var(--ink);
+}
+.bangxuong td.ten .nb {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Mono và `--ink-3`: mã là khoá để đối chiếu (nó cũng là `?tp=` trên thanh địa chỉ), không
+   phải chữ để đọc. Cùng cách `.picklist .ten .ma` đã làm. */
+.bangxuong td.ten .ma {
+  display: block;
+  font: 400 10.5px/1.5 var(--mono);
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Cuốn CHƯA ĐẶT TÊN: chỉ có mã, và nó đứng ở vị trí của tên. Mono vì nó vẫn là một khoá. */
+.bangxuong td.ten > em {
+  display: block;
+  font: 400 12px/1.5 var(--mono);
+  font-style: normal;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Huy hiệu engine: viền + CHỮ, không chỉ màu — PRODUCT.md, "màu không bao giờ là kênh thông
+   tin duy nhất". Nó lặp lại tín hiệu của nền dòng, và đó là chủ ý: nền nói với người quét
+   mắt, chữ nói với người mù màu và với ảnh chụp đen trắng. */
+.bangxuong .engnhan {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 6px;
+  border: 1px solid color-mix(in oklch, var(--gold) 45%, var(--line));
+  border-radius: 3px;
+  font: 500 10.5px/1.6 var(--ui);
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.bangxuong td.phase {
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
+/* Tiến độ: con số ĐỨNG TRƯỚC, thanh chỉ là hình dạng của nó. Thanh mất đi thì "46/300" vẫn
+   trả lời được câu hỏi; con số mất đi thì một thanh 15% không nói được 15% của bao nhiêu. */
+.bangxuong td.tiendo .sl {
+  display: block;
+  font: 400 12px var(--mono);
+  color: var(--ink-2);
+}
+.bangxuong .thanh {
+  display: block;
+  margin-top: 5px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--raised);
+  overflow: hidden;
+}
+/* Trung tính, KHÔNG vàng — xem ràng buộc 1 ở đầu mục. */
+.bangxuong .thanh .day {
+  display: block;
+  height: 100%;
+  background: var(--ink-2);
+}
+
+/* Hai con số chồng lên nhau trong một ô: tổng đã tiêu (chữ chính) và giá thành mỗi chương
+   (chữ phụ). Chúng trả lời hai câu khác nhau — "cuốn này đã ngốn bao nhiêu" và "mỗi chương
+   giá bao nhiêu" — nên chúng không được trông giống nhau. */
+.bangxuong td.tien .tong {
+  display: block;
+  color: var(--ink);
+}
+.bangxuong td.tien .donGia {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+/* `td.num` toàn cục đặt `white-space: nowrap`, đúng cho một con số nhưng sai cho "3,4
+   chương/giờ": với `table-layout: fixed` ô không nở ra được, nên nowrap ở đây làm chữ TRÀN
+   khỏi ô và đè lên cột bên cạnh ở dải bề rộng chật. Cho nó xuống dòng — đơn vị nằm dưới con
+   số vẫn đọc được, chữ chồng lên nhau thì không. */
+.bangxuong td.nhip {
+  white-space: normal;
+}
+/* Đơn vị đi sau con số, cùng luật với `<em>` của dải tổng. */
+.bangxuong td.nhip em {
+  font: 400 11px var(--ui);
+  font-style: normal;
+  color: var(--ink-3);
+}
+
+/* Mốc thời gian được PHÉP xuống dòng: ô này 128px, mà "17:41:07 30/7/2026" ở cỡ mono 11.5px
+   cần nhiều hơn thế. Cắt cụt một mốc thời gian là làm nó sai; xuống dòng thì nó chỉ cao hơn. */
+.bangxuong td.sua {
+  font: 400 11.5px/1.6 var(--mono);
+  color: var(--ink-2);
+}
+
+/* Nút xuống dòng thay vì bị cắt: ba nút của cuốn đã hoàn thành cần ~168px, và ngân sách cột
+   là 204px — nhưng ngân sách đó co lại cùng bảng ở bề rộng giữa hai điểm ngắt. */
+.bangxuong td.lam {
+  white-space: normal;
+}
+.bangxuong td.lam .nutPhu {
+  padding: 4px 9px;
+  font: 500 11px/1.4 var(--ui);
+  margin: 0 4px 4px 0;
+}
+
+/* ── dưới 860px: bảng thành thẻ xếp dọc ── */
+/* KHÔNG cuộn ngang. Tám cột ở 390px thì mỗi cột được 48px — cột nào cũng cắt cụt, và một
+   bảng phải kéo ngang để đọc là một bảng người ta thôi đọc. Cùng điểm ngắt mà rail thôi làm
+   cột (DESIGN.md:110), nên hai thứ đổi hình một lượt thay vì hai nhịp.
+
+   Đánh đổi phải nói ra: `display: block` gỡ luôn vai trò bảng của trình duyệt, nên liên kết
+   ô ↔ đầu cột mất theo. Bù bằng nhãn hiện RA MÀN HÌNH ở mỗi ô (`data-nhan`), tức thông tin
+   mà `thead` mang giờ đọc được bằng mắt lẫn bằng trình đọc — không phải một liên kết ẩn. */
+@media (max-width: 860px) {
+  .bangxuong,
+  .bangxuong tbody,
+  .bangxuong tbody tr,
+  .bangxuong tbody td {
+    display: block;
+  }
+  .bangxuong thead {
+    display: none;
+  }
+  /* Viền ĐỦ BỐN PHÍA, không phải border-left màu. */
+  .bangxuong tbody tr {
+    border: 1px solid var(--line-2);
+    border-radius: var(--r);
+    padding: 10px 12px;
+    margin: 0 0 8px;
+  }
+  .bangxuong tbody tr.engmo {
+    border-color: color-mix(in oklch, var(--gold) 36%, var(--line));
+  }
+  /* Nhãn ĐẶT TUYỆT ĐỐI ở mép trái, nội dung chảy trong phần đã chừa chỗ.
+     KHÔNG dùng lưới hai cột — đã thử và đo được vì sao không được: một ô như `Chi phí` có HAI
+     con blốc (`.tong`, `.donGia`) và `Nhịp` có một nút chữ cộng một `<em>`, nên mỗi mảnh thành
+     một ô lưới riêng và mảnh thứ hai rơi xuống CỘT NHÃN của hàng dưới — "$0,172" và
+     "chương/giờ" nằm đúng chỗ dành cho nhãn, đọc ra như thể chúng là tên của dòng kế tiếp.
+     Với cách đặt tuyệt đối thì con blốc vẫn thụt đúng lề nội dung, còn chữ inline vẫn chảy
+     liền sau nhãn. */
+  .bangxuong tbody td {
+    border-bottom: 0;
+    position: relative;
+    /* 132px cho cột nhãn, đúng con số DESIGN.md chốt cho biểu mẫu tiếng Việt — 96px theo
+       phản xạ Anh ngữ sẽ làm "Sửa lần cuối" ngắt hai dòng. */
+    padding: 3px 0 3px 140px;
+    /* Huỷ canh phải của `.num`: canh phải chỉ có nghĩa khi các số xếp thành cột. */
+    text-align: left;
+  }
+  .bangxuong tbody td[data-nhan]::before {
+    content: attr(data-nhan);
+    position: absolute;
+    left: 0;
+    top: 3px;
+    width: 132px;
+    font: 400 11.5px/1.72 var(--ui);
+    color: var(--ink-3);
+  }
+  /* Tên là TIÊU ĐỀ của thẻ, không phải một hàng nhãn–giá trị. */
+  .bangxuong tbody td.ten {
+    display: block;
+    padding: 0 0 7px;
+    margin-bottom: 5px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .bangxuong tbody td.ten .nb {
+    font-size: 13px;
+  }
+  /* Hàng nút: nhãn cột là thừa (nút đã nói ra việc của nó), và chúng cần cả bề ngang. */
+  .bangxuong tbody td.lam {
+    display: block;
+    padding: 0;
+    margin-top: 9px;
+  }
+  /* Thanh tiến độ chiếm hết phần nội dung thay vì co theo cột 128px của bảng: ở thẻ dọc nó
+     là hình duy nhất, và một thanh 128px lửng lơ giữa một hàng rộng đọc như một vệt thừa. */
+  .bangxuong tbody td.tiendo .thanh {
+    margin-top: 6px;
+  }
+  .bangxuong tbody td.lam .nutPhu {
+    padding: 6px 11px;
+  }
+}
