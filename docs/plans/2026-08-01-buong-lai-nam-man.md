@@ -1,6 +1,11 @@
 # Buồng lái sản xuất + năm màn — kế hoạch chi tiết
 
-Trạng thái: **chờ duyệt**. Preview: `web/out/preview.html` (không vào git).
+> **ĐÃ THAY THẾ.** Tệp này là bản nháp viết TRƯỚC quy trình spec. Nguồn sự thật giờ là
+> `docs/superpowers/specs/2026-08-01-buong-lai-nam-man-design.md` (thiết kế) và
+> `docs/superpowers/plans/2026-08-01-hop-dong-go-van-song.md` (kế hoạch 1/4).
+> Giữ lại vì nó là nơi các phép đo trên `sample.gif` được ghi lần đầu.
+
+Trạng thái: **đã thay thế**. Preview: `web/out/preview.html` (không vào git).
 Điểm neo: `scripts/novel.png` và `scripts/sample.gif` của upstream.
 
 ---
@@ -64,7 +69,7 @@ Văn truyện đọc ở bề mặt đọc. Hai thứ khác nhau nên hai kiểu
 | tiền đề · nhân vật · phụ | `Premise`, `Characters`, `SupportingCount`, `RecentSupporting` |
 | tập/cung hiện tại | `CurrentVolumeArc`, `NextVolumeTitle` |
 
-`internal/serve/snapshot.go` hiện chỉ ánh xạ một phần nhỏ. **Toàn bộ đợt 1 là việc ánh
+`internal/serve/snapshot.go` hiện chỉ ánh xạ một phần nhỏ. **Toàn bộ đợt 2 là việc ánh
 xạ, không phải việc engine.** Rủi ro thấp hơn hẳn so với ước lượng ban đầu.
 
 Ngoại lệ duy nhất cần mã mới: văn sống, vì `Host.Stream()` là channel một-người-nhận.

@@ -47,3 +47,7 @@ workspace/
 
 # công cụ i18n
 scripts/i18n/__pycache__/
+
+# Worktree cô lập cho việc thi hành kế hoạch (superpowers:using-git-worktrees).
+# Phải bị ignore, nếu không nội dung worktree lọt vào chính repo.
+.worktrees/

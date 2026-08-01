@@ -274,6 +274,17 @@ func (s *server) handleWorkshop(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, err)
 		return
 	}
+	// EngineOpen cần s.may — một trường của server, không phải của store — nên nó được đặt
+	// ở đây chứ không trong scanWorkshop/bookFrom, cùng lý lẽ với Capabilities.Steer ở
+	// handleStudio. `s.may == nil` (bản chỉ-đọc) thì mọi cuốn đều engine_open=false, đúng
+	// giá trị zero của bool nên không cần gán tường minh cho ca đó.
+	if s.may != nil {
+		for i := range ws.Books {
+			if _, err := s.may.dangMo(ws.Books[i].ID); err == nil {
+				ws.Books[i].EngineOpen = true
+			}
+		}
+	}
 	writeJSON(w, ws)
 }
 
@@ -296,6 +307,25 @@ func (s *server) handleStudio(w http.ResponseWriter, r *http.Request) {
 	// chú thích nói "cần engine hợp tác". Engine giờ chạy trong process này, nên câu trả
 	// lời đúng là: ghi được khi và chỉ khi nhóm route ghi tồn tại.
 	snap.Capabilities.Steer = s.choGhi && s.may != nil
+
+	// Trường sống (agents, advance, context, ...) chỉ có nghĩa khi engine đang mở CHO
+	// ĐÚNG CUỐN NÀY. `buildSnapshot` không biết gì về bộ giám sát engine (s.may — nó
+	// thuộc server, không thuộc store), nên phải nối ở đây, cùng chỗ Steer đã nối.
+	// `dangMo` không tự mở mới: mở studio để ĐỌC một cuốn không được vô tình khởi động
+	// engine (tốn tiền API) cho cuốn đó.
+	if s.may != nil {
+		if p, err := s.may.dangMo(id); err == nil {
+			ts := chieuTruongSong(p.eng.Snapshot())
+			snap.Agents = ts.Agents
+			snap.IdleAgents = ts.IdleAgents
+			snap.PendingSteer = ts.PendingSteer
+			snap.RewriteReason = ts.RewriteReason
+			snap.Recovery = ts.Recovery
+			snap.InProgressChapter = ts.InProgressChapter
+			snap.Advance = ts.Advance
+			snap.Context = ts.Context
+		}
+	}
 	writeJSON(w, snap)
 }
 
