@@ -1,6 +1,9 @@
 package serve
 
 import (
+	"encoding/json"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/voocel/ainovel-cli/internal/host"
@@ -69,6 +72,40 @@ func TestAnhXaVaiKhopTUI(t *testing.T) {
 	for i, v := range muonCho {
 		if cho[i] != v {
 			t.Errorf("vai chờ[%d] = %q, muốn %q", i, cho[i], v)
+		}
+	}
+}
+
+// TestTruongSongLaNullKhiMayDong canh lớp lỗi "0 nói dối".
+//
+// Engine ĐÓNG thì không đo được ngữ cảnh, không biết vai nào đang chạy. `0` và `[]` nói "đo
+// được, bằng không" — giao diện sẽ vẽ một thước ngữ cảnh 0% và một cây vai rỗng, tức khẳng
+// định một điều không ai biết. `null` nói "không có nguồn", và giao diện có nhánh riêng cho nó.
+//
+// Đọc JSON THÔ chứ không giải vào struct: giải vào struct biến `null` thành zero value và bài
+// kiểm mất đúng thứ nó đo. Cùng lý do như TestTrucSachKhongPhanTangTraNull trong gói này.
+func TestTruongSongLaNullKhiMayDong(t *testing.T) {
+	goc := t.TempDir()
+	st := newBook(t, goc, "sach", nil)
+	ghiTho(t, st, "chapters/01.md", "# Chương một\n\nMột dòng.\n")
+
+	srv := &server{root: goc} // KHÔNG có bộ giám sát → engine đóng
+	rec := httptest.NewRecorder()
+	srv.routes().ServeHTTP(rec, httptest.NewRequest("GET", "/api/books/sach/studio", nil))
+	if rec.Code != 200 {
+		t.Fatalf("mã %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var tho map[string]json.RawMessage
+	if err := json.Unmarshal(rec.Body.Bytes(), &tho); err != nil {
+		t.Fatalf("giải mã: %v", err)
+	}
+	for _, ten := range []string{"agents", "idle_agents", "advance", "context"} {
+		got := strings.TrimSpace(string(tho[ten]))
+		if got != "null" {
+			t.Errorf("%s = %s, muốn `null` khi engine đóng.\n"+
+				"`0`/`[]`/`{}` ở đây là khẳng định một điều không đo được, và giao diện sẽ "+
+				"vẽ số 0 thay vì vẽ dấu \"không có nguồn\".", ten, got)
 		}
 	}
 }

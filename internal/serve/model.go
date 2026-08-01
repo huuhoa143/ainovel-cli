@@ -209,6 +209,31 @@ type Snapshot struct {
 	// nó làm điểm bắt đầu cho SSE để không bỏ sót và không nhận trùng sự kiện
 	// phát ra giữa lúc tải trang và lúc mở stream.
 	QueueSeq int64 `json:"queue_seq"`
+
+	// Bốn nhóm dưới là trường SỐNG: chúng chỉ đo được khi engine đang mở. Dùng con trỏ /
+	// slice để `nil` marshal thành `null`, và `null` nghĩa là "không có nguồn" — khác hẳn `0`
+	// nghĩa là "đo được, bằng không". Giao diện có hai nhánh vẽ khác nhau cho hai câu đó.
+	Agents     []Vai    `json:"agents"`
+	IdleAgents []string `json:"idle_agents"`
+	Advance    *TienDo  `json:"advance"`
+	Context    *NguCanh `json:"context"`
+}
+
+// TienDo là chế độ đi tiếp và cửa nghiệm thu.
+type TienDo struct {
+	Mode          string `json:"mode"`
+	PermitChapter int    `json:"permit_chapter,omitempty"`
+	Hold          bool   `json:"hold"`
+	HoldReason    string `json:"hold_reason,omitempty"`
+}
+
+// NguCanh là cửa sổ ngữ cảnh của model đang chạy.
+type NguCanh struct {
+	Tokens   int     `json:"tokens"`
+	Window   int     `json:"window"`
+	Percent  float64 `json:"percent"`
+	Scope    string  `json:"scope,omitempty"`
+	Strategy string  `json:"strategy,omitempty"`
 }
 
 // Vai là một tác tử đang làm việc, chiếu từ host.AgentSnapshot.
