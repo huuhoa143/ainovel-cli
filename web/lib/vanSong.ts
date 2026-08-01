@@ -78,7 +78,32 @@ export function moLuot(bd: BoDemVan, nhan?: string): BoDemVan {
   });
 }
 
-/** Cắt theo hai trần. Bước 3 của Task 4 thay thân hàm này. */
+/**
+ * Cắt bộ đệm theo HAI trần: số lượt và tổng byte. Cái nào chạm trước thì cái đó cắt.
+ *
+ * Thứ tự cố ý: bỏ lượt cũ nhất TRƯỚC, và chỉ khi chỉ còn một lượt mà vẫn quá trần thì mới cắt
+ * chữ bên trong nó. Ngược lại — cắt chữ trước — sẽ gọt mất phần đầu của một lượt cũ mà lẽ ra
+ * chỉ cần bỏ cả lượt, tức để lại một lượt cụt đầu vô nghĩa.
+ *
+ * Không bao giờ bỏ lượt CUỐI. Trần chạm được trong lúc engine đang phát, và một khu trống ở
+ * vị trí đắt nhất của màn hình đúng lúc máy đang nói là hỏng nặng hơn cả việc phình bộ đệm.
+ */
 function cat(bd: BoDemVan): BoDemVan {
-  return bd;
+  let luot = bd.luot;
+
+  if (luot.length > SO_LUOT_GIU) luot = luot.slice(luot.length - SO_LUOT_GIU);
+
+  let tong = luot.reduce((n, l) => n + l.chu.length, 0);
+  while (tong > CO_TOI_DA && luot.length > 1) {
+    tong -= luot[0]!.chu.length;
+    luot = luot.slice(1);
+  }
+
+  // Chỉ còn một lượt mà vẫn quá trần: cắt từ ĐẦU chữ của nó. Phần cuối là phần đang chảy.
+  const cuoi = luot[luot.length - 1];
+  if (luot.length === 1 && cuoi && cuoi.chu.length > CO_TOI_DA) {
+    luot = [{ ...cuoi, chu: cuoi.chu.slice(cuoi.chu.length - CO_TOI_DA) }];
+  }
+
+  return luot === bd.luot ? bd : { luot, idKe: bd.idKe };
 }
