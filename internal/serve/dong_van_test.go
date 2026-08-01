@@ -98,3 +98,39 @@ func TestDongVanHaiCaiTran(t *testing.T) {
 		}
 	})
 }
+
+// TestDongVanHaiNguoiDocDeuDu là bài kiểm BIỆN HỘ cho sự tồn tại của cả tệp dong_van.go.
+//
+// `Host.Stream()` là một channel Go, tức "một người nhận": mỗi mẩu chữ chỉ đến đúng một chỗ
+// đọc. Nếu mỗi kết nối SSE tự nhận thẳng từ đó thì hai tab trình duyệt GIÀNH mẩu của nhau —
+// mỗi bên thấy một nửa câu và không bên nào biết mình đang thiếu.
+//
+// Nếu ai đó "tối ưu" bằng cách cho kết nối đọc thẳng channel, bài này phải đỏ.
+func TestDongVanHaiNguoiDocDeuDu(t *testing.T) {
+	d := &dongVan{}
+	const so = 200
+	for i := 0; i < so; i++ {
+		d.them("m")
+	}
+
+	doc := func() int {
+		var moc int64
+		dem := 0
+		for {
+			manh, _ := d.sau(moc)
+			if len(manh) == 0 {
+				return dem
+			}
+			for _, m := range manh {
+				dem++
+				moc = m.Seq
+			}
+		}
+	}
+
+	a, b := doc(), doc()
+	if a != so || b != so {
+		t.Errorf("người đọc A nhận %d mẩu, B nhận %d — cả hai phải nhận đủ %d. "+
+			"Số lệch nghĩa là hai kết nối đang giành dữ liệu của nhau.", a, b, so)
+	}
+}
