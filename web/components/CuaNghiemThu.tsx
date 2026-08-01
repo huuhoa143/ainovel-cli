@@ -138,6 +138,7 @@ export function CuaNghiemThu({
         <button
           type="button"
           className="nutChinh"
+          aria-busy={dangGui === 'tiep' || undefined}
           disabled={khoa}
           onClick={() => goi('tiep', () => choDiTiep(tacPham!))}
         >
@@ -178,6 +179,7 @@ export function CuaNghiemThu({
             />
             <button
               type="button"
+              aria-busy={dangGui === 'tra' || undefined}
               disabled={khoa || !chu.trim()}
               onClick={() => goi('tra', () => canThiep(tacPham!, chu.trim()))}
             >

@@ -25,6 +25,7 @@ export function Transport({
   song,
   suKien,
   trong,
+  mayChay,
   children,
 }: {
   /**
@@ -38,6 +39,19 @@ export function Transport({
   transport: TransportData | undefined;
   song: CongDoanSong | undefined;
   suKien: StreamEvent[];
+  /**
+   * MÁY còn sống không — bật ĐẦU ĐỌC ở mép trên.
+   *
+   * Tên là `mayChay` chứ không `dangChay` vì trong chính tệp này đã có một `dangChay` khác
+   * nghĩa: `song?.dangChay` nói BƯỚC hiện tại còn chạy, suy từ payload sự kiện. Hai thứ đó
+   * lệch nhau được — một bước vừa xong trong khi máy vẫn sống, và ngược lại một bước treo
+   * mãi trên một engine đã chết.
+   *
+   * Nhận qua prop chứ không tự suy: sự thật liveness nằm ở `runtime` của engine, và
+   * `mayDangChay` (lib/song.ts) là chỗ DUY NHẤT được phép nói ra nó. Một đầu đọc chạy trên
+   * dây chuyền đã chết là đúng lỗi mà chú thích của `.dap` đã trả giá để ghi lại.
+   */
+  mayChay?: boolean;
   /**
    * true khi xưởng đã đọc xong và KHÔNG có tác phẩm nào. Cần tách khỏi ca "chưa
    * đọc xong": để "đang đọc store…" đứng mãi ở thanh dưới là nói dối, vì lúc đó
@@ -74,7 +88,7 @@ export function Transport({
   const chay = daChay(transport.elapsed_ms);
 
   return (
-    <footer className="trans" aria-label="Trạng thái dây chuyền">
+    <footer className="trans" data-chay={mayChay ? '1' : undefined} aria-label="Trạng thái dây chuyền">
       <div className="cell">
         <span
           className={`ky ${may.mau}${transport.state === 'running' ? ' dap' : ''}`}

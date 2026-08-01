@@ -3,6 +3,7 @@
 import { CHU, GIAI_THICH, nhanMucXem } from '@/lib/nhan';
 import { MUC_XEM, type MucXem as Muc, type PhamVi, phamViCua } from '@/lib/phamVi';
 import type { Timeline } from '@/lib/types';
+import { useTruot } from '@/lib/truot';
 
 /**
  * Bộ chọn "Mức xem" — Tập / Cung / Chương, ở đầu vùng canvas như bản mockup.
@@ -24,8 +25,11 @@ export function MucXem({
   hienTai: Muc;
   onChon: (m: Muc) => void;
 }) {
+  /* Dấu chỉ TRƯỢT giữa Tập / Cung / Chương. Đo vị trí thật vì ba nhãn không bằng bề rộng. */
+  const hop = useTruot<HTMLDivElement>('[aria-pressed="true"]', 'ngang', hienTai);
+
   return (
-    <div className="mucxem" role="group" aria-label={CHU.mucXem} title={GIAI_THICH.mucXemGiai}>
+    <div ref={hop} className="mucxem" role="group" aria-label={CHU.mucXem} title={GIAI_THICH.mucXemGiai}>
       <span className="lbl">{CHU.mucXem}</span>
       {MUC_XEM.map((m) => {
         const pv = phamViCua(timeline, m);

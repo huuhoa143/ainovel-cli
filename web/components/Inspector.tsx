@@ -16,6 +16,7 @@ import type {
   Snapshot,
 } from '@/lib/types';
 import { useHoSo } from '@/lib/useHoSo';
+import { useTruot } from '@/lib/truot';
 
 import { BanDuyet } from './BanDuyet';
 import { MucRong } from './HoSoKhung';
@@ -65,6 +66,9 @@ export function Inspector({
   onChonChuong: (n: number) => void;
 }) {
   const [tab, setTab] = useState<Tab>('kheuoc');
+  /* Gạch chân TRƯỢT giữa ba tab. Ba nhãn tiếng Việt không bằng bề rộng nên phải đo vị trí
+     thật, không tính theo chỉ số — xem lib/truot.ts. */
+  const hopTab = useTruot<HTMLDivElement>('[aria-selected="true"]', 'ngang', tab);
   /**
    * `true` = người dùng đã bấm đường lui và đang xem ngữ cảnh truyện dù `?ch=` còn nguyên.
    * Đặt lại mỗi khi `chuongChon` đổi: chọn một chương khác ở cột giữa là một yêu cầu xem
@@ -111,7 +115,7 @@ export function Inspector({
               trông bấm được mà bấm nào cũng ra cùng một câu là một lời hứa hụt lặp ba lần.
               Hai chế độ đưa lý do đó tới tận cùng: ở chế độ ngữ cảnh KHÔNG có chương nào để
               ba tab nói về, nên chúng không có mặt. */}
-          <div className="tabs" role="tablist" aria-label={CHU.cotPhaiVung}>
+          <div ref={hopTab} className="tabs" role="tablist" aria-label={CHU.cotPhaiVung}>
             <TabNut tab="kheuoc" hienTai={tab} onChon={setTab} nhan={CHU.tabKheUoc} />
             <TabNut tab="kiemdinh" hienTai={tab} onChon={setTab} nhan={CHU.tabKiemDinh} />
             <TabNut tab="banthao" hienTai={tab} onChon={setTab} nhan={CHU.tabBanThao} />

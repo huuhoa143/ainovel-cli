@@ -29,3 +29,26 @@ import { afterEach } from 'vitest';
  * lặng trở lại, và cái quên đó không có bộ canh nào bắt.
  */
 afterEach(cleanup);
+
+/**
+ * `ResizeObserver` — jsdom không hiện thực, và `useTruot` dùng nó để đo lại dấu chỉ khi khung
+ * đổi bề rộng.
+ *
+ * Vá ở ĐÂY chứ không ở từng tệp, và đây là một ĐẢO CHIỀU có lý do. Luật của repo là "vá tại
+ * tệp kiểm nếu chỉ tệp đó chạm tới" — đúng cho `scrollIntoView` (chỉ bài nào dựng `Rail`) và
+ * `EventSource` (chỉ bài nào dựng `useStudio`). Nhưng dấu trượt nằm trong `MucXem`,
+ * `Inspector` và `Rail`, tức trong hầu hết cây component; đo được ngay khi lắp: thiếu bản vá
+ * này thì `Inspector.test.tsx` và `BuongLai.test.tsx` đỏ cùng lúc với một `ReferenceError`
+ * không nói gì về nguyên nhân.
+ *
+ * Tiêu chí phân biệt vẫn là tiêu chí cũ: vá chung khi thiếu nó làm MỌI bài kiểm nói dối hoặc
+ * gãy vì lý do không liên quan. `ResizeObserver` đã bước qua ngưỡng đó.
+ *
+ * Bản vá KHÔNG gọi callback: jsdom không có bố cục để đổi, nên một bản vá "trung thực hơn"
+ * cũng không đo được gì thêm. Vị trí thật là việc của phép kiểm trên trình duyệt.
+ */
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as unknown as typeof ResizeObserver;

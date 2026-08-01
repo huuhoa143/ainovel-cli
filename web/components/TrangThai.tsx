@@ -1,3 +1,4 @@
+import { useDauDoi } from '@/lib/dauDoi';
 import type { NhanTrangThai } from '@/lib/nhan';
 
 /**
@@ -23,8 +24,27 @@ export function TrangThai({
   title?: string;
   dap?: boolean;
 }) {
+  /**
+   * Trạng thái VỪA ĐỔI thì lắng xuống một lần.
+   *
+   * Đặt ở đây chứ không ở từng chỗ gọi: `TrangThai` là component của MỌI `.st` trong bề mặt —
+   * hàng bảng chương, khối trục, nhãn inspector, ô transport. Một chỗ sửa là cả hệ đi cùng
+   * nhau, và không có chỗ nào lỡ quên.
+   *
+   * `tt` là object HẰNG lấy từ bảng tra (`TRANG_THAI_CHUONG[stage]`), nên cùng một trạng thái
+   * cho cùng một tham chiếu và `useDauDoi` không thấy đổi ở những lần render lại vô nghĩa.
+   *
+   * KHÔNG đụng nhịp đập: `.dap` giữ vòng 2,2s của nó. Hai chuyển động trả lời hai câu khác
+   * nhau — "vừa đổi" và "còn đang chạy" — nên chúng cùng tồn tại.
+   */
+  const dau = useDauDoi(tt);
+
   return (
-    <span className={`st ${tt.mau}${dap ? ' dap' : ''}`} title={title}>
+    <span
+      key={dau}
+      className={`st ${tt.mau}${dap ? ' dap' : ''}${dau > 0 ? ' vuaDoi' : ''}`}
+      title={title}
+    >
       <span className="ky" aria-hidden="true">
         {tt.ky}
       </span>
