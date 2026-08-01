@@ -190,3 +190,70 @@ Dải cạnh màu bị cấm (xem danh sách CẤM). Nên:
 ### `min-width: 0` chỉ cho phép co; `max-width` mới buộc
 
 Một block con có `min-content` lớn hơn cha sẽ **tràn ra ngoài cha và đè** phần tử bên cạnh, và `text-overflow: ellipsis` không bao giờ chạy. Đo được ở thanh trên: khung bọc 150px mà picker 237px, tràn 88px, phủ lên nhãn `dòng sự kiện`. Cần cả hai.
+
+### Vùng tự cuộn phải nhường người đang đọc
+
+Khu văn sống tự cuộn theo chữ mới, và đó là phép ĐO chứ không phải sở thích: chia khu chữ của
+`scripts/sample.gif` thành tám dải ngang thì bảy dải TRÊN cũng đổi 59–73/254 khung — nếu chữ
+chỉ thêm ở dưới thì chúng phải đứng im.
+
+Nhưng tự cuộn phải DỪNG khi người dùng cuộn lên, kèm một nút "về cuối". Nhịp delta đã đo là
+trung vị **2ms**, nên không dừng thì mỗi mẩu lại kéo màn hình về đáy và đọc lại một đoạn dài là
+bất khả. Ngưỡng bám đáy là **24px**, không so bằng đúng: trình duyệt trả số lẻ do
+devicePixelRatio và bố cục sub-pixel, nên so bằng 0 làm khu rớt khỏi chế độ tự cuộn ngay nhịp
+đầu.
+
+### Hai bộ đệm, hai việc — đừng lẫn
+
+Văn sống có bộ đệm ở **cả hai** phía, và chúng giữ hai thứ khác nhau. Server giữ đúng LƯỢT
+HIỆN TẠI (trần 512KB, cắt từ ĐẦU) vì nó chỉ cần đủ cho người mở trang giữa một lượt. Client giữ
+**3 lượt gần nhất HOẶC 512KB**, cái nào chạm trước, bỏ từ lượt cũ nhất.
+
+Phải có cả hai trần: chỉ đếm lượt thì một lượt Writer bằng cả chương vẫn phình; chỉ đếm byte thì
+một lượt dài đẩy hết lượt trước ra và mất luôn vạch ngăn.
+
+### Lệnh xóa của terminal thành VẠCH NGĂN trên web
+
+TUI xóa sạch khu chữ ở mỗi lượt vì terminal không cuộn lại được. Trình duyệt giỏi đúng chỗ đó,
+nên vứt phần vừa đọc là bỏ phí. Vạch chỉ vẽ GIỮA hai lượt — một vạch trên cùng khẳng định có
+một lượt phía trên nó mà lượt đó đã bị trần cắt mất.
+
+### Dải trạng thái ↔ dải việc tiếp theo: đổi, không hiện cả hai
+
+Máy chạy → dải trạng thái (vai · việc tồn · ngữ cảnh). Máy nghỉ → dải "việc tiếp theo".
+
+Lúc nghỉ không có gì đang chảy để xem và câu người dùng mang theo là "giờ tôi làm gì". Lúc chạy
+thì ngược lại, và một dải "việc tiếp theo" lúc đó là mời bấm một nút thứ hai trong khi một lượt
+đang tiêu tiền — hai nút cùng gọi `POST /run` không thấy trạng thái khóa-lúc-đang-gửi của nhau.
+
+### `null` KHÁC `0`, và giao diện phải vẽ hai thứ khác nhau
+
+Các trường sống (`agents`, `idle_agents`, `advance`, `context`, `in_progress_chapter`, `runtime`)
+là `null`/`""` khi engine ĐÓNG — nghĩa "không đo được", không nghĩa "đo được, bằng không". Một
+thước ngữ cảnh 0% và một dấu "không có nguồn" nói hai điều khác nhau.
+
+Mảng rỗng cũng vậy và theo chiều ngược: `idle_agents: []` nghĩa "đã đo, không ai chờ" nên KHÔNG
+vẽ dòng nào; `null` mới vẽ dấu không-đo-được. Lỗi này đã xảy ra thật — dải từng hiện
+"chờ: không đo được" ngay cạnh một vai đang làm việc.
+
+### Liveness đọc từ `runtime`, không từ `activity`
+
+`book.activity` suy từ mốc checkpoint trong store, nên nó trễ ở CẢ HAI chiều: engine vừa nhận
+giấy phép và đang viết mà `activity` còn `idle`, hoặc engine đã dừng ở cửa nghiệm thu mà
+`activity` còn `running` vài phút. `runtime` là trạng thái engine tự khẳng định. `activity` chỉ
+còn là nguồn dự phòng cho ca engine đóng.
+
+### Cửa nghiệm thu KHÔNG dùng modal
+
+Modal chỉ dành cho `ask_user`, lúc đó engine chặn thật. Ở cửa nghiệm thu engine cũng đứng chờ,
+nhưng người dùng cần đọc bản thảo, xem chi phí và đối chiếu chương trước để quyết định — chặn
+họ lại là chặn đúng việc họ phải làm.
+
+Huy hiệu "đang chờ bạn" ở thanh trên, hiện ở MỌI bề mặt: một dây chuyền đang đứng chờ không
+được ẩn sau một lựa chọn điều hướng.
+
+### Ngân sách thanh trên ở 390px là 123px — và tràn ngang KHÔNG bắt được
+
+Flex NÉN chứ không tràn. Thêm một phần tử vào `.bar` từng nén bộ chọn tác phẩm xuống **5px**
+(tên cuốn biến mất) trong khi cả `documentElement.scrollWidth - clientWidth` lẫn phép đo tràn
+của chính thanh đều bằng 0. Đo bề rộng THẬT của từng phần tử, đừng chỉ đo tràn.
