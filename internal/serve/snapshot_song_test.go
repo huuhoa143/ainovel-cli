@@ -109,3 +109,56 @@ func TestTruongSongLaNullKhiMayDong(t *testing.T) {
 		}
 	}
 }
+
+// TestAnhXaTruongSongDiXuyenTuSnapshot canh việc serve TỰ TÍNH thay vì lấy từ engine.
+//
+// `PRODUCT.md` cấm studio nhân bản logic engine, và đây là chỗ dễ vi phạm nhất: mọi trường
+// dưới đây đều "có thể suy được" từ store nếu chịu viết thêm mã. Suy lại là dựng bản sao thứ
+// hai của sự thật, và hai bản sao thì lệch.
+//
+// Bài kiểm bơm một `UISnapshot` có giá trị KHÔNG suy được từ store (ví dụ RecoveryLabel là
+// một câu chỉ engine biết), rồi đòi thấy đúng câu đó trong JSON.
+func TestAnhXaTruongSongDiXuyenTuSnapshot(t *testing.T) {
+	snap := host.UISnapshot{
+		Agents:               []host.AgentSnapshot{{Name: "writer", State: "working"}},
+		PendingSteer:         "cho Lục Miên xuất hiện sớm hơn",
+		PendingRewrites:      []int{8},
+		RewriteReason:        "lệch mốc giờ sổ miếu",
+		AdvanceMode:          "review",
+		HasAdvanceHold:       true,
+		AdvanceHoldReason:    "chờ cấp phép cung 2",
+		AdvancePermitChapter: 8,
+		RecoveryLabel:        "lần trước dừng ở cửa nghiệm thu",
+		InProgressChapter:    2,
+		ContextTokens:        52400,
+		ContextWindow:        128000,
+		ContextPercent:       41,
+		ContextScope:         "baseline",
+		ContextStrategy:      "light_trim",
+	}
+
+	ra := chieuTruongSong(snap)
+
+	if ra.PendingSteer != snap.PendingSteer {
+		t.Errorf("pending_steer = %q, muốn %q", ra.PendingSteer, snap.PendingSteer)
+	}
+	if ra.Recovery != snap.RecoveryLabel {
+		t.Errorf("recovery = %q, muốn %q — câu này chỉ engine biết, serve không suy được",
+			ra.Recovery, snap.RecoveryLabel)
+	}
+	if ra.RewriteReason != snap.RewriteReason {
+		t.Errorf("rewrite_reason = %q, muốn %q", ra.RewriteReason, snap.RewriteReason)
+	}
+	if ra.InProgressChapter == nil || *ra.InProgressChapter != 2 {
+		t.Errorf("in_progress_chapter = %v, muốn 2", ra.InProgressChapter)
+	}
+	if ra.Advance == nil || !ra.Advance.Hold || ra.Advance.Mode != "review" ||
+		ra.Advance.PermitChapter != 8 || ra.Advance.HoldReason != snap.AdvanceHoldReason {
+		t.Errorf("advance = %+v, muốn mode review / hold true / permit 8 / có lý do", ra.Advance)
+	}
+	if ra.Context == nil || ra.Context.Tokens != 52400 || ra.Context.Window != 128000 ||
+		ra.Context.Percent != 41 || ra.Context.Scope != "baseline" ||
+		ra.Context.Strategy != "light_trim" {
+		t.Errorf("context = %+v, muốn đúng năm trường của UISnapshot", ra.Context)
+	}
+}

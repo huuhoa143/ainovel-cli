@@ -217,6 +217,13 @@ type Snapshot struct {
 	IdleAgents []string `json:"idle_agents"`
 	Advance    *TienDo  `json:"advance"`
 	Context    *NguCanh `json:"context"`
+
+	// Bốn trường dưới cũng chỉ có nghĩa khi engine đang mở, chiếu thẳng từ
+	// host.UISnapshot (xem chieuTruongSong) — không suy lại từ store.
+	PendingSteer      string `json:"pending_steer,omitempty"`
+	RewriteReason     string `json:"rewrite_reason,omitempty"`
+	Recovery          string `json:"recovery,omitempty"`
+	InProgressChapter *int   `json:"in_progress_chapter"`
 }
 
 // TienDo là chế độ đi tiếp và cửa nghiệm thu.

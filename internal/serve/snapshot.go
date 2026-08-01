@@ -537,6 +537,58 @@ func storeWarnings(st *store.Store) []string { return st.CheckConsistency() }
 // Cố ý KHÔNG lặp lại nhánh "không ai đang chạy thì gộp hết vào danh sách đang chạy" của
 // `sidebarAgents`: đó là mẹo trình bày để sidebar TUI không hiện một khối rỗng, không phải
 // một sự thật về ai đang chạy — bề mặt JSON không cần né một khối rỗng theo cách đó.
+// truongSong là phần payload chỉ có nghĩa khi engine đang mở.
+//
+// Gom thành một hàm chiếu để có đúng MỘT chỗ quyết định "trường nào đến từ đâu". Rải phép
+// gán ra nhiều chỗ là cách mà một trường bị suy lại ở chỗ thứ hai mà không ai thấy — đúng
+// điều PRODUCT.md cấm: studio không được nhân bản logic của engine.
+type truongSong struct {
+	Agents            []Vai
+	IdleAgents        []string
+	PendingSteer      string
+	RewriteReason     string
+	Recovery          string
+	InProgressChapter *int
+	Advance           *TienDo
+	Context           *NguCanh
+}
+
+// chieuTruongSong chiếu host.UISnapshot (trạng thái sống của engine đang mở) thành phần
+// payload tương ứng. Mọi trường ở đây đến THẲNG từ UISnapshot — không tính lại, không suy
+// từ store — vì engine đã tính đúng những giá trị này một lần rồi.
+func chieuTruongSong(snap host.UISnapshot) truongSong {
+	dang, cho := anhXaVai(snap.Agents)
+	ra := truongSong{
+		Agents:        dang,
+		IdleAgents:    cho,
+		PendingSteer:  snap.PendingSteer,
+		RewriteReason: snap.RewriteReason,
+		Recovery:      snap.RecoveryLabel,
+		Advance: &TienDo{
+			Mode:          snap.AdvanceMode,
+			PermitChapter: snap.AdvancePermitChapter,
+			Hold:          snap.HasAdvanceHold,
+			HoldReason:    snap.AdvanceHoldReason,
+		},
+	}
+	if snap.InProgressChapter > 0 {
+		n := snap.InProgressChapter
+		ra.InProgressChapter = &n
+	}
+	// Ngữ cảnh chỉ có nghĩa khi biết cửa sổ. `Window == 0` là chưa đo được, không phải cửa
+	// sổ bằng không — nên để `nil` thay vì trả một tỉ lệ chia cho 0.
+	if snap.ContextWindow > 0 {
+		ra.Context = &NguCanh{
+			Tokens:   snap.ContextTokens,
+			Window:   snap.ContextWindow,
+			Percent:  snap.ContextPercent,
+			Scope:    snap.ContextScope,
+			Strategy: snap.ContextStrategy,
+		}
+	}
+	return ra
+}
+
 func anhXaVai(vao []host.AgentSnapshot) (dang []Vai, cho []string) {
 	for _, a := range vao {
 		if a.State == "idle" {
