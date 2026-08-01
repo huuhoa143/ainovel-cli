@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { BangChuong, GhiChuChiPhi } from '@/components/BangChuong';
+import { BuongLai } from '@/components/BuongLai';
 import { CaiDat } from '@/components/CaiDat';
 import { CauHinhXuong } from '@/components/CauHinhXuong';
 import { CungDung } from '@/components/CungDung';
@@ -16,34 +16,21 @@ import { DocTruyen } from '@/components/DocTruyen';
 import { HangChoVietLai } from '@/components/HangChoVietLai';
 import { Inspector } from '@/components/Inspector';
 import { KiemDinh } from '@/components/KiemDinh';
-import { MucXem } from '@/components/MucXem';
 import { NhanVat } from '@/components/NhanVat';
-import { DongSuKien, NhatKy } from '@/components/NhatKy';
-import { OCanThiep } from '@/components/OCanThiep';
+import type { DongSuKien } from '@/components/NhatKy';
 import { Rail } from '@/components/Rail';
 import { LuatTheGioi, PhucBut } from '@/components/TheGioi';
 import { ThanhTren } from '@/components/ThanhTren';
 import { ToSanXuat } from '@/components/ToSanXuat';
 import { Transport } from '@/components/Transport';
 import { VanPhong } from '@/components/VanPhong';
-import { ViecTiepTheo } from '@/components/ViecTiepTheo';
 import { DangTai, KhongTaiDuoc, XuongTrong } from '@/components/XuongTrong';
-import { Truc } from '@/components/Truc';
-import { so } from '@/lib/dinhdang';
 import { dungInspector, type Khu as KhuMa } from '@/lib/khu';
-import { CHU, GIAI_THICH, nhanPhamViXem, nhanPhase } from '@/lib/nhan';
-import {
-  type MucXem as Muc,
-  type PhamVi,
-  locHang,
-  phamViCua,
-  soHangAn,
-  vieccTonBiAn,
-} from '@/lib/phamVi';
 import { mayDangChay } from '@/lib/song';
 import { useMay } from '@/lib/useMay';
 import type { CongDoanSong } from '@/lib/useStudio';
 import type { Snapshot } from '@/lib/types';
+import type { BoDemVan } from '@/lib/vanSong';
 import { useStudio } from '@/lib/useStudio';
 
 export default function Trang() {
@@ -150,6 +137,7 @@ export default function Trang() {
             nhapSan={nhapTuCungDung}
             suKien={s.suKien}
             song={s.song}
+            vanSong={s.vanSong}
             dangChay={mayDangChay(s.snapshot)}
           />
           {coInsp ? (
@@ -157,6 +145,7 @@ export default function Trang() {
               snapshot={s.snapshot}
               tacPham={s.tacPham}
               chuongChon={s.chuongChon}
+              onChonChuong={s.chonChuong}
             />
           ) : null}
         </>
@@ -194,8 +183,11 @@ export default function Trang() {
  * Chỉ khu được chọn được render — không phải ẩn bằng CSS. Panel bị treo
  * transition trên tab ẩn từng làm mất trắng cả khối khi render headless, và một
  * bề mặt bị ẩn vẫn giữ nguyên hiệu ứng cuộn của nó.
+ *
+ * Export để bài kiểm gọi thẳng được LUẬT ĐỊNH TUYẾN mà không phải dựng cả `Trang` (tức cả
+ * `useStudio`, tức cả mạng). `Trang` vẫn là cửa duy nhất của ứng dụng; đây là cửa của bộ kiểm.
  */
-function Khu({
+export function Khu({
   khu,
   snapshot,
   tacPham,
@@ -209,6 +201,7 @@ function Khu({
   nhapSan,
   suKien,
   song,
+  vanSong,
   dangChay,
 }: {
   khu: KhuMa;
@@ -225,6 +218,7 @@ function Khu({
   nhapSan: string;
   suKien: Parameters<typeof DongSuKien>[0]['suKien'];
   song: CongDoanSong | undefined;
+  vanSong: BoDemVan;
   dangChay: boolean;
 }) {
   switch (khu) {
@@ -291,9 +285,13 @@ function Khu({
       return <LuatTheGioi tacPham={tacPham} />;
     case 'phuc-but':
       return <PhucBut tacPham={tacPham} />;
+    // Buồng lái là bề mặt MẶC ĐỊNH, và nó nằm ở `default` chứ không ở một `case` riêng cho
+    // `'dong-san-xuat'`: `KHU_MAC_DINH` là khu được chọn khi URL không nói gì và khi giá trị
+    // trong URL không đọc được, nên một khu mới thêm vào mà quên viết `case` phải rơi về đây
+    // chứ không rơi vào một màn hình trắng.
     default:
       return (
-        <Canvas
+        <BuongLai
           snapshot={snapshot}
           tacPham={tacPham}
           chuongChon={chuongChon}
@@ -302,208 +300,9 @@ function Khu({
           onDocChuong={onDocChuong}
           suKien={suKien}
           song={song}
+          vanSong={vanSong}
           dangChay={dangChay}
         />
       );
   }
-}
-
-function Canvas({
-  snapshot,
-  tacPham,
-  chuongChon,
-  onChonChuong,
-  onChonKhu,
-  onDocChuong,
-  suKien,
-  song,
-  dangChay,
-}: {
-  snapshot: Snapshot;
-  tacPham: string | undefined;
-  chuongChon: number | undefined;
-  onChonChuong: (n: number) => void;
-  onChonKhu: (k: KhuMa) => void;
-  onDocChuong: (n: number) => void;
-  suKien: Parameters<typeof DongSuKien>[0]['suKien'];
-  song: CongDoanSong | undefined;
-  dangChay: boolean;
-}) {
-  const canhBao = snapshot.warnings ?? [];
-
-  // Mặc định "Tập" như bản mockup. `layered_outline === false` thì không có
-  // tập/cung nào để lọc, và mức người dùng chọn có thể mất phạm vi khi engine
-  // sang tập mới — cả hai ca đều rơi về "Chương", tức không lọc gì.
-  const [mucMuon, setMucMuon] = useState<Muc>('tap');
-  const phanTang = snapshot.capabilities.layered_outline;
-  const pvMuon = phamViCua(snapshot.timeline, mucMuon);
-  const muc: Muc = !phanTang || pvMuon.khongRo ? 'chuong' : mucMuon;
-  const pv = phamViCua(snapshot.timeline, muc);
-
-  const hang = locHang(snapshot.chapters, pv);
-  const an = soHangAn(snapshot.chapters, pv);
-  const ton = vieccTonBiAn(snapshot.chapters, pv);
-
-  return (
-    <main className="canvas" id="dong-san-xuat">
-      <div className="head">
-        <h1>{CHU.dongSanXuat}</h1>
-        <span className="sub">{motTa(snapshot)}</span>
-        {phanTang ? (
-          <MucXem timeline={snapshot.timeline} hienTai={muc} onChon={setMucMuon} />
-        ) : null}
-      </div>
-
-      {/* Dải việc tiếp theo đứng NGAY dưới đầu trang, trên cả cảnh báo dữ liệu lệch.
-          Hai loại tin khác nhau: dải này trả lời "giờ tôi làm gì", cảnh báo trả lời "cái gì
-          đang không ổn". Câu thứ nhất là câu người dùng mang theo lúc mở trang, nên nó đứng
-          trước — và một cuốn có cảnh báo thì dải vẫn nói được việc tiếp theo. */}
-      <ViecTiepTheo
-        snapshot={snapshot}
-        dangChay={dangChay}
-        song={song}
-        onChonKhu={onChonKhu}
-        onDocChuong={onDocChuong}
-      />
-
-      {/* Dữ liệu lệch là tin vận hành, không phải chi tiết nội bộ — hiện ngay
-          dưới đầu trang thay vì nuốt đi. */}
-      {canhBao.length > 0 ? (
-        <section className="canhbao" aria-label={GIAI_THICH.duLieuLech}>
-          <h2>
-            <span aria-hidden="true">■</span>
-            {GIAI_THICH.duLieuLech} · {canhBao.length}
-          </h2>
-          <ul>
-            {canhBao.map((c, i) => (
-              <li key={i}>{c}</li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      <section className="sect">
-        <h2>{CHU.trucSanXuat}</h2>
-        <Truc
-          timeline={snapshot.timeline}
-          capabilities={snapshot.capabilities}
-          chuongChon={chuongChon}
-          onChonChuong={onChonChuong}
-        />
-      </section>
-
-      <section className="sect">
-        <h2>{tieuDeBang(pv)}</h2>
-        <BangChuong
-          rows={hang}
-          capabilities={snapshot.capabilities}
-          chuongChon={chuongChon}
-          onChon={onChonChuong}
-          dangChay={mayDangChay(snapshot)}
-          khiTrong={
-            snapshot.chapters.length > 0 ? GIAI_THICH.bangTrongPhamVi : undefined
-          }
-        />
-        <NgoaiPhamVi pv={pv} an={an} ton={ton} onBoLoc={() => setMucMuon('chuong')} />
-        <GhiChuChiPhi capabilities={snapshot.capabilities} />
-      </section>
-
-      <section className="sect" id="nhat-ky-phan-quyet">
-        <h2>
-          {CHU.nhatKyPhanQuyet} · <span className="phu">Arbiter</span>
-        </h2>
-        <NhatKy decisions={snapshot.decisions} />
-      </section>
-
-      {/* `id` để dải việc tiếp theo cuộn tới được — xem `DangLam` trong ViecTiepTheo.tsx. */}
-      <section className="sect" id="dong-su-kien">
-        <h2>
-          Dòng sự kiện · <span className="phu">trực tiếp từ engine</span>
-        </h2>
-        <DongSuKien suKien={suKien} />
-      </section>
-
-      <section className="sect">
-        <h2>
-          {CHU.canThiep} · <span className="phu">nói vào dây chuyền đang chạy</span>
-        </h2>
-        <OCanThiep
-          capabilities={snapshot.capabilities}
-          tacPham={tacPham}
-          dangChay={dangChay}
-        />
-      </section>
-
-      {/* Chỗ trống cuối để hàng cuối bảng không dính vào transport. */}
-      <div style={{ height: 8 }} />
-    </main>
-  );
-}
-
-/** "Trấn Yêu Ký · đang viết · 300 chương · 6 tập" — chỉ nói điều biết được. */
-function motTa(snap: Snapshot): string {
-  const b = snap.book;
-  const phan: string[] = [b.name || b.id, nhanPhase(b.phase)];
-  if (b.total_chapters > 0) phan.push(`${so(b.total_chapters)} chương`);
-  // `?? []` chứ không tin `layered_outline`: hai trường đến từ hai nhánh khác nhau phía
-  // server, nên một cuốn có cờ true mà volumes null là ca hợp lệ (dàn ý phân tầng đã có
-  // khung mà chưa mở tập nào).
-  const soTap = snap.timeline.volumes?.length ?? 0;
-  if (snap.capabilities.layered_outline && soTap > 0) {
-    phan.push(`${soTap} tập`);
-  }
-  if (b.total_words > 0) phan.push(`${so(b.total_words)} từ`);
-  return phan.join(' · ');
-}
-
-/**
- * Tiêu đề bảng chương — nói đúng phần ĐANG HIỆN, không phải phần mong là đang
- * hiện.
- *
- * Bản trước suy tiêu đề từ khối đang chạy ("Chương trong cung 2 · tập 3") trong
- * khi bảng vẫn liệt kê mọi chương có dấu vết sản xuất trên toàn tác phẩm. Với
- * fixture, cung 2 là chương 45–50 mà bảng chứa cả chương 41 và 44 — tiêu đề
- * khẳng định một phạm vi mà dữ liệu không có. Giờ tiêu đề đi theo phép lọc thật.
- */
-function tieuDeBang(pv: PhamVi): string {
-  if (pv.index === undefined || pv.from === undefined || pv.to === undefined) {
-    return `${CHU.chuong} · mọi chương có dấu vết sản xuất`;
-  }
-  return `${CHU.chuong} trong ${nhanPhamViXem(pv.muc, pv.index)} · ${pv.from}–${pv.to}`;
-}
-
-/**
- * Dòng nói ra những gì phép lọc đã ẩn.
- *
- * Bắt buộc phải có: ẩn im lặng một chương chờ viết lại là đúng cái lỗi mà Rail
- * đã tránh — người vận hành bỏ qua một hàng chờ thật vì bề mặt không nói. Số
- * việc tồn được tách riêng vì nó là loại tin khác: chương đã nghiệm thu ở tập
- * trước nằm ngoài phạm vi là chuyện bình thường, chương chờ viết lại thì không.
- */
-function NgoaiPhamVi({
-  pv,
-  an,
-  ton,
-  onBoLoc,
-}: {
-  pv: PhamVi;
-  an: number;
-  ton: number;
-  onBoLoc: () => void;
-}) {
-  if (an <= 0 || pv.index === undefined) return null;
-  return (
-    <p className={`phamvihint${ton > 0 ? ' con-ton' : ''}`}>
-      {ton > 0 ? (
-        <span className="ky" aria-hidden="true">
-          ■
-        </span>
-      ) : null}
-      {CHU.ngoaiPhamVi(an, nhanPhamViXem(pv.muc, pv.index))}
-      {ton > 0 ? ` — ${CHU.conTonNgoaiPhamVi(ton)}` : ''}.{' '}
-      <button type="button" onClick={onBoLoc}>
-        {CHU.hienTatCa}
-      </button>
-    </p>
-  );
 }

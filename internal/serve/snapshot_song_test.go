@@ -196,3 +196,39 @@ func TestWorkshopCoDuSoLieuChoManXuong(t *testing.T) {
 		}
 	}
 }
+
+// TestVaiRongLaMangRongChuKhongPhaiNull canh một lỗi ĐO ĐƯỢC trên cuốn thật.
+//
+// Trong Go, một slice chưa append lần nào là `nil`, và `nil` marshal thành `null`. Nên
+// `anhXaVai` từng trả `null` cho `idle_agents` khi engine ĐANG MỞ mà mọi vai đều bận —
+// tức đúng thứ mà cả hợp đồng trường sống sinh ra để phân biệt bị xóa mất: giao diện đọc
+// `null` là "engine đóng nên KHÔNG ĐO ĐƯỢC" và vẽ dấu không-có-nguồn, trong khi sự thật là
+// "đo được, không ai chờ".
+//
+// ĐO ĐƯỢC lúc E2E kế hoạch 2/4 trên cuốn `mac-the-bien-di-vo`: `agents` có một vai đang
+// chạy, `idle_agents` là `null`, và dải trạng thái hiện "chờ: không đo được" ngay cạnh một
+// vai đang làm việc. Hai câu đó không thể cùng đúng.
+//
+// Ca engine ĐÓNG vẫn phải là `null`, và nó đi đường khác: `chieuTruongSong` chỉ được gọi khi
+// có engine (serve.go), nên lúc đóng cả cấu trúc đứng ở zero value. TestTruongSongLaNullKhiMayDong
+// canh đầu đó.
+func TestVaiRongLaMangRongChuKhongPhaiNull(t *testing.T) {
+	// Engine mở, đúng một vai và nó đang bận: không có ai chờ, nhưng ĐO ĐƯỢC là không có ai.
+	ra := chieuTruongSong(host.UISnapshot{
+		Agents: []host.AgentSnapshot{{Name: "writer", State: "working"}},
+	})
+
+	if ra.IdleAgents == nil {
+		t.Error("idle_agents = nil → JSON `null`.\n" +
+			"Engine ĐANG MỞ và ta ĐO ĐƯỢC rằng không vai nào chờ; `null` nói ngược lại " +
+			"(\"không đo được\"), và giao diện sẽ vẽ dấu không-có-nguồn cạnh một vai đang chạy.")
+	}
+
+	// Chiều đối xứng: mọi vai đều chờ thì `agents` phải là mảng rỗng, không phải null.
+	ra2 := chieuTruongSong(host.UISnapshot{
+		Agents: []host.AgentSnapshot{{Name: "editor", State: "idle"}},
+	})
+	if ra2.Agents == nil {
+		t.Error("agents = nil → JSON `null` trong khi engine mở và đo được là không ai chạy")
+	}
+}

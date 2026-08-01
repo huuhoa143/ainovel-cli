@@ -1,0 +1,123 @@
+import { render, screen } from '@testing-library/react';
+import { expect, test, vi } from 'vitest';
+
+import { snap } from '@/components/mau.test-helper';
+import type { Khu as KhuMa } from '@/lib/khu';
+import type { Studio } from '@/lib/useStudio';
+import { BO_DEM_RONG, themChu } from '@/lib/vanSong';
+
+import Trang, { Khu } from './page';
+
+/**
+ * Studio giả cho bài kiểm tầng `Trang`.
+ *
+ * `useStudio` bị thay chứ không bị cho gọi thật: bài kiểm ở đây canh việc `Trang` NỐI DÂY,
+ * và một `useStudio` thật sẽ biến nó thành bài kiểm về khả năng giả lập `fetch` + `EventSource`
+ * của jsdom — đo nhầm thứ, và hỏng vì những lý do không liên quan.
+ */
+const STUDIO_GIA: Studio = {
+  // `books` dựng lại từ chính `snap()` chứ không ép kiểu một object hai trường: thanh trên
+  // đọc `b.activity` để vẽ đốm trạng thái, và một fixture ép kiểu làm `tsc` xanh trong khi
+  // component nổ lúc chạy — đúng lớp lỗi mà `mau.test-helper.ts` ghi lại.
+  workshop: { root: '/w', books: [snap({}).book] },
+  tacPham: 'b',
+  snapshot: snap({ agents: [], idle_agents: [] }),
+  hoSo: undefined,
+  chuongChon: undefined,
+  khu: 'dong-san-xuat',
+  song: undefined,
+  suKien: [],
+  vanSong: themChu(BO_DEM_RONG, 'nàng quay đầu lại'),
+  ketNoi: 'song',
+  dangTai: false,
+  loi: undefined,
+  chonTacPham: () => {},
+  chonChuong: () => {},
+  chonKhu: () => {},
+  moTacPhamVuaTao: () => {},
+  docChuong: () => {},
+  taiLai: () => {},
+};
+
+vi.mock('@/lib/useStudio', () => ({ useStudio: () => STUDIO_GIA }));
+vi.mock('@/lib/useMay', () => ({
+  useMay: () => ({ choGhi: true, canCaiDat: false, daHoi: true }),
+}));
+
+/**
+ * jsdom KHÔNG hiện thực `scrollIntoView` — nó không bố cục nên không có gì để cuộn tới.
+ * `Rail` gọi nó trong effect để kéo khu đang mở vào tầm nhìn, nên dựng cả `Trang` mà không
+ * có mảnh vá này thì bài kiểm đỏ vì một lỗ hổng của môi trường, không vì mã.
+ *
+ * Vá TẠI ĐÂY chứ không ở `vitest.setup.giaodien.ts`: tệp đó vá một lỗi làm MỌI bài kiểm nói
+ * dối; cái này chỉ chạm tới bài kiểm nào dựng `Rail`. Đặt vào setup chung là lặng lẽ tắt một
+ * hành vi cho cả bộ kiểm, kể cả bài kiểm sau này muốn đo chính hành vi đó.
+ */
+Element.prototype.scrollIntoView = function () {
+  /* jsdom không bố cục */
+};
+
+/**
+ * LUẬT ĐỊNH TUYẾN — việc DUY NHẤT còn lại của `page.tsx` sau Task 13.
+ *
+ * Gọi thẳng `Khu` chứ không dựng `Trang`: `Trang` gọi `useStudio`, tức mạng, tức một bộ kiểm
+ * canh định tuyến lại đi đo khả năng giả lập `fetch` của jsdom. `Khu` là một hàm thuần trên
+ * đúng cái nó nhận.
+ */
+function ve(khu: KhuMa, vanSong = BO_DEM_RONG) {
+  return render(
+    <Khu
+      khu={khu}
+      snapshot={snap({ agents: [], idle_agents: [] })}
+      tacPham="b"
+      chuongChon={undefined}
+      onChonChuong={() => {}}
+      onChonKhu={() => {}}
+      onDocChuong={() => {}}
+      onChonTacPham={() => {}}
+      onXongTaoSach={() => {}}
+      onChotCungDung={() => {}}
+      nhapSan=""
+      suKien={[]}
+      song={undefined}
+      vanSong={vanSong}
+      dangChay
+    />,
+  );
+}
+
+test('khu dòng sản xuất → buồng lái', () => {
+  const { container } = ve('dong-san-xuat');
+  expect(container.querySelector('.buonglai')).not.toBeNull();
+});
+
+test('khu KHÁC → không phải buồng lái', () => {
+  // Nửa còn lại của luật, và nó cần một bài riêng: một `default` trả buồng lái cho MỌI khu
+  // vẫn làm bài trên xanh, trong khi hệ quả là mười lăm bề mặt kia biến mất.
+  const { container } = ve('to-san-xuat');
+  expect(container.querySelector('.buonglai')).toBeNull();
+  expect(container.querySelector('.khuto')).not.toBeNull();
+});
+
+test('khu không đọc được rơi về buồng lái, KHÔNG rơi vào màn hình trắng', () => {
+  // `KHU_MAC_DINH` là khu được chọn khi URL không nói gì; buồng lái nằm ở `default` để một
+  // khu mới thêm vào mà quên viết `case` cũng rơi về đây. Ép kiểu vì luật này chỉ có nghĩa
+  // với một giá trị mà kiểu KHÔNG cho phép — đó chính là ca nó tồn tại để đỡ.
+  const { container } = ve('khu-chua-co' as KhuMa);
+  expect(container.querySelector('.buonglai')).not.toBeNull();
+});
+
+test('buồng lái nhận bộ đệm văn sống đi qua tầng định tuyến', () => {
+  // Sợi dây `useStudio.vanSong` → `Trang` → `Khu` → `BuongLai` → `VanSong` đứt ở tầng này
+  // thì khu đắt nhất màn hình im lặng mà không có lỗi nào nổ ra.
+  ve('dong-san-xuat', themChu(BO_DEM_RONG, 'nàng quay đầu lại'));
+  expect(screen.getByText('nàng quay đầu lại')).toBeDefined();
+});
+
+test('`Trang` nối bộ đệm văn sống THẬT của studio xuống buồng lái', () => {
+  // Mắt CUỐI của sợi dây, và là mắt duy nhất không nằm trong `Khu`. Đã đo bằng đột biến:
+  // đổi `vanSong={s.vanSong}` thành một bộ đệm rỗng dựng tại chỗ thì cả bộ kiểm vẫn xanh —
+  // vì không bài nào chạm tới `Trang`. Bài này là chỗ chạm đó.
+  render(<Trang />);
+  expect(screen.getByText('nàng quay đầu lại')).toBeDefined();
+});

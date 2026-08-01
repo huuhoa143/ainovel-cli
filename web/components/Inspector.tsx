@@ -2,94 +2,136 @@
 
 import { useEffect, useState } from 'react';
 
-import { layChuong } from '@/lib/api';
+import { layChuong, layDanY, layNhanVat } from '@/lib/api';
 import { soTu } from '@/lib/dinhdang';
-import { CHU, GIAI_THICH, TRANG_THAI_CHUONG } from '@/lib/nhan';
+import { CHU, GIAI_THICH, TRANG_THAI_CHUONG, nhanHang } from '@/lib/nhan';
 import { mayDangChay } from '@/lib/song';
-import type { ChapterDetail, Contract, Review, Selection, Snapshot } from '@/lib/types';
+import type {
+  ChapterDetail,
+  ChapterRow,
+  Character,
+  Contract,
+  Review,
+  Selection,
+  Snapshot,
+} from '@/lib/types';
+import { useHoSo } from '@/lib/useHoSo';
 
 import { BanDuyet } from './BanDuyet';
+import { MucRong } from './HoSoKhung';
 import { TrangThai } from './TrangThai';
 
 type Tab = 'kheuoc' | 'kiemdinh' | 'banthao';
 
 /**
- * Inspector: chi tiết chương đang chọn, ba tab Khế ước / Kiểm định / Bản thảo.
+ * Cột phải của buồng lái, HAI CHẾ ĐỘ (spec §7.2).
+ *
+ *   chưa chọn chương → NGỮ CẢNH TRUYỆN: dải chương `●▶○` · nhân vật · tiền đề
+ *   đã chọn chương   → CHI TIẾT CHƯƠNG: ba tab Khế ước / Kiểm định / Bản thảo
+ *                      cộng một đường lui về chế độ trên
  *
  * Nội dung KHÔNG bị gate sau animation và tab không dùng transition ẩn/hiện:
  * panel bị treo transition trên tab ẩn sẽ làm mất trắng cả khối khi render
  * headless hoặc khi tab nền bị trình duyệt hoãn. Ở đây tab nào không được chọn
  * thì không render, tab được chọn hiện ngay.
+ *
+ * # Vì sao hai chế độ, không phải một cột thứ tư
+ *
+ * Ngữ cảnh truyện và chi tiết chương trả lời hai câu KHÁC NHAU nhưng không bao giờ cùng lúc:
+ * người vận hành hoặc đang hỏi "cuốn này về cái gì, đang tới đâu", hoặc đang hỏi "chương này
+ * ra sao". Mở thêm một cột cho câu thứ hai là lấy bề rộng của cột giữa — chỗ chữ đang chảy —
+ * để hiện một thứ chỉ đọc lúc đứng lại.
+ *
+ * # Vì sao chế độ là STATE, không phải suy thẳng từ `chuongChon`
+ *
+ * `chuongChon` do URL giữ (`?ch=`), và đường lui không được xóa nó — tải lại trang phải về
+ * đúng chương đang xem. Nên "quay lại danh sách" là một chế độ XEM, không phải một phép bỏ
+ * chọn, và nó phải sống trong component.
+ *
+ * Cái bẫy của lựa chọn đó là ngõ cụt: nếu chế độ chỉ được đặt lại khi `chuongChon` ĐỔI, thì
+ * bấm lại đúng chương đang chọn không đổi prop nào và nút trông bấm được mà không phản ứng.
+ * Vì thế dải `●▶○` ở chế độ ngữ cảnh tự mở chi tiết trước rồi mới báo lên trên — xem `moChuong`.
  */
 export function Inspector({
   snapshot,
   tacPham,
   chuongChon,
+  onChonChuong,
 }: {
   snapshot: Snapshot | undefined;
   tacPham: string | undefined;
   chuongChon: number | undefined;
+  /** Chọn chương từ dải `●▶○` của chế độ ngữ cảnh truyện. */
+  onChonChuong: (n: number) => void;
 }) {
   const [tab, setTab] = useState<Tab>('kheuoc');
+  /**
+   * `true` = người dùng đã bấm đường lui và đang xem ngữ cảnh truyện dù `?ch=` còn nguyên.
+   * Đặt lại mỗi khi `chuongChon` đổi: chọn một chương khác ở cột giữa là một yêu cầu xem
+   * chương đó, không phải một yêu cầu ở lại danh sách.
+   */
+  const [xemNguCanh, datXemNguCanh] = useState(false);
+  useEffect(() => {
+    datXemNguCanh(false);
+  }, [chuongChon]);
+
   const sel = snapshot?.selected;
+  const cheDoChuong = chuongChon !== undefined && !xemNguCanh;
+
+  const moChuong = (n: number) => {
+    // Tắt chế độ ngữ cảnh TRƯỚC khi báo lên trên: `chuongChon` có thể không đổi (bấm đúng
+    // chương đang chọn), và lúc đó effect ở trên không chạy.
+    datXemNguCanh(false);
+    onChonChuong(n);
+  };
 
   return (
-    <aside className="insp" aria-label="Chi tiết chương">
-      {/* Tiêu đề panel và thân panel phải nói CÙNG MỘT điều.
-          Bản trước hiện "Chương / chưa đặt tiêu đề" ở tiêu đề trong khi thân nói
-          "Chưa chọn chương" — và câu ở tiêu đề là câu sai: nó khẳng định có một
-          chương đang mở, chỉ là chương đó chưa được đặt tên. Giờ ca chưa chọn có
-          đúng một câu trạng thái (ở tiêu đề) và đúng một câu hướng dẫn (ở thân). */}
-      <div className="ihead">
-        {chuongChon ? (
-          <>
+    <aside className="insp" aria-label={CHU.cotPhaiVung}>
+      {cheDoChuong ? (
+        <>
+          {/* Tiêu đề panel và thân panel phải nói CÙNG MỘT điều.
+              Bản trước hiện "Chương / chưa đặt tiêu đề" ở tiêu đề trong khi thân nói
+              "Chưa chọn chương" — và câu ở tiêu đề là câu sai: nó khẳng định có một
+              chương đang mở, chỉ là chương đó chưa được đặt tên. Giờ hai chế độ tách hẳn
+              nhau nên ca đó không dựng lại được: tiêu đề chương chỉ tồn tại khi có chương. */}
+          <div className="ihead">
+            <button type="button" className="ilui" onClick={() => datXemNguCanh(true)}>
+              <span aria-hidden="true">← </span>
+              {CHU.veDanhSachChuong}
+            </button>
             <div className="no">{viTri(snapshot, chuongChon)}</div>
             <h2>
               {sel?.title ? sel.title : <span className="draft">{CHU.chuaDatTieuDe}</span>}
             </h2>
             <TrangThaiChuong snapshot={snapshot} chuong={chuongChon} />
-          </>
-        ) : (
-          <h2 className="chuachon">{GIAI_THICH.chuaChonChuongTieuDe}</h2>
-        )}
-      </div>
+          </div>
 
-      {/* Tab bị vô hiệu khi chưa chọn chương: ba tab trông bấm được mà bấm nào
-          cũng ra cùng một câu là một lời hứa hụt nhỏ, lặp ba lần. */}
-      <div className="tabs" role="tablist" aria-label="Mặt của chương">
-        <TabNut
-          tab="kheuoc"
-          hienTai={tab}
-          onChon={setTab}
-          nhan={CHU.tabKheUoc}
-          tat={!chuongChon}
-        />
-        <TabNut
-          tab="kiemdinh"
-          hienTai={tab}
-          onChon={setTab}
-          nhan={CHU.tabKiemDinh}
-          tat={!chuongChon}
-        />
-        <TabNut
-          tab="banthao"
-          hienTai={tab}
-          onChon={setTab}
-          nhan={CHU.tabBanThao}
-          tat={!chuongChon}
-        />
-      </div>
+          {/* Tab chỉ TỒN TẠI khi có chương, không phải tồn tại rồi bị vô hiệu.
+              Bản trước vẽ ba tab `disabled` ở ca chưa chọn chương, với lý do đúng — ba tab
+              trông bấm được mà bấm nào cũng ra cùng một câu là một lời hứa hụt lặp ba lần.
+              Hai chế độ đưa lý do đó tới tận cùng: ở chế độ ngữ cảnh KHÔNG có chương nào để
+              ba tab nói về, nên chúng không có mặt. */}
+          <div className="tabs" role="tablist" aria-label={CHU.cotPhaiVung}>
+            <TabNut tab="kheuoc" hienTai={tab} onChon={setTab} nhan={CHU.tabKheUoc} />
+            <TabNut tab="kiemdinh" hienTai={tab} onChon={setTab} nhan={CHU.tabKiemDinh} />
+            <TabNut tab="banthao" hienTai={tab} onChon={setTab} nhan={CHU.tabBanThao} />
+          </div>
 
-      {!chuongChon ? (
-        <div className="ibody">
-          <p className="trong">{GIAI_THICH.chuaChonChuong}</p>
-        </div>
-      ) : tab === 'kheuoc' ? (
-        <TabKheUoc contract={sel?.contract} sel={sel} />
-      ) : tab === 'kiemdinh' ? (
-        <TabKiemDinh review={sel?.review} />
+          {tab === 'kheuoc' ? (
+            <TabKheUoc contract={sel?.contract} sel={sel} />
+          ) : tab === 'kiemdinh' ? (
+            <TabKiemDinh review={sel?.review} />
+          ) : (
+            <TabBanThao tacPham={tacPham} chuong={chuongChon} excerpt={sel?.excerpt} />
+          )}
+        </>
       ) : (
-        <TabBanThao tacPham={tacPham} chuong={chuongChon} excerpt={sel?.excerpt} />
+        <NguCanhTruyen
+          tacPham={tacPham}
+          hang={snapshot?.chapters ?? []}
+          chuongChon={chuongChon}
+          onChon={moChuong}
+        />
       )}
     </aside>
   );
@@ -100,25 +142,177 @@ function TabNut({
   hienTai,
   onChon,
   nhan,
-  tat,
 }: {
   tab: Tab;
   hienTai: Tab;
   onChon: (t: Tab) => void;
   nhan: string;
-  tat?: boolean;
 }) {
   return (
     <button
       type="button"
       role="tab"
-      aria-selected={!tat && tab === hienTai}
-      disabled={tat}
-      title={tat ? GIAI_THICH.tabChuaChonChuong : undefined}
+      aria-selected={tab === hienTai}
       onClick={() => onChon(tab)}
     >
       {nhan}
     </button>
+  );
+}
+
+/* ── chế độ ngữ cảnh truyện ───────────────────────────────────────────── */
+
+/**
+ * Chế độ mặc định của cột phải: cuốn này về cái gì, và đang tới đâu.
+ *
+ * Ba khối theo đúng thứ tự spec §7.2 — và thứ tự đó là thứ tự câu hỏi: "đang tới đâu" (dải
+ * chương) đứng trước "ai" (nhân vật) đứng trước "về cái gì" (tiền đề), vì hai câu đầu đổi
+ * theo từng lượt còn câu cuối đứng yên cả cuốn.
+ *
+ * Tiền đề và nhân vật đọc từ hai endpoint hồ sơ, và `useHoSo` chỉ nạp lại khi đổi tác phẩm —
+ * chúng KHÔNG đổi theo từng sự kiện của dây chuyền, nên gộp vào nhịp làm mới 1,5s là nghiền
+ * store để hiện lại đúng dữ liệu cũ.
+ */
+function NguCanhTruyen({
+  tacPham,
+  hang,
+  chuongChon,
+  onChon,
+}: {
+  tacPham: string | undefined;
+  hang: ChapterRow[];
+  chuongChon: number | undefined;
+  onChon: (n: number) => void;
+}) {
+  const danY = useHoSo(tacPham, layDanY);
+  const nhanVat = useHoSo(tacPham, layNhanVat);
+
+  return (
+    <>
+      <div className="ihead">
+        <h2 className="chuachon">{CHU.nguCanhTruyen}</h2>
+      </div>
+
+      <div className="ibody">
+        <h3>{CHU.chuong}</h3>
+        <DaiChuong hang={hang} chuongChon={chuongChon} onChon={onChon} />
+
+        <h3>{CHU.nhanVat}</h3>
+        {/* `loi` KHÔNG bị hạ xuống thành "chưa có dữ liệu": một lời gọi hỏng và một tác
+            phẩm chưa dựng nền là hai chuyện, và chỉ một trong hai có cách sửa. */}
+        {nhanVat.loi ? (
+          <p className="loiDoc">{nhanVat.loi}</p>
+        ) : nhanVat.du?.characters && nhanVat.du.characters.length > 0 ? (
+          <ul className="nvtom">
+            {nhanVat.du.characters.slice(0, 8).map((c) => (
+              <NguoiTom key={c.name} c={c} />
+            ))}
+          </ul>
+        ) : nhanVat.dangTai ? (
+          <p className="trong nvtom">{CHU.dangTai}</p>
+        ) : (
+          <div className="nvtom">
+            <MucRong mang={nhanVat.du?.characters ?? null} muc="nhân vật nào" />
+          </div>
+        )}
+
+        <h3>{CHU.tienDe}</h3>
+        {danY.loi ? (
+          <p className="loiDoc">{danY.loi}</p>
+        ) : danY.dangTai ? (
+          <p className="trong">{CHU.dangTai}</p>
+        ) : (
+          <TienDeTom raw={danY.du?.premise ?? ''} />
+        )}
+      </div>
+    </>
+  );
+}
+
+/**
+ * Dải `●▶○` — một vạch một chương, bấm được.
+ *
+ * Ký hiệu VÀ chữ, không chỉ màu: đây là luật 5 của `PRODUCT.md`, và ở một dải dày đặc như
+ * thế này nó là luật cứu được nhiều nhất — mắt không phân biệt nổi hai chấm 14px cạnh nhau
+ * chỉ khác sắc độ, còn ảnh chụp đen trắng thì không phân biệt nổi gì cả.
+ *
+ * Dải này TRÙNG dữ liệu với lane chương ở cột giữa, và đó là chủ ý chứ không phải sót: lane
+ * kia vẽ hình dạng cả cuốn theo tỉ lệ, dải này là một danh sách CHỌN ĐƯỢC ngay cạnh chỗ chi
+ * tiết sẽ hiện ra. Cùng sự thật, hai việc.
+ */
+function DaiChuong({
+  hang,
+  chuongChon,
+  onChon,
+}: {
+  hang: ChapterRow[];
+  chuongChon: number | undefined;
+  onChon: (n: number) => void;
+}) {
+  if (hang.length === 0) return <p className="trong">{GIAI_THICH.chuaCoChuong}</p>;
+  return (
+    <div className="dsvach">
+      {hang.map((r) => {
+        const tt = TRANG_THAI_CHUONG[r.stage];
+        return (
+          <button
+            key={r.chapter}
+            type="button"
+            className={`vach1 ${tt.mau}${r.chapter === chuongChon ? ' chon' : ''}`}
+            title={CHU.chuongVaCongDoan(r.chapter, tt.nhan)}
+            aria-current={r.chapter === chuongChon ? 'true' : undefined}
+            onClick={() => onChon(r.chapter)}
+          >
+            <span className="ky" aria-hidden="true">
+              {tt.ky}
+            </span>
+            <span className="so">{r.chapter}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Một dòng nhân vật: tên · hạng · vai. Chi tiết đầy đủ ở bề mặt Nhân vật. */
+function NguoiTom({ c }: { c: Character }) {
+  return (
+    <li>
+      <span className="nvten">{c.name}</span>
+      <span className={`hang h-${(c.tier ?? 'important').toLowerCase()}`}>
+        {nhanHang(c.tier)}
+      </span>
+      {c.role ? <span className="nvvai">{c.role}</span> : null}
+    </li>
+  );
+}
+
+/**
+ * Tiền đề rút gọn.
+ *
+ * Cùng phép tách đoạn với bề mặt Dàn ý, và cùng lý do: `premise.md` là markdown thô, nên
+ * xuống dòng ĐƠN là định dạng của TỆP chứ không phải của văn — giữ nguyên nó ở cột 292px
+ * cho ra một đoạn răng cưa. Chỉ dòng trống mới là ranh giới đoạn.
+ *
+ * Dùng `--ui` chứ không serif: đây là bản ghi của engine VỀ tác phẩm, viết cho người vận
+ * hành — phép thử của `DESIGN.md` ("chữ này có nằm trong bộ truyện xuất bản không?") trả lời
+ * là không.
+ */
+function TienDeTom({ raw }: { raw: string }) {
+  const doan = raw
+    .split(/\n{2,}/)
+    .map((d) => d.replace(/\s*\n\s*/g, ' ').trim())
+    .filter(Boolean);
+
+  if (doan.length === 0) return <p className="trong">{GIAI_THICH.chuaCoTienDe}</p>;
+  return (
+    <>
+      {doan.map((d, i) => (
+        <p className="tiendetom" key={i}>
+          {d}
+        </p>
+      ))}
+    </>
   );
 }
 

@@ -1,0 +1,52 @@
+import type { Snapshot } from '@/lib/types';
+
+/**
+ * Snapshot tối thiểu cho bài kiểm component.
+ *
+ * # Vì sao dựng đủ trường thật thay vì `{} as Snapshot['capabilities']`
+ *
+ * Ép kiểu một object rỗng thành một kiểu có trường bắt buộc là đúng lớp lỗi mà cả `types.ts`
+ * lẫn spec §6.1 ghi lại: một kiểu NÓI DỐI về dữ liệu làm `tsc` xanh trong khi mã đọc phải
+ * `undefined`. Ở fixture thì hậu quả nhẹ hơn — nhưng nó cũng làm mất đúng thứ fixture này
+ * đáng lẽ cho không: ngày hợp đồng thêm một trường bắt buộc, bản dựng đủ sẽ ĐỎ ở đây và
+ * người sửa biết ngay có một ca mới phải nghĩ tới, còn bản ép kiểu thì im lặng.
+ *
+ * Đuôi `.test-helper.ts` chứ không phải `.test.ts`: `vitest.config.mts` gom bài kiểm giao
+ * diện theo `{components,app}/**\/*.test.tsx`, nên tệp này không bị chạy như một bộ kiểm rỗng.
+ */
+export function snap(p: Partial<Snapshot>): Snapshot {
+  return {
+    book: {
+      id: 'b',
+      name: 'B',
+      phase: 'writing',
+      completed_chapters: 1,
+      total_chapters: 3,
+      total_words: 100,
+      activity: 'running',
+      cost_usd: 0,
+      cost_per_chapter: 0,
+      chapters_per_hour: 0,
+      engine_open: true,
+    },
+    capabilities: {
+      per_chapter_duration: false,
+      per_chapter_cost: false,
+      layered_outline: false,
+      steer: true,
+    },
+    timeline: { volumes: null, arcs: null, chapters: [] },
+    // Năm trường sống mặc định là `null` — tức ca engine ĐÓNG. Đó là mặc định đúng cho một
+    // fixture: bài kiểm nào cần ca "đo được" phải nói ra bằng cách đặt trường đó, nên không
+    // bài nào lỡ đo ca dễ mà tưởng mình đo ca khó.
+    agents: null,
+    idle_agents: null,
+    advance: null,
+    context: null,
+    in_progress_chapter: null,
+    chapters: [],
+    transport: { state: 'running', cost_usd: 0 },
+    queue_seq: 0,
+    ...p,
+  };
+}
