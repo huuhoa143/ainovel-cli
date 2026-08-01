@@ -40,7 +40,18 @@ type Book struct {
 	Total     int    `json:"total_chapters"`
 	Words     int    `json:"total_words"`
 	Activity  string `json:"activity"` // running | idle | complete
-	UpdatedAt string `json:"updated_at,omitempty"`
+	UpdatedAt string `json:"updated_at"`
+
+	// Năm trường cho bề mặt Xưởng. Lấy từ cùng nguồn mà `/studio` dùng (transport của store)
+	// để hai bề mặt không nói hai số khác nhau về cùng một cuốn. Không omitempty: một xưởng
+	// mười cuốn cần liệt kê đủ mà không phải gọi /studio riêng cho từng cuốn — xem
+	// TestWorkshopCoDuSoLieuChoManXuong.
+	CostUSD         float64 `json:"cost_usd"`
+	CostPerChapter  float64 `json:"cost_per_chapter"`
+	ChaptersPerHour float64 `json:"chapters_per_hour"`
+	// EngineOpen do handleWorkshop đặt (cần s.may, một trường server — bookFrom/scanWorkshop
+	// chỉ biết store), cùng lý lẽ với Capabilities.Steer ở handleStudio.
+	EngineOpen bool `json:"engine_open"`
 }
 
 // Workshop là toàn cảnh xưởng: mọi tác phẩm tìm thấy dưới thư mục gốc.

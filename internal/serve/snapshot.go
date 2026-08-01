@@ -41,7 +41,7 @@ func buildSnapshot(st *store.Store, id string, selected int) (*Snapshot, error) 
 	settingsDoc, _ := buildSettings(st)
 
 	snap := &Snapshot{
-		Book:     bookFrom(id, progress, cps),
+		Book:     bookFrom(st, id, progress, cps),
 		Timeline: timeline,
 		Chapters: buildChapterRows(st, progress, cycles),
 		Capabilities: Capabilities{
@@ -74,7 +74,7 @@ func buildSnapshot(st *store.Store, id string, selected int) (*Snapshot, error) 
 	return snap, nil
 }
 
-func bookFrom(id string, p *domain.Progress, cps []domain.Checkpoint) Book {
+func bookFrom(st *store.Store, id string, p *domain.Progress, cps []domain.Checkpoint) Book {
 	b := Book{
 		ID:       id,
 		Name:     p.NovelName,
@@ -87,6 +87,17 @@ func bookFrom(id string, p *domain.Progress, cps []domain.Checkpoint) Book {
 	}
 	if _, last, ok := runSpan(cps); ok {
 		b.UpdatedAt = last.UTC().Format(time.RFC3339)
+	}
+	// Dùng CHÍNH builder mà /studio dùng cho Transport, không suy lại riêng — xem ghi chú ở
+	// Book. CostPerChapter/ChaptersPerHour là con trỏ bên Transport (nil = chưa đo được);
+	// Book muốn khóa luôn có mặt nên ngã về 0 khi chưa đo được, xem ghi chú ở Book.
+	tr := buildTransport(st, p, cps)
+	b.CostUSD = tr.CostUSD
+	if tr.CostPerChapter != nil {
+		b.CostPerChapter = *tr.CostPerChapter
+	}
+	if tr.ChaptersPerHour != nil {
+		b.ChaptersPerHour = *tr.ChaptersPerHour
 	}
 	return b
 }

@@ -48,7 +48,7 @@ func scanWorkshop(root, only string) (*Workshop, error) {
 		if err != nil || p == nil {
 			continue
 		}
-		ws.Books = append(ws.Books, bookFrom(id, p, st.Checkpoints.All()))
+		ws.Books = append(ws.Books, bookFrom(st, id, p, st.Checkpoints.All()))
 	}
 
 	// Đang chạy lên trước, rồi tới cập nhật gần nhất: thứ tự này khớp việc người

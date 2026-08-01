@@ -274,6 +274,17 @@ func (s *server) handleWorkshop(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, err)
 		return
 	}
+	// EngineOpen cần s.may — một trường của server, không phải của store — nên nó được đặt
+	// ở đây chứ không trong scanWorkshop/bookFrom, cùng lý lẽ với Capabilities.Steer ở
+	// handleStudio. `s.may == nil` (bản chỉ-đọc) thì mọi cuốn đều engine_open=false, đúng
+	// giá trị zero của bool nên không cần gán tường minh cho ca đó.
+	if s.may != nil {
+		for i := range ws.Books {
+			if _, err := s.may.dangMo(ws.Books[i].ID); err == nil {
+				ws.Books[i].EngineOpen = true
+			}
+		}
+	}
 	writeJSON(w, ws)
 }
 

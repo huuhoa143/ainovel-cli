@@ -162,3 +162,37 @@ func TestAnhXaTruongSongDiXuyenTuSnapshot(t *testing.T) {
 		t.Errorf("context = %+v, muốn đúng năm trường của UISnapshot", ra.Context)
 	}
 }
+
+// TestWorkshopCoDuSoLieuChoManXuong canh một lỗi HIỆU NĂNG thành lỗi đúng đắn.
+//
+// Bề mặt Xưởng liệt kê mọi tác phẩm kèm chi phí và nhịp. Nếu `/workshop` không mang các số
+// đó thì giao diện phải gọi `/studio` một lượt cho MỖI cuốn — với xưởng mười cuốn là mười lượt
+// đọc store cho một lần mở trang, và mười thời điểm khác nhau trong cùng một bảng.
+func TestWorkshopCoDuSoLieuChoManXuong(t *testing.T) {
+	goc := t.TempDir()
+	st := newBook(t, goc, "sach", nil)
+	ghiTho(t, st, "chapters/01.md", "# Chương một\n\nMột dòng.\n")
+
+	srv := &server{root: goc}
+	rec := httptest.NewRecorder()
+	srv.routes().ServeHTTP(rec, httptest.NewRequest("GET", "/api/workshop", nil))
+	if rec.Code != 200 {
+		t.Fatalf("mã %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var ra struct {
+		Books []map[string]json.RawMessage `json:"books"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &ra); err != nil {
+		t.Fatalf("giải mã: %v", err)
+	}
+	if len(ra.Books) != 1 {
+		t.Fatalf("có %d cuốn, muốn 1", len(ra.Books))
+	}
+	for _, khoa := range []string{"cost_usd", "cost_per_chapter", "chapters_per_hour",
+		"updated_at", "engine_open"} {
+		if _, co := ra.Books[0][khoa]; !co {
+			t.Errorf("thiếu khóa %q — bề mặt Xưởng sẽ phải gọi /studio cho từng cuốn", khoa)
+		}
+	}
+}
