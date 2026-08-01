@@ -1,4 +1,35 @@
-import type { Snapshot } from '@/lib/types';
+import type { Book, Snapshot } from '@/lib/types';
+
+/**
+ * Một cuốn trong xưởng, mặc định là cuốn CHƯA CHẠY LẦN NÀO.
+ *
+ * Mặc định đó có chủ ý, cùng lý do như năm trường sống `null` của `snap()` ngay dưới: ca
+ * "chưa đo được" (`chapters_per_hour === 0`, `cost_per_chapter === 0`) là ca mà bề mặt Xưởng
+ * tồn tại để phân biệt với ca "đo được, bằng không". Bài kiểm nào cần một cuốn đã chạy phải
+ * NÓI RA bằng cách đặt trường đó, nên không bài nào lỡ đo ca dễ mà tưởng mình đo ca khó.
+ *
+ * Đặt ở đây chứ không viết lại trong từng tệp kiểm: `lib/xuong.test.ts` và
+ * `components/Xuong.test.tsx` cùng dựng `Book`, và hai bản sao của một fixture thì lệch —
+ * ngày hợp đồng `/workshop` thêm một trường bắt buộc, một bản được sửa còn bản kia im lặng
+ * ở lại với một kiểu đã ép. Tệp này chạy được ở CẢ HAI project của vitest vì nó chỉ nhập
+ * kiểu, không chạm `document`.
+ */
+export function sach(p: Partial<Book> = {}): Book {
+  return {
+    id: 'b',
+    name: 'B',
+    phase: 'writing',
+    completed_chapters: 0,
+    total_chapters: 0,
+    total_words: 0,
+    activity: 'idle',
+    cost_usd: 0,
+    cost_per_chapter: 0,
+    chapters_per_hour: 0,
+    engine_open: false,
+    ...p,
+  };
+}
 
 /**
  * Snapshot tối thiểu cho bài kiểm component.
@@ -16,19 +47,13 @@ import type { Snapshot } from '@/lib/types';
  */
 export function snap(p: Partial<Snapshot>): Snapshot {
   return {
-    book: {
-      id: 'b',
-      name: 'B',
-      phase: 'writing',
+    book: sach({
       completed_chapters: 1,
       total_chapters: 3,
       total_words: 100,
       activity: 'running',
-      cost_usd: 0,
-      cost_per_chapter: 0,
-      chapters_per_hour: 0,
       engine_open: true,
-    },
+    }),
     capabilities: {
       per_chapter_duration: false,
       per_chapter_cost: false,
