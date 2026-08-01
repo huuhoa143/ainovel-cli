@@ -756,7 +756,24 @@ export const CHU = {
   colThoiLuong: 'Thời lượng',
   chuaDatTieuDe: 'chưa đặt tiêu đề',
 
-  // inspector
+  /* ── inspector ─────────────────────────────────────────────────────────────
+   *
+   * `cotPhaiVung` là tên VÙNG, và nó đứng yên qua CẢ HAI chế độ của cột phải —
+   * cùng luật đã ghi ở `vttVung`, `vanSongVung`, `daiTrangThaiVung`.
+   * Trước khi cột này có hai chế độ, tên vùng viết thẳng trong component là
+   * "Chi tiết chương". Câu đó thành SAI ở chế độ ngữ cảnh truyện: trình đọc màn
+   * hình điều hướng tới một vùng tên "Chi tiết chương" rồi gặp tiền đề và danh
+   * sách nhân vật. Tên vùng phải nói cột này LÀ GÌ, không nói nó đang hiện gì.
+   */
+  cotPhaiVung: 'Ngữ cảnh và chi tiết',
+  nguCanhTruyen: 'Ngữ cảnh truyện',
+  /* Chữ thường: nút đường lui nhỏ trong đầu panel, không phải nhãn một vùng —
+     cùng lý do đã ghi ở `veCuoi`. Mũi tên `←` là trang trí và nằm ngoài chuỗi
+     này: chữ đã nói đủ, nên trình đọc màn hình không cần đọc "mũi tên trái". */
+  veDanhSachChuong: 'danh sách chương',
+  /* Nhãn cho một vạch chương trong dải `●▶○`: số hiệu VÀ công đoạn, vì một dải
+     chỉ có ký hiệu là một dải chỉ đọc được bằng mắt đã quen. */
+  chuongVaCongDoan: (n: number, congDoan: string) => `Chương ${n} · ${congDoan}`,
   tabKheUoc: 'Khế ước',
   tabKiemDinh: 'Kiểm định',
   tabBanThao: 'Bản thảo',
@@ -1172,18 +1189,22 @@ export const GIAI_THICH = {
     'Studio đọc trực tiếp thư mục gốc. Nếu thư mục gốc sai, hoặc tác phẩm này chưa có meta/progress.json, thì không có gì để đọc.',
 
   /**
-   * Inspector khi chưa chọn chương.
+  /*
+   * BA NHÃN "chưa chọn chương" của inspector đã ĐƯỢC BỎ ở cụm dựng buồng lái —
+   * `chuaChonChuongTieuDe`, `chuaChonChuong`, `tabChuaChonChuong`.
    *
-   * Trước đây tiêu đề panel hiện "Chương / *chưa đặt tiêu đề*" trong khi thân
-   * panel nói "Chưa chọn chương" — hai câu nói hai chuyện khác nhau, và câu ở
-   * tiêu đề là câu sai: nó khẳng định có một chương đang mở mà chương đó chưa
-   * được đặt tiêu đề. Giờ tiêu đề và thân nói cùng một điều, và câu duy nhất
-   * còn lại là câu HƯỚNG DẪN, không phải câu lặp lại trạng thái.
+   * Ghi lại vì bài học sinh ra chúng vẫn còn giá trị: bản trước nữa hiện
+   * "Chương / *chưa đặt tiêu đề*" ở tiêu đề panel trong khi thân panel nói "Chưa
+   * chọn chương" — hai câu nói hai chuyện, và câu ở tiêu đề là câu SAI (nó khẳng
+   * định có một chương đang mở, chỉ là chưa được đặt tên). Ba nhãn này là câu trả
+   * lời cho ca đó: đúng một câu trạng thái và đúng một câu hướng dẫn.
+   *
+   * Chúng hết việc vì cột phải giờ có HAI CHẾ ĐỘ (spec §7.2): ca "chưa chọn
+   * chương" không còn là một panel thiếu dữ liệu để xin lỗi, nó là chế độ ngữ
+   * cảnh truyện với nội dung riêng. Ràng buộc gốc — tiêu đề và thân phải nói cùng
+   * một điều — giờ được giữ bằng cấu trúc chứ bằng chữ, và nó ghi ở đầu
+   * `Inspector.tsx`.
    */
-  chuaChonChuongTieuDe: 'Chưa chọn chương',
-  chuaChonChuong:
-    'Bấm một hàng trong bảng chương để xem khế ước, bản duyệt và bản thảo của chương đó.',
-  tabChuaChonChuong: 'chưa chọn chương nên chưa có gì để mở',
 
   chuongChuaCoDuLieu: 'Chương này chưa có dữ liệu trong store.',
   chuaCoKheUoc:

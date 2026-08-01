@@ -973,8 +973,18 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* 72%, không phải 66%. ĐO ĐƯỢC bằng tỉ số tương phản thật trên trình duyệt: ở
+   66% thì `--tren-mau` trên nền này chỉ đạt **4,0:1**, dưới sàn AA 4,5:1 của
+   `PRODUCT.md` — và nó hỏng ở CHÍN phần tử cùng lúc (`.ky`, `.idx`, `.txt` của
+   mỗi khối đã xong). 72% cho 4,6:1.
+   Con số 72% không phải bịa: `.nguoi .hang.h-core` đã dùng đúng nó cho đúng cặp
+   màu này (`--tren-mau` trên teal-trộn-panel) và đạt sàn. Hai chỗ cùng cặp màu
+   thì phải cùng tỉ lệ trộn, nếu không một trong hai sẽ lại tụt xuống dưới sàn
+   mà không ai thấy.
+   Lỗi này CÓ TỪ TRƯỚC cụm buồng lái — cả hai token lẫn luật này đều không đổi;
+   nó chỉ chưa từng được đo. */
 .blk.done {
-  background: color-mix(in oklch, var(--teal) 66%, var(--panel));
+  background: color-mix(in oklch, var(--teal) 72%, var(--panel));
 }
 .blk.running {
   background: var(--gold);
@@ -3374,20 +3384,147 @@ div:has(> .qcrow) {
   overflow-wrap: anywhere;
 }
 
-/* Tiêu đề inspector khi chưa chọn chương: nói đúng trạng thái, không giả vờ có
-   một chương đang mở mà chưa được đặt tên. */
+/* Tiêu đề của cột phải ở CHẾ ĐỘ NGỮ CẢNH TRUYỆN.
+   Trước khi cột này có hai chế độ, câu ở đây là "Chưa chọn chương" — nói đúng
+   trạng thái, không giả vờ có một chương đang mở mà chưa được đặt tên. Giờ ca đó
+   không còn là một panel thiếu dữ liệu để xin lỗi mà là một chế độ có nội dung
+   riêng, nên câu đổi thành tên chế độ.
+   Vẫn nhẹ hơn tiêu đề chương (400 thay vì 500, `--ink-3` thay vì `--ink`): tiêu
+   đề chương là TÊN của thứ đang xem, câu này là tên của một chế độ. Hai câu cùng
+   sức nặng thì đổi chế độ trông như đổi trang. */
 .insp .ihead h2.chuachon {
   color: var(--ink-3);
   font-weight: 400;
   margin: 0;
 }
 
-.tabs button:disabled {
+/* ── cột phải: đường lui về danh sách chương ── */
+/* Đứng TRÊN số hiệu chương, không dưới thân panel: đường lui phải nằm ở chỗ mắt
+   quay về khi đọc đầu panel, còn một nút ở đáy một panel cuộn được thì có thể
+   không bao giờ nằm trong tầm nhìn. */
+.insp .ihead .ilui {
+  display: block;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0 0 6px;
   color: var(--ink-3);
-  cursor: not-allowed;
+  font: 400 11.5px var(--ui);
+  cursor: pointer;
+  transition: color 0.14s var(--ease);
 }
-.tabs button:disabled:hover {
+.insp .ihead .ilui:hover {
+  color: var(--ink);
+}
+
+/* ── cột phải: dải chương ●▶○ ── */
+/* Ký hiệu VÀ số, không chỉ màu — luật 5 của `PRODUCT.md`. Bốn công đoạn mang bốn
+   ký hiệu khác nhau (`● ▶ ■ ○`), nên dải này đọc được cả trên ảnh đen trắng. */
+.dsvach {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 4px;
+}
+.dsvach .vach1 {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 5px;
+  background: var(--panel-2);
+  border: 1px solid transparent;
+  border-radius: 3px;
   color: var(--ink-3);
+  font: 400 10.5px/1 var(--mono);
+  cursor: pointer;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.dsvach .vach1 .ky {
+  font-family: var(--ui);
+  font-size: 8px;
+}
+.dsvach .vach1:hover {
+  background: var(--raised);
+  color: var(--ink);
+}
+.dsvach .vach1.teal {
+  color: var(--teal);
+}
+.dsvach .vach1.gold {
+  color: var(--gold);
+}
+.dsvach .vach1.amber {
+  color: var(--amber);
+}
+/* Chương đang chọn: viền vàng + nền nổi, KHÔNG phải dải cạnh màu (danh sách CẤM
+   của `DESIGN.md`). Người dùng vừa từ đây bấm vào một chương rồi quay lại, nên
+   dấu này trả lời "mình vừa xem cái nào". */
+.dsvach .vach1.chon {
+  background: var(--raised);
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
+/* ── cột phải: tóm tắt nhân vật ── */
+.nvtom {
+  list-style: none;
+  margin: 0 0 4px;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+}
+.nvtom li {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+.nvtom .nvten {
+  font: 500 12.5px var(--ui);
+  color: var(--ink);
+}
+/* Cùng hình với hạng ở bề mặt Nhân vật, và cùng lý do đã ghi ở đó: hạng là thang
+   BỐN bậc, mà bốn sắc độ của một màu thì không đọc được trên ảnh đen trắng — nên
+   nó phân biệt bằng ĐỘ ĐẶC của viền, không chỉ bằng màu. */
+.nvtom .hang {
+  font: 400 10px/1 var(--ui);
+  border-radius: 3px;
+  padding: 2px 5px;
+  flex: none;
+}
+.nvtom .hang.h-core {
+  color: var(--tren-mau);
+  background: color-mix(in oklch, var(--teal) 72%, var(--panel));
+}
+.nvtom .hang.h-important {
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+}
+.nvtom .hang.h-secondary,
+.nvtom .hang.h-decorative {
+  color: var(--ink-3);
+  border: 1px dashed var(--line);
+}
+.nvtom .nvvai {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  min-width: 0;
+}
+
+/* ── cột phải: tiền đề rút gọn ── */
+/* `--ui` chứ không `--serif`: xem phép thử ở `.nguoi .tavan`. Tiền đề là bản ghi
+   của engine VỀ tác phẩm, không phải văn của tác phẩm.
+   1.78 vì đây vẫn là khổ đọc dài (DESIGN.md:84), và ở cột 292px một đoạn tiền đề
+   xuống rất nhiều dòng — đúng chỗ dấu tiếng Việt hai tầng chạm nhau. */
+.tiendetom {
+  margin: 0 0 8px;
+  font: 400 12px/1.78 var(--ui);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.tiendetom:last-child {
+  margin-bottom: 0;
 }
 
 /* ══ @media (max-width: 860px) — rail dạng dải ngang ══════════════════ */

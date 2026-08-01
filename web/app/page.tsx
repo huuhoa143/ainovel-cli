@@ -145,6 +145,7 @@ export default function Trang() {
               snapshot={s.snapshot}
               tacPham={s.tacPham}
               chuongChon={s.chuongChon}
+              onChonChuong={s.chonChuong}
             />
           ) : null}
         </>
