@@ -27,7 +27,19 @@ import type { CauHinhDoc, NhaCungCap } from '@/lib/types';
  * có khóa để điền lại, và để trống lúc lưu phải nghĩa là "giữ khóa cũ" — đó là lý do
  * `api_key` chỉ được gửi khi người dùng thật sự gõ gì vào.
  */
-export function CauHinhXuong({ lanDau = false }: { lanDau?: boolean }) {
+export function CauHinhXuong({
+  lanDau = false,
+  onDoiCauHinh,
+}: {
+  lanDau?: boolean;
+  /**
+   * Gọi sau MỖI lần lưu thành công. Vắng = không ai ở trên quan tâm.
+   *
+   * Tách khỏi `tai`: `tai` chạy cả lúc mount, còn cái này chỉ nói "cấu hình vừa ĐỔI". Gộp
+   * hai việc sẽ bắt tầng trên hỏi lại `/api/config` một lần thừa ở mỗi lần mở bề mặt.
+   */
+  onDoiCauHinh?: () => void;
+}) {
   const [du, datDu] = useState<CauHinhDoc | null>(null);
   const [loi, datLoi] = useState<string | null>(null);
   const [dangTai, datDangTai] = useState(true);
@@ -42,6 +54,12 @@ export function CauHinhXuong({ lanDau = false }: { lanDau?: boolean }) {
       .catch((e: unknown) => datLoi(e instanceof Error ? e.message : String(e)))
       .finally(() => datDangTai(false));
   };
+  /** Sau khi lưu: nạp lại chính mình VÀ báo lên trên. Mọi đường lưu đều đi qua đây. */
+  const daLuu = () => {
+    tai();
+    onDoiCauHinh?.();
+  };
+
   useEffect(tai, []);
 
   return (
@@ -60,12 +78,12 @@ export function CauHinhXuong({ lanDau = false }: { lanDau?: boolean }) {
 
       {du ? (
         <>
-          <NhaCungCapList du={du} lanDau={lanDau} onXong={tai} />
+          <NhaCungCapList du={du} lanDau={lanDau} onXong={daLuu} />
           {/* Chưa có nhà cung cấp nào thì không có mặc định nào để đặt: ô chọn sẽ rỗng và
               nút Lưu vô hiệu. Hiện một khối như thế ở đúng bước đầu tiên là thêm nhiễu vào
               lúc người dùng cần ít lựa chọn nhất. Biểu mẫu nhà cung cấp tự đặt mặc định
               khi đây là cái đầu tiên (xem `!du.provider` trong FormNhaCungCap). */}
-          {du.providers.length > 0 ? <MacDinh du={du} onXong={tai} /> : null}
+          {du.providers.length > 0 ? <MacDinh du={du} onXong={daLuu} /> : null}
         </>
       ) : null}
 

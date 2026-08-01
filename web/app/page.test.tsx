@@ -96,6 +96,7 @@ function ve(
       onMoTacPham={() => {}}
       onXongTaoSach={() => {}}
       onChotCungDung={() => {}}
+      onDoiCauHinh={() => {}}
       onDoi={() => {}}
       nhapSan=""
       suKien={[]}

@@ -299,6 +299,22 @@ export function useStudio(): Studio {
     }
   }, []);
 
+  /**
+   * Nạp lại HỒ SƠ truyện (số nhân vật, luật thế giới, phục bút) cho cuốn đang xem.
+   *
+   * Rail hiện mấy con số này, và engine THÊM vào chúng trong lúc viết — nạp một lần lúc đổi
+   * cuốn thì chúng đứng im cả phiên. Cùng lớp lỗi với danh sách xưởng, chỉ khác chỗ hiện ra.
+   *
+   * Nuốt lỗi có chủ ý: hồ sơ là số phụ, một lần đọc hỏng không được xoá con số đang đúng.
+   */
+  const napLaiHoSo = useCallback(async (id: string) => {
+    try {
+      setHoSo(await layHoSo(id));
+    } catch {
+      /* giữ số cũ */
+    }
+  }, []);
+
   const napSnapshot = useCallback(async (id: string, chuong: number | undefined) => {
     const snap = await laySnapshot(id, chuong);
     setSnapshot(snap);
@@ -383,6 +399,7 @@ export function useStudio(): Studio {
         // sách nạp một lần sẽ đứng im suốt phiên và ô "N engine đang mở" nói 0 trong khi có
         // một engine đang viết. Cùng nhịp vì cùng một lý do phải gộp: nghiền store.
         void napLaiXuong();
+        if (id) void napLaiHoSo(id);
       }, NHIP_LAM_MOI_MS);
     };
 
@@ -432,7 +449,7 @@ export function useStudio(): Studio {
       nguon.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tacPham, lanTai, !!snapshot, napSnapshot, napLaiXuong]);
+  }, [tacPham, lanTai, !!snapshot, napSnapshot, napLaiXuong, napLaiHoSo]);
 
   /* ── hành động ─────────────────────────────────────────────────────── */
 
