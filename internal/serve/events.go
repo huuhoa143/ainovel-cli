@@ -61,6 +61,30 @@ func (s *server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	// kết nối lại không phải đợi hết một nhịp poll mới thấy phần đã bỏ lỡ.
 	lastSeq = pump(w, flusher, st, lastSeq)
 
+	// Bộ đệm văn sống của phiên engine, nếu cuốn này đang mở engine.
+	//
+	// `s.may == nil` là chế độ chỉ đọc (không có bộ giám sát) và `dangMo` lỗi là engine chưa
+	// mở. Cả hai KHÔNG phải lỗi của yêu cầu này: dòng sự kiện vẫn chạy, chỉ là không có văn
+	// sống nào để phát.
+	var van *dongVan
+	if s.may != nil {
+		if p, err := s.may.dangMo(r.PathValue("book")); err == nil {
+			van = p.van
+		}
+	}
+	var mocVan int64
+	if van != nil {
+		// Người mới nối phải thấy CẢ đoạn đang chảy, không phải nửa cuối một câu. Gửi lệnh
+		// xóa trước để giao diện không dán đoạn này vào phần cũ của nó.
+		vong, moc := van.vongHienTai()
+		mocVan = moc
+		if vong != "" {
+			writeSSEKhongID(w, "stream_clear", struct{}{})
+			writeSSEKhongID(w, "stream_delta", map[string]string{"text": vong})
+			flusher.Flush()
+		}
+	}
+
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 	beat := time.NewTicker(heartbeatInterval)
@@ -68,9 +92,22 @@ func (s *server) handleEvents(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	for {
+		// Đăng ký TRƯỚC khi đọc: mẩu đến giữa hai bước sẽ không đánh thức ai nếu làm ngược,
+		// và kết nối treo tới nhịp sau — chữ đứng im dù engine đang phát.
+		var choVan <-chan struct{}
+		if van != nil {
+			choVan = van.doi()
+			if moi := bomVan(w, flusher, van, mocVan); moi != mocVan {
+				mocVan = moi
+				continue // còn mẩu thì vòng lại ngay, đừng chờ
+			}
+		}
+
 		select {
 		case <-ctx.Done():
 			return
+		case <-choVan:
+			// vòng lại để bơm; `choVan` nil thì nhánh này không bao giờ chọn được
 		case <-beat.C:
 			fmt.Fprint(w, ": nhịp\n\n")
 			flusher.Flush()
@@ -146,4 +183,41 @@ func writeSSE(w http.ResponseWriter, ev sseEvent) bool {
 		return false
 	}
 	return true
+}
+
+// writeSSEKhongID ghi một sự kiện KHÔNG mang `id:`.
+//
+// Dùng cho văn sống. `id:` là mốc mà trình duyệt gửi lại qua `Last-Event-ID` khi nối lại, và
+// `resumeSeq` đọc nó làm mốc hàng đợi ui_event — hai chuỗi seq khác nhau dùng chung một ô thì
+// mốc của bên này thành mốc sai của bên kia.
+func writeSSEKhongID(w http.ResponseWriter, ten string, than any) bool {
+	data, err := json.Marshal(than)
+	if err != nil {
+		return true // bỏ qua mục lỗi, không giết cả stream
+	}
+	_, err = fmt.Fprintf(w, "event: %s\ndata: %s\n\n", ten, data)
+	return err == nil
+}
+
+// bomVan đẩy mọi mẩu văn mới sau mocVan và trả mốc cuối đã đẩy.
+func bomVan(w http.ResponseWriter, flusher http.Flusher, van *dongVan, mocVan int64) int64 {
+	manh, _ := van.sau(mocVan)
+	if len(manh) == 0 {
+		return mocVan
+	}
+	cuoi := mocVan
+	for _, m := range manh {
+		ok := true
+		if m.Xoa {
+			ok = writeSSEKhongID(w, "stream_clear", struct{}{})
+		} else {
+			ok = writeSSEKhongID(w, "stream_delta", map[string]string{"text": m.Chu})
+		}
+		if !ok {
+			return cuoi
+		}
+		cuoi = m.Seq
+	}
+	flusher.Flush()
+	return cuoi
 }
