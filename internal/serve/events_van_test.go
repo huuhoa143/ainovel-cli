@@ -122,6 +122,22 @@ func TestSSEVanSongKhongCoMayVanChay(t *testing.T) {
 	}
 }
 
+// TestNhipDoUiEventKhongDoi canh việc ai đó "tối ưu" cả hai loại về một nhịp.
+//
+// Hai loại có nhịp KHÁC nhau vì dữ liệu của chúng khác nhau, và cả hai con số đều đo được
+// trên scripts/sample.gif: dòng sự kiện thêm dòng 5 lần trong 17,9 giây (dò 700ms là đủ),
+// còn văn sống đổi ở 146/254 khung với trung vị 70ms (phải đánh thức).
+//
+// Hạ `pollInterval` xuống cho văn sống là nghiền đĩa: mỗi nhịp dò là một lần đọc tệp JSONL,
+// và ở 150ms thì đó là gần 7 lần đọc mỗi giây cho một hàng đợi gần như im.
+func TestNhipDoUiEventKhongDoi(t *testing.T) {
+	if pollInterval != 700*time.Millisecond {
+		t.Errorf("pollInterval = %v, muốn 700ms. Nếu đổi có chủ ý thì sửa cả bài kiểm này "+
+			"VÀ ghi lý do: văn sống KHÔNG cần nhịp này, nó đi theo đánh thức (xem dongVan.doi).",
+			pollInterval)
+	}
+}
+
 // contextVoiHanVan cho handler SSE một hạn chót để nó thoát vòng chờ.
 //
 // Handler SSE chạy vô hạn tới khi client đi; `httptest` không tự đóng, nên bài kiểm phải là
