@@ -40,7 +40,18 @@ type Book struct {
 	Total     int    `json:"total_chapters"`
 	Words     int    `json:"total_words"`
 	Activity  string `json:"activity"` // running | idle | complete
-	UpdatedAt string `json:"updated_at,omitempty"`
+	UpdatedAt string `json:"updated_at"`
+
+	// Năm trường cho bề mặt Xưởng. Lấy từ cùng nguồn mà `/studio` dùng (transport của store)
+	// để hai bề mặt không nói hai số khác nhau về cùng một cuốn. Không omitempty: một xưởng
+	// mười cuốn cần liệt kê đủ mà không phải gọi /studio riêng cho từng cuốn — xem
+	// TestWorkshopCoDuSoLieuChoManXuong.
+	CostUSD         float64 `json:"cost_usd"`
+	CostPerChapter  float64 `json:"cost_per_chapter"`
+	ChaptersPerHour float64 `json:"chapters_per_hour"`
+	// EngineOpen do handleWorkshop đặt (cần s.may, một trường server — bookFrom/scanWorkshop
+	// chỉ biết store), cùng lý lẽ với Capabilities.Steer ở handleStudio.
+	EngineOpen bool `json:"engine_open"`
 }
 
 // Workshop là toàn cảnh xưởng: mọi tác phẩm tìm thấy dưới thư mục gốc.
@@ -209,6 +220,51 @@ type Snapshot struct {
 	// nó làm điểm bắt đầu cho SSE để không bỏ sót và không nhận trùng sự kiện
 	// phát ra giữa lúc tải trang và lúc mở stream.
 	QueueSeq int64 `json:"queue_seq"`
+
+	// Bốn nhóm dưới là trường SỐNG: chúng chỉ đo được khi engine đang mở. Dùng con trỏ /
+	// slice để `nil` marshal thành `null`, và `null` nghĩa là "không có nguồn" — khác hẳn `0`
+	// nghĩa là "đo được, bằng không". Giao diện có hai nhánh vẽ khác nhau cho hai câu đó.
+	Agents     []Vai    `json:"agents"`
+	IdleAgents []string `json:"idle_agents"`
+	Advance    *TienDo  `json:"advance"`
+	Context    *NguCanh `json:"context"`
+
+	// Bốn trường dưới cũng chỉ có nghĩa khi engine đang mở, chiếu thẳng từ
+	// host.UISnapshot (xem chieuTruongSong) — không suy lại từ store.
+	PendingSteer      string `json:"pending_steer,omitempty"`
+	RewriteReason     string `json:"rewrite_reason,omitempty"`
+	Recovery          string `json:"recovery,omitempty"`
+	InProgressChapter *int   `json:"in_progress_chapter"`
+}
+
+// TienDo là chế độ đi tiếp và cửa nghiệm thu.
+type TienDo struct {
+	Mode          string `json:"mode"`
+	PermitChapter int    `json:"permit_chapter,omitempty"`
+	Hold          bool   `json:"hold"`
+	HoldReason    string `json:"hold_reason,omitempty"`
+}
+
+// NguCanh là cửa sổ ngữ cảnh của model đang chạy.
+type NguCanh struct {
+	Tokens   int     `json:"tokens"`
+	Window   int     `json:"window"`
+	Percent  float64 `json:"percent"`
+	Scope    string  `json:"scope,omitempty"`
+	Strategy string  `json:"strategy,omitempty"`
+}
+
+// Vai là một tác tử đang làm việc, chiếu từ host.AgentSnapshot.
+//
+// Chỉ lấy phần giao diện DÙNG. `UpdatedAt` và `TaskID` không lên đây: cái đầu không hiện ở
+// đâu, cái sau là khóa nội bộ của engine — đưa ra JSON là mời người sau dựng logic quanh nó.
+type Vai struct {
+	Role  string `json:"role"`
+	State string `json:"state"`
+	Tool  string `json:"tool,omitempty"`
+	Turn  int    `json:"turn,omitempty"`
+	Task  string `json:"task,omitempty"`
+	Depth int    `json:"depth"`
 }
 
 // Selection là chi tiết của chương đang được chọn, cho panel inspector.

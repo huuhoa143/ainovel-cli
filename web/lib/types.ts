@@ -56,6 +56,18 @@ export interface Book {
   total_words: number;
   activity: Activity;
   updated_at?: string;
+
+  /**
+   * Năm trường cho bề mặt Xưởng.
+   *
+   * Chúng nằm ở `/workshop` chứ không phải `/studio` có lý do: bảng Xưởng liệt kê MỌI cuốn,
+   * nên nếu phải lấy từ `/studio` thì một xưởng mười cuốn là mười lượt đọc store cho một lần
+   * mở trang — và mười thời điểm khác nhau trong cùng một bảng.
+   */
+  cost_usd: number;
+  cost_per_chapter: number;
+  chapters_per_hour: number;
+  engine_open: boolean;
 }
 
 export interface Workshop {
@@ -216,10 +228,61 @@ export interface Selection {
   words?: number;
 }
 
+/**
+ * Một tác tử đang làm việc.
+ *
+ * `turn` là số lượt của tác tử trong chu kỳ hiện tại. TUI gốc hiện nó dạng `writer turn 7`,
+ * và nó là dấu hiệu duy nhất phân biệt "đang chạy lâu" với "treo".
+ */
+export interface Vai {
+  role: string;
+  state: string;
+  tool?: string;
+  turn?: number;
+  task?: string;
+  depth: number;
+}
+
+/** Chế độ đi tiếp và cửa nghiệm thu. */
+export interface TienDo {
+  mode: string;
+  permit_chapter?: number;
+  hold: boolean;
+  hold_reason?: string;
+}
+
+/** Cửa sổ ngữ cảnh của model đang chạy. */
+export interface NguCanh {
+  tokens: number;
+  window: number;
+  percent: number;
+  scope?: string;
+  strategy?: string;
+}
+
 export interface Snapshot {
   book: Book;
   capabilities: Capabilities;
   timeline: Timeline;
+
+  /**
+   * Năm trường SỐNG: `null` nghĩa là engine đang ĐÓNG nên KHÔNG ĐO ĐƯỢC — khác hẳn `0` hay
+   * `[]`, vốn nghĩa là "đo được, bằng không". Giao diện phải có hai nhánh vẽ khác nhau: một
+   * thước ngữ cảnh 0% và một dấu "không có nguồn" nói hai điều khác nhau.
+   *
+   * `| null` ở đây là HÀNG RÀO BIÊN DỊCH, không phải chú thích. Một trường khai không-null
+   * cho một payload trả `null` làm `tsc` xanh trong khi renderer sập — đã xảy ra một lần với
+   * `Timeline.volumes`. Có bộ canh giữ luật này: TestKieuTruongSongPhaiChoNull (Go, quét
+   * chính tệp này).
+   */
+  agents: Vai[] | null;
+  idle_agents: string[] | null;
+  advance: TienDo | null;
+  context: NguCanh | null;
+  in_progress_chapter: number | null;
+  pending_steer?: string;
+  rewrite_reason?: string;
+  recovery?: string;
   chapters: ChapterRow[];
   transport: Transport;
   decisions?: Decision[];
