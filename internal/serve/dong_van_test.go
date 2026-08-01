@@ -202,3 +202,38 @@ func TestDongVanHutKetThucKhiChannelDong(t *testing.T) {
 		t.Errorf("hút được %d mẩu, muốn 2 — mẩu gửi trước lúc đóng không được mất", len(manh))
 	}
 }
+
+// TestDongVanDanhThucNgay canh lý do KIẾN TRÚC của cơ chế đánh thức.
+//
+// ĐO ĐƯỢC trên scripts/sample.gif (255 khung × 70ms): khu chữ máy đổi ở 146/254 khung, khoảng
+// cách trung vị giữa hai lần đổi là 70ms và 94% khoảng cách ≤ 210ms. `pollInterval` của SSE
+// hiện tại là 700ms — chậm gấp 10 lần. Đẩy văn sống qua vòng dò đó thì người dùng thấy chữ
+// nhảy từng cục mỗi 0,7 giây, không phải chảy.
+//
+// Engine chạy IN-PROCESS nên không cần dò: người chờ được đánh thức ngay khi có mẩu mới.
+// Ngưỡng 200ms trong bài kiểm là ngưỡng RỘNG cho máy CI chậm; nó vẫn đỏ nếu ai thay đánh thức
+// bằng một vòng dò 700ms.
+func TestDongVanDanhThucNgay(t *testing.T) {
+	d := &dongVan{}
+	cho := d.doi()
+
+	go func() {
+		time.Sleep(10 * time.Millisecond)
+		d.them("mẩu mới")
+	}()
+
+	select {
+	case <-cho:
+	case <-time.After(200 * time.Millisecond):
+		t.Fatal("người chờ không được đánh thức trong 200ms — cơ chế đánh thức không hoạt động")
+	}
+
+	// Đăng ký TRƯỚC rồi đọc SAU là luật chống mất mẩu: nếu đọc trước rồi mới đăng ký thì mẩu
+	// đến giữa hai bước sẽ không đánh thức ai, và kết nối treo tới nhịp sau.
+	cho2 := d.doi()
+	select {
+	case <-cho2:
+		t.Fatal("channel chờ MỚI đã đóng sẵn — người chờ sẽ quay vòng liên tục, tức lại là dò")
+	default:
+	}
+}

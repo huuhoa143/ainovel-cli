@@ -38,6 +38,11 @@ type dongVan struct {
 	manh []manhVan
 	seq  int64
 	vong strings.Builder
+
+	// cho là channel BÁO HIỆU, không mang dữ liệu: nó được ĐÓNG để đánh thức mọi người đang
+	// chờ, rồi thay bằng channel mới. Đây là lối broadcast chuẩn của Go — gửi giá trị thì chỉ
+	// một người nhận được, mà ở đây có N kết nối SSE cùng chờ một bộ đệm.
+	cho chan struct{}
 }
 
 // manhVan là một mục trong hàng: hoặc một mẩu chữ, hoặc một lệnh xóa.
@@ -64,6 +69,10 @@ const coVongToiDa = 512 << 10
 func (d *dongVan) them(delta string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	// defer chạy theo thứ tự NGƯỢC với lúc khai báo, nên `danhThuc` ở đây chạy TRƯỚC
+	// `mu.Unlock()` phía trên — đúng yêu cầu "gọi trong lúc đã giữ khóa". Đặt ở CẢ HAI nhánh
+	// bên dưới (sentinel và chữ) vì cả hai đều là mẩu mới mà người chờ cần biết.
+	defer d.danhThuc()
 
 	d.seq++
 	if delta == host.StreamClearSentinel {
@@ -117,6 +126,28 @@ func (d *dongVan) vongLen() int {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return d.vong.Len()
+}
+
+// doi trả channel để chờ mẩu tiếp theo.
+//
+// Người chờ phải gọi `doi()` TRƯỚC khi đọc `sau()`. Đọc trước rồi mới đăng ký thì mẩu đến
+// giữa hai bước không đánh thức ai, và kết nối treo tới nhịp sau — tức chữ đứng im dù engine
+// đang phát.
+func (d *dongVan) doi() <-chan struct{} {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.cho == nil {
+		d.cho = make(chan struct{})
+	}
+	return d.cho
+}
+
+// danhThuc đóng channel báo hiệu hiện tại. Gọi trong lúc đã giữ khóa.
+func (d *dongVan) danhThuc() {
+	if d.cho != nil {
+		close(d.cho)
+		d.cho = nil
+	}
 }
 
 // vongHienTai trả toàn bộ văn của lượt đang chảy và seq tương ứng.
