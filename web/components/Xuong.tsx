@@ -191,10 +191,12 @@ function Dong({
       <td className="sua">{sua ?? <Trong viSao={GIAI_THICH.xuongChuaBietSuaLucNao} />}</td>
 
       {/* Hành động: ĐIỀU HƯỚNG, và chỉ điều hướng. Không nút nào ở đây gọi một route ghi.
+          Dùng `.nutPhu` sẵn có chứ không khai một lớp nút mới: ba nút này không khác gì nút
+          phụ ở bề mặt khác, và một lớp mới là một bộ token thứ hai phải giữ cho khớp.
           `Đọc` và `Xuất bản` chỉ có ở cuốn đã hoàn thành vì trước đó chúng dẫn tới hai bề mặt
           nói "chưa có gì": bản thảo dở chừng và một tệp xuất thiếu chương. */}
       <td className="lam">
-        <button type="button" className="nutnho" onClick={() => onMoTacPham(b.id, 'dong-san-xuat')}>
+        <button type="button" className="nutPhu" onClick={() => onMoTacPham(b.id, 'dong-san-xuat')}>
           {CHU.moTacPham}
         </button>
         {b.phase === 'complete' ? (
@@ -202,10 +204,10 @@ function Dong({
             {/* Chương 1 đi CÙNG lời gọi. Tách ra thành "chọn chương" rồi "đổi khu" là mất
                 `?ch=` khỏi URL — đã đo được, và hư hại bị che vì bề mặt đọc tự chọn chương 1
                 khi vào mà chưa có. */}
-            <button type="button" className="nutnho" onClick={() => onMoTacPham(b.id, 'ban-thao', 1)}>
+            <button type="button" className="nutPhu" onClick={() => onMoTacPham(b.id, 'ban-thao', 1)}>
               {CHU.docTacPham}
             </button>
-            <button type="button" className="nutnho" onClick={() => onMoTacPham(b.id, 'nhap-xuat')}>
+            <button type="button" className="nutPhu" onClick={() => onMoTacPham(b.id, 'nhap-xuat')}>
               {CHU.xuatBan}
             </button>
           </>
