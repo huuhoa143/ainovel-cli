@@ -73,6 +73,23 @@ Element.prototype.scrollIntoView = function () {
   /* jsdom không bố cục */
 };
 
+/**
+ * Nút `Cho đi tiếp` CỦA DẢI, tra trong `.cuanghiemthu`.
+ *
+ * Phải khoanh vùng, và lý do là một sự thật về sản phẩm chứ không phải một mẹo kiểm thử: ở một
+ * cửa đang chờ, thanh transport CŨNG vẽ một nút `Cho đi tiếp` (`DieuKhien` hiện nó khi chế độ
+ * là `review`), nên trên cùng một màn hình có HAI nút cùng tên. Chúng gọi cùng một route nên
+ * đây không phải lớp lỗi "hai sự thật" — nhưng một phép tra toàn cục sẽ đỏ vì "nhiều phần tử",
+ * và nếu tra bừa một cái thì bài kiểm có thể đo nút của transport rồi tưởng mình đo nút của dải.
+ *
+ * Trước Task 6 chuyện này không lộ ra ở đây: tệp này không thay `layCaiDat`, nên nhãn chế độ
+ * của transport không bao giờ về và nút kia không bao giờ hiện.
+ */
+const nutTiepCuaDai = (c: HTMLElement) =>
+  [...c.querySelectorAll<HTMLButtonElement>('.cuanghiemthu button')].find(
+    (n) => n.textContent === CHU.choDiTiep,
+  )!;
+
 beforeEach(() => {
   MAY.choGhi = true;
   CHO_DI_TIEP.mockReset().mockResolvedValue({ permit_chapter: 9, running: true });
@@ -85,9 +102,9 @@ test('`Trang` nối `taiLai` THẬT của studio vào dải — bấm Cho đi ti
   // hai — và lần đó cấp phép thêm một chương nữa, tức tiền đôi vì một sợi dây thiếu.
   //
   // Không lỗi nào nổ ra ở ca đó, và không bài kiểm nào ngoài bài này chạm tới nó.
-  render(<Trang />);
+  const { container } = render(<Trang />);
 
-  fireEvent.click(screen.getByRole('button', { name: CHU.choDiTiep }));
+  fireEvent.click(nutTiepCuaDai(container));
 
   expect(CHO_DI_TIEP).toHaveBeenCalledWith('tran-yeu-ky');
   await waitFor(() => expect(TAI_LAI).toHaveBeenCalled());
@@ -102,8 +119,8 @@ test('sợi dây `taiLai` cũng liền ở bề mặt KIỂM ĐỊNH, không ri�
   const truoc = STUDIO_GIA.khu;
   STUDIO_GIA.khu = 'kiem-dinh';
   try {
-    render(<Trang />);
-    fireEvent.click(screen.getByRole('button', { name: CHU.choDiTiep }));
+    const { container } = render(<Trang />);
+    fireEvent.click(nutTiepCuaDai(container));
     expect(CHO_DI_TIEP).toHaveBeenCalledWith('tran-yeu-ky');
     // `await` TRONG `try`, không `return` một lời hứa: `finally` chạy ngay lúc `return` được
     // định giá, nên bản `return` khôi phục `khu` trước khi `waitFor` xong — và bài kiểm khi đó
