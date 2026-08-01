@@ -58,6 +58,91 @@
   --serif: 'Noto Serif', ui-serif, Georgia, serif;
 }
 
+/* ═══ NÚM CƯỜNG ĐỘ ════════════════════════════════════════════════════════
+   Ba mức, một chỗ điều khiển biên độ của CẢ CHÍN HỌ.
+
+   Vì sao có núm này thay vì tôi tự chọn một biên độ: người duyệt đã nói "hơn
+   nữa" ba lần. Đoán lần thứ tư là lại đoán. Biên độ là thứ chỉ mắt người quyết
+   được, còn CƠ CHẾ thì đã chốt — nên tách hai thứ đó ra: cơ chế cố định, biên
+   độ thành một núm.
+
+   Và nó không chỉ là chuyện thẩm mỹ: một chuyển động mang thông tin mà không ai
+   NHẬN RA thì không mang được thông tin nào. Nếu mức 1 quá nhẹ để thấy thì mức 1
+   là sai theo đúng tiêu chí của chính nó — đây là lý do "rõ hơn" phục vụ nguyên
+   tắc chứ không đi ngược nó.
+
+   Mọi họ chỉ đọc biến, không tự khai số. Đổi mức là đổi cả hệ cùng lúc, nên hệ
+   không bao giờ lệch nhịp giữa các họ.  */
+body {
+  /* mức 1 · VỪA — biên độ của bản duyệt hiệp một/hai */
+  --a-day: 1px;          /* dày của đầu đọc */
+  --a-day-nut: 2px;      /* dày của vệt trong nút */
+  --a-nhap: 22%;         /* nồng độ nhấp của ô số vừa đổi */
+  --a-nhap-dem: 30%;     /* nồng độ nhấp của chip đếm */
+  --a-lau: 0.9s;         /* nhấp giữ bao lâu */
+  --a-tho-lo: 26%;       /* thở: viền lúc nhạt */
+  --a-tho-hi: 66%;       /* thở: viền lúc đậm */
+  --a-tho-nen-lo: 9%;    /* thở: nền lúc nhạt */
+  --a-tho-nen-hi: 9%;    /* thở: nền lúc đậm — mức 1 KHÔNG thở nền */
+  --a-tho-day: 1px;      /* thở: dày viền */
+  --a-dich: 2px;         /* trạng thái đổi: dịch dọc */
+  --a-mo: 0.45;          /* trạng thái đổi: mờ ban đầu */
+  --a-vach-day: 1.5px;   /* dày gạch chân tab */
+  --a-pop: 1;            /* chip đếm nảy tới đâu */
+  --a-cao-chot: 1;       /* vạch chương cao thêm bao nhiêu khi chốt */
+  --a-nhan-vach: var(--ink-3); /* màu nhãn vạch ngăn lúc vừa tới */
+}
+body.pv-c2 {
+  /* mức 2 · RÕ */
+  --a-day: 2px;
+  --a-day-nut: 3px;
+  --a-nhap: 40%;
+  --a-nhap-dem: 52%;
+  --a-lau: 1.3s;
+  --a-tho-lo: 30%;
+  --a-tho-hi: 88%;
+  --a-tho-nen-lo: 9%;
+  --a-tho-nen-hi: 12%;   /* CHẶN — xem trần nền */
+  --a-tho-day: 1.5px;
+  --a-dich: 4px;
+  --a-mo: 0.25;
+  --a-vach-day: 2px;
+  --a-pop: 1.16;
+  --a-cao-chot: 1.3;
+  --a-nhan-vach: var(--gold);
+}
+/* ── TRẦN CỦA NỀN AMBER — đo được, không phải phỏng đoán ───────────────────
+   `--a-tho-nen-hi` KHÔNG được vượt 13%. Đo trên chính token của dự án: `--ink-3`
+   trên `color-mix(amber X%, bg)` cho
+     9% → 4,96  ·  12% → 4,75  ·  13% → 4,65  ·  14% → 4,58
+     15% → 4,48 ·  17% → 4,35  ·  19% → 4,17
+   Sàn AA là 4,5, và DESIGN.md ghi `--ink-3` là SÀN CỨNG, không hạ thêm.
+   Bản mức 3 đầu tiên của tôi đặt 19% và ĐÃ PHÁ sàn — đo được 4,17.
+
+   14% vẫn "đạt" nhưng chỉ dư 0,08; dự án này đã có một lần dư 0,21 và phải ghi
+   cảnh báo vì một lần nhích token là thủng. Nên chặn ở 13% (dư 0,15) và dồn độ
+   to của mức 3 vào các kênh KHÔNG CHỞ CHỮ: dày viền, nồng độ viền, độ mờ ký
+   hiệu. Viền không chở chữ nào nên nó to bao nhiêu cũng không đổi tương phản. */
+body.pv-c3 {
+  /* mức 3 · RẤT RÕ — biên độ lớn nhất còn giữ được sàn AA và giọng công nghiệp */
+  --a-day: 3px;
+  --a-day-nut: 4px;
+  --a-nhap: 58%;
+  --a-nhap-dem: 74%;
+  --a-lau: 1.8s;
+  --a-tho-lo: 34%;
+  --a-tho-hi: 100%;
+  --a-tho-nen-lo: 10%;
+  --a-tho-nen-hi: 13%;   /* CHẶN ở 13%, KHÔNG lên nữa */
+  --a-tho-day: 3px;      /* độ to của mức 3 dồn vào ĐÂY, không vào nền */
+  --a-dich: 7px;
+  --a-mo: 0.1;
+  --a-vach-day: 2.5px;
+  --a-pop: 1.3;
+  --a-cao-chot: 1.55;
+  --a-nhan-vach: var(--gold);
+}
+
 /* ── vỏ trang preview (không vào app) ─────────────────────────────────────── */
 body { background: var(--bg); color: var(--ink); font-family: var(--ui); margin: 0; }
 .pv { max-width: 1180px; margin: 0 auto; padding: 40px 28px 120px; }
@@ -78,6 +163,17 @@ body { background: var(--bg); color: var(--ink); font-family: var(--ui); margin:
 .pv-dk input { accent-color: var(--gold); margin: 0; }
 .pv-dk .pv-vach { width: 1px; height: 20px; background: var(--line); }
 .pv-dk .pv-nhan { font-size: 11px; color: var(--ink-3); }
+.pv-cuongdo { gap: 2px !important; padding: 2px; background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: var(--r); }
+.pv-cuongdo .pv-nhan { padding: 0 8px 0 5px; }
+.pv-cuongdo button {
+  background: none; border: 0; border-radius: 3px; color: var(--ink-3);
+  font: 400 11.5px var(--ui); padding: 4px 11px; cursor: pointer;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.pv-cuongdo button:hover:not([aria-pressed='true']) { color: var(--ink-2); }
+.pv-cuongdo button[aria-pressed='true'] { background: var(--gold); color: #241f18; font-weight: 500; }
+.pv-cuongdo button:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
 
 .pv-sect { margin: 0 0 52px; }
 .pv-sect > h2 {
@@ -127,7 +223,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--ui); margin:
 .mo-dauDoc .trans[data-chay='1'] { position: relative; }
 .mo-dauDoc .trans[data-chay='1']::before {
   content: '';
-  position: absolute; inset: 0 0 auto 0; height: 1px;
+  position: absolute; inset: 0 0 auto 0; height: var(--a-day);
   background-image: linear-gradient(
     90deg,
     transparent 0%,
@@ -161,15 +257,18 @@ body { background: var(--bg); color: var(--ink); font-family: var(--ui); margin:
    Chi phí: một keyframe 0.9s trên background, chạy khi có dữ liệu mới — tức
    nhiều nhất một lần mỗi nhịp làm mới 1,5s. */
 @keyframes pvVuaDoiTien {
-  0%   { background-color: color-mix(in oklch, var(--gold) 22%, transparent); }
+  0%   { background-color: color-mix(in oklch, var(--gold) var(--a-nhap), transparent); color: var(--gold); }
   100% { background-color: transparent; }
 }
 @keyframes pvVuaDoiChot {
-  0%   { background-color: color-mix(in oklch, var(--teal) 22%, transparent); }
+  0%   { background-color: color-mix(in oklch, var(--teal) var(--a-nhap), transparent); color: var(--teal); }
   100% { background-color: transparent; }
 }
-.mo-vuaDoi .pv-doi-tien { animation: pvVuaDoiTien 0.9s var(--ease); }
-.mo-vuaDoi .pv-doi-chot { animation: pvVuaDoiChot 0.9s var(--ease); }
+/* Nhấp CẢ nền lẫn con số: "màu dành cho dữ liệu, không cho khung" (PRODUCT.md luật 5).
+   Ở mức cao, nền một mình bắt đầu đọc ra như một khối trang trí; con số đổi màu thì vẫn là
+   dữ liệu tự nói. */
+.mo-vuaDoi .pv-doi-tien { animation: pvVuaDoiTien var(--a-lau) var(--ease); }
+.mo-vuaDoi .pv-doi-chot { animation: pvVuaDoiChot var(--a-lau) var(--ease); }
 
 /* ═══ 3 · ĐANG CHỜ BẠN ════════════════════════════════════════════════════
    Dải nghiệm thu và huy hiệu thở chậm — 2.6s, CỐ Ý chậm hơn nhịp máy 2.2s.
@@ -181,11 +280,29 @@ body { background: var(--bg); color: var(--ink); font-family: var(--ui); margin:
    Chỉ thở VIỀN, không thở nền: nền amber đã đo được 4,94:1 với chữ trên nó, và
    sàn AA là 4,5 — nhấp nền là đem tương phản đi chơi. Viền không chở chữ nào. */
 @keyframes pvThoCho {
-  0%, 100% { border-color: color-mix(in oklch, var(--amber) 26%, var(--line-2)); }
-  50%      { border-color: color-mix(in oklch, var(--amber) 66%, var(--line-2)); }
+  0%, 100% {
+    border-color: color-mix(in oklch, var(--amber) var(--a-tho-lo), var(--line-2));
+    background-color: color-mix(in oklch, var(--amber) var(--a-tho-nen-lo), var(--bg));
+  }
+  50% {
+    border-color: color-mix(in oklch, var(--amber) var(--a-tho-hi), var(--line-2));
+    background-color: color-mix(in oklch, var(--amber) var(--a-tho-nen-hi), var(--bg));
+  }
 }
-.mo-thoCho .cuanghiemthu { animation: pvThoCho 2.6s var(--ease) infinite; }
+/* Ký hiệu ■ thở theo, lệch pha nửa vòng: hai kênh cùng nói một điều nhưng không cùng lúc,
+   nên mắt bắt được cả khi đang nhìn chỗ khác. Ký hiệu là kênh KHÔNG phải màu — luật "màu
+   không bao giờ là kênh duy nhất" vẫn đứng. */
+@keyframes pvThoKy {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+.mo-thoCho .cuanghiemthu {
+  border-top-width: var(--a-tho-day); border-bottom-width: var(--a-tho-day);
+  animation: pvThoCho 2.6s var(--ease) infinite;
+}
 .mo-thoCho .hieunghiemthu { animation: pvThoCho 2.6s var(--ease) infinite; }
+.mo-thoCho .cuanghiemthu .ky,
+.mo-thoCho .hieunghiemthu .ky { animation: pvThoKy 2.6s var(--ease) 1.3s infinite; }
 
 /* ═══ 4 · NÚT ĐANG GỬI ════════════════════════════════════════════════════
    Vệt 2px trong lòng nút, chạy trong lúc lệnh còn trên đường.
@@ -204,7 +321,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--ui); margin:
 .mo-dangGui button[aria-busy='true'] { position: relative; overflow: hidden; }
 .mo-dangGui button[aria-busy='true']::after {
   content: '';
-  position: absolute; inset: auto 0 0 0; height: 2px;
+  position: absolute; inset: auto 0 0 0; height: var(--a-day-nut);
   background-image: linear-gradient(
     90deg, transparent, color-mix(in oklch, var(--gold) 88%, transparent), transparent
   );
@@ -225,7 +342,14 @@ body { background: var(--bg); color: var(--ink); font-family: var(--ui); margin:
   from { transform: scaleX(0.04); opacity: 0; }
   to   { transform: scaleX(1);    opacity: 1; }
 }
+@keyframes pvVachNhan {
+  0%   { color: var(--a-nhan-vach); }
+  100% { color: var(--ink-3); }
+}
 .mo-vachToi .vach { transform-origin: center; animation: pvVachToi 0.24s var(--ease) both; }
+/* Nhãn vạch sáng lên màu tín hiệu rồi lắng về `--ink-3`. Ở mức 1 hai đầu bằng nhau nên nó
+   không làm gì — đúng ý: mức 1 là bản dè dặt nhất. */
+.mo-vachToi .vach span { animation: pvVachNhan calc(var(--a-lau) * 1.1) var(--ease) both; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HIỆP HAI · TRẠNG THÁI VÀ NHÃN
@@ -258,16 +382,16 @@ body { background: var(--bg); color: var(--ink); font-family: var(--ui); margin:
    KHÔNG đụng vào nhịp đập: `.st.gold.dap .ky` giữ nguyên vòng 2,2s của nó.
    Hai chuyển động này trả lời hai câu khác nhau — "vừa đổi" và "còn đang chạy". */
 @keyframes pvDoiTT {
-  from { transform: translateY(-2px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+  from { transform: translateY(calc(var(--a-dich) * -1)) scale(0.72); opacity: 0; }
+  to   { transform: translateY(0) scale(1);                          opacity: 1; }
 }
-.mo-doiTT .st.vuaDoi .ky { animation: pvDoiTT 0.2s var(--ease) both; }
-.mo-doiTT .st.vuaDoi { animation: pvHienNhe 0.2s var(--ease) both; }
-.mo-doiTT .blk.vuaDoi { animation: pvHienNhe 0.24s var(--ease) both; }
 @keyframes pvHienNhe {
-  from { opacity: 0.45; }
+  from { opacity: var(--a-mo); }
   to   { opacity: 1; }
 }
+.mo-doiTT .st.vuaDoi .ky { animation: pvDoiTT 0.22s var(--ease) both; }
+.mo-doiTT .st.vuaDoi { animation: pvHienNhe 0.22s var(--ease) both; }
+.mo-doiTT .blk.vuaDoi { animation: pvHienNhe 0.26s var(--ease) both; }
 
 /* ═══ 07 · VỊ TRÍ TRONG TẬP HỮU HẠN = TRƯỢT ═══════════════════════════════
    Dấu chỉ mục đang mở TRƯỢT giữa các vị trí thay vì nhảy.
@@ -288,7 +412,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--ui); margin:
 .mo-truot .tabs.truot button[aria-selected='true'] { border-bottom-color: transparent; }
 .mo-truot .tabs.truot::after {
   content: '';
-  position: absolute; bottom: -1px; height: 1.5px;
+  position: absolute; bottom: -1px; height: var(--a-vach-day);
   left: var(--x, 0); width: var(--w, 0);
   background: var(--gold);
   transition: left 0.22s var(--ease), width 0.22s var(--ease);
@@ -331,14 +455,17 @@ body { background: var(--bg); color: var(--ink); font-family: var(--ui); margin:
    có gì cần bạn" sang "có việc cần bạn". Nên nó vào bằng scale, không bằng nhấp.
    Cùng lý lẽ với `.n.warn` mang amber ở mọi chỗ khác của bề mặt. */
 @keyframes pvNhapDem {
-  0%   { background: color-mix(in oklch, var(--teal) 30%, transparent); color: var(--ink); }
-  100% { background: var(--panel-2); }
+  0%   {
+    background: color-mix(in oklch, var(--teal) var(--a-nhap-dem), transparent);
+    color: var(--ink); transform: scale(var(--a-pop));
+  }
+  100% { background: var(--panel-2); transform: scale(1); }
 }
 @keyframes pvTonToi {
   from { transform: scale(0.4); opacity: 0; }
   to   { transform: scale(1);   opacity: 1; }
 }
-.mo-nhanDem .rail .n.vuaDoi { animation: pvNhapDem 0.9s var(--ease); }
+.mo-nhanDem .rail .n.vuaDoi { animation: pvNhapDem var(--a-lau) var(--ease); }
 .mo-nhanDem .rail .n.warn.vuaToi { animation: pvTonToi 0.26s var(--ease) both; }
 
 /* ═══ 09 · CHƯƠNG CHỐT ════════════════════════════════════════════════════
@@ -360,13 +487,44 @@ body { background: var(--bg); color: var(--ink); font-family: var(--ui); margin:
 }
 @keyframes pvChotNhap {
   0%, 100% { box-shadow: none; }
-  40%      { box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--teal) 78%, transparent); }
+  30%, 70% { box-shadow: inset 0 0 0 2px color-mix(in oklch, var(--teal) 92%, transparent); }
+  50%      { box-shadow: none; }
+}
+/* Vạch cao thêm rồi lắng về. Sự kiện quan trọng nhất của sản phẩm đáng cử chỉ lớn nhất trong
+   cả hệ — và `transform` không phải thuộc tính layout nên nó không đẩy vạch bên cạnh. */
+@keyframes pvChotCao {
+  0%   { transform: scaleY(1); }
+  38%  { transform: scaleY(var(--a-cao-chot)); }
+  100% { transform: scaleY(1); }
 }
 .mo-chuongChot .pv-vach-ch.vuaChot {
   background-image: linear-gradient(90deg, var(--teal), var(--teal));
   background-repeat: no-repeat;
-  animation: pvChotDay 0.42s var(--ease) both, pvChotNhap 0.9s var(--ease) 0.42s;
+  animation: pvChotDay 0.42s var(--ease) both,
+             pvChotNhap calc(var(--a-lau) * 1.1) var(--ease) 0.42s,
+             pvChotCao 0.5s var(--ease) 0.38s;
 }
+
+/* ═══ 10 · ĐỒNG THANH ═════════════════════════════════════════════════════
+   Một chương chốt thì BA chỗ nói cùng một sự thật cùng lúc: vạch trên lane, chip
+   đếm ở rail, và ô tiến độ ở transport.
+
+   Đây là thứ "hơn nữa" thật sự — không phải to hơn, mà là DẠY một điều mới. Hôm
+   nay ba con số đó đổi độc lập, và không gì cho biết chúng là MỘT sự thật nhìn
+   từ ba chỗ. Nhấp đồng thanh nói ra quan hệ đó: bạn học một lần rồi từ đó chỉ
+   cần nhìn một trong ba.
+
+   Vì sao nó không thành màn trình diễn đèn: cả ba nhấp cùng một màu (teal = đã
+   nghiệm thu), cùng một thời điểm, cùng một thời lượng. Ba chỗ nhấp KHÁC nhịp
+   mới là màn trình diễn; cùng nhịp thì đọc ra là một sự kiện.
+
+   Nó tách thành họ riêng vì nó là quyết định về SỰ CHÚ Ý, không về biên độ: nó
+   lấy mắt người dùng khỏi chỗ họ đang nhìn. Người duyệt phải được bỏ riêng nó. */
+@keyframes pvDongThanh {
+  0%   { background-color: color-mix(in oklch, var(--teal) var(--a-nhap), transparent); }
+  100% { background-color: transparent; }
+}
+.mo-dongThanh .dongThanh { animation: pvDongThanh var(--a-lau) var(--ease); }
 
 /* ── Đường tắt bắt buộc ──────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
@@ -382,7 +540,11 @@ body { background: var(--bg); color: var(--ink); font-family: var(--ui); margin:
   .mo-doiTT .blk.vuaDoi,
   .mo-nhanDem .rail .n.vuaDoi,
   .mo-nhanDem .rail .n.warn.vuaToi,
-  .mo-chuongChot .pv-vach-ch.vuaChot {
+  .mo-chuongChot .pv-vach-ch.vuaChot,
+  .mo-thoCho .cuanghiemthu .ky,
+  .mo-thoCho .hieunghiemthu .ky,
+  .mo-vachToi .vach span,
+  .mo-dongThanh .dongThanh {
     animation: none;
   }
   /* Trượt: tắt transition, dấu chỉ nhảy tới đúng chỗ — vẫn nói đúng bạn đang ở đâu. */
@@ -415,7 +577,11 @@ body.pv-giam .mo-doiTT .st.vuaDoi .ky,
 body.pv-giam .mo-doiTT .blk.vuaDoi,
 body.pv-giam .mo-nhanDem .rail .n.vuaDoi,
 body.pv-giam .mo-nhanDem .rail .n.warn.vuaToi,
-body.pv-giam .mo-chuongChot .pv-vach-ch.vuaChot { animation: none; }
+body.pv-giam .mo-chuongChot .pv-vach-ch.vuaChot,
+body.pv-giam .mo-thoCho .cuanghiemthu .ky,
+body.pv-giam .mo-thoCho .hieunghiemthu .ky,
+body.pv-giam .mo-vachToi .vach span,
+body.pv-giam .mo-dongThanh .dongThanh { animation: none; }
 body.pv-giam .mo-truot .tabs.truot::after,
 body.pv-giam .mo-truot .mucxem.truot::after,
 body.pv-giam .mo-truot .pv-rail.truot::after { transition: none; }
@@ -608,7 +774,7 @@ body.pv-an * { animation-play-state: paused !important; }
 </style>
 </head>
 
-<body class="mo-dauDoc mo-vuaDoi mo-thoCho mo-dangGui mo-vachToi mo-doiTT mo-truot mo-nhanDem mo-chuongChot">
+<body class="mo-dauDoc mo-vuaDoi mo-thoCho mo-dangGui mo-vachToi mo-doiTT mo-truot mo-nhanDem mo-chuongChot mo-dongThanh" data-c="1">
 <div class="pv">
 
   <div class="pv-head">
@@ -647,6 +813,14 @@ body.pv-an * { animation-play-state: paused !important; }
       <label><input type="checkbox" data-mo="mo-truot" checked> 7 · trượt</label>
       <label><input type="checkbox" data-mo="mo-nhanDem" checked> 8 · nhãn có số đếm</label>
       <label><input type="checkbox" data-mo="mo-chuongChot" checked> 9 · chương chốt</label>
+      <label><input type="checkbox" data-mo="mo-dongThanh" checked> 10 · đồng thanh</label>
+    </div>
+    <span class="pv-vach"></span>
+    <div class="pv-nhom pv-cuongdo" role="radiogroup" aria-label="Cường độ">
+      <span class="pv-nhan">Cường độ:</span>
+      <button type="button" data-c="1" aria-pressed="true">Vừa</button>
+      <button type="button" data-c="2" aria-pressed="false">Rõ</button>
+      <button type="button" data-c="3" aria-pressed="false">Rất rõ</button>
     </div>
     <span class="pv-vach"></span>
     <label><input type="checkbox" id="pv-tat-het"> <b style="color:var(--ink)">Tắt hết — xem bản hiện tại</b></label>
@@ -947,6 +1121,48 @@ kết luận: nhịp ổn, phục bút "chiếc đèn bến" đã gieo</pre>
     </div>
   </section>
 
+  <!-- ═══ 10 ═══ -->
+  <section class="pv-sect">
+    <h2><span class="pv-ma">10</span> Đồng thanh <span class="pv-tieu">cùng màu · cùng lúc · cùng thời lượng</span></h2>
+    <p class="pv-vs">
+      Một chương chốt thì <b>ba chỗ</b> nói cùng một sự thật: vạch trên lane, chip đếm ở rail, và
+      ô tiến độ ở transport. Hôm nay ba con số đó đổi độc lập, và không gì cho biết chúng là
+      <b>một</b> sự thật nhìn từ ba chỗ.
+      <br><br>
+      Đây là thứ "hơn nữa" thật sự — không phải to hơn, mà <b>dạy một điều mới</b>: bạn học một
+      lần rồi từ đó chỉ cần nhìn một trong ba. Và nó không thành màn trình diễn đèn vì cả ba nhấp
+      <b>cùng một màu, cùng một thời điểm, cùng một thời lượng</b> — ba chỗ nhấp khác nhịp mới là
+      trình diễn; cùng nhịp thì đọc ra là một sự kiện.
+      <br><br>
+      Tách thành họ riêng vì nó là quyết định về <b>sự chú ý</b>, không về biên độ: nó lấy mắt bạn
+      khỏi chỗ đang nhìn. Nên bạn phải bỏ riêng được nó.
+    </p>
+    <div class="pv-khung">
+      <div style="display:flex">
+        <div class="pv-rail" id="pv-rail-4" style="width:212px">
+          <div class="nhomNhan">Truyện của bạn</div>
+          <button class="mucdi"><span class="g">✎</span>Bản thảo<span class="n" id="pv-dt-dem">2</span></button>
+          <button class="mucdi" aria-current="page"><span class="g">▤</span>Dòng sản xuất</button>
+        </div>
+        <div style="flex:1;min-width:0;display:grid;align-content:center;gap:9px;padding:14px 18px">
+          <div class="pv-truc-hang">
+            <span class="pv-nhan-tt">Chương</span>
+            <div class="pv-lane-ch" id="pv-dt-lane"></div>
+          </div>
+        </div>
+      </div>
+      <div class="trans" data-chay="1" style="border-top:1px solid var(--line)">
+        <div class="o"><span class="ky">▶</span><span class="val">đang chạy</span></div>
+        <div class="o" id="pv-dt-td"><span class="lbl">đã chốt</span><span class="val" id="pv-dt-so">2 / 111</span></div>
+        <div class="o pv-day"><span class="lbl">giá thành</span><span class="val">$1,002 / chương</span></div>
+      </div>
+    </div>
+    <div class="pv-hang-nut">
+      <button class="pv-nut" id="pv-gia-dongthanh">Giả lập: một chương vừa chốt</button>
+      <span class="pv-nhan">Tắt họ 10 ở bảng trên rồi bấm lại — ba chỗ vẫn đổi số, chỉ không còn nói với nhau.</span>
+    </div>
+  </section>
+
   <p class="pv-ghi">
     <b>Chi phí:</b> ba vòng lặp (đầu đọc, thở, nút gửi) chỉ đổi <code>background-position</code>
     hoặc <code>border-color</code>. Đầu đọc và nút gửi chỉ chạy khi có việc đang chạy; thở chỉ
@@ -974,6 +1190,18 @@ document.getElementById('pv-tat-het').addEventListener('change', (e) => {
 
 document.getElementById('pv-giam').addEventListener('change', (e) =>
   body.classList.toggle('pv-giam', e.target.checked));
+
+/* Núm cường độ: đổi MỘT lớp trên body, cả chín họ theo. Không họ nào tự khai số. */
+document.querySelector('.pv-cuongdo').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-c]');
+  if (!b) return;
+  for (const x of document.querySelectorAll('.pv-cuongdo button')) {
+    x.setAttribute('aria-pressed', String(x === b));
+  }
+  body.classList.remove('pv-c2', 'pv-c3');
+  if (b.dataset.c !== '1') body.classList.add('pv-c' + b.dataset.c);
+  body.dataset.c = b.dataset.c;
+});
 
 /* 1 · dừng / chạy máy */
 const trans = document.getElementById('pv-trans');
@@ -1180,6 +1408,33 @@ document.getElementById('pv-gia-chuong').addEventListener('click', () => {
   lai(dang, 'vuaChot');
   chotCh += 1;
   vach[chotCh].classList.add('now');
+});
+
+/* 10 · đồng thanh — ba chỗ, một sự kiện, một nhịp. */
+const dtLane = document.getElementById('pv-dt-lane');
+let dtChot = 2;
+for (let i = 0; i < 22; i += 1) {
+  const d = document.createElement('div');
+  d.className = 'pv-vach-ch' + (i < dtChot ? ' done' : i === dtChot ? ' now' : '');
+  dtLane.append(d);
+}
+document.getElementById('pv-gia-dongthanh').addEventListener('click', () => {
+  const vach = [...dtLane.children];
+  if (dtChot >= vach.length - 1) return;
+  const dang = vach[dtChot];
+  dang.classList.remove('now');
+  dang.classList.add('done');
+  lai(dang, 'vuaChot');
+  dtChot += 1;
+  vach[dtChot].classList.add('now');
+
+  // Ba chỗ, MỘT nhịp: cùng lớp, gắn trong cùng một khung hình.
+  const chip = document.getElementById('pv-dt-dem');
+  const oTd = document.getElementById('pv-dt-td');
+  chip.textContent = String(dtChot);
+  document.getElementById('pv-dt-so').textContent = dtChot + ' / 111';
+  lai(chip, 'dongThanh');
+  lai(oTd, 'dongThanh');
 });
 
 /* Tab ẩn thì dừng mọi vòng — luật của impeccable, và đúng cho một bề mặt mở suốt đêm. */
