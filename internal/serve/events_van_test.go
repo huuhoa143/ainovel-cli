@@ -50,6 +50,46 @@ func TestSSEVanSongKhungDung(t *testing.T) {
 	}
 }
 
+// TestSSEVanSongVaoGiuaLuot canh thứ tự hai sự kiện đầu tiên.
+//
+// Nếu gửi cả đoạn đang chảy mà KHÔNG gửi `stream_clear` trước, giao diện sẽ dán đoạn đó vào
+// phần văn nó đang giữ từ trước (ví dụ sau khi mất kết nối rồi nối lại) — hai khúc của cùng
+// một lượt xuất hiện hai lần liền nhau, và người đọc không có cách nào biết đâu là chỗ nối.
+func TestSSEVanSongVaoGiuaLuot(t *testing.T) {
+	goc := t.TempDir()
+	newBook(t, goc, "sach", nil)
+
+	may := newBoMay(goc)
+	van := &dongVan{}
+	may.dang["sach"] = &phienMay{id: "sach", van: van, moLuc: mocBayGio()}
+	van.them("nửa đầu ")
+	van.them("nửa sau")
+
+	srv := &server{root: goc, choGhi: true, may: may}
+	rec := httptest.NewRecorder()
+	ctx, huy := contextVoiHanVan(t, 400*time.Millisecond)
+	defer huy()
+	srv.routes().ServeHTTP(rec, httptest.NewRequest("GET", "/api/books/sach/events", nil).WithContext(ctx))
+
+	than := rec.Body.String()
+	iXoa := strings.Index(than, "event: stream_clear")
+	iVan := strings.Index(than, "event: stream_delta")
+	if iXoa < 0 || iVan < 0 {
+		t.Fatalf("thiếu sự kiện mở đầu:\n%s", than)
+	}
+	if iXoa > iVan {
+		t.Error("stream_clear đến SAU stream_delta — giao diện sẽ xóa mất đoạn vừa nhận")
+	}
+	if !strings.Contains(than, `"text":"nửa đầu nửa sau"`) {
+		t.Errorf("đoạn đang chảy không được gửi nguyên khối:\n%s", than)
+	}
+	// Và KHÔNG được gửi lại từng mẩu sau khi đã gửi cả khối.
+	if strings.Count(than, "event: stream_delta") != 1 {
+		t.Errorf("có %d sự kiện stream_delta, muốn 1 — đoạn văn đang bị gửi lặp",
+			strings.Count(than, "event: stream_delta"))
+	}
+}
+
 // contextVoiHanVan cho handler SSE một hạn chót để nó thoát vòng chờ.
 //
 // Handler SSE chạy vô hạn tới khi client đi; `httptest` không tự đóng, nên bài kiểm phải là
