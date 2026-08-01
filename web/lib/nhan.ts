@@ -1258,6 +1258,8 @@ export const GIAI_THICH = {
   nghiemThuChuaCoKetLuan:
     'Editor chưa ghi kết luận nào cho chương này. Cửa vẫn đang chờ bạn: engine dừng ở biên trước, Editor kết luận sau.',
   nghiemThuChoDay: 'Hai nút vô hiệu — studio đang ở chế độ chỉ đọc',
+  nghiemThuHuyHieuDanToi:
+    'Dây chuyền đã dừng ở biên chương và đang chờ bạn duyệt. Bấm để tới bề mặt Kiểm định: bản duyệt và hai nút quyết định ở cùng một chỗ.',
   /**
    * Vì sao "trả về viết lại" đi qua `/steer` — quyết định 7 của kế hoạch 4/4.
    *

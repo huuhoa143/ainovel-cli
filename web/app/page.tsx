@@ -27,6 +27,7 @@ import { VanPhong } from '@/components/VanPhong';
 import { Xuong } from '@/components/Xuong';
 import { DangTai, KhongTaiDuoc, XuongTrong } from '@/components/XuongTrong';
 import { dungInspector, type Khu as KhuMa } from '@/lib/khu';
+import { trangThaiCua } from '@/lib/nghiemThu';
 import { mayDangChay } from '@/lib/song';
 import { useMay } from '@/lib/useMay';
 import type { CongDoanSong } from '@/lib/useStudio';
@@ -76,7 +77,16 @@ export default function Trang() {
         workshop={s.workshop}
         dangXem={sachDangXem}
         ketNoi={s.ketNoi}
+        // Huy hiệu nghiệm thu nối ở ĐÂY, ngoài `Khu`, và đó là cả điểm của nó: một dây
+        // chuyền đang đứng chờ người dùng phải thấy được từ MỌI bề mặt, không riêng buồng
+        // lái — cùng lý lẽ đã ghi cho `HoiChan` ngay dưới.
+        //
+        // `undefined` khi chưa có snapshot, KHÔNG phải `trangThaiCua(null)`: hai ca đó cho
+        // cùng một hình (không huy hiệu) nhưng khác nguồn — "chưa tải xong" và "engine
+        // đóng" — và gộp chúng ở đây là dạy người sau rằng chúng là một.
+        cuaNghiemThu={s.snapshot ? trangThaiCua(s.snapshot.advance) : undefined}
         onChon={s.chonTacPham}
+        onChonKhu={s.chonKhu}
         // Đường vào "Tác phẩm mới" đặt ở thanh trên, cạnh bộ chọn tác phẩm.
         //
         // Nó VẪN còn trong rail, nhóm Máy — bỏ đi là bỏ một đường đi. Nhưng ở đó nó là mục
