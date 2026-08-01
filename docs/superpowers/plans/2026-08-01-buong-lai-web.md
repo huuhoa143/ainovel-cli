@@ -1693,3 +1693,175 @@ Hai trong ba đột biến chỉ hai bài đó bắt được, nên Task 9 có t
 `go build` exit 0 · `go vet` exit 0 · `gofmt -l .` rỗng · `go test -count=1 ./...`
 **30 gói ok / 0 FAIL** (đúng nền) · `npm test` **42/42** (nền sau cụm A: 20/20) ·
 `tsc --noEmit` exit 0 · `npm run build` **exit 0** (Turbopack, xem mục 5).
+
+---
+
+### Cụm C (Task 10–12) — thi hành xong
+
+**Commit** (nền = `aaec673`):
+
+| sha | tiêu đề |
+|---|---|
+| `815553a` | feat(web): dựng cây vai từ danh sách phẳng có depth |
+| `5593413` | feat(web): dải trạng thái với cây vai và ngữ cảnh |
+| `919db2b` | feat(web): khung buồng lái đổi dải theo trạng thái máy |
+
+#### Phép thử đột biến — Task 10 (`lib/vaiTro.ts`)
+
+Hai dòng đầu là bảng của kế hoạch; năm dòng sau là của tôi.
+
+| # | Đột biến | Kết quả | Bài kiểm bắt được |
+|---|---|---|---|
+| KH-1 | bỏ `ganNhat.length = bac + 1;` | **XANH — LỖ HỔNG** | không bài nào |
+| KH-2 | bỏ nhánh `else goc.push(nut)` | ĐỎ | 4 bài |
+| R-3 | bỏ vòng đi ngược lên, chỉ nhìn `ganNhat[bac - 1]` | **XANH — LỖ HỔNG** | không bài nào |
+| R-4 | bỏ `ganNhat[bac] = nut;` | ĐỎ | 2 bài |
+| R-5 | `Math.max(0, vai.depth)` → `vai.depth` | **XANH — LỖ HỔNG** | không bài nào |
+| R-6 | mọi vai đều về gốc (bỏ lồng) | ĐỎ | 2 bài |
+| R-7 | `goc.push` → `goc.unshift` (đảo thứ tự gốc) | ĐỎ | 1 bài |
+
+**Lỗ hổng KH-1 — bảng của kế hoạch chỉ đúng một nửa: nó nói đột biến này phải đỏ ở bài "vai
+depth 1 thành con của vai depth 0 ngay TRƯỚC nó", nhưng bài đó không chạm tới được.** Cắt bậc
+chỉ có hiệu lực với vai tới SAU một vai nông hơn, mà cả năm bài của kế hoạch đều không có vai
+nào đứng sau một vai nông. Bịt bằng bài `[writer 0, tool 1, sub 2, editor 0, phu 2]`: không
+cắt bậc thì `phu` bị treo dưới `writer` qua một `tool` của nhánh đã đóng — giao diện khẳng
+định Writer đang gọi một công cụ mà nó không gọi.
+
+**Lỗ hổng R-3 — cùng lớp với lỗ hổng `'y'.repeat(…)` của cụm A và `LE_DAY` của cụm B: bài
+kiểm dựng đầu vào ở đúng ca mà hai cách viết cho cùng kết quả.** Bài "vai mồ côi" dùng một vai
+depth 3 KHÔNG có tổ tiên nào, nên nhìn một bậc hay đi ngược lên đều ra "vẽ ở gốc". Bịt bằng
+`[writer 0, sub 2]`: có tổ tiên thì phải đứng dưới nó.
+
+**Lỗ hổng R-5 — một nhánh phòng thủ không bài nào canh** (giống lỗ hổng 6 của cụm A). Hệ quả
+rộng hơn vẻ ngoài: `bac = -1` làm `ganNhat.length = 0`, tức xóa sạch mọi mốc cha, và MỌI vai
+lồng sau đó bị đẩy lên gốc. Bịt bằng `[la -1, con 1]`.
+
+Cả ba: chạy lại sau khi bịt → ĐỎ. `lib/vaiTro.test.ts` có **8** bài, không phải 5.
+
+#### Phép thử đột biến — Task 11 (`components/DaiTrangThai.tsx`)
+
+Hai dòng đầu là bảng của kế hoạch; sáu dòng sau là của tôi. **Bảy trong tám đột biến XANH ở
+lần chạy đầu** — bộ kiểm bốn bài của kế hoạch canh được đúng một điều.
+
+| # | Đột biến | Kết quả | Bài kiểm bắt được |
+|---|---|---|---|
+| KH-1 | ngữ cảnh: `=== null` → `?? 0` (luôn vẽ thước) | ĐỎ | "ngữ cảnh null hiện dấu KHÔNG ĐO ĐƯỢC" |
+| KH-2 | `cayVai(agents)` → `map` phẳng | **XANH — LỖ HỔNG** | không bài nào |
+| R-3 | vai: gộp `null` vào nhánh rỗng | **XANH — LỖ HỔNG** | không bài nào |
+| R-4 | vai chờ: bỏ hẳn nhánh `null` | **XANH — LỖ HỔNG** | không bài nào |
+| R-5 | `turn !== undefined` → kiểm falsy | **XANH — LỖ HỔNG** | không bài nào |
+| R-6 | bỏ kẹp 0–100 của thước | **XANH — LỖ HỔNG** | không bài nào |
+| R-7 | bỏ `title` giải thích của dấu không-đo-được | **XANH — LỖ HỔNG** | không bài nào |
+| R-8 | bỏ cặp `tokens/window` cạnh thước | **XANH — LỖ HỔNG** | không bài nào |
+
+**Lỗ hổng KH-2 — bài "vẽ cây vai" của kế hoạch không canh cây.** Bốn khẳng định của nó đều
+hỏi "chữ này có xuất hiện đâu đó không", mà `getByText` không biết gì về lồng nhau. Thay
+`cayVai` bằng `map` phẳng vẫn xanh. Bịt bằng bài hỏi DOM: `.cayvai > li` đúng một, `.cayvai
+li li` đúng một, và nó chứa `novel_context`.
+
+**Lỗ hổng R-3 là lỗ hổng nặng nhất của cụm, vì nó nằm đúng chỗ cụm này tồn tại để giữ.** Không
+bài nào của kế hoạch chạm tới nhánh `agents === null`: gộp `null` vào nhánh `[]` vẫn xanh cả
+bộ. Nói cách khác, bộ kiểm của kế hoạch cho phép giao diện trả lời "engine đóng nên không
+biết" bằng câu "engine mở, không ai chạy". Bịt bằng bài vẽ hai lần và đòi hai câu KHÁC nhau,
+mỗi lần đều đòi câu kia vắng mặt. R-4 là cùng lỗ hổng đó ở `idle_agents`.
+
+**Lỗ hổng R-5** — `turn: 0` là lượt đầu tiên, một tin thật; bài duy nhất có `turn` dùng số 7
+nên không phân biệt được `!== undefined` với kiểm falsy. Cùng lớp với `advance_permit_chapter`
+đã ghi ở `types.ts`.
+
+**Lỗ hổng R-7** — dấu "không đo được" không có lời giải thích thì người vận hành không biết đó
+là engine đóng hay studio hỏng. Bịt bằng khẳng định `title` trong bài R-3.
+
+Cả bảy: chạy lại sau khi bịt → ĐỎ. `components/DaiTrangThai.test.tsx` có **9** bài, không phải 4.
+
+#### Phép thử đột biến — Task 12 (`components/BuongLai.tsx`)
+
+Kế hoạch không có bảng cho Task này. Bảng này là của tôi.
+
+| # | Đột biến | Kết quả | Bài kiểm bắt được |
+|---|---|---|---|
+| R-1 | luôn vẽ dải trạng thái | ĐỎ | 2 bài |
+| R-2 | luôn vẽ dải việc tiếp theo | ĐỎ | 1 bài |
+| R-3 | đảo điều kiện | ĐỎ | cả 3 bài |
+| R-4 | hiện CẢ HAI dải cùng lúc | ĐỎ | 2 bài |
+| R-5 | nhét cứng `dangChay={true}` xuống dải việc tiếp theo | ĐỎ | "dải việc tiếp theo được cho biết máy đang NGHỈ" |
+| R-6 | bỏ lớp `buonglai` của khung | **XANH — LỖ HỔNG** | không bài nào |
+| R-7 | không truyền `song` xuống dải việc tiếp theo | **XANH — không bịt được, xem dưới** | không bài nào |
+
+R-5 là bài thứ ba tôi thêm ngoài hai bài kế hoạch đòi: hai bài kia chỉ hỏi dải NÀO có mặt,
+nên chúng vẫn xanh khi cờ truyền xuống bị nhét cứng — lúc đó dải nghỉ nói "Máy đang viết"
+ngay dưới một transport đang đứng im. R-6 bịt bằng một khẳng định về lớp khung: hôm nay lớp
+đó chưa làm gì, nhưng lưới của Task 13 và CSS của Task 14 đều bám vào tên đó.
+
+**R-7 KHÔNG phải lỗ hổng bịt được, và lý do là một phát hiện về thiết kế** — xem mục 8 dưới đây.
+
+#### Chỗ kế hoạch sai hoặc thiếu
+
+1. **Bảng đột biến của Task 10 sai ở dòng 1** — xem lỗ hổng KH-1.
+2. **Task 11 Bước 1 bảo thêm hai nhãn ĐÃ CÓ trong `CHU`:** `vaiDangChay` (khối "tổ sản xuất",
+   dòng 877) và `nguCanh` (khối transport, dòng 969, đang được `Transport.tsx` dùng). Đáng ghi
+   không phải vì trùng, mà vì **thứ bắt được là `tsc`, KHÔNG phải bộ kiểm**: khai trùng khóa
+   trong một object literal là JavaScript hợp lệ (bản sau thắng), nên `npm test` xanh 59/59
+   trong khi hai nhãn cùng tên sống song song. Đã bỏ hai khóa mới, dùng lại khóa cũ.
+3. **Bài kiểm 1 của Task 11 đòi `/writer/` chữ thường.** Tên vai đi qua `nhanVai` như mọi chỗ
+   khác trên trang (`ViecTiepTheo` đã làm thế), nên nó ra `Writer`. Đã lệch: bài kiểm đòi
+   `/Writer/`. Để nguyên chữ thường ở dải này là để một trang hiện cùng một vai bằng hai cách
+   viết, đúng thứ từ điển `nhan.ts` tồn tại để chặn.
+4. **Bài kiểm 2 và 4 của Task 11 hỏng ngay với chính fixture của kế hoạch.** Fixture để mọi
+   trường sống là `null`, nên câu "không đo được" xuất hiện ở nhiều ô và `getByText` đỏ vì
+   "Found multiple elements" — đỏ vì một lý do không liên quan tới điều đang canh. Đã hỏi
+   trong ô (`.dtngucanh`, `.dtvai`) thay vì hỏi cả dải.
+5. **Biểu thức của bài kiểm 4 (`/không đo được|chưa có vai/i`) nhận CẢ HAI câu**, tức nó xanh
+   kể cả khi giao diện gộp hai ca lại — đúng thứ cụm này tồn tại để chặn. Đã đổi thành: ô vai
+   phải chứa câu "chưa có vai" VÀ không được chứa "không đo được".
+6. **Task 11 Bước 4 tự mâu thuẫn:** nó bảo dựng cây bằng `cayVai(snapshot.agents ?? [])` rồi
+   ba dòng sau bảo "mọi trường sống phải kiểm `=== null` TRƯỚC khi đọc, không dùng `?? 0`".
+   Đã theo vế thứ hai: `?? []` ở đây biến "engine đóng" thành "không ai chạy".
+7. **Task 12 bảo dùng `container.querySelector('.viectieptheo')` — lớp đó không tồn tại.**
+   `ViecTiepTheo` đã có từ trước và lớp của nó là `vtt` (`app/globals.css` bám theo tên đó).
+   Đã dùng `.vtt`; đổi tên lớp cho khớp kế hoạch là sửa CSS của một dải đang chạy được chỉ để
+   một bài kiểm đọc đẹp hơn.
+8. **Luật đổi dải làm khối `DangLam` bên trong `ViecTiepTheo` thành KHÔNG TỚI ĐƯỢC.** `DangLam`
+   chỉ vẽ khi `dangChay`, mà dải đó chỉ hiện khi máy NGHỈ. Hệ quả: tham số `song` của
+   `BuongLai` đi xuyên mà không ai đọc, và không bài kiểm nào phân biệt được — một giá trị
+   không quan sát được thì không có phép đo nào chạm tới. Đã giữ tham số (Task 13 chuyển cả
+   thân `Canvas` vào đây) và ghi rõ trong chú thích. Việc của `DangLam` ("ai · bước nào ·
+   chương nào") giờ do `DaiTrangThai` làm, đầy đủ hơn — **người làm Task 13 nên quyết định
+   dứt điểm: giữ `DangLam` như mã chết, hay bỏ nó cùng chú thích ghi lý do nó từng tồn tại.**
+9. **Cây vai hôm nay LUÔN PHẲNG với dữ liệu thật, và đó là chuyện phía Go.** `host.AgentSnapshot`
+   (`internal/host/events.go:147`) không có trường depth, nên `anhXaVai`
+   (`internal/serve/snapshot.go:615`) gán cứng `Depth: 0` cho mọi vai. `cayVai` vẫn dựng theo
+   hợp đồng JSON đã chốt (spec §6.1) chứ không theo cái server tạm gửi. Ngoài phạm vi cụm C
+   (cụm này là web), nhưng **spec §7.2 vẽ `└ writer → novel_context` và điều đó chưa hiện ra
+   được trên cuốn thật** — E2E của Task 16 sẽ thấy một cây một bậc, và đó không phải hồi quy.
+10. **Spec §6.1 nói `pending_steer`: `"" = không có; null = không biết (engine đóng)` — hợp
+    đồng thật không làm được thế.** `internal/serve/model.go:234` khai `omitempty`, nên chuỗi
+    rỗng bị rụng khỏi JSON và trường này KHÔNG BAO GIỜ là `null`: hai ca "không có việc tồn"
+    và "engine đóng" đến web y hệt nhau. Dải vì vậy không vẽ dấu "không đo được" cho việc tồn
+    — vẽ là khẳng định một điều dữ liệu không nói. Ghi lại để ai sửa phía Go biết chỗ này.
+11. **`context.percent` là 0–100, không phải 0–1.** TUI in thẳng bằng `%.0f%%`
+    (`internal/entry/tui/layout.go:107`). Dùng `phanTram()` của `lib/dinhdang` ở đây sẽ cho
+    "4100%" — hàm đó nhân 100. Không phải lỗi của kế hoạch, nhưng là cái bẫy đặt sẵn cho
+    người vẽ lại thước này.
+
+#### Quyết định tự đưa ra vì kế hoạch không nói
+
+- **Fixture `components/mau.test-helper.ts` dựng đủ trường THẬT, không `{} as Snapshot[...]`.**
+  Ép kiểu một object rỗng là đúng lớp lỗi mà `types.ts` và spec §6.1 ghi lại (kiểu nói dối →
+  `tsc` xanh, mã đọc phải `undefined`), và nó cũng bỏ mất thứ fixture đáng lẽ cho không: ngày
+  hợp đồng thêm một trường bắt buộc, bản dựng đủ ĐỎ ngay ở đây.
+- **`idle_agents: []` thì KHÔNG vẽ dòng "chờ" nào; `null` thì vẽ dấu "không đo được".** Chỗ
+  trống nói được "đã đo, không ai chờ" nhưng không nói được "không đo được".
+- **Ô "việc tồn" không vẽ gì khi cả hai trường rỗng** — chúng không phải trường sống (mục 10).
+- **Thước ngữ cảnh kẹp 0–100, con số in nguyên giá trị engine báo.** Kẹp là việc của hình vẽ;
+  kẹp cả con số là giấu đi đúng cái bất thường đáng xem.
+- **`BuongLai` chỉ nhận 5 tham số** (snapshot · dangChay · song · onChonKhu · onDocChuong) —
+  đủ cho luật đổi dải. Bộ tham số đầy đủ của `Canvas` là việc của Task 13.
+- **Không đụng `app/globals.css`** — tám lớp của cụm B cộng bảy lớp mới của dải
+  (`.daitrangthai .dtvai .dtcho .dtton .dtngucanh .thuoc .kim .cayvai .khongdo …`) đều chưa có
+  CSS. Đúng theo bảng tệp (globals.css thuộc Task 14), và cũng để tránh va chạm.
+
+**Cổng sau Task 12** (chạy toàn bộ trong worktree, không lọc gói, không `-x`):
+`go build` exit 0 · `go vet` exit 0 · `gofmt -l .` rỗng · `go test -count=1 ./...`
+**30 gói ok / 0 FAIL** (đúng nền) · `npm test` **62/62** (nền sau cụm B: 42/42) ·
+`tsc --noEmit` exit 0 · `npm run build` exit 0.
