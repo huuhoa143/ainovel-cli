@@ -545,3 +545,293 @@ này là thứ duy nhất chứng minh nó có giá.
 **`tsc` lại bắt được thứ `npm test` không bắt**, lần thứ ba trong dự án: thêm prop bắt buộc
 `dangChay` ở Task 3 làm bốn lời gọi trong `CuaNghiemThu.test.tsx` thiếu tham số — `npm test`
 xanh 20/20 vì JSX thiếu prop chỉ là `undefined` lúc chạy. Chạy CẢ HAI trước khi commit.
+
+---
+
+### Cụm nghiệm thu-gắn (Task 5–7) — thi hành xong
+
+**Commit** (nền = `91bc4b6`, nhánh `thuc-thi/nghiem-thu`):
+
+| sha | tiêu đề |
+|---|---|
+| `159e4c7` | feat(web): gắn dải quyết định vào buồng lái và Kiểm định — một cửa, hai bề mặt |
+| `fdd619b` | feat(web): nhãn chế độ đọc snapshot.advance — bỏ nguồn thứ hai từ /settings |
+| `c8c11e9` | feat(web): hình cho dải nghiệm thu và huy hiệu — amber 9%, hai nút căn phải |
+
+#### Task 5 — gắn dải vào hai bề mặt
+
+Bảng của tôi; kế hoạch không có bảng. **14/14 ĐỎ, không lỗ hổng.**
+
+| # | Đột biến | Kết quả | Bài kiểm bắt được |
+|---|---|---|---|
+| T5-1 | bỏ HẲN dải khỏi `BuongLai` | ĐỎ (8) | 4 bài buồng lái · 2 bài `Khu` · 2 bài `Trang` |
+| T5-2 | bỏ HẲN dải khỏi `KiemDinh` | ĐỎ (7) | 4 bài Kiểm định · 2 bài `Khu` · 1 bài `Trang` |
+| T5-3 | dải xuống DƯỚI dải trạng thái | ĐỎ (2) | hai bài thứ tự |
+| T5-4 | dải xuống DƯỚI bản duyệt | ĐỎ | "TRÊN bản duyệt" |
+| T5-5 | `BuongLai` nhét cứng `choGhi={true}` | ĐỎ (3) | 1 buồng lái · 1 `Khu` · 1 `Trang` |
+| T5-6 | `KiemDinh` nhét cứng `choGhi={true}` | ĐỎ (2) | 1 Kiểm định · 1 `Khu` |
+| T5-7 | `BuongLai` nhét cứng `dangChay={false}` | ĐỎ | "được cho biết máy đang chạy hay nghỉ" |
+| T5-7b | nhét cứng `dangChay={true}` (chiều kia) | ĐỎ | cùng bài |
+| T5-8 | `KiemDinh` nhét cứng `dangChay={false}` | ĐỎ | bài tương ứng ở Kiểm định |
+| T5-9 | `KiemDinh` không truyền `tacPham` | ĐỎ (3) | "nhận `tacPham`, nên hai nút BẤM ĐƯỢC" |
+| T5-10 | `page.tsx` nhét cứng `choGhi={true}` | ĐỎ | **chỉ** bài `Trang` |
+| T5-11 | `page.tsx` nối `onDoi` vào hàm rỗng | ĐỎ (2) | hai bài `Trang` |
+| T5-12 | `KiemDinh` nuốt `onDoi` | ĐỎ | **chỉ** bài "sợi dây `taiLai` … ở Kiểm định" |
+| T5-13 | `BuongLai` nuốt `onDoi` | ĐỎ | **chỉ** bài `Trang` buồng lái |
+
+**T5-12 và T5-13 mỗi cái chỉ MỘT bài bắt được, và đó là hai bài tôi thêm riêng cho chúng.**
+Sợi dây `onDoi` có HAI chỗ nối (một trong `BuongLai`, một trong `KiemDinh`) nên một bài đi qua
+một bề mặt không chứng minh gì về bề mặt kia. Hệ quả nếu đứt: lệnh tới engine và thành công,
+nhưng snapshot không về, nên dải amber ở lại cho một cái cửa ĐÃ MỞ — và cú bấm thứ hai cấp phép
+thêm một chương, tức tiền đôi. Không lỗi nào nổ ra.
+
+Đây là **lần thứ NĂM** của lớp lỗi "mắt cuối của sợi dây" trong dự án — sau `vanSong` (cụm D),
+`sach` + `onMoTacPham` (cụm Xưởng) và `onChonKhu` của thanh trên (cụm nghiệm thu). Phép đo phải
+dựng cả `Trang`; mọi tầng thấp hơn đều truyền giá trị CỦA CHÍNH NÓ vào.
+
+**Hai bộ kiểm mới:** `components/KiemDinh.test.tsx` và `app/page.nghiemthu.test.tsx` (repo chưa
+từng có bộ kiểm cho `KiemDinh`). Tệp thứ hai tách riêng vì nó thay `@/lib/api` cho cả tệp —
+cùng lý do cụm trước tách `CuaNghiemThu.hanhdong.test.tsx`.
+
+#### Task 6 — bỏ nguồn thứ hai của `advance_mode`
+
+Bảng của tôi, gồm hai dòng kế hoạch/người giao việc BẮT BUỘC. **9/9 ĐỎ, không lỗ hổng.**
+
+| # | Đột biến | Kết quả | Bài kiểm bắt được |
+|---|---|---|---|
+| T6-1 | **đọc lại `/settings`** (dựng lại NGUYÊN VẸN state + effect + phép suy) | ĐỎ (5) | 4 bài `DieuKhien` · 1 bài `Trang` |
+| T6-2 | **coi `advance === null` là auto** (`bietCheDo = true`) | ĐỎ | **chỉ** bài "`advance === null` thì KHÔNG vẽ chế độ nào" |
+| T6-3 | coi `advance === null` là review (chiều kia) | ĐỎ | cùng bài |
+| T6-4 | nhãn viết cứng "nghiệm thu" | ĐỎ (4) | 4 bài |
+| T6-5 | nhãn viết cứng "tự chạy" | ĐỎ (3) | 3 bài |
+| T6-6 | đổi chế độ gửi CHÍNH chế độ đang có | ĐỎ (2) | hai bài đổi chế độ |
+| T6-7 | bỏ `onDoi()` sau khi đổi | ĐỎ (2) | hai bài đổi chế độ |
+| T6-8 | nhãn chế độ hiện ở MỌI ca | ĐỎ | bài ca `null` |
+| T6-9 | `Cho đi tiếp` hiện ở mọi chế độ | ĐỎ (2) | 2 bài |
+
+**Lần đầu tôi viết T6-1 nó KHÔNG phải một đột biến, và cái chốt của cụm trước bắt được.** Bản
+đầu chỉ thay hai dòng suy luận và tham chiếu một biến không tồn tại → 10/11 đỏ vì lỗi BIÊN DỊCH,
+không vì hành vi. Một đột biến không biên dịch được thì làm mọi bài đỏ và không đo gì cả — cùng
+họ với "ĐỘT BIẾN KHÔNG ĂN", chỉ ngược dấu. Đã thêm **cái chốt thứ ba** vào bộ chạy: `tsc` phải
+xanh SAU khi đột biến, nếu không thì bỏ dòng đó thay vì ghi một con số. Bản đúng dựng lại nguyên
+vẹn cả `import`, `useState`, effect `layCaiDat` và phép suy.
+
+**Hai phép đo cho câu "không gọi mạng để biết chế độ"**, vì một mình phép đo đầu chỉ canh đúng
+một cái tên hàm: spy trên `layCaiDat` (đường qua `lib/api.ts`) và spy trên `fetch` (đường gọi
+thẳng). Cả hai **không bao giờ resolve** — một mock trả sẵn `advance_mode` sẽ cho ra nhãn đúng
+vì lý do sai, và lúc đó bài kiểm xanh trong khi component vẫn phụ thuộc mạng.
+
+#### Ca `advance === null`: chỗ tôi lệch khỏi chữ "giữ hành vi hiện tại", và vì sao
+
+Người giao việc nói hai điều mà ở ca này chúng **xung đột**: "giữ hành vi hiện tại của
+`DieuKhien` cho ca không biết chế độ" và "đừng vẽ *tự chạy* như một sự thật".
+
+Hành vi hiện tại LÀ vẽ "tự chạy": `cheDo` khởi tạo là `''` nên `choNghiemThu === false`, và nhãn
+đi vào nhánh `CHU.cheDoTuChay`. Bài kiểm của tôi cho ca đó ĐỎ trên mã nền — tức cái nói dối có
+thật, không phải giả thuyết. Đã chọn vế thứ hai, và giữ vế thứ nhất ở đúng phần nó nói đúng:
+
+- `choNghiemThu === false` khi `advance === null` → nút `Cho đi tiếp` KHÔNG hiện. **Giống hệt
+  hành vi cũ**, và đúng: engine đóng thì nút đó trả 409.
+- nhãn chế độ thì ẨN thay vì khẳng định một chế độ.
+
+Và nó không chỉ đúng về LỜI mà còn đúng về CHỨC NĂNG — đây là phần suy ra được từ mã Go, không
+suy được từ giao diện: `PUT /advance-mode` tự đòi `s.may.dangMo(book)` (`internal/serve/vongdoi.go:41`),
+nên trên một engine đã đóng cái nút ấy **chắc chắn trả lỗi**. Vẽ nó là mời bấm một nút không
+bấm được — cùng lý lẽ mà chính kế hoạch đã dùng để bỏ cửa nghiệm thu ở ca `null`.
+
+Ẩn chứ không vẽ một dấu "không đo được": nhánh `maMoy === false` ngay dưới ĐÃ là bề mặt cho ca
+engine đóng và nó nói ra bằng nút `Mở máy` — một câu rõ hơn một dấu gạch. Có bài kiểm cho vế
+ngược ("`advance === null` KHÔNG làm mất nút Chạy") để không ai chữa cái này bằng cách ẩn cả
+thanh: nhánh đó mang một sửa lỗi vòng đời có lời người dùng kèm theo.
+
+#### Chỗ kế hoạch SAI hoặc thiếu
+
+1. **Câu "`Snapshot.transport` không mang `advance_mode`" đúng nguyên văn tới hôm nay, nhưng lý
+   do THẬT để bỏ `/settings` mạnh hơn thứ kế hoạch ghi.** Kế hoạch nói hai endpoint "mô tả cùng
+   một engine ở hai thời điểm lệch nhau". Đo được thì chúng không phải hai bản của một nguồn:
+   `/settings` đọc `meta/run.json` — một TỆP còn lại từ lượt trước — còn `snapshot.advance` đến
+   thẳng từ engine đang mở (`serve.go:325` chỉ gán khi `may.dangMo(id)` thành công). Nên đường
+   mới **mất thông tin** ở ca engine đóng, và đó chính là điều đúng.
+2. **Kế hoạch không nói `DieuKhien` sẽ mất gì khi bỏ `datCheDo(r.mode)`.** Đã kiểm phía Go trước
+   khi bỏ, vì nếu `PUT /advance-mode` chỉ ghi `run.json` thì đọc chế độ từ snapshot sống sẽ làm
+   nút đổi chế độ **không phản ứng** — một hồi quy im lặng. Nó chạm engine thật
+   (`p.eng.SetAdvanceMode`, `vongdoi.go:46`) và trả từ chính `p.eng.Snapshot()`, tức cùng nguồn
+   mà `/studio` đọc. Nên `onDoi()` là đủ, và giữ một `useState` là dựng lại đúng nguồn thứ hai
+   vừa bỏ.
+3. **Task 5 không nói dải lấy `choGhi` từ đâu, và `capabilities.steer` là câu trả lời SAI dù nó
+   nằm sẵn trong snapshot.** `serve.go:309` đặt `Steer = s.choGhi && s.may != nil`, và nó là một
+   `bool` trong JSON nên **không bao giờ nói được "chưa biết"**. Dải có một nhánh riêng cho
+   `choGhi === undefined` (khóa nút mà KHÔNG nói "studio chỉ đọc"), có bài kiểm, và đột biến
+   T2-7 của cụm trước đã chứng minh nhánh đó sống. Dùng `steer` là lặng lẽ giết nó. Nên
+   `may.choGhi` đi xuyên `Khu` — hai prop mới trên một `switch` mười sáu nhánh, và đó là giá
+   đúng.
+4. **Task 7 kê sáu lớp; nhật ký cụm trước sửa thành tám. Tám là ĐÚNG** — đã đo lại bằng cách
+   nhìn CHÍNH selector, không đếm số lần xuất hiện: `.ky` và `.lbl` không có một luật TRẦN nào
+   trong `globals.css` (chỉ `.st .ky`, `.trans .lbl`, `.mucxem .lbl`…). Thiếu chúng thì `■` và
+   "Kết luận của Editor" render trần.
+5. **Task 7 không lường rằng huy hiệu phá thanh trên ở 390px** — xem mục dưới. Đây là chỗ kế
+   hoạch thiếu nặng nhất của Task 7, vì hệ quả là mất DỮ LIỆU (tên cuốn đang mở), không phải
+   mất hình.
+6. **Fixture `studio-tran-yeu-ky.json` mang một trạng thái server thật KHÔNG dựng được:**
+   `agents`/`context`/`in_progress_chapter` non-null mà `advance: null`. `chieuTruongSong`
+   (`snapshot.go:571`) đặt cả năm trường sống trong CÙNG một lời gọi và `Advance` ở đó là
+   `&TienDo{…}`, không bao giờ `nil`. Cùng lớp drift mà cụm D đã sửa cho năm trường kia và bỏ
+   sót đúng trường này. Đã sửa thành một cửa đang chờ — cần cho kiểm hình, và cũng để mock thôi
+   nói dối.
+
+#### Một hồi quy TỰ GÂY RA ở 390px, và nó không hiện ra dưới dạng tràn ngang
+
+`tranNgangTrang === 0` và `barTran === 0` ở 390px — cả hai phép đo mà Task 7 yêu cầu đều XANH.
+Nhưng huy hiệu (194px) đã nén `.pickwrap` xuống còn **5px**: tên cuốn đang mở biến mất khỏi
+thanh trên. Đúng cái hỏng mà chú thích của `.slate` đã trả giá để ghi một lần ("bị nén về bề
+rộng 0 mà các đốm bên trong vẫn vẽ ra ngoài") — và một bộ đo chỉ hỏi "có tràn không" **không
+bao giờ thấy nó**, vì flex nén chứ không tràn.
+
+Ngân sách đo được ở 390px: 330px dùng được (390 − đệm 24 − ba khe 36), trong đó bộ chọn đòi
+76px, nút `+` 27px, huy hiệu kết nối 104px → còn **123px** cho huy hiệu.
+
+| | trước | sau |
+|---|---|---|
+| huy hiệu | 194px | **83px** |
+| bộ chọn tác phẩm | **5px** (nén) | **116px** (không nén) |
+
+Đã xử bằng bản nhãn ngắn `nghiemThuChoBanNgan = 'Chờ bạn'`, hai bản cùng nằm trong DOM và CSS
+chọn bản nào hiện — không có điểm ngắt nào trong JS, vì một `matchMedia` ở đó là bản thứ hai của
+một con số mà `globals.css` đã giữ. Giữ vế "chờ bạn" chứ vế "nghiệm thu": vế thứ hai nói CHỦ ĐỀ,
+vế thứ nhất nói việc phải làm, và huy hiệu tồn tại để nói điều thứ hai.
+
+**Cái còn mất, nói thẳng:** ở 390px bộ chọn hiện `Tr… 46/300` chứ không hiện đủ "Trấn Yêu Ký",
+vì huy hiệu vẫn ăn 83px của nó. Chấp nhận, và có lý do đo được: tên cuốn VẪN trên màn hình —
+`.head` của bề mặt in "Trấn Yêu Ký · đang viết · 300 chương · 6 tập · 138.412 từ" ngay dưới
+thanh trên — còn huy hiệu chỉ hiện khi có một cửa đang chờ. Đường thứ ba (rút về đúng ký hiệu,
+trả bộ chọn về 161px) đã cân nhắc và bỏ: một hình vuông amber không tên là một huy hiệu không ai
+đọc được, và trên cảm ứng `title` không tồn tại (lý do đã ghi ở `moMay`).
+
+**Task 7 vì vậy ĐỘNG VÀO `ThanhTren.tsx` và `nhan.ts`, ngoài bảng tệp** — cùng tiền lệ và cùng
+lý do như `data-nhan` của cụm Xưởng: CSS không được tự bịa chuỗi (luật 4), nên một bản nhãn thứ
+hai phải đi qua `nhan.ts`.
+
+#### Kiểm hình trên trình duyệt THẬT
+
+`npm run build:mock` → phục vụ `web/out` tĩnh trên `127.0.0.1:8479` → Chromium qua Playwright.
+
+**Ảnh chụp:**
+`/Users/robin/Personal/reclip/VideoCaptionerSystem/.playwright-mcp/nghiemthu-1440.png` ·
+`…/nghiemthu-390.png` · `…/nghiemthu-kiemdinh-1440.png` (dải trên bản duyệt 7 chiều).
+
+| Việc | 1440×900 | 390×844 |
+|---|---|---|
+| tràn ngang trang | **0** | **0** |
+| tràn ngang trong dải | **0** | **0** |
+| tràn ngang thanh trên | **0** | **0** |
+| bộ chọn tác phẩm bị nén | không | **không** (116px) |
+| huy hiệu | 194px, nhãn đầy đủ | 83px, nhãn ngắn |
+| hai nút | cùng hàng với chữ, căn phải | **xuống hàng riêng** dưới chữ |
+| phần tử chữ đo được (dải) | **6** | **6** |
+| màu không đọc được | **0** | **0** |
+| vi phạm AA trong dải | **0** | **0** |
+| vi phạm AA toàn trang | **0** (345 phần tử) | **0** (308 phần tử) |
+| tỉ số thấp nhất trên nền amber | **4,94:1** (`.lbl`) | **4,94:1** |
+
+**Điểm ngắt đo tại chỗ:** 861px → hai cột (`291.82px 321.18px`), nút cùng hàng với chữ;
+860px → một cột (`824px`), nút xuống hàng (top 212 so với ô lý do 159). Cả hai 0 tràn.
+
+**Ca engine đóng, đo trên `?tp=bien-ky`:** không dải, không huy hiệu, và transport chỉ còn
+`▶ Chạy` + `Đóng máy` — **không nhãn chế độ nào**, tức ca `null` của Task 6 đúng trên trình
+duyệt thật, không chỉ trong jsdom.
+
+**Ca Kiểm định:** hai nút `disabled === false` trên trình duyệt thật, tức `tacPham` và `choGhi`
+thật sự tới được bề mặt đó — bẫy T2-8 mà cụm trước cảnh báo đã được đóng bằng một phép đo sống,
+không chỉ bằng một bài kiểm jsdom.
+
+#### BỘ ĐO TƯƠNG PHẢN: chốt thứ tư, và cách tôi chứng minh nó không đo nhầm
+
+Cụm Xưởng ghi lại rằng bản đầu của họ tô đen trước rồi tô đè, nên `rgba(0,0,0,0)` để lại pixel
+đen ĐẶC và **mọi phần tử bị đo trên nền đen** — báo cao hơn sự thật. Bản của tôi bỏ hẳn bước tô
+đen (`clearRect` rồi tô thẳng, đọc alpha thật) và gộp chuỗi tổ tiên theo `source-over`.
+
+Ba chốt của họ đều bật: đếm màu không đọc được (**0**), cắm một phần tử chắc chắn vi phạm rồi
+hỏi lại (**đúng 1** mọi lần chạy), quét cả `::before`.
+
+**Chốt thứ tư, của tôi, và nó là thứ duy nhất chứng minh bản này không lặp lại lỗi ĐÓ:** hỏi
+CÙNG một màu chữ trên BA nền khác nhau và đòi ba con số khác nhau. Triệu chứng của bộ đo hỏng là
+"mọi phần tử `--ink-3` đều ra đúng một số".
+
+| `--ink-3` trên | tỉ số |
+|---|---|
+| `--bg` | **5,46:1** |
+| `--panel` | **5,22:1** |
+| nền dải (amber 9%) | **4,94:1** |
+
+Ba số khác nhau, và **giảm dần đúng chiều** nền sáng lên — đúng vật lý. Thêm một đối chiếu độc
+lập: **5,46 khớp CHÍNH XÁC** con số cụm Xưởng đo cho `--ink-3` trên một dòng thường. Hai bộ đo
+dựng riêng, cùng một con số.
+
+**Một chỗ đáng ghi cho người sau:** chú thích của token nói `--ink-3` là "4.9:1" so với `--bg`,
+còn hai bộ đo độc lập đều cho 5,46. Không sửa (ngoài phạm vi, và con số 4,9 vẫn ở phía an toàn),
+nhưng nếu ai chỉnh token đừng tin con số trong chú thích đó.
+
+Nồng độ 9% chứ 12%: chép nguyên `.canhbao`, và có ba lý do đo được — (a) hai dải amber đứng gần
+nhau trong `.bltren` nên hai nồng độ khác nhau đọc thành hai MỨC báo động trong khi chúng là hai
+LOẠI tin; (b) dải này đứng trên `--panel`/`--bg` cạnh `.canhbao`, không phải giữa những hàng
+`--bg` như dòng engine-mở của màn Xưởng; (c) 9% để lại **4,94:1**, tức dư 0,44 trên sàn — gấp
+đôi khoảng dư 0,21 mà cụm Xưởng phải sống với ở 12%.
+
+#### Chỗ KHÔNG có bài kiểm, và vì sao
+
+CSS thuần vẫn không có bài kiểm nào, cùng lý do cụm Xưởng đã ghi: jsdom không bố cục. Mọi khẳng
+định về hình ở trên đứng trên số đo lấy từ Chromium thật. Ba thứ không có hàng rào hồi quy:
+
+- dải và huy hiệu có hình đúng hay không;
+- **ngân sách 123px của thanh trên ở 390px** — thêm bất kỳ thứ gì vào `.bar` sẽ lại nén bộ chọn,
+  và không có gì đỏ. Đây là cái đáng lo nhất của cụm này, vì phép đo "có tràn không" **không
+  bắt được nó** (flex nén chứ không tràn). Con số và cách đo đã ghi thẳng vào `nhan.ts` và CSS;
+- tỉ số tương phản sau một lần chỉnh token.
+
+Thứ jsdom GIỮ được thì đã có bài: `ThanhTren.test.tsx` chốt cả hai bản nhãn có mặt, `aria-label`
+là bản đầy đủ, và bản ngắn phải là một chuỗi KHÁC (hai bản giống nhau thì điểm ngắt không tiết
+kiệm pixel nào mà bài kiểm vẫn xanh).
+
+#### Quyết định tự đưa ra vì kế hoạch không nói
+
+- **`dangChay` của dải ở Kiểm định lấy từ prop `dangChay` của `Khu`, không gọi lại
+  `mayDangChay(snapshot)`.** Nhật ký cụm trước gợi ý cách thứ hai; cả hai cho cùng giá trị, mà
+  `page.tsx` đã tính sẵn một lần — tính lại là mở đường cho hai bản của cùng một phép suy.
+- **`maMoy` (`/api/engine`) được GIỮ dù `snapshot.advance !== null` bây giờ trả lời được chính
+  câu nó đang hỏi.** Đó là nguồn thứ hai của "engine có mở không", cùng lớp với nguồn thứ hai
+  vừa bỏ — nhưng nhánh `maMoy === false` mang một sửa lỗi vòng đời có lời người dùng kèm theo
+  ("không biết luồng chạy như nào… rời rạc"), và gộp nó là đổi luồng Chạy/Mở máy, việc mà cụm
+  này không sở hữu và Task 8 không có mục E2E nào cho. Đã ghi thẳng vào chú thích tại chỗ để ai
+  sở hữu luồng đó nhặt.
+- **Ở một cửa đang chờ, `Cho đi tiếp` xuất hiện HAI lần trên cùng màn hình** — một ở dải, một ở
+  transport (`DieuKhien` hiện nó khi chế độ là `review`). Không phải lớp lỗi "hai sự thật":
+  chúng gọi CÙNG một route và giờ đọc CÙNG một nguồn. Không bỏ cái nào: nút ở transport có
+  nghĩa ở mọi bề mặt kể cả khi chưa tới biên, còn nút ở dải là nút quyết định đứng cạnh bằng
+  chứng. Nhưng bộ kiểm phải khoanh vùng — `app/page.nghiemthu.test.tsx` tra trong
+  `.cuanghiemthu`, và có chú thích nói vì sao. Trước Task 6 chuyện này không lộ ra trong bộ
+  kiểm vì tệp đó không thay `layCaiDat` nên nhãn chế độ không bao giờ về.
+- **`.cntlydo` dùng `--ink-2`, không `--ink-3`.** Đây là câu người vận hành đọc để QUYẾT ĐỊNH,
+  không phải một nhãn phụ; và nó cũng là chỗ dư tương phản nhất nên không có lý do hạ.
+- **Dưới 860px hai nút căn TRÁI, không căn phải.** Trên một hàng của chính nó, căn phải đẩy hai
+  nút ra xa mắt vừa đọc xong câu kết luận — ở khổ hẹp thứ tự đọc là trên xuống dưới.
+- **Không mở điểm ngắt mới.** Dải dùng 860px (`DESIGN.md:110` và rail đang bám), huy hiệu dùng
+  700px (`.nutMoi` và `.slate` đang bám).
+- **`web/out` dựng lại bằng `npm run build` (không mock) trước khi commit** — nó bị
+  `.gitignore` bỏ qua nên không vào commit, nhưng để lại một bản mock là đặt bẫy cho Task 8.
+- **Bộ chạy đột biến và bộ đo tương phản KHÔNG đưa vào repo**, cùng lý do ba cụm trước: chúng
+  không nằm trong cổng nào nên trong repo chúng là mã chết trông như hàng rào. Nhưng đây là cụm
+  thứ NĂM cần chúng, và cụm trước đã viết "nếu có cụm thứ năm, hãy cân nhắc commit nó thật" —
+  tôi vẫn không commit, và ghi lại rằng khuyến nghị đó bây giờ có bốn cụm hậu thuẫn.
+
+#### Cổng sau Task 7 (chạy toàn bộ trong worktree, không lọc gói, không `-x`)
+
+`go build ./...` exit 0 · `go vet ./...` exit 0 · `gofmt -l .` **rỗng** ·
+`go test -count=1 ./...` **30 gói ok / 0 FAIL** (đúng nền) ·
+`npm test` **197/197** (nền sau Task 1–4: 171/171, không bài nào đỏ) · `npx tsc --noEmit` exit 0 ·
+`npm run build` exit 0.
+
+`git merge-base --is-ancestor 91bc4b6 HEAD` → đúng; cây làm việc sạch.
+
+**`tsc` bắt được thứ `npm test` không bắt, lần thứ TƯ trong dự án:** fixture của
+`KiemDinh.test.tsx` dùng `note` cho một `Dimension` mà hợp đồng khai `comment`. `npm test` xanh
+188/188 vì bài đó không đọc trường ấy — nó chỉ đếm `.duyetthan`. Chạy CẢ HAI trước khi commit.
