@@ -201,3 +201,18 @@ test('vừa mở khu, chưa cuộn lần nào thì KHÔNG có nút về cuối',
   render(<VanSong boDem={themChu(BO_DEM_RONG, 'x')} dangChay />);
   expect(screen.queryByRole('button', { name: CHU.veCuoi })).toBeNull();
 });
+
+test('máy nghỉ mà bộ đệm CÒN chữ thì giữ nguyên chữ, chỉ đổi tiêu đề', () => {
+  // Bộ đệm còn giữ báo cáo của lượt vừa xong. Xóa nó đi lúc engine đóng là vứt thứ duy nhất
+  // đang nói được điều gì đó ở vị trí đắt nhất màn hình.
+  const bd = themChu(BO_DEM_RONG, 'khế ước: ✓ 4/4 · 1.874 từ');
+  render(<VanSong boDem={bd} dangChay={false} />);
+
+  expect(screen.getByText('khế ước: ✓ 4/4 · 1.874 từ')).toBeDefined();
+  expect(screen.getByRole('heading', { name: /máy đang nghỉ/i })).toBeDefined();
+});
+
+test('máy nghỉ và bộ đệm rỗng thì nói việc tiếp theo, không nói "chờ chữ"', () => {
+  render(<VanSong boDem={BO_DEM_RONG} dangChay={false} />);
+  expect(screen.getByText(/bấm chạy ở thanh dưới/i)).toBeDefined();
+});
