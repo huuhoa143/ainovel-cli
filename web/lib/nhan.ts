@@ -715,6 +715,33 @@ export const CHU = {
   /* Chữ thường: đây là nút hành động nhỏ nổi trong khu chữ, không phải nhãn của một vùng. */
   veCuoi: 'về cuối',
 
+  /* ── dải trạng thái của buồng lái ──────────────────────────────────────────
+   *
+   * `daiTrangThaiVung` là tên VÙNG, đứng yên — cùng lý do đã ghi ở `vttVung` và
+   * `vanSongVung`: tên vùng là thứ trình đọc màn hình điều hướng tới, nên nó không được đổi
+   * theo trạng thái máy.
+   *
+   * Hai nhãn của dải này DÙNG LẠI khóa đã có ở dưới thay vì khai mới, vì cùng chủ ngữ:
+   *   - `vaiDangChay` (khối "tổ sản xuất") — một VAI đang chạy;
+   *   - `nguCanh` (khối transport) — cùng cửa sổ ngữ cảnh, cùng con số.
+   * Bản đầu của khối này khai lại cả hai, và thứ bắt được là `tsc` chứ KHÔNG phải bộ kiểm:
+   * khai trùng khóa trong một object literal là JavaScript hợp lệ (bản sau thắng), nên
+   * `npm test` xanh suốt trong khi hai nhãn cùng tên sống song song.
+   *
+   * `vaiDangChay` cũng không dùng lại `buocDangChayNgan` dù hai chuỗi giống hệt nhau lúc
+   * này: khóa kia nói về một CÔNG ĐOẠN của engine, ở đây chủ ngữ là VAI. Ngày ai đó đổi nhãn
+   * công đoạn thành "đang xử lý", nhãn của nhóm vai không được đi theo.
+   */
+  daiTrangThaiVung: 'Trạng thái máy',
+  vaiCho: 'chờ',
+  vieccTon: 'việc tồn',
+  /* TUI gốc viết `writer turn 7`. Đây là lượt của VAI trong chu kỳ hiện tại, không phải lượt
+     nói của khu văn sống — hai thứ trùng từ nhưng khác chủ ngữ, nên có chú giải đi kèm. */
+  luotVai: (n: number) => `lượt ${n}`,
+  lyDoVietLai: 'Lý do viết lại',
+  /* Chữ thường: nó đứng SAU dấu hai chấm của nhãn trường, không mở đầu một câu. */
+  khongDoDuoc: 'không đo được',
+
   // bảng chương
   // "n chương ngoài tập 3" — phép lọc phải nói ra mình đã ẩn bao nhiêu.
   ngoaiPhamVi: (n: number, phamVi: string) => `${n} chương ngoài ${phamVi}`,
@@ -1063,6 +1090,21 @@ export const GIAI_THICH = {
     'Chưa có lượt nào trong phiên xem này. Khi máy bắt đầu viết, chữ sẽ chảy ở đây.',
   vanSongNghi:
     'Máy đang nghỉ, và phiên xem này chưa giữ được lượt nào để hiện lại. Bấm Chạy ở thanh dưới để nó viết tiếp — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước.',
+  /* ── dải trạng thái: hai câu cho HAI ca không được lẫn ─────────────────────
+   *
+   * `null` (engine đóng, KHÔNG đo được) và `[]`/`0` (đo được, bằng không) là hai sự thật khác
+   * nhau, và dự án này đã trả giá một lần cho việc gộp chúng: một kiểu TS khai không-null cho
+   * một trường server trả `null` (`Timeline.volumes`) làm `tsc` xanh trong khi renderer SẬP ở
+   * bề mặt mặc định. Ở dải này hệ quả nhẹ hơn nhưng cùng lớp: một cây thước ngữ cảnh 0% vẽ
+   * cho một thứ không có nguồn nói rằng model đang dùng 0% cửa sổ — một con số sai, không
+   * phải một chỗ trống.
+   */
+  truongSongNull:
+    'Engine đang đóng nên studio không đo được giá trị này. Đây KHÁC với "đo được, bằng không".',
+  chuaCoVaiNaoChay:
+    'Engine đang mở và đo được: lúc này không có vai nào đang chạy.',
+  soLuotVaiLaGi:
+    'Số lượt của vai trong chu kỳ hiện tại. Đây là dấu hiệu duy nhất phân biệt "đang chạy lâu" với "treo".',
   /* ── luồng tạo tác phẩm ──────────────────────────────────────────────── */
   batDauRoiKhongPhaiLamGi:
     'Sau khi bấm, bạn KHÔNG phải làm gì thêm: máy tự đi tiếp từng chương. Việc của bạn là xem nó chạy và nói vào ô can thiệp nếu muốn đổi hướng.',
