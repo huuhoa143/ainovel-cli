@@ -31,7 +31,7 @@ function ve(p: Partial<Parameters<typeof ThanhTren>[0]> = {}) {
 }
 
 test('đang chờ nghiệm thu thì thanh trên mang huy hiệu, kèm ký hiệu hình học', () => {
-  ve({ cuaNghiemThu: trangThaiCua({ mode: 'review', hold: true, permit_chapter: 8 }) });
+  ve({ cuaNghiemThu: trangThaiCua({ mode: 'review', hold: true, permit_chapter: 8 }, '') });
 
   const hh = screen.getByRole('button', { name: CHU.nghiemThuChoBan });
   expect(hh).toBeDefined();
@@ -57,7 +57,7 @@ test('huy hiệu mang CẢ HAI bản nhãn, và tên vùng là bản đầy đ�
   //    amber vô danh, và không phép đo nào ngoài bài này chạm tới);
   //  - `aria-label` là bản ĐẦY ĐỦ, nên tên vùng KHÔNG đổi theo bề rộng màn hình — cùng luật
   //    đã ghi cho `vttVung`/`vanSongVung`, và cùng cách `.nutMoi` giữ nghĩa khi rút về `+`.
-  ve({ cuaNghiemThu: trangThaiCua({ mode: 'review', hold: true, permit_chapter: 8 }) });
+  ve({ cuaNghiemThu: trangThaiCua({ mode: 'review', hold: true, permit_chapter: 8 }, '') });
 
   const hh = screen.getByRole('button', { name: CHU.nghiemThuChoBan });
   expect(hh.getAttribute('aria-label')).toBe(CHU.nghiemThuChoBan);
@@ -97,7 +97,7 @@ test('KHÔNG chờ thì không có huy hiệu — cả ba ca không-chờ', () =
         ketNoi="song"
         onChon={() => {}}
         onChonKhu={() => {}}
-        cuaNghiemThu={trangThaiCua(a)}
+        cuaNghiemThu={trangThaiCua(a, '')}
       />,
     );
     expect(container.querySelector('.hieunghiemthu')).toBeNull();
@@ -111,7 +111,7 @@ test('bấm huy hiệu đi tới khu Kiểm định', () => {
   const di = vi.fn();
   ve({
     onChonKhu: di,
-    cuaNghiemThu: trangThaiCua({ mode: 'review', hold: true, permit_chapter: 8 }),
+    cuaNghiemThu: trangThaiCua({ mode: 'review', hold: true, permit_chapter: 8 }, ''),
   });
 
   fireEvent.click(screen.getByRole('button', { name: CHU.nghiemThuChoBan }));
@@ -125,7 +125,7 @@ test('huy hiệu KHÔNG phụ thuộc việc có tác phẩm nào đang xem hay 
   // đi qua. Giữ nó ở ngoài để chốt rằng nó là tin của MÁY, không phải một phần của bộ chọn.
   ve({
     dangXem: undefined,
-    cuaNghiemThu: trangThaiCua({ mode: 'review', hold: true }),
+    cuaNghiemThu: trangThaiCua({ mode: 'review', hold: true }, ''),
   });
   expect(screen.getByRole('button', { name: CHU.nghiemThuChoBan })).toBeDefined();
 });

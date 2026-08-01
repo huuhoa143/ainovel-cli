@@ -29,6 +29,7 @@ function cho(p: Partial<Parameters<typeof CuaNghiemThu>[0]> = {}) {
   return render(
     <CuaNghiemThu
       advance={{ mode: 'review', hold: true, permit_chapter: 8, hold_reason: LY_DO }}
+      runtime=""
       tacPham="tran-yeu-ky"
       choGhi
       dangChay={false}
@@ -185,6 +186,7 @@ test('nhãn nút gửi nói TRƯỚC câu này sẽ thành gì, theo engine đan
   rerender(
     <CuaNghiemThu
       advance={{ mode: 'review', hold: true, permit_chapter: 8, hold_reason: LY_DO }}
+      runtime=""
       tacPham="tran-yeu-ky"
       choGhi
       dangChay

@@ -48,11 +48,34 @@ export interface TrangThaiCua {
  *   - `??` một mặc định DUYỆT (`{mode:'review', hold:true}`) → vẽ cửa cho một engine đã
  *     đóng, tức đúng lớp lỗi `null`-đọc-thành-một-phép-đo mà cả hợp đồng `/studio` giữ.
  */
-export function trangThaiCua(advance: TienDo | null): TrangThaiCua {
+/**
+ * Trạng thái engine mà ở đó nó KHÔNG còn tự đi tiếp — tức nếu đang ở chế độ nghiệm thu thì
+ * nó đang chờ người duyệt.
+ *
+ * `completed` KHÔNG nằm trong đây: truyện viết xong thì không còn chương nào để duyệt, và một
+ * dải "đang chờ bạn cho đi tiếp" trên một cuốn đã hoàn thành là một việc phải làm không tồn
+ * tại. `pausing` cũng không: engine đang trên đường dừng, chưa dừng.
+ *
+ * `''` (engine đóng) không nằm trong đây, và đó là cả một quyết định: suy nó thành "đã dừng"
+ * sẽ vẽ cửa cho một engine không tồn tại — đúng lớp lỗi `null`-đọc-thành-một-phép-đo mà cả
+ * hợp đồng `/studio` sinh ra để chặn.
+ */
+const DA_DUNG = new Set(['paused', 'idle']);
+
+export function trangThaiCua(advance: TienDo | null, runtime: string | null): TrangThaiCua {
   if (!advance) return { dangCho: false, cheDoDuyet: false };
   const cheDoDuyet = advance.mode === 'review';
   return {
-    dangCho: cheDoDuyet && advance.hold,
+    // HAI đường vào cùng một cửa, và chúng là hai chuyện khác nhau:
+    //
+    //   - `advance.hold` — một lần tạm dừng DO CAN THIỆP KÝ. Xảy ra được cả lúc engine đang
+    //     chạy, nên nó không cần điều kiện runtime nào.
+    //   - `runtime` đã dừng — cửa nghiệm thu ở luồng THƯỜNG: engine viết xong một chương và
+    //     đứng lại vì chưa có giấy phép cho chương sau.
+    //
+    // Bản đầu chỉ có đường thứ nhất, và đó là một lỗi ĐO ĐƯỢC: engine viết xong chương 4 rồi
+    // dừng với `hold: false`, nên dải nghiệm thu không bao giờ hiện ở luồng thường.
+    dangCho: cheDoDuyet && (advance.hold || DA_DUNG.has(runtime ?? '')),
     cheDoDuyet,
     chuong: advance.permit_chapter,
     lyDo: advance.hold_reason,

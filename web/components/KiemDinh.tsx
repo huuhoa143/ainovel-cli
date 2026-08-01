@@ -103,6 +103,7 @@ export function KiemDinh({
           người dùng phải cuộn qua hết bảy chiều mới thấy hai cái nút. */}
       <CuaNghiemThu
         advance={snapshot.advance}
+          runtime={snapshot.runtime}
         tacPham={tacPham}
         choGhi={choGhi}
         dangChay={dangChay}

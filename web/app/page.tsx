@@ -84,7 +84,7 @@ export default function Trang() {
         // `undefined` khi chưa có snapshot, KHÔNG phải `trangThaiCua(null)`: hai ca đó cho
         // cùng một hình (không huy hiệu) nhưng khác nguồn — "chưa tải xong" và "engine
         // đóng" — và gộp chúng ở đây là dạy người sau rằng chúng là một.
-        cuaNghiemThu={s.snapshot ? trangThaiCua(s.snapshot.advance) : undefined}
+        cuaNghiemThu={s.snapshot ? trangThaiCua(s.snapshot.advance, s.snapshot.runtime) : undefined}
         onChon={s.chonTacPham}
         onChonKhu={s.chonKhu}
         // Đường vào "Tác phẩm mới" đặt ở thanh trên, cạnh bộ chọn tác phẩm.

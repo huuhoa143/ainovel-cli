@@ -161,6 +161,7 @@ export function BuongLai({
             giữ (`lib/nghiemThu.ts`), và người nối dây không có cơ hội tính sai nó. */}
         <CuaNghiemThu
           advance={snapshot.advance}
+          runtime={snapshot.runtime}
           tacPham={tacPham}
           choGhi={choGhi}
           dangChay={dangChay}

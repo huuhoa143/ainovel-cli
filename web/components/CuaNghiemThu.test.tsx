@@ -15,7 +15,7 @@ function cho(p: Partial<Parameters<typeof CuaNghiemThu>[0]> = {}) {
         permit_chapter: 8,
         hold_reason: 'nhịp tụt ở đoạn giữa; ba cảnh liên tiếp cùng một nhịp',
       }}
-      tacPham="b"
+      runtime="" tacPham="b"
       choGhi
       dangChay={false}
       onDoi={() => {}}
@@ -32,14 +32,14 @@ test('cửa KHÔNG chờ thì không vẽ gì — cả ba ca không-chờ', () =
   // thì mỗi bài chỉ canh được một phần ba của nó. Ca `null` đứng đầu: engine đóng thì mọi nút
   // ở đây chắc chắn trả 409.
   const { container, rerender } = render(
-    <CuaNghiemThu advance={null} tacPham="b" choGhi dangChay={false} onDoi={() => {}} />,
+    <CuaNghiemThu advance={null} runtime="" tacPham="b" choGhi dangChay={false} onDoi={() => {}} />,
   );
   expect(container.querySelector('.cuanghiemthu')).toBeNull();
 
   rerender(
     <CuaNghiemThu
       advance={{ mode: 'auto', hold: true }}
-      tacPham="b"
+      runtime="" tacPham="b"
       choGhi
       dangChay={false}
       onDoi={() => {}}
@@ -50,7 +50,7 @@ test('cửa KHÔNG chờ thì không vẽ gì — cả ba ca không-chờ', () =
   rerender(
     <CuaNghiemThu
       advance={{ mode: 'review', hold: false }}
-      tacPham="b"
+      runtime="" tacPham="b"
       choGhi
       dangChay={false}
       onDoi={() => {}}

@@ -52,12 +52,18 @@ type DangGui = 'tiep' | 'tra' | null;
  */
 export function CuaNghiemThu({
   advance,
+  runtime,
   tacPham,
   choGhi,
   dangChay,
   onDoi,
 }: {
   advance: TienDo | null;
+  /**
+   * Trạng thái engine tự khẳng định (`paused`/`running`/…). Cần nó vì cửa nghiệm thu ở luồng
+   * THƯỜNG chặn bằng cách để engine DỪNG, không bằng `advance.hold` — xem `trangThaiCua`.
+   */
+  runtime: string | null;
   tacPham: string | undefined;
   /** undefined = chưa biết (đang hỏi `/api/config`) — xem `useMay`. */
   choGhi: boolean | undefined;
@@ -76,7 +82,7 @@ export function CuaNghiemThu({
   /** Gọi sau mỗi lệnh để snapshot được nạp lại — đừng tự đoán trạng thái mới. */
   onDoi: () => void;
 }) {
-  const cua = trangThaiCua(advance);
+  const cua = trangThaiCua(advance, runtime);
   const [moO, datMoO] = useState(false);
   const [chu, datChu] = useState('');
   const [dangGui, datDangGui] = useState<DangGui>(null);

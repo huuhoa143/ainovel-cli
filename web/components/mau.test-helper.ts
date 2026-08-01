@@ -47,6 +47,8 @@ export function sach(p: Partial<Book> = {}): Book {
  */
 export function snap(p: Partial<Snapshot>): Snapshot {
   return {
+    // '' = engine đóng, đúng mặc định an toàn: không bề mặt nào được suy nó thành 'đã dừng'.
+    runtime: '',
     book: sach({
       completed_chapters: 1,
       total_chapters: 3,
