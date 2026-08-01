@@ -79,11 +79,24 @@ function DongPhanQuyet({ d }: { d: Decision }) {
  * tại trong snapshot. Có nó thì mới trả lời được "dây chuyền còn chạy không"
  * mà không phải đọc log.
  */
-export function DongSuKien({ suKien }: { suKien: StreamEvent[] }) {
+export function DongSuKien({
+  suKien,
+  dangChay,
+}: {
+  suKien: StreamEvent[];
+  /**
+   * Máy còn chạy không — quyết định câu nào được nói ở ca RỖNG.
+   *
+   * Không suy được từ `suKien`: rỗng lúc máy chạy và rỗng lúc máy nghỉ trông giống hệt nhau
+   * ở đây, mà chúng là hai chuyện khác nhau. Xem chú thích của `GIAI_THICH.chuaCoSuKienDangChay`
+   * để biết phép đo đã bắt lỗi này.
+   */
+  dangChay?: boolean;
+}) {
   if (suKien.length === 0) {
     return (
       <p className="trongSect">
-        Chưa nhận sự kiện nào từ engine kể từ lúc mở dòng. Engine đang nghỉ hoặc chưa phát.
+        {dangChay ? GIAI_THICH.chuaCoSuKienDangChay : GIAI_THICH.chuaCoSuKienDangNghi}
       </p>
     );
   }

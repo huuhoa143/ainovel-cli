@@ -601,6 +601,14 @@ func chieuTruongSong(snap host.UISnapshot) truongSong {
 }
 
 func anhXaVai(vao []host.AgentSnapshot) (dang []Vai, cho []string) {
+	// Khởi tạo RỖNG chứ không để `nil`. Slice nil của Go marshal thành `null`, và `null` ở
+	// hợp đồng này có nghĩa riêng: "engine đóng nên KHÔNG ĐO ĐƯỢC". Hàm này chỉ chạy khi
+	// engine ĐANG MỞ, nên mọi kết quả của nó đều là đã-đo-được — kể cả kết quả bằng không.
+	//
+	// ĐO ĐƯỢC lúc E2E kế hoạch 2/4: engine đang viết chương 3, `agents` có một vai chạy,
+	// `idle_agents` là `null`, và dải trạng thái hiện "chờ: không đo được" ngay cạnh vai
+	// đang làm việc đó. Hai câu ấy không thể cùng đúng.
+	dang, cho = []Vai{}, []string{}
 	for _, a := range vao {
 		if a.State == "idle" {
 			cho = append(cho, a.Name)

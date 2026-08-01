@@ -192,7 +192,7 @@ export function BuongLai({
             <h2>
               Dòng sự kiện · <span className="phu">trực tiếp từ engine</span>
             </h2>
-            <DongSuKien suKien={suKien} />
+            <DongSuKien suKien={suKien} dangChay={dangChay} />
           </section>
 
           <section className="sect">

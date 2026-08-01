@@ -1094,6 +1094,21 @@ export const GIAI_THICH = {
     'Máy đang nghỉ. Bấm ▶ Chạy ở thanh dưới cùng để nó viết tiếp — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước, việc mở máy không gọi model lần nào.',
   chuaChayLanNao:
     'Tác phẩm đã tạo nhưng chưa viết chương nào. Bấm ▶ Chạy ở thanh dưới cùng để máy bắt đầu — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước.',
+  /* ── dòng sự kiện, hai ca RỖNG ────────────────────────────────────────────
+   *
+   * Rỗng lúc máy ĐANG CHẠY là chuyện bình thường, không phải sự cố: observer chỉ ghi vào
+   * hàng những bước ĐÃ KẾT THÚC (internal/host/observer.go:191), nên suốt một lượt
+   * `draft_chapter` dài không có sự kiện nào. Phép đo trên `sample.gif` nói đúng thế: dòng
+   * này nhảy 5 lần trong 18 giây rồi im 15 giây.
+   *
+   * Nên phải có HAI câu. ĐO ĐƯỢC lúc E2E kế hoạch 2/4: một câu duy nhất khẳng định "Engine
+   * đang nghỉ" hiện ra trong lúc engine đang viết chương 3, ngay dưới một khu văn sống đang
+   * chảy và một dải ghi `Writer → draft_chapter`. Ba chỗ trên cùng màn hình, một chỗ nói
+   * ngược — và chỗ nói ngược là chỗ người vận hành nhìn để biết dây chuyền còn sống không. */
+  chuaCoSuKienDangChay:
+    'Máy đang chạy nhưng chưa có bước nào kết thúc để ghi vào đây. Bước đang chạy hiện ở dải trạng thái phía trên, và chữ nó đang sinh ra chảy ở khu Máy đang nói.',
+  chuaCoSuKienDangNghi:
+    'Chưa nhận sự kiện nào từ engine kể từ lúc mở dòng. Máy đang nghỉ hoặc chưa phát bước nào.',
   /* ── khu văn sống, hai ca RỖNG ────────────────────────────────────────────
    *
    * Chỉ dùng khi bộ đệm KHÔNG còn lượt nào. Lúc bộ đệm còn chữ thì khu vẽ chính chữ đó, kể
