@@ -15,9 +15,11 @@ import (
 // được viết mà không ai chặn — và renderer SẬP ở bề mặt mặc định, đúng chỗ người dùng đáp
 // xuống. Một kiểu sai không gây cảnh báo; nó gây một cú sập ở nơi khác.
 //
-// Bài kiểm ở phía Go vì `web/` cố ý không có bộ chạy test (devDependencies chỉ có TypeScript
-// và các gói @types). Tiền lệ: TestNhanDlPhaiQuaTuDien trong gói này cũng quét tệp nguồn của
-// web, và lý do được ghi ở đó.
+// Bài kiểm ở phía Go dù `web/` giờ đã có vitest (dựng ở 61bc31e), vì nó canh một luật CẤU
+// TRÚC trên tệp nguồn chứ không canh hành vi của một component — xem lý do đầy đủ ở
+// TestNhanDlPhaiQuaTuDien trong gói này. Thêm nữa, luật này nói về một payload của SERVER, và
+// đặt nó cạnh bài kiểm sinh ra payload đó (TestTruongSongLaNullKhiMayDong) là đặt hai nửa của
+// cùng một hợp đồng cạnh nhau: đổi một nửa mà quên nửa kia thì cùng một lệnh `go test` bắt.
 //
 // KHÔNG viết bài kiểm này thành "chạy tsc rồi đòi nó đỏ": `tsc` không tự khẳng định thất bại
 // của chính nó, nên câu đó là một bài kiểm không chạy được.

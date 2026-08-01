@@ -12,9 +12,14 @@ import (
 //
 // # Vì sao bài kiểm này viết bằng Go mà không phải bằng JS
 //
-// `web/` cố ý không có bộ chạy test: devDependencies chỉ có TypeScript và các
-// gói @types, vì nó là static export do chính binary Go này phục vụ. Kéo cả
-// vitest vào chỉ để canh một luật là đổi một tệp test lấy vài trăm gói.
+// `web/` GIỜ ĐÃ CÓ bộ chạy test (vitest, dựng ở 61bc31e cho buồng lái) — nhưng
+// bài kiểm này vẫn ở phía Go, và có lý do.
+//
+// Hai bộ canh này canh hai loại lỗi khác nhau. vitest canh HÀNH VI: bộ đệm cắt
+// đúng chỗ chưa, tự cuộn có nhường người đọc không. Bài kiểm ở đây canh một luật
+// CẤU TRÚC trên toàn cây nguồn: "không nhãn nào được viết cứng". Luật đó phải
+// quét MỌI tệp .tsx kể cả tệp chưa ai import, nên nó thuộc về một bộ quét cây
+// chứ không thuộc về một bài kiểm đơn vị của một component.
 //
 // Gói `serve` là phía Go sở hữu `web/`, nên ai đi tìm "chỗ nào kiểm chuỗi của
 // web" sẽ tìm ở đây. Repo cũng đã có tiền lệ cho kiểu kiểm-tệp-nguồn-từ-Go:
