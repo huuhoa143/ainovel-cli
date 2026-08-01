@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/voocel/ainovel-cli/internal/domain"
+	"github.com/voocel/ainovel-cli/internal/host"
 	"github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -519,3 +520,37 @@ func excerpt(text string, maxRunes int) string {
 }
 
 func storeWarnings(st *store.Store) []string { return st.CheckConsistency() }
+
+// anhXaVai chiếu danh sách tác tử của engine thành hai danh sách của giao diện: đang chạy
+// và tên vai đang chờ.
+//
+// Luật phân loại lấy từ TUI (internal/entry/tui/panels_sidebar.go: sidebarAgents +
+// sidebarIdleAgents) — nhưng KHÔNG phải "State == working thì đang chạy" như một bản kế
+// hoạch trước đó giả định. Luật thật của TUI so `State == "idle"`: bất kỳ vai nào KHÔNG idle
+// (kể cả một giá trị lạ chưa từng gặp) đều được coi là đang chạy. Engine hôm nay chỉ từng gán
+// "working" hoặc "idle" (internal/host/observer.go), nên hai cách so cho cùng kết quả VỚI DỮ
+// LIỆU HÔM NAY — nhưng nếu mai engine thêm một trạng thái mới mà không ai sửa chỗ này, so
+// "== working" sẽ âm thầm đẩy trạng thái đó sang "chờ" trong khi TUI vẫn vẽ nó là "đang
+// chạy". Không suy lại theo cách khác: hai bề mặt nói khác nhau về "ai đang chạy" là lớp lỗi
+// không tự lộ ra, vì cả hai đều trông đáng tin.
+//
+// Cố ý KHÔNG lặp lại nhánh "không ai đang chạy thì gộp hết vào danh sách đang chạy" của
+// `sidebarAgents`: đó là mẹo trình bày để sidebar TUI không hiện một khối rỗng, không phải
+// một sự thật về ai đang chạy — bề mặt JSON không cần né một khối rỗng theo cách đó.
+func anhXaVai(vao []host.AgentSnapshot) (dang []Vai, cho []string) {
+	for _, a := range vao {
+		if a.State == "idle" {
+			cho = append(cho, a.Name)
+			continue
+		}
+		dang = append(dang, Vai{
+			Role:  a.Name,
+			State: a.State,
+			Tool:  a.Tool,
+			Turn:  a.Turn,
+			Task:  a.Summary,
+			Depth: 0,
+		})
+	}
+	return dang, cho
+}

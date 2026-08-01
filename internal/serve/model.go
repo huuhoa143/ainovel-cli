@@ -211,6 +211,19 @@ type Snapshot struct {
 	QueueSeq int64 `json:"queue_seq"`
 }
 
+// Vai là một tác tử đang làm việc, chiếu từ host.AgentSnapshot.
+//
+// Chỉ lấy phần giao diện DÙNG. `UpdatedAt` và `TaskID` không lên đây: cái đầu không hiện ở
+// đâu, cái sau là khóa nội bộ của engine — đưa ra JSON là mời người sau dựng logic quanh nó.
+type Vai struct {
+	Role  string `json:"role"`
+	State string `json:"state"`
+	Tool  string `json:"tool,omitempty"`
+	Turn  int    `json:"turn,omitempty"`
+	Task  string `json:"task,omitempty"`
+	Depth int    `json:"depth"`
+}
+
 // Selection là chi tiết của chương đang được chọn, cho panel inspector.
 type Selection struct {
 	Chapter  int       `json:"chapter"`
