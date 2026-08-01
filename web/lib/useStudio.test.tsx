@@ -36,8 +36,20 @@ const LAY_WORKSHOP = vi.fn<() => Promise<Workshop>>();
  * jsdom không có `EventSource`, và một bài kiểm về luật đáp không được đỏ vì chuyện đó.
  */
 class DongGiaCam {
-  addEventListener() {}
+  /** Bộ nghe theo loại, để bài kiểm bắn được một `ui_event` thật. */
+  static nghe = new Map<string, (ev: MessageEvent) => void>();
+  addEventListener(loai: string, fn: (ev: MessageEvent) => void) {
+    DongGiaCam.nghe.set(loai, fn);
+  }
   close() {}
+  /** Bắn một ui_event có `seq` hợp lệ — đủ để `nhanSuKienUi` nhận và hẹn làm mới chạy. */
+  static ban(seq: number) {
+    DongGiaCam.nghe.get('ui_event')?.(
+      new MessageEvent('ui_event', {
+        data: JSON.stringify({ seq, kind: 'ui_event', time: '2026-08-02T00:00:00Z' }),
+      }),
+    );
+  }
 }
 
 /**
@@ -132,4 +144,51 @@ test('đổi khu sau khi đã đáp thì luật đáp KHÔNG kéo về nữa, k�
   act(() => r.result.current.taiLai());
   await waitFor(() => expect(r.result.current.workshop?.books).toHaveLength(4));
   expect(r.result.current.khu).toBe('chi-phi');
+});
+
+
+/* ── Danh sách xưởng phải SỐNG, không phải nạp một lần rồi thôi ──────────────
+ *
+ * ĐO ĐƯỢC trên máy thật: tạo tác phẩm mới rồi chạy nó, thanh trên KHÔNG hiện cuốn nào, bảng
+ * Xưởng vẫn liệt kê 3 cuốn cũ và ghi "0 engine đang mở" — trong khi transport phía dưới ghi
+ * "đang chạy". Phải F5 mới thấy. Nguyên nhân: `/workshop` chỉ được gọi trong effect §1, và
+ * effect đó chỉ chạy theo `lanTai`.
+ *
+ * Hư hại không chỉ là một dòng thiếu. `ThanhTren` suy cuốn đang xem bằng
+ * `workshop.books.find(b => b.id === tacPham)`, nên cuốn vắng trong danh sách làm bộ chọn tác
+ * phẩm KHÔNG được vẽ — người dùng mất luôn đường đổi cuốn. */
+
+test('tạo tác phẩm mới xong thì Xưởng có nó ngay — không cần F5', async () => {
+  const r = await mo('/', xuong(3));
+  await waitFor(() => expect(r.result.current.khu).toBe('xuong'));
+  expect(r.result.current.workshop?.books).toHaveLength(3);
+
+  // Cuốn mới đã có ở server; `/workshop` từ giờ trả BỐN cuốn.
+  LAY_WORKSHOP.mockResolvedValue({
+    root: '/w',
+    books: [...xuong(3).books, sach({ id: 'moi', name: 'Con Rối Trong Hộp Kính' })],
+  });
+
+  act(() => r.result.current.moTacPhamVuaTao('moi'));
+
+  await waitFor(() => expect(r.result.current.workshop?.books).toHaveLength(4));
+  // Điều kiện thật mà `ThanhTren` cần để vẽ được bộ chọn tác phẩm.
+  expect(r.result.current.workshop?.books.some((b) => b.id === 'moi')).toBe(true);
+});
+
+test('sự kiện engine tới thì danh sách xưởng cũng được nạp lại, không chỉ snapshot', async () => {
+  // Bảng Xưởng hiện chương đã chốt, tiền đã tiêu và "engine đang mở" — cả ba đổi TRONG lúc
+  // chạy. Làm mới snapshot mà không làm mới xưởng thì dải tổng đứng im suốt phiên, và ô
+  // "N engine đang mở" nói 0 trong khi có một engine đang viết.
+  const r = await mo('/?tp=b1', xuong(2));
+  await waitFor(() => expect(r.result.current.tacPham).toBe('b1'));
+
+  const truoc = LAY_WORKSHOP.mock.calls.length;
+  LAY_WORKSHOP.mockResolvedValue(xuong(5));
+  act(() => DongGiaCam.ban(101));
+
+  await waitFor(() => expect(LAY_WORKSHOP.mock.calls.length).toBeGreaterThan(truoc), {
+    timeout: 4000,
+  });
+  await waitFor(() => expect(r.result.current.workshop?.books).toHaveLength(5));
 });

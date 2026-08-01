@@ -268,6 +268,37 @@ export function useStudio(): Studio {
   }, [lanTai]);
 
   /* ── 2. snapshot của tác phẩm đang xem ─────────────────────────────── */
+  /**
+   * Nạp lại DANH SÁCH tác phẩm, và cố ý KHÔNG chạm `tacPham` hay `khu`.
+   *
+   * # Vì sao không dùng `taiLai()`
+   *
+   * `taiLai` bơm `lanTai`, tức chạy lại cả ba effect: nó đóng/mở lại dòng sự kiện (mất các
+   * sự kiện đến trong khoảng đó), xóa bộ đệm văn sống, và cho luật đáp một cơ hội nữa để
+   * kéo người dùng về Xưởng giữa lúc họ đang xem bề mặt khác. Ở đây chỉ cần một thứ: danh
+   * sách mới.
+   *
+   * # Vì sao phải có
+   *
+   * ĐO ĐƯỢC trên máy thật: tạo tác phẩm mới rồi chạy, thanh trên KHÔNG hiện cuốn nào, bảng
+   * Xưởng vẫn ba cuốn cũ và ghi "0 engine đang mở" trong khi transport ghi "đang chạy". Phải
+   * F5 mới thấy. `/workshop` trước đây chỉ được gọi trong effect §1, mà effect đó chỉ chạy
+   * theo `lanTai`.
+   *
+   * Hư hại không chỉ là một dòng thiếu trong bảng: `ThanhTren` suy cuốn đang xem bằng
+   * `workshop.books.find(b => b.id === tacPham)`, nên cuốn vắng trong danh sách làm bộ chọn
+   * tác phẩm không được vẽ — người dùng mất luôn đường đổi cuốn.
+   *
+   * Lỗi im lặng: không có gì đỏ, chỉ có một danh sách nói thiếu.
+   */
+  const napLaiXuong = useCallback(async () => {
+    try {
+      setWorkshop(await layWorkshop());
+    } catch {
+      // Danh sách cũ còn dùng được; một lần đọc lỗi không được xóa bề mặt đang xem.
+    }
+  }, []);
+
   const napSnapshot = useCallback(async (id: string, chuong: number | undefined) => {
     const snap = await laySnapshot(id, chuong);
     setSnapshot(snap);
@@ -347,6 +378,11 @@ export function useStudio(): Studio {
       henRef.current = setTimeout(() => {
         const id = tacPhamRef.current;
         if (id) void napSnapshot(id, chuongRef.current).catch(() => undefined);
+        // Xưởng đi CÙNG nhịp với snapshot, không có nhịp riêng: bảng Xưởng hiện chương đã
+        // chốt, tiền đã tiêu và "engine đang mở" — cả ba đổi trong lúc chạy, nên một danh
+        // sách nạp một lần sẽ đứng im suốt phiên và ô "N engine đang mở" nói 0 trong khi có
+        // một engine đang viết. Cùng nhịp vì cùng một lý do phải gộp: nghiền store.
+        void napLaiXuong();
       }, NHIP_LAM_MOI_MS);
     };
 
@@ -396,7 +432,7 @@ export function useStudio(): Studio {
       nguon.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tacPham, lanTai, !!snapshot, napSnapshot]);
+  }, [tacPham, lanTai, !!snapshot, napSnapshot, napLaiXuong]);
 
   /* ── hành động ─────────────────────────────────────────────────────── */
 
@@ -418,7 +454,7 @@ export function useStudio(): Studio {
         setLoi(e instanceof Error ? e.message : String(e));
       });
     },
-    [napSnapshot],
+    [napSnapshot, napLaiXuong],
   );
 
   const chonKhu = useCallback((k: Khu) => {
@@ -485,6 +521,11 @@ export function useStudio(): Studio {
   const moTacPhamTai = useCallback(
     (id: string, k: Khu, chuong?: number) => {
       const cach = cachMoTacPham(tacPhamRef.current, id, chuong);
+
+      // Cuốn VỪA TẠO chưa có trong danh sách đã nạp lúc mở trang. Gọi ở đây, không ở nhánh
+      // `doi-cuon` phía dưới: mở một cuốn cũ cũng đáng nạp lại, vì tiến độ và chi phí của mọi
+      // cuốn đã đổi kể từ lần đọc trước.
+      void napLaiXuong();
 
       setChuongChon(chuong);
       setKhu(k);
