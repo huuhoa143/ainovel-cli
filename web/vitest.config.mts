@@ -53,6 +53,10 @@ export default defineConfig({
           name: 'giaodien',
           environment: 'jsdom',
           include: ['{components,app}/**/*.test.tsx'],
+          // Dọn DOM giữa hai bài kiểm. Không có dòng này thì render của bài trước ở lại
+          // trong `document` và mọi truy vấn qua `screen` chạy trên phần thừa đó — xem
+          // phép đo trong chính tệp setup.
+          setupFiles: ['./vitest.setup.giaodien.ts'],
         },
       },
     ],

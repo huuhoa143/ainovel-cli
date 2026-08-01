@@ -702,6 +702,19 @@ export const CHU = {
   chuong: 'Chương',
   canThiep: 'Can thiệp',
 
+  /* ── khu văn sống của buồng lái ────────────────────────────────────────────
+   *
+   * Tiêu đề khu ĐỔI theo trạng thái máy, nhưng tên VÙNG thì không — và hai thứ đó là hai
+   * khóa khác nhau ở đây vì đúng lý do đã ghi ở `vttVung`: tên vùng để trình đọc màn hình
+   * điều hướng TỚI, nên đặt nó bằng câu trạng thái thì cây trợ năng đọc tên vùng rồi đọc
+   * lại y nguyên câu đó ở nội dung, và tên vùng còn thành sai khi máy chuyển sang nghỉ.
+   */
+  vanSongVung: 'Văn sống',
+  mayDangNoi: 'Máy đang nói',
+  mayNghi: 'Máy đang nghỉ',
+  /* Chữ thường: đây là nút hành động nhỏ nổi trong khu chữ, không phải nhãn của một vùng. */
+  veCuoi: 'về cuối',
+
   // bảng chương
   // "n chương ngoài tập 3" — phép lọc phải nói ra mình đã ẩn bao nhiêu.
   ngoaiPhamVi: (n: number, phamVi: string) => `${n} chương ngoài ${phamVi}`,
@@ -1037,6 +1050,19 @@ export const GIAI_THICH = {
     'Máy đang nghỉ. Bấm ▶ Chạy ở thanh dưới cùng để nó viết tiếp — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước, việc mở máy không gọi model lần nào.',
   chuaChayLanNao:
     'Tác phẩm đã tạo nhưng chưa viết chương nào. Bấm ▶ Chạy ở thanh dưới cùng để máy bắt đầu — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước.',
+  /* ── khu văn sống, hai ca RỖNG ────────────────────────────────────────────
+   *
+   * Chỉ dùng khi bộ đệm KHÔNG còn lượt nào. Lúc bộ đệm còn chữ thì khu vẽ chính chữ đó, kể
+   * cả khi máy đã nghỉ — báo cáo của lượt vừa xong là chữ thật, và bỏ nó đi để lấy một câu
+   * giải thích là đổi thứ đang nói được điều gì đó lấy thứ không.
+   *
+   * Vì vậy câu cho ca nghỉ KHÔNG được nói "đây là báo cáo của lượt vừa xong": ở đúng ca nó
+   * hiện ra thì không có báo cáo nào cả, và một câu chỉ vào chỗ trống là câu nói dối.
+   */
+  vanSongTrong:
+    'Chưa có lượt nào trong phiên xem này. Khi máy bắt đầu viết, chữ sẽ chảy ở đây.',
+  vanSongNghi:
+    'Máy đang nghỉ, và phiên xem này chưa giữ được lượt nào để hiện lại. Bấm Chạy ở thanh dưới để nó viết tiếp — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước.',
   /* ── luồng tạo tác phẩm ──────────────────────────────────────────────── */
   batDauRoiKhongPhaiLamGi:
     'Sau khi bấm, bạn KHÔNG phải làm gì thêm: máy tự đi tiếp từng chương. Việc của bạn là xem nó chạy và nói vào ô can thiệp nếu muốn đổi hướng.',
