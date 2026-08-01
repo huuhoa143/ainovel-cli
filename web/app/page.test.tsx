@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 
 import { snap } from '@/components/mau.test-helper';
@@ -15,6 +15,11 @@ import Trang, { Khu } from './page';
  * và một `useStudio` thật sẽ biến nó thành bài kiểm về khả năng giả lập `fetch` + `EventSource`
  * của jsdom — đo nhầm thứ, và hỏng vì những lý do không liên quan.
  */
+/**
+ * Hành động mở-tại-khu, giữ làm spy: mắt cuối của sợi dây Xưởng chỉ đo được ở đây.
+ */
+const MO_TAI = vi.fn();
+
 const STUDIO_GIA: Studio = {
   // `books` dựng lại từ chính `snap()` chứ không ép kiểu một object hai trường: thanh trên
   // đọc `b.activity` để vẽ đốm trạng thái, và một fixture ép kiểu làm `tsc` xanh trong khi
@@ -35,6 +40,7 @@ const STUDIO_GIA: Studio = {
   chonChuong: () => {},
   chonKhu: () => {},
   moTacPhamVuaTao: () => {},
+  moTacPhamTai: MO_TAI,
   docChuong: () => {},
   taiLai: () => {},
 };
@@ -69,12 +75,14 @@ function ve(khu: KhuMa, vanSong = BO_DEM_RONG) {
     <Khu
       khu={khu}
       snapshot={snap({ agents: [], idle_agents: [] })}
+      sach={[snap({}).book]}
       tacPham="b"
       chuongChon={undefined}
       onChonChuong={() => {}}
       onChonKhu={() => {}}
       onDocChuong={() => {}}
       onChonTacPham={() => {}}
+      onMoTacPham={() => {}}
       onXongTaoSach={() => {}}
       onChotCungDung={() => {}}
       nhapSan=""
@@ -120,4 +128,43 @@ test('`Trang` nối bộ đệm văn sống THẬT của studio xuống buồng 
   // vì không bài nào chạm tới `Trang`. Bài này là chỗ chạm đó.
   render(<Trang />);
   expect(screen.getByText('nàng quay đầu lại')).toBeDefined();
+});
+
+test('khu `xuong` → bảng Xưởng, không phải buồng lái', () => {
+  const { container } = ve('xuong');
+  expect(container.querySelector('.khuxuong')).not.toBeNull();
+  expect(container.querySelector('.buonglai')).toBeNull();
+});
+
+test('`Trang` nối danh sách sách THẬT của studio xuống màn Xưởng', () => {
+  // Mắt CUỐI của sợi dây `useStudio.workshop.books` → `Trang` → `Khu` → `Xuong`, và nó không
+  // nằm trong `Khu`: bài kiểm ở trên truyền `sach` thẳng vào nên đổi `sach={s.workshop?.books
+  // ?? []}` thành một mảng rỗng dựng tại chỗ vẫn xanh. Hệ quả thật là một Xưởng trống trơn
+  // trên một xưởng có sách — cùng lớp với `vanSong={s.vanSong}` mà cụm D đã đo được.
+  const truoc = STUDIO_GIA.khu;
+  STUDIO_GIA.khu = 'xuong';
+  try {
+    const { container } = render(<Trang />);
+    expect(container.querySelector('.khuxuong tbody tr[data-ma="b"]')).not.toBeNull();
+  } finally {
+    STUDIO_GIA.khu = truoc;
+  }
+});
+
+test('`Trang` nối hành động mở-tại-khu THẬT của studio xuống nút `Mở` của Xưởng', () => {
+  // ĐO ĐƯỢC: thay `onMoTacPham={s.moTacPhamTai}` bằng một hàm rỗng thì cả 34 bài vẫn xanh.
+  // Bộ kiểm của `Xuong` truyền spy của chính nó vào, nên nó chỉ chứng minh component GỌI
+  // đúng — không chứng minh nó được nối vào hành động thật. Hệ quả: mọi nút trên bảng bấm
+  // vào không đi đâu cả, và không lỗi nào nổ ra. Cùng lớp với `vanSong={s.vanSong}` của cụm D
+  // và với `sach={s.workshop?.books}` ngay trên.
+  const truoc = STUDIO_GIA.khu;
+  STUDIO_GIA.khu = 'xuong';
+  MO_TAI.mockClear();
+  try {
+    const { container } = render(<Trang />);
+    fireEvent.click(container.querySelector<HTMLElement>('.khuxuong tbody tr[data-ma="b"] button')!);
+    expect(MO_TAI).toHaveBeenCalledWith('b', 'dong-san-xuat');
+  } finally {
+    STUDIO_GIA.khu = truoc;
+  }
 });

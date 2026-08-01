@@ -24,12 +24,13 @@ import { ThanhTren } from '@/components/ThanhTren';
 import { ToSanXuat } from '@/components/ToSanXuat';
 import { Transport } from '@/components/Transport';
 import { VanPhong } from '@/components/VanPhong';
+import { Xuong } from '@/components/Xuong';
 import { DangTai, KhongTaiDuoc, XuongTrong } from '@/components/XuongTrong';
 import { dungInspector, type Khu as KhuMa } from '@/lib/khu';
 import { mayDangChay } from '@/lib/song';
 import { useMay } from '@/lib/useMay';
 import type { CongDoanSong } from '@/lib/useStudio';
-import type { Snapshot } from '@/lib/types';
+import type { Book, Snapshot } from '@/lib/types';
 import type { BoDemVan } from '@/lib/vanSong';
 import { useStudio } from '@/lib/useStudio';
 
@@ -126,12 +127,18 @@ export default function Trang() {
           <Khu
             khu={s.khu}
             snapshot={s.snapshot}
+            // `?? []` ở đây KHÔNG biến "chưa tải" thành "xưởng rỗng": nhánh này chỉ chạy khi
+            // `s.snapshot` đã có, mà snapshot chỉ có sau khi `tacPham` được chọn, mà `tacPham`
+            // chỉ được chọn từ chính `workshop`. Ba nhánh `!s.snapshot` ở trên đã đỡ ca chưa
+            // tải, và xưởng rỗng thật thì `xuongTrong` đã bắt trước cả ba.
+            sach={s.workshop?.books ?? []}
             tacPham={s.tacPham}
             chuongChon={s.chuongChon}
             onChonChuong={s.chonChuong}
             onChonKhu={s.chonKhu}
             onDocChuong={s.docChuong}
             onChonTacPham={s.chonTacPham}
+            onMoTacPham={s.moTacPhamTai}
             onXongTaoSach={xongTaoSach}
             onChotCungDung={chotCungDung}
             nhapSan={nhapTuCungDung}
@@ -190,12 +197,14 @@ export default function Trang() {
 export function Khu({
   khu,
   snapshot,
+  sach,
   tacPham,
   chuongChon,
   onChonChuong,
   onChonKhu,
   onDocChuong,
   onChonTacPham,
+  onMoTacPham,
   onXongTaoSach,
   onChotCungDung,
   nhapSan,
@@ -206,12 +215,16 @@ export function Khu({
 }: {
   khu: KhuMa;
   snapshot: Snapshot;
+  /** Mọi cuốn trong xưởng — chỉ khu `xuong` đọc, vì chỉ nó là bề mặt của CẢ xưởng. */
+  sach: Book[];
   tacPham: string | undefined;
   chuongChon: number | undefined;
   onChonChuong: (n: number) => void;
   onChonKhu: (k: KhuMa) => void;
   onDocChuong: (n: number) => void;
   onChonTacPham: (id: string) => void;
+  /** Mở một cuốn từ bảng Xưởng ở một bề mặt cụ thể — xem `moTacPhamTai` trong useStudio. */
+  onMoTacPham: (id: string, khu: KhuMa, chuong?: number) => void;
   /** Tạo tác phẩm xong: đổi tác phẩm VÀ đổi khu — xem lý do ở `xongTaoSach`. */
   onXongTaoSach: (id: string) => void;
   onChotCungDung: (banNhap: string) => void;
@@ -222,6 +235,11 @@ export function Khu({
   dangChay: boolean;
 }) {
   switch (khu) {
+    // Xưởng là bề mặt của CẢ xưởng, nên nó cố ý KHÔNG nhận `tacPham`: nội dung của nó không
+    // đổi theo cuốn đang mở (`laKhuMucMay('xuong')`). Truyền vào sẽ mời người sau dùng nó rồi
+    // biến một bảng liệt kê mọi cuốn thành nửa-theo-tác-phẩm.
+    case 'xuong':
+      return <Xuong sach={sach} onMoTacPham={onMoTacPham} />;
     case 'ban-thao':
       return (
         <DocTruyen

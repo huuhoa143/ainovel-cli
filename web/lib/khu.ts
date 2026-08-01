@@ -19,6 +19,7 @@
  */
 
 export type Khu =
+  | 'xuong'
   | 'dong-san-xuat'
   | 'ban-thao'
   | 'kiem-dinh'
@@ -37,6 +38,7 @@ export type Khu =
   | 'nhap-xuat';
 
 export const KHU: readonly Khu[] = [
+  'xuong',
   'dong-san-xuat',
   'ban-thao',
   'kiem-dinh',
@@ -62,7 +64,7 @@ export function laKhu(v: string | null | undefined): v is Khu {
 }
 
 /**
- * `cau-hinh` là khu mức MÁY, không mức tác phẩm.
+ * `cau-hinh` và `xuong` là khu mức MÁY, không mức tác phẩm.
  *
  * Nó nằm trong `Khu` để dùng chung một mô hình điều hướng (rail + `?khu=`), nhưng bề mặt
  * của nó không đọc `tacPham` và nội dung không đổi khi người dùng chuyển tác phẩm. Rail
@@ -72,9 +74,25 @@ export function laKhu(v: string | null | undefined): v is Khu {
  *
  * Tên nhóm dài ra chính vì việc đó: một chữ "Máy" (tên cũ) không ngăn được cái nhầm đó,
  * nó chỉ đặt tên cho một bộ phận của hệ thống.
+ *
+ * `xuong` vào đây vì cùng lý do, chỉ theo chiều ngược: bảng của nó liệt kê MỌI cuốn, nên nội
+ * dung không đổi khi người dùng chuyển tác phẩm. Đọc nó thành "xưởng của cuốn đang mở" là
+ * đúng cái nhầm mà nhóm này tồn tại để chặn.
+ *
+ * # Hàm này hôm nay KHÔNG có người gọi
+ *
+ * Đã đo (`grep laKhuMucMay lib components app`): chỉ còn một lời viện dẫn trong chú thích ở
+ * `nhan.ts:618`. Nó vẫn là hợp đồng được khai và được canh bằng bài kiểm — giữ nguyên theo
+ * đúng cách cụm D đã xử `DangLam`: "không tới được" là tính chất của người gọi hôm nay, không
+ * phải của thứ được gọi. Ai bỏ nó thì bỏ cả nhóm rail đang bám vào cùng ranh giới đó.
  */
 export function laKhuMucMay(khu: Khu): boolean {
-  return khu === 'cau-hinh' || khu === 'tac-pham-moi' || khu === 'cung-dung';
+  return (
+    khu === 'xuong' ||
+    khu === 'cau-hinh' ||
+    khu === 'tac-pham-moi' ||
+    khu === 'cung-dung'
+  );
 }
 
 /**

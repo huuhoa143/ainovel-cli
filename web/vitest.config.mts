@@ -52,7 +52,12 @@ export default defineConfig({
         test: {
           name: 'giaodien',
           environment: 'jsdom',
-          include: ['{components,app}/**/*.test.tsx'],
+          // `lib/**/*.test.tsx` cũng vào đây, và ĐUÔI TỆP là thứ chia hai project chứ không
+          // phải thư mục: một hook (`useStudio`) là logic, nhưng đo nó cần bộ chạy React,
+          // tức `document`. Để nó ở project `logic` thì `renderHook` nổ; đặt nó vào
+          // `components/` cho khớp mẫu cũ thì tệp kiểm nằm cách xa thứ nó đo. `.ts` trong
+          // `lib/` vẫn là logic thuần chạy trong Node — ranh giới đó không đổi.
+          include: ['{components,app}/**/*.test.tsx', 'lib/**/*.test.tsx'],
           // Dọn DOM giữa hai bài kiểm. Không có dòng này thì render của bài trước ở lại
           // trong `document` và mọi truy vấn qua `screen` chạy trên phần thừa đó — xem
           // phép đo trong chính tệp setup.

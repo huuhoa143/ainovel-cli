@@ -25,6 +25,7 @@ import { nhanSuKienUi } from './dongSuKien';
 import { KHU_MAC_DINH, laKhu, type Khu } from './khu';
 import type { Profile, Snapshot, StreamEvent, Workshop } from './types';
 import { BO_DEM_RONG, moLuot, nhanVach, themChu, type BoDemVan } from './vanSong';
+import { cachMoTacPham, khuDap } from './xuong';
 
 /** Số sự kiện giữ lại trong dòng. Nhật ký là cửa sổ, không phải log đầy đủ. */
 const GIU_SU_KIEN = 40;
@@ -115,6 +116,13 @@ export interface Studio {
   chonKhu: (k: Khu) => void;
   /** Mở tác phẩm vừa tạo: đổi tác phẩm + về bề mặt mặc định, một lần ghi URL. */
   moTacPhamVuaTao: (id: string) => void;
+  /**
+   * Mở một cuốn BẤT KỲ ở một bề mặt bất kỳ, một lần ghi URL.
+   *
+   * Bảng Xưởng cần nó vì mọi hành động trên dòng đều nhắm vào một cuốn KHÔNG phải cuốn đang
+   * xem — ghép từ `chonTacPham` rồi `chonKhu` sẽ ghi URL bằng cuốn cũ.
+   */
+  moTacPhamTai: (id: string, khu: Khu, chuong?: number) => void;
   /** Mở một chương để đọc: chọn chương + sang bề mặt đọc, một lần ghi URL. */
   docChuong: (n: number) => void;
   taiLai: () => void;
@@ -149,10 +157,22 @@ function chuongTuUrl(): number | undefined {
   return Number.isFinite(n) && n > 0 ? n : undefined;
 }
 
-function khuTuUrl(): Khu {
-  if (typeof window === 'undefined') return KHU_MAC_DINH;
+/**
+ * Khu ghi trên URL, hoặc `undefined` khi URL IM.
+ *
+ * Hai ca này PHẢI phân biệt được, và đó là cái bẫy của luật đáp: `ghiUrl` cố ý bỏ `khu` khỏi
+ * URL khi nó bằng `KHU_MAC_DINH`, nên một bộ đọc trả thẳng `KHU_MAC_DINH` cho ca "không có
+ * `?khu=`" làm hai ca "URL im" và "URL ghi dong-san-xuat" đến `khuDap` y hệt nhau. Lúc đó mọi
+ * lần mở trang rơi vào nhánh "URL nói rõ khu" và KHÔNG ai thấy màn Xưởng — mà không một bài
+ * kiểm nào của `khuDap` đỏ, vì bản thân hàm vẫn đúng.
+ *
+ * Giá trị không đọc được (`?khu=xyz`) cũng về `undefined`: một mã khu rác không phải một câu
+ * URL nói ra, nên nó không được thắng luật đáp.
+ */
+function khuTuUrl(): Khu | undefined {
+  if (typeof window === 'undefined') return undefined;
   const v = new URLSearchParams(window.location.search).get('khu');
-  return laKhu(v) ? v : KHU_MAC_DINH;
+  return laKhu(v) ? v : undefined;
 }
 
 export function useStudio(): Studio {
@@ -164,7 +184,10 @@ export function useStudio(): Studio {
   // Khu đọc từ URL ngay lúc dựng state: `next export` không render trước gì nên
   // không có nguy cơ lệch giữa máy chủ và máy khách, và đọc trong useEffect sẽ
   // làm bề mặt nháy qua Dòng sản xuất một nhịp trước khi về đúng khu.
-  const [khu, setKhu] = useState<Khu>(khuTuUrl);
+  //
+  // URL im thì đứng ở khu mặc định cho tới khi effect §1 biết xưởng có mấy cuốn — luật đáp
+  // cần con số đó, và nó chỉ có sau khi `/workshop` trả về.
+  const [khu, setKhu] = useState<Khu>(() => khuTuUrl() ?? KHU_MAC_DINH);
   const [song, setSong] = useState<CongDoanSong>();
   const [suKien, setSuKien] = useState<StreamEvent[]>([]);
   const [vanSong, setVanSong] = useState<BoDemVan>(BO_DEM_RONG);
@@ -208,6 +231,23 @@ export function useStudio(): Studio {
         const co = ws.books.find((b) => b.id === muon);
         const chon = co?.id ?? ws.books[0]?.id;
         setTacPham(chon);
+        /**
+         * Bề mặt đáp, và nó phải nằm ở ĐÂY chứ không ở chỗ dựng state.
+         *
+         * Luật đáp cần SỐ LƯỢNG sách (spec §7.1: không có `?tp=` và ≥ 2 cuốn → Xưởng), mà con
+         * số đó chỉ tồn tại sau khi `/workshop` trả về. Lúc dựng state nó chưa có, nên đặt
+         * luật ở đó là đoán.
+         *
+         * Cả ba mảnh đi vào `khuDap` ở dạng THÔ — `khuTuUrl()` trả `undefined` khi URL im, và
+         * chính hàm thuần đó giữ luật "URL nói rõ khu thì thắng". Không lặp lại luật ấy bằng
+         * một `if` ở đây: hai bản của cùng một luật thì lệch, và bản trong `khuDap` là bản có
+         * bài kiểm.
+         *
+         * Chỉ chạy theo `lanTai`, tức lúc mở trang và lúc người dùng bấm tải lại. Đặt nó vào
+         * một effect chạy theo `workshop` thì mỗi lần làm mới danh sách sẽ ném người dùng về
+         * Xưởng ngay giữa lúc họ đang xem bề mặt khác.
+         */
+        setKhu(khuDap({ tpTuUrl: muon, khuTuUrl: khuTuUrl(), soSach: ws.books.length }));
         if (!chon) {
           setDangTai(false);
           // Không có tác phẩm thì không có dòng sự kiện nào được mở.
@@ -428,14 +468,50 @@ export function useStudio(): Studio {
     [napSnapshot],
   );
 
-  const moTacPhamVuaTao = useCallback((id: string) => {
-    setChuongChon(undefined);
-    setSnapshot(undefined);
-    setHoSo(undefined);
-    setTacPham(id);
-    setKhu(KHU_MAC_DINH);
-    ghiUrl(id, undefined, KHU_MAC_DINH);
-  }, []);
+  /**
+   * Mở một cuốn BẤT KỲ ở một bề mặt bất kỳ, trong MỘT hành động.
+   *
+   * Đây là dạng tổng quát của `moTacPhamVuaTao` ngay dưới, và bảng Xưởng cần đúng dạng tổng
+   * quát đó: mỗi dòng có `Mở` (→ buồng lái), và cuốn đã hoàn thành có thêm `Đọc` (→ bề mặt
+   * đọc, chương 1) và `Xuất bản` (→ Nhập & Xuất). Cả ba đều mở một cuốn KHÔNG phải cuốn đang
+   * xem, nên không cái nào ghép được từ các hành động sẵn có: `docChuong` và `chonKhu` đọc
+   * `tacPhamRef.current`, mà ref đó chỉ được đặt lại lúc render — gọi `chonTacPham(id)` rồi
+   * `docChuong(1)` trong cùng một handler sẽ ghi URL bằng cuốn CŨ. Lỗi đó đã đo được hai lần
+   * trong dự án này; hai chú thích ngay dưới ghi lại cả hai.
+   *
+   * Ba nhánh của `cachMoTacPham` (lib/xuong.ts) không thay thế nhau được, và nhánh giữa là
+   * nhánh làm treo màn hình — lý do đầy đủ nằm ở chú thích của hàm đó.
+   */
+  const moTacPhamTai = useCallback(
+    (id: string, k: Khu, chuong?: number) => {
+      const cach = cachMoTacPham(tacPhamRef.current, id, chuong);
+
+      setChuongChon(chuong);
+      setKhu(k);
+      setTacPham(id);
+      // Một lần ghi, cả ba mảnh. Hai lần ghi thì lần sau xóa tham số của lần trước.
+      ghiUrl(id, chuong, k);
+
+      if (cach === 'doi-cuon') {
+        // Effect §2 sẽ nạp lại vì `tacPham` đổi. Xóa để bề mặt không vẽ số của cuốn trước
+        // dưới tên cuốn sau.
+        setSnapshot(undefined);
+        setHoSo(undefined);
+        return;
+      }
+      if (cach === 'nap-lai') {
+        void napSnapshot(id, chuong).catch((e: unknown) => {
+          setLoi(e instanceof Error ? e.message : String(e));
+        });
+      }
+    },
+    [napSnapshot],
+  );
+
+  const moTacPhamVuaTao = useCallback(
+    (id: string) => moTacPhamTai(id, KHU_MAC_DINH),
+    [moTacPhamTai],
+  );
 
   const taiLai = useCallback(() => setLanTai((n) => n + 1), []);
 
@@ -457,6 +533,7 @@ export function useStudio(): Studio {
       chonChuong,
       chonKhu,
       moTacPhamVuaTao,
+      moTacPhamTai,
       docChuong,
       taiLai,
     }),
@@ -477,6 +554,7 @@ export function useStudio(): Studio {
       chonChuong,
       chonKhu,
       moTacPhamVuaTao,
+      moTacPhamTai,
       docChuong,
       taiLai,
     ],

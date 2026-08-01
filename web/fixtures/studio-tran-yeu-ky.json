@@ -8,7 +8,11 @@
     "total_chapters": 300,
     "total_words": 138412,
     "activity": "running",
-    "updated_at": "2026-07-30T10:41:07Z"
+    "updated_at": "2026-07-30T10:41:07Z",
+    "cost_usd": 7.906347000000001,
+    "cost_per_chapter": 0.171877,
+    "chapters_per_hour": 3.4,
+    "engine_open": true
   },
   "capabilities": {
     "per_chapter_duration": true,
