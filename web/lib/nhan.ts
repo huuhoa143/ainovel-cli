@@ -1258,6 +1258,19 @@ export const GIAI_THICH = {
   nghiemThuChuaCoKetLuan:
     'Editor chưa ghi kết luận nào cho chương này. Cửa vẫn đang chờ bạn: engine dừng ở biên trước, Editor kết luận sau.',
   nghiemThuChoDay: 'Hai nút vô hiệu — studio đang ở chế độ chỉ đọc',
+  /**
+   * Vì sao "trả về viết lại" đi qua `/steer` — quyết định 7 của kế hoạch 4/4.
+   *
+   * Câu này hiện RA MÀN HÌNH khi ô nhập mở: "trả chương về viết lại" nghe như một lệnh xóa
+   * chương, nhưng thứ thật sự xảy ra là một chỉ thị can thiệp, và PHẠM VI ẢNH HƯỞNG do
+   * Arbiter quyết định — có thể nhiều hơn một chương. Người bấm phải biết điều đó trước khi
+   * gửi, không phải sau khi thấy hàng chờ dài ra.
+   *
+   * Một route riêng cho việc này là đưa quyết định phạm vi ảnh hưởng vào `serve`, tức nhân
+   * bản logic Arbiter — thứ `PRODUCT.md` cấm.
+   */
+  traVeVietLaiQuaSteer:
+    'Câu này đi vào dây chuyền như một chỉ thị can thiệp: Arbiter đọc nó, phân loại phạm vi ảnh hưởng rồi xếp các chương bị tác động vào hàng chờ viết lại. Có thể nhiều hơn một chương.',
   cheDoAutoLaGi:
     'Chế độ tự chạy: engine viết liên tục tới khi xong hoặc hết ngân sách. Không dừng chờ ai.',
   taoSachGiaiThich:
