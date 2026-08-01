@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 
 import { sach } from '@/components/mau.test-helper';
 
-import { tongXuong } from './xuong';
+import { khuDap, tongXuong } from './xuong';
 
 test('cộng chương đã chốt, số từ, chi phí và số engine đang mở', () => {
   const t = tongXuong([
@@ -52,4 +52,54 @@ test('chi phí DƯỚI xu: làm tròn TỪNG CUỐN, để tổng cộng đúng 
     sach({ id: 'b', cost_usd: 7.906347000000001 }),
   ]);
   expect(t.chiPhi).toBe(10.11);
+});
+
+/* ── luật đáp lúc mở trang ────────────────────────────────────────────── */
+
+test('có tp trên URL thì đáp thẳng vào buồng lái — người quay lại không phải bấm thêm nhịp', () => {
+  expect(khuDap({ tpTuUrl: 'mac-the', khuTuUrl: undefined, soSach: 5 })).toBe('dong-san-xuat');
+});
+
+test('không có tp và xưởng nhiều cuốn thì đáp vào Xưởng', () => {
+  expect(khuDap({ tpTuUrl: undefined, khuTuUrl: undefined, soSach: 3 })).toBe('xuong');
+});
+
+test('không có tp mà đúng MỘT cuốn thì đáp vào buồng lái, không phải bảng một dòng', () => {
+  expect(khuDap({ tpTuUrl: undefined, khuTuUrl: undefined, soSach: 1 })).toBe('dong-san-xuat');
+});
+
+test('ĐÚNG HAI cuốn đã là Xưởng — mốc của spec §7.1 là ≥ 2, không phải > 2', () => {
+  // Bốn bài của kế hoạch dùng 5 · 3 · 1 · 9, tức không bài nào đứng ở mốc. ĐO ĐƯỢC: đổi
+  // `>= 2` thành `> 2` vẫn xanh cả bốn — trong khi hệ quả là một xưởng hai cuốn không bao
+  // giờ thấy được màn Xưởng, đúng ca nhỏ nhất mà một bảng bắt đầu có nghĩa (hai dòng thì
+  // đã có cái để so).
+  expect(khuDap({ tpTuUrl: undefined, khuTuUrl: undefined, soSach: 2 })).toBe('xuong');
+});
+
+test('xưởng RỖNG không do luật này xử — nó vẫn trả khu mặc định, không trả Xưởng', () => {
+  // `page.tsx` dẫn thẳng vào Tác phẩm mới trước mọi nhánh khác, nên số 0 không bao giờ tới
+  // đây trên đường thật. Bài này chốt rằng nếu nó có tới thì hàm KHÔNG mở một bảng rỗng —
+  // và nó chặn cách viết `soSach !== 1`, một cách viết thỏa cả bốn bài của kế hoạch.
+  expect(khuDap({ tpTuUrl: undefined, khuTuUrl: undefined, soSach: 0 })).toBe('dong-san-xuat');
+});
+
+test('khu ghi rõ trên URL luôn THẮNG luật đáp', () => {
+  // Tải lại trang ở bất kỳ màn nào phải về đúng màn đó. Luật đáp chỉ quyết định khi URL im.
+  expect(khuDap({ tpTuUrl: undefined, khuTuUrl: 'chi-phi', soSach: 9 })).toBe('chi-phi');
+  expect(khuDap({ tpTuUrl: 'mac-the', khuTuUrl: 'ban-thao', soSach: 9 })).toBe('ban-thao');
+});
+
+test('URL ghi rõ ĐÚNG khu mặc định vẫn thắng — `undefined` mới là "URL im"', () => {
+  // Đây là mắt dễ tuột nhất của sợi dây này, và nó nằm ở NGƯỜI GỌI chứ ở hàm.
+  // `khuTuUrl()` trong `useStudio.ts` trả `KHU_MAC_DINH` khi query string KHÔNG có `?khu=`,
+  // và `ghiUrl` cố ý bỏ `khu` khỏi URL khi nó bằng `KHU_MAC_DINH`. Nên hai ca "URL im" và
+  // "URL ghi dong-san-xuat" đến chỗ đó y hệt nhau. Ai đấu dây bằng cách truyền thẳng
+  // `khuTuUrl()` vào đây sẽ làm luật đáp CHẾT HẲN mà không bài kiểm nào của luật đỏ: mọi
+  // lần mở trang đều rơi vào nhánh đầu và về buồng lái.
+  //
+  // Hàm này nhận `Khu | undefined` chính vì thế: phân biệt đó là việc của người gọi, và
+  // người gọi phải đọc tham số THÔ.
+  expect(khuDap({ tpTuUrl: undefined, khuTuUrl: 'dong-san-xuat', soSach: 9 })).toBe(
+    'dong-san-xuat',
+  );
 });

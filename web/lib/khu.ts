@@ -19,6 +19,7 @@
  */
 
 export type Khu =
+  | 'xuong'
   | 'dong-san-xuat'
   | 'ban-thao'
   | 'kiem-dinh'
@@ -37,6 +38,7 @@ export type Khu =
   | 'nhap-xuat';
 
 export const KHU: readonly Khu[] = [
+  'xuong',
   'dong-san-xuat',
   'ban-thao',
   'kiem-dinh',

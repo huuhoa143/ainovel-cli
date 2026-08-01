@@ -1,3 +1,4 @@
+import { KHU_MAC_DINH, type Khu } from './khu';
 import type { Book } from './types';
 
 /** Con số của cả xưởng, cho dải tổng ở đầu màn Xưởng. */
@@ -48,4 +49,36 @@ export function tongXuong(sach: Book[]): TongXuong {
   }
   t.chiPhi = xu / 100;
   return t;
+}
+
+/**
+ * Bề mặt đáp lúc mở trang.
+ *
+ * Ba nhánh, ba lý do khác nhau:
+ *
+ *   - **URL nói rõ khu** → theo URL, không bàn. Tải lại trang ở một màn phải về đúng màn đó;
+ *     một luật đáp thắng URL là URL nói dối.
+ *   - **có `?tp=`** → buồng lái. Người quay lại một cuốn cụ thể đã nói ra họ muốn gì; bắt họ
+ *     đi qua một bảng nữa là thêm một nhịp cho mọi lần mở trang.
+ *   - **không `?tp=`** → Xưởng nếu có ≥ 2 cuốn, buồng lái nếu đúng 1. Một bảng một dòng không
+ *     quyết định gì, nên nó chỉ là một màn hình phải bấm qua.
+ *
+ * Xưởng RỖNG không xử ở đây: `page.tsx` đã dẫn thẳng vào Tác phẩm mới trước mọi nhánh khác, và
+ * lý do được ghi ở đó. Nhánh cuối vẫn trả khu mặc định cho `soSach === 0` chứ không trả
+ * `'xuong'` — nếu một ngày số 0 tới được đây thì mở một bảng rỗng là câu trả lời tệ nhất.
+ *
+ * `khuTuUrl` là `Khu | undefined`, và `undefined` mang nghĩa "URL IM" — không phải "URL ghi
+ * khu mặc định". Người gọi phải đọc tham số THÔ để phân biệt hai ca đó: `khuTuUrl()` trong
+ * `useStudio.ts` trả `KHU_MAC_DINH` khi không có `?khu=`, và `ghiUrl` cố ý bỏ `khu` khỏi URL
+ * khi nó bằng `KHU_MAC_DINH`, nên truyền thẳng hàm đó vào đây sẽ làm cả luật này chết lặng:
+ * mọi lần mở trang rơi vào nhánh đầu và không ai thấy màn Xưởng.
+ */
+export function khuDap(v: {
+  tpTuUrl: string | undefined;
+  khuTuUrl: Khu | undefined;
+  soSach: number;
+}): Khu {
+  if (v.khuTuUrl) return v.khuTuUrl;
+  if (v.tpTuUrl) return KHU_MAC_DINH;
+  return v.soSach >= 2 ? 'xuong' : KHU_MAC_DINH;
 }
