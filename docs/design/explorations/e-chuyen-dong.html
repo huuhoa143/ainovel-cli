@@ -25,12 +25,20 @@
    nguyên tắc đó, nó mở rộng đúng nguyên tắc: thêm chuyển động mang thông tin,
    không thêm trang trí.
 
-   Năm họ, một tiêu điểm:
+   Chín họ, MỘT tiêu điểm, chia hai hiệp.
+
+   Hiệp một — máy còn sống:
      1. ĐẦU ĐỌC          — tiêu điểm. Máy còn sống, thấy từ hai mét.
      2. SỐ VỪA ĐỔI       — có gì đổi lúc tôi đi vắng.
      3. ĐANG CHỜ BẠN     — chờ-người khác chờ-máy.
      4. NÚT ĐANG GỬI     — lệnh đã đi, đừng bấm nữa.
      5. VẠCH NGĂN TỚI    — ranh giới lượt là một sự kiện, không phải một đường kẻ.
+
+   Hiệp hai — mọi chỗ thay một sự thật bằng một sự thật khác:
+     6. TRẠNG THÁI ĐỔI   — lắng xuống. Áp cho MỌI .st và .blk.
+     7. TRƯỢT            — vị trí trong tập hữu hạn: tab, mức xem, khu ở rail.
+     8. NHÃN CÓ SỐ ĐẾM   — số đổi = nhấp; việc tồn tới = scale-in. Hai loại tin.
+     9. CHƯƠNG CHỐT      — đổ đầy từ trái. Sự kiện quan trọng nhất của sản phẩm.
 
    Mọi họ đều có nhánh prefers-reduced-motion. Không họ nào animate thuộc tính
    layout. Không glow, không glassmorphism, không gradient trang trí.
@@ -219,6 +227,147 @@ body { background: var(--bg); color: var(--ink); font-family: var(--ui); margin:
 }
 .mo-vachToi .vach { transform-origin: center; animation: pvVachToi 0.24s var(--ease) both; }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   HIỆP HAI · TRẠNG THÁI VÀ NHÃN
+
+   Hiệp một nói "máy còn sống". Hiệp hai nói một điều khác: **mọi chỗ giao diện
+   thay một sự thật bằng một sự thật khác đều đang làm việc đó không để lại dấu.**
+
+   Bốn cơ chế, mỗi cơ chế áp cho MỌI thực thể cùng loại — đây là một hệ, không
+   phải bốn hiệu ứng lẻ. Học một lần, đọc được ở mọi chỗ:
+
+     06 · trạng thái vừa đổi        → LẮNG XUỐNG   (mọi .st, mọi .blk)
+     07 · vị trí trong tập hữu hạn  → TRƯỢT        (tab, mức xem, khu ở rail)
+     08 · nhãn có số đếm            → NHẤP / TỚI   (mọi .rail .n)
+     09 · chương chốt               → ĐỔ ĐẦY       (vạch chương trên lane)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ 06 · TRẠNG THÁI VỪA ĐỔI ═════════════════════════════════════════════
+   Ký hiệu lắng xuống vị trí, chữ hiện lên — 200ms, một lần.
+
+   `.st` là component trạng thái dùng ở KHẮP bề mặt: hàng bảng chương, khối trục,
+   nhãn ở inspector, ô transport. Nó mang `đốm + ký hiệu + chữ` và đổi giá trị
+   mỗi lần công đoạn sang bước mới — `chờ trong hàng` → `đang soạn bản thảo` →
+   `đã nghiệm thu`. Hôm nay cú đổi đó là một phép thay chuỗi tức thời.
+
+   Vì sao LẮNG XUỐNG chứ không giao nhau: giao nhau đòi cả trạng thái cũ và mới
+   cùng có trong DOM một lúc — tức component phải giữ giá trị cũ, và một bề mặt
+   nói ra hai trạng thái cùng lúc là một bề mặt nói dối trong 200ms. Lắng xuống
+   chỉ khẳng định "cái đang thấy vừa mới tới", đúng thứ cần nói.
+
+   KHÔNG đụng vào nhịp đập: `.st.gold.dap .ky` giữ nguyên vòng 2,2s của nó.
+   Hai chuyển động này trả lời hai câu khác nhau — "vừa đổi" và "còn đang chạy". */
+@keyframes pvDoiTT {
+  from { transform: translateY(-2px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.mo-doiTT .st.vuaDoi .ky { animation: pvDoiTT 0.2s var(--ease) both; }
+.mo-doiTT .st.vuaDoi { animation: pvHienNhe 0.2s var(--ease) both; }
+.mo-doiTT .blk.vuaDoi { animation: pvHienNhe 0.24s var(--ease) both; }
+@keyframes pvHienNhe {
+  from { opacity: 0.45; }
+  to   { opacity: 1; }
+}
+
+/* ═══ 07 · VỊ TRÍ TRONG TẬP HỮU HẠN = TRƯỢT ═══════════════════════════════
+   Dấu chỉ mục đang mở TRƯỢT giữa các vị trí thay vì nhảy.
+
+   Ba chỗ cùng một bài toán: tab của inspector (Khế ước / Kiểm định / Bản thảo),
+   bộ chọn mức xem (Tập / Cung / Chương), và khu đang mở ở rail. Cả ba là "bạn
+   đang ở một trong N", và cả ba hôm nay nhảy tức thời.
+
+   Chuyển động ở đây mang QUAN HỆ KHÔNG GIAN — bạn vừa đi từ đâu tới đâu. Đó là
+   thông tin mà một cú nhảy xoá mất: sau khi nhảy, không còn gì nói bạn vừa ở tab
+   nào.
+
+   Nâng cấp tiệm tiến, cố ý: `aria-pressed` / `aria-selected` VẪN giữ nền và viền
+   như hiện tại, nên nếu JS chết thì bề mặt vẫn đọc được y như hôm nay. Lớp
+   `.truot` chỉ được thêm khi có JS, và chỉ lúc đó dấu trượt mới thay viền tĩnh.
+   Đây là family duy nhất cần vài dòng JS — bốn family kia là CSS thuần. */
+.mo-truot .tabs.truot { position: relative; }
+.mo-truot .tabs.truot button[aria-selected='true'] { border-bottom-color: transparent; }
+.mo-truot .tabs.truot::after {
+  content: '';
+  position: absolute; bottom: -1px; height: 1.5px;
+  left: var(--x, 0); width: var(--w, 0);
+  background: var(--gold);
+  transition: left 0.22s var(--ease), width 0.22s var(--ease);
+}
+.mo-truot .mucxem.truot { position: relative; }
+.mo-truot .mucxem.truot button[aria-pressed='true'] { background: none; }
+.mo-truot .mucxem.truot::after {
+  content: '';
+  position: absolute; top: 2px; bottom: 2px;
+  left: var(--x, 0); width: var(--w, 0);
+  background: var(--raised); border-radius: 3px;
+  transition: left 0.22s var(--ease), width 0.22s var(--ease);
+  z-index: 0;
+}
+.mo-truot .mucxem.truot button { position: relative; z-index: 1; }
+.pv-rail.truot { position: relative; }
+.mo-truot .pv-rail.truot .mucdi[aria-current='page'] { background: none; }
+.mo-truot .pv-rail.truot::after {
+  content: '';
+  position: absolute; left: 6px; right: 6px;
+  top: var(--y, 0); height: var(--h, 0);
+  background: var(--panel-2); border-radius: var(--r);
+  transition: top 0.24s var(--ease), height 0.24s var(--ease);
+  z-index: 0;
+}
+.pv-rail.truot .mucdi { position: relative; z-index: 1; }
+
+/* ═══ 08 · NHÃN CÓ SỐ ĐẾM ═════════════════════════════════════════════════
+   `.rail .n` là chip đếm ở mọi mục rail: Bản thảo 2, Nhân vật 8, Luật thế giới
+   12, Phục bút 3, Hàng chờ viết lại 0. Engine THÊM vào những thứ đó trong lúc
+   viết — đó là dấu hiệu duy nhất trên rail cho biết máy vừa ghi ra cái gì mới,
+   và ở khu nào.
+
+   HAI hành vi khác nhau, và phân biệt chúng chính là thông tin:
+
+     · số đổi (2 → 3)        = NHẤP. Có thêm việc đã xong.
+     · việc tồn tới (0 → 1)  = TỚI.  Chip amber xuất hiện từ không có gì.
+
+   Cái thứ hai không phải "số đổi mạnh hơn" — nó là một loại tin khác: từ "không
+   có gì cần bạn" sang "có việc cần bạn". Nên nó vào bằng scale, không bằng nhấp.
+   Cùng lý lẽ với `.n.warn` mang amber ở mọi chỗ khác của bề mặt. */
+@keyframes pvNhapDem {
+  0%   { background: color-mix(in oklch, var(--teal) 30%, transparent); color: var(--ink); }
+  100% { background: var(--panel-2); }
+}
+@keyframes pvTonToi {
+  from { transform: scale(0.4); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+.mo-nhanDem .rail .n.vuaDoi { animation: pvNhapDem 0.9s var(--ease); }
+.mo-nhanDem .rail .n.warn.vuaToi { animation: pvTonToi 0.26s var(--ease) both; }
+
+/* ═══ 09 · CHƯƠNG CHỐT ════════════════════════════════════════════════════
+   Vạch chương trên lane đổ đầy từ trái, rồi nhấp một lần.
+
+   Đây là SỰ KIỆN QUAN TRỌNG NHẤT của cả sản phẩm: một đơn vị sản xuất vừa hoàn
+   thành. Nó là thứ người vận hành chờ suốt sáu giờ. Hôm nay nó là một ô 6px đổi
+   màu, không dấu vết — nếu bạn không nhìn đúng ô đó thì nó đã xảy ra mà bạn
+   không biết.
+
+   Đổ đầy TỪ TRÁI vì lane là một trục thời gian: chương chạy từ trái sang phải,
+   nên nó cũng phải đầy theo chiều đó. Đổ từ giữa hay mờ dần vào đều là chuyển
+   động không cùng hướng với dữ liệu.
+
+   `background-size` chứ không `width`: không animate thuộc tính layout. */
+@keyframes pvChotDay {
+  from { background-size: 0% 100%; }
+  to   { background-size: 100% 100%; }
+}
+@keyframes pvChotNhap {
+  0%, 100% { box-shadow: none; }
+  40%      { box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--teal) 78%, transparent); }
+}
+.mo-chuongChot .pv-vach-ch.vuaChot {
+  background-image: linear-gradient(90deg, var(--teal), var(--teal));
+  background-repeat: no-repeat;
+  animation: pvChotDay 0.42s var(--ease) both, pvChotNhap 0.9s var(--ease) 0.42s;
+}
+
 /* ── Đường tắt bắt buộc ──────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .mo-dauDoc .trans[data-chay='1']::before,
@@ -227,9 +376,21 @@ body { background: var(--bg); color: var(--ink); font-family: var(--ui); margin:
   .mo-thoCho .cuanghiemthu,
   .mo-thoCho .hieunghiemthu,
   .mo-dangGui button[aria-busy='true']::after,
-  .mo-vachToi .vach {
+  .mo-vachToi .vach,
+  .mo-doiTT .st.vuaDoi,
+  .mo-doiTT .st.vuaDoi .ky,
+  .mo-doiTT .blk.vuaDoi,
+  .mo-nhanDem .rail .n.vuaDoi,
+  .mo-nhanDem .rail .n.warn.vuaToi,
+  .mo-chuongChot .pv-vach-ch.vuaChot {
     animation: none;
   }
+  /* Trượt: tắt transition, dấu chỉ nhảy tới đúng chỗ — vẫn nói đúng bạn đang ở đâu. */
+  .mo-truot .tabs.truot::after,
+  .mo-truot .mucxem.truot::after,
+  .mo-truot .pv-rail.truot::after { transition: none; }
+  /* Chương chốt: bỏ đổ đầy nhưng GIỮ màu đã đầy — không mất thông tin nào. */
+  .mo-chuongChot .pv-vach-ch.vuaChot { background-size: 100% 100%; }
   /* Không mất thông tin khi tắt: đầu đọc thành một dải tĩnh, thở thành viền đậm
      cố định, vạch ngăn hiện đủ. Trạng thái vẫn đọc được, chỉ không động. */
   .mo-dauDoc .trans[data-chay='1']::before {
@@ -248,7 +409,17 @@ body.pv-giam .mo-vuaDoi .pv-doi-chot,
 body.pv-giam .mo-thoCho .cuanghiemthu,
 body.pv-giam .mo-thoCho .hieunghiemthu,
 body.pv-giam .mo-dangGui button[aria-busy='true']::after,
-body.pv-giam .mo-vachToi .vach { animation: none; }
+body.pv-giam .mo-vachToi .vach,
+body.pv-giam .mo-doiTT .st.vuaDoi,
+body.pv-giam .mo-doiTT .st.vuaDoi .ky,
+body.pv-giam .mo-doiTT .blk.vuaDoi,
+body.pv-giam .mo-nhanDem .rail .n.vuaDoi,
+body.pv-giam .mo-nhanDem .rail .n.warn.vuaToi,
+body.pv-giam .mo-chuongChot .pv-vach-ch.vuaChot { animation: none; }
+body.pv-giam .mo-truot .tabs.truot::after,
+body.pv-giam .mo-truot .mucxem.truot::after,
+body.pv-giam .mo-truot .pv-rail.truot::after { transition: none; }
+body.pv-giam .mo-chuongChot .pv-vach-ch.vuaChot { background-size: 100% 100%; }
 body.pv-giam .mo-dauDoc .trans[data-chay='1']::before {
   background-image: none;
   background-color: color-mix(in oklch, var(--gold) 42%, transparent);
@@ -358,6 +529,76 @@ body.pv-an * { animation-play-state: paused !important; }
 }
 .vach::before, .vach::after { content: ''; height: 1px; background: var(--line); flex: 1; }
 
+/* ── vỏ tối thiểu cho các khối của hiệp hai ──────────────────────────────── */
+.pv-hangTT {
+  display: flex; flex-wrap: wrap; gap: 10px 26px;
+  padding: 14px 18px; align-items: center;
+}
+.pv-hangTT .pv-o-tt {
+  display: flex; align-items: baseline; gap: 9px;
+  min-width: 190px;
+}
+.pv-hangTT .pv-nhan-tt { font-size: 11px; color: var(--ink-3); min-width: 62px; }
+
+.pv-truc { padding: 14px 18px; display: grid; gap: 6px; }
+.pv-truc-hang { display: flex; align-items: center; gap: 10px; }
+.pv-truc-hang > .pv-nhan-tt { min-width: 78px; text-align: right; flex: none; }
+.pv-lane { display: flex; gap: 3px; flex: 1; min-width: 0; }
+.blk {
+  flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center;
+  gap: 7px; height: 26px; border-radius: 3px; font-size: 11.5px;
+  font-family: var(--mono); white-space: nowrap; overflow: hidden;
+}
+.blk .ky { font-size: 9px; }
+.blk.done { background: color-mix(in oklch, var(--teal) 30%, var(--panel-2)); color: var(--ink); }
+.blk.running { background: var(--gold); color: #241f18; }
+.blk.planned { background: var(--panel-2); color: var(--ink-3); }
+.blk.unplanned {
+  background: var(--panel-2); color: var(--ink-3);
+  background-image: repeating-linear-gradient(45deg, transparent 0 4px, color-mix(in oklch, var(--line) 70%, transparent) 4px 5px);
+}
+
+.pv-lane-ch { display: flex; gap: 2px; flex: 1; min-width: 0; }
+.pv-vach-ch {
+  flex: 1; min-width: 0; height: 22px; border-radius: 2px;
+  background-color: var(--panel-2);
+}
+.pv-vach-ch.done { background-color: color-mix(in oklch, var(--teal) 72%, var(--panel-2)); }
+.pv-vach-ch.now { background-color: var(--gold); }
+
+.pv-rail {
+  width: 232px; padding: 8px 6px; background: var(--panel);
+  border-right: 1px solid var(--line); flex: none;
+}
+.pv-rail .nhomNhan {
+  font-size: 11px; color: var(--ink-3); padding: 8px 8px 5px;
+}
+.pv-rail .mucdi {
+  width: 100%; display: flex; align-items: center; gap: 9px;
+  padding: 6px 8px; border-radius: var(--r);
+  background: none; border: 0; color: var(--ink-2);
+  font: 400 12.5px var(--ui); text-align: left; cursor: pointer;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.pv-rail .mucdi:hover { background: var(--panel-2); color: var(--ink); }
+.pv-rail .mucdi[aria-current='page'] { background: var(--panel-2); color: var(--ink); font-weight: 500; }
+.pv-rail .mucdi[aria-current='page'] .g { color: var(--gold); }
+.pv-rail .g { color: var(--ink-3); font-size: 11px; width: 13px; flex: none; }
+.pv-rail .n {
+  margin-left: auto; font-family: var(--mono); font-size: 11px;
+  color: var(--ink-3); background: var(--panel-2);
+  border-radius: 3px; padding: 1px 5px; min-width: 18px; text-align: center;
+}
+.pv-rail .n.warn { color: var(--amber); background: color-mix(in oklch, var(--amber) 16%, var(--panel-2)); }
+.pv-rail:focus-visible, .pv-rail .mucdi:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+
+.pv-doi { display: flex; }
+.pv-insp { flex: 1; min-width: 0; }
+.pv-insp .ihead { padding: 11px 14px 0; }
+.pv-insp .ihead .no { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+.pv-insp .ihead h3 { font-size: 14px; font-weight: 500; margin: 2px 0 6px; color: var(--ink); }
+.pv-insp .ibody { padding: 13px 14px 18px; font-size: 12.5px; color: var(--ink-2); line-height: 1.7; }
+
 .pv-ghi {
   margin: 12px 0 0; font-size: 11.5px; color: var(--ink-3);
   line-height: 1.7; max-width: 78ch;
@@ -367,7 +608,7 @@ body.pv-an * { animation-play-state: paused !important; }
 </style>
 </head>
 
-<body class="mo-dauDoc mo-vuaDoi mo-thoCho mo-dangGui mo-vachToi">
+<body class="mo-dauDoc mo-vuaDoi mo-thoCho mo-dangGui mo-vachToi mo-doiTT mo-truot mo-nhanDem mo-chuongChot">
 <div class="pv">
 
   <div class="pv-head">
@@ -398,6 +639,14 @@ body.pv-an * { animation-play-state: paused !important; }
       <label><input type="checkbox" data-mo="mo-thoCho" checked> 3 · đang chờ bạn</label>
       <label><input type="checkbox" data-mo="mo-dangGui" checked> 4 · nút đang gửi</label>
       <label><input type="checkbox" data-mo="mo-vachToi" checked> 5 · vạch ngăn</label>
+    </div>
+    <span class="pv-vach"></span>
+    <span class="pv-nhan">Hiệp hai — trạng thái &amp; nhãn:</span>
+    <div class="pv-nhom">
+      <label><input type="checkbox" data-mo="mo-doiTT" checked> 6 · trạng thái vừa đổi</label>
+      <label><input type="checkbox" data-mo="mo-truot" checked> 7 · trượt</label>
+      <label><input type="checkbox" data-mo="mo-nhanDem" checked> 8 · nhãn có số đếm</label>
+      <label><input type="checkbox" data-mo="mo-chuongChot" checked> 9 · chương chốt</label>
     </div>
     <span class="pv-vach"></span>
     <label><input type="checkbox" id="pv-tat-het"> <b style="color:var(--ink)">Tắt hết — xem bản hiện tại</b></label>
@@ -545,6 +794,159 @@ kết luận: nhịp ổn, phục bút "chiếc đèn bến" đã gieo</pre>
     </div>
   </section>
 
+  <h2 style="font-size:15px;font-weight:600;margin:64px 0 6px;padding-top:26px;border-top:1px solid var(--line)">
+    Hiệp hai · trạng thái và nhãn
+  </h2>
+  <p class="pv-vs" style="margin-bottom:34px">
+    Hiệp một nói "máy còn sống". Hiệp hai nói một điều khác: <b>mọi chỗ giao diện thay một sự
+    thật bằng một sự thật khác đều đang làm việc đó không để lại dấu.</b> Bốn cơ chế dưới đây là
+    <b>một hệ</b>, không phải bốn hiệu ứng lẻ — mỗi cơ chế áp cho MỌI thực thể cùng loại, nên học
+    một lần là đọc được ở mọi chỗ.
+  </p>
+
+  <!-- ═══ 06 ═══ -->
+  <section class="pv-sect">
+    <h2><span class="pv-ma">06</span> Trạng thái vừa đổi <span class="pv-tieu">0,2s · lắng xuống · một lần</span></h2>
+    <p class="pv-vs">
+      <code>.st</code> là component trạng thái dùng ở <b>khắp</b> bề mặt: hàng bảng chương, khối
+      trục, nhãn ở inspector, ô transport. Nó đổi giá trị mỗi lần công đoạn sang bước mới —
+      <code>chờ trong hàng</code> → <code>đang soạn bản thảo</code> → <code>đã nghiệm thu</code>.
+      Hôm nay cú đổi đó là một phép thay chuỗi tức thời.
+      <br><br>
+      <b>Vì sao lắng xuống chứ không giao nhau:</b> giao nhau đòi cả trạng thái cũ và mới cùng có
+      trong DOM một lúc — tức bề mặt nói ra hai trạng thái cùng lúc trong 200ms, và đó là một bề
+      mặt nói dối. Lắng xuống chỉ khẳng định "cái đang thấy vừa mới tới".
+      <b>Không đụng vào nhịp đập</b> — hai chuyển động trả lời hai câu khác nhau: "vừa đổi" và
+      "còn đang chạy".
+    </p>
+    <div class="pv-khung pv-hangTT" id="pv-tt-khung">
+      <div class="pv-o-tt"><span class="pv-nhan-tt">Chương 1</span><span class="st teal" data-ch="1"><span class="ky">●</span>đã nghiệm thu</span></div>
+      <div class="pv-o-tt"><span class="pv-nhan-tt">Chương 2</span><span class="st teal" data-ch="2"><span class="ky">●</span>đã nghiệm thu</span></div>
+      <div class="pv-o-tt"><span class="pv-nhan-tt">Chương 3</span><span class="st gold dap" data-ch="3"><span class="ky">▶</span>đang soạn bản thảo</span></div>
+      <div class="pv-o-tt"><span class="pv-nhan-tt">Chương 4</span><span class="st muted" data-ch="4"><span class="ky">○</span>chờ trong hàng</span></div>
+    </div>
+    <div class="pv-hang-nut">
+      <button class="pv-nut" id="pv-gia-tt">Giả lập: dây chuyền tiến một bước</button>
+      <span class="pv-nhan">Chương 3 chốt, chương 4 vào việc — hai trạng thái đổi cùng lúc.</span>
+    </div>
+  </section>
+
+  <!-- ═══ 07 ═══ -->
+  <section class="pv-sect">
+    <h2><span class="pv-ma">07</span> Vị trí trong tập hữu hạn = trượt <span class="pv-tieu">0,22s · ease-out</span></h2>
+    <p class="pv-vs">
+      Ba chỗ cùng một bài toán: <b>tab</b> của inspector, <b>bộ chọn mức xem</b>, và <b>khu đang
+      mở</b> ở rail. Cả ba là "bạn đang ở một trong N", và cả ba hôm nay nhảy tức thời. Chuyển
+      động ở đây mang <b>quan hệ không gian</b> — bạn vừa đi từ đâu tới đâu; một cú nhảy xoá mất
+      chính thông tin đó.
+      <br><br>
+      Đây là họ <b>duy nhất</b> cần vài dòng JS. Nâng cấp tiệm tiến, cố ý:
+      <code>aria-selected</code> / <code>aria-pressed</code> vẫn giữ nền và viền như hiện tại, nên
+      JS chết thì bề mặt đọc được y như hôm nay.
+    </p>
+    <div class="pv-khung pv-doi">
+      <div class="pv-rail truot" id="pv-rail-2">
+        <div class="nhomNhan">Truyện của bạn</div>
+        <button class="mucdi"><span class="g">✎</span>Bản thảo<span class="n">2</span></button>
+        <button class="mucdi" aria-current="page"><span class="g">▤</span>Dòng sản xuất</button>
+        <button class="mucdi"><span class="g">◆</span>Kiểm định<span class="n">3</span></button>
+        <button class="mucdi"><span class="g">■</span>Hàng chờ viết lại<span class="n">0</span></button>
+        <button class="mucdi"><span class="g">⇄</span>Nhập &amp; Xuất</button>
+      </div>
+      <div class="pv-insp">
+        <div style="display:flex;align-items:center;gap:10px;padding:11px 14px 0">
+          <span class="pv-nhan" style="color:var(--ink-3);font-size:11px">Mức xem</span>
+          <div class="mucxem truot" id="pv-mucxem">
+            <button aria-pressed="false">Tập</button>
+            <button aria-pressed="false">Cung</button>
+            <button aria-pressed="true">Chương</button>
+          </div>
+        </div>
+        <div class="tabs truot" id="pv-tabs" role="tablist" style="margin-top:11px">
+          <button role="tab" aria-selected="true">Khế ước</button>
+          <button role="tab" aria-selected="false">Kiểm định</button>
+          <button role="tab" aria-selected="false">Bản thảo</button>
+        </div>
+        <div class="ibody" id="pv-tab-than">
+          Khi kiểm kê bộ đồ chơi, Lục Hoài An phát hiện con rối số bảy bị thay ngón tay giả; bên
+          trong ngón tay có mảnh giấy dấu ghi ký hiệu đấu giá kín.
+        </div>
+      </div>
+    </div>
+    <div class="pv-hang-nut">
+      <span class="pv-nhan">Bấm thẳng vào tab, mức xem, và mục ở rail — dấu chỉ trượt theo.</span>
+    </div>
+  </section>
+
+  <!-- ═══ 08 ═══ -->
+  <section class="pv-sect">
+    <h2><span class="pv-ma">08</span> Nhãn có số đếm <span class="pv-tieu">0,9s nhấp · 0,26s tới</span></h2>
+    <p class="pv-vs">
+      <code>.rail .n</code> là chip đếm ở mọi mục rail. Engine <b>thêm</b> vào những thứ đó trong
+      lúc viết — đó là dấu hiệu duy nhất trên rail cho biết máy vừa ghi ra cái gì mới, và ở khu nào.
+      <br><br>
+      <b>Hai hành vi khác nhau, và phân biệt chúng chính là thông tin:</b> số đổi
+      (<code>8 → 9</code>) là <b>nhấp</b> — có thêm việc đã xong. Việc tồn tới
+      (<code>0 → 1</code>) là <b>tới</b> — chip amber xuất hiện từ không có gì. Cái thứ hai không
+      phải "số đổi mạnh hơn": nó là từ "không có gì cần bạn" sang "có việc cần bạn".
+    </p>
+    <div class="pv-khung" style="display:flex">
+      <div class="pv-rail" id="pv-rail-3" style="border-right:0">
+        <div class="nhomNhan">Thế giới truyện</div>
+        <button class="mucdi"><span class="g">≡</span>Dàn ý phân tầng<span class="n" data-d="dany">2</span></button>
+        <button class="mucdi"><span class="g">●</span>Nhân vật<span class="n" data-d="nv">8</span></button>
+        <button class="mucdi"><span class="g">◐</span>Luật thế giới<span class="n" data-d="luat">12</span></button>
+        <button class="mucdi"><span class="g">◇</span>Phục bút<span class="n" data-d="phucbut">3</span></button>
+        <div class="nhomNhan" style="margin-top:6px">Truyện của bạn</div>
+        <button class="mucdi"><span class="g">■</span>Hàng chờ viết lại<span class="n" data-d="vietlai">0</span></button>
+      </div>
+    </div>
+    <div class="pv-hang-nut">
+      <button class="pv-nut" id="pv-gia-dem">Giả lập: engine ghi thêm nhân vật &amp; luật</button>
+      <button class="pv-nut" id="pv-gia-ton">Giả lập: một chương bị trả về viết lại</button>
+    </div>
+  </section>
+
+  <!-- ═══ 09 ═══ -->
+  <section class="pv-sect">
+    <h2><span class="pv-ma">09</span> Chương chốt <span class="pv-tieu">0,42s đổ đầy + 0,9s nhấp</span></h2>
+    <p class="pv-vs">
+      Đây là <b>sự kiện quan trọng nhất của cả sản phẩm</b>: một đơn vị sản xuất vừa hoàn thành —
+      thứ người vận hành chờ suốt sáu giờ. Hôm nay nó là một ô 6px đổi màu, không dấu vết.
+      <br><br>
+      Đổ đầy <b>từ trái</b> vì lane là một trục thời gian: chương chạy trái sang phải, nên nó cũng
+      phải đầy theo chiều đó. Đổ từ giữa hay mờ dần vào đều là chuyển động không cùng hướng với dữ
+      liệu. Dùng <code>background-size</code> chứ không <code>width</code> — không animate thuộc
+      tính layout.
+    </p>
+    <div class="pv-khung pv-truc" id="pv-truc">
+      <div class="pv-truc-hang">
+        <span class="pv-nhan-tt">Tập</span>
+        <div class="pv-lane">
+          <div class="blk running" style="flex:2"><span class="ky">▶</span>T1 · đang chạy</div>
+          <div class="blk planned" style="flex:3"><span class="ky">◇</span>T2 · đã quy hoạch</div>
+        </div>
+      </div>
+      <div class="pv-truc-hang">
+        <span class="pv-nhan-tt">Cung, tập 1</span>
+        <div class="pv-lane" id="pv-lane-cung">
+          <div class="blk running"><span class="ky">▶</span>C1 · đang chạy</div>
+          <div class="blk unplanned"><span class="ky">□</span>C2 · chờ mở</div>
+          <div class="blk unplanned"><span class="ky">□</span>C3 · chờ mở</div>
+          <div class="blk unplanned"><span class="ky">□</span>C4 · chờ mở</div>
+        </div>
+      </div>
+      <div class="pv-truc-hang">
+        <span class="pv-nhan-tt">Chương</span>
+        <div class="pv-lane-ch" id="pv-lane-ch"></div>
+      </div>
+    </div>
+    <div class="pv-hang-nut">
+      <button class="pv-nut" id="pv-gia-chuong">Giả lập: chương vừa chốt</button>
+      <span class="pv-nhan">Vạch đang chạy (vàng) chốt lại thành teal, vạch kế tiếp vào việc.</span>
+    </div>
+  </section>
+
   <p class="pv-ghi">
     <b>Chi phí:</b> ba vòng lặp (đầu đọc, thở, nút gửi) chỉ đổi <code>background-position</code>
     hoặc <code>border-color</code>. Đầu đọc và nút gửi chỉ chạy khi có việc đang chạy; thở chỉ
@@ -643,6 +1045,141 @@ document.getElementById('pv-gia-vach').addEventListener('click', () => {
   p.textContent = MAU[(luot - 3) % MAU.length].replace(/\{n\}/g, String(luot));
   than.append(v, p);
   than.scrollTop = than.scrollHeight;
+});
+
+/* ══════════ HIỆP HAI ══════════ */
+
+/** Gán lại một animation một-lần: bỏ lớp, buộc reflow, thêm lại. */
+function lai(el, lop) {
+  el.classList.remove(lop);
+  void el.offsetWidth;
+  el.classList.add(lop);
+}
+
+/* 06 · trạng thái vừa đổi — dây chuyền tiến một bước. */
+const TT = {
+  done: { lop: 'st teal', ky: '●', chu: 'đã nghiệm thu' },
+  drafting: { lop: 'st gold dap', ky: '▶', chu: 'đang soạn bản thảo' },
+  pending: { lop: 'st muted', ky: '○', chu: 'chờ trong hàng' },
+};
+function datTT(el, ten) {
+  const t = TT[ten];
+  el.className = t.lop;
+  el.replaceChildren();
+  const k = document.createElement('span');
+  k.className = 'ky';
+  k.textContent = t.ky;
+  el.append(k, document.createTextNode(t.chu));
+  lai(el, 'vuaDoi');
+}
+let buoc = 0;
+document.getElementById('pv-gia-tt').addEventListener('click', () => {
+  const o = (n) => document.querySelector(`#pv-tt-khung [data-ch="${n}"]`);
+  buoc += 1;
+  if (buoc % 2 === 1) { datTT(o(3), 'done'); datTT(o(4), 'drafting'); }
+  else { datTT(o(3), 'drafting'); datTT(o(4), 'pending'); }
+});
+
+/* 07 · trượt. Dấu chỉ đọc vị trí THẬT của phần tử đang chọn — không đoán theo chỉ số, vì bề
+   rộng các nút khác nhau (Tập / Cung / Chương) và nhãn tiếng Việt dài không đều. */
+function noiTruotNgang(hop, chonSel, datChon) {
+  const ve = () => {
+    const a = hop.querySelector(chonSel);
+    if (!a) return;
+    hop.style.setProperty('--x', a.offsetLeft + 'px');
+    hop.style.setProperty('--w', a.offsetWidth + 'px');
+  };
+  hop.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b || b.disabled) return;
+    datChon(hop, b);
+    ve();
+  });
+  ve();
+  // Bề rộng đổi khi khổ đổi hoặc font vừa tải xong.
+  new ResizeObserver(ve).observe(hop);
+  document.fonts.ready.then(ve);
+}
+noiTruotNgang(
+  document.getElementById('pv-tabs'),
+  '[aria-selected="true"]',
+  (hop, b) => {
+    for (const x of hop.querySelectorAll('button')) x.setAttribute('aria-selected', String(x === b));
+    document.getElementById('pv-tab-than').textContent = {
+      'Khế ước': 'Khi kiểm kê bộ đồ chơi, Lục Hoài An phát hiện con rối số bảy bị thay ngón tay giả; bên trong ngón tay có mảnh giấy dấu ghi ký hiệu đấu giá kín.',
+      'Kiểm định': 'Bảy chiều đều đạt. Nhịp: khá — ba cảnh liên tiếp cùng khoảng cách người kể, Editor đề nghị đổi một cảnh sang góc nhìn xa.',
+      'Bản thảo': 'Hộp kính mở ra dưới ánh đèn lạnh. Lục Hoài An đếm tới con rối thứ bảy rồi dừng lại, vì ngón tay nó không cùng một màu gỗ với phần còn lại.',
+    }[b.textContent.trim()] || '';
+  },
+);
+noiTruotNgang(
+  document.getElementById('pv-mucxem'),
+  '[aria-pressed="true"]',
+  (hop, b) => {
+    for (const x of hop.querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b));
+  },
+);
+(function noiTruotDoc() {
+  const hop = document.getElementById('pv-rail-2');
+  const ve = () => {
+    const a = hop.querySelector('[aria-current="page"]');
+    if (!a) return;
+    hop.style.setProperty('--y', a.offsetTop + 'px');
+    hop.style.setProperty('--h', a.offsetHeight + 'px');
+  };
+  hop.addEventListener('click', (e) => {
+    const b = e.target.closest('.mucdi');
+    if (!b) return;
+    for (const x of hop.querySelectorAll('.mucdi')) x.removeAttribute('aria-current');
+    b.setAttribute('aria-current', 'page');
+    ve();
+  });
+  ve();
+  new ResizeObserver(ve).observe(hop);
+  document.fonts.ready.then(ve);
+})();
+
+/* 08 · nhãn có số đếm. Hai hành vi tách bạch: đổi = nhấp, tới = scale-in. */
+const dem = { nv: 8, luat: 12, phucbut: 3, dany: 2, vietlai: 0 };
+const oDem = (k) => document.querySelector(`#pv-rail-3 .n[data-d="${k}"]`);
+document.getElementById('pv-gia-dem').addEventListener('click', () => {
+  dem.nv += 1; dem.luat += 2;
+  for (const k of ['nv', 'luat']) {
+    const el = oDem(k);
+    el.textContent = String(dem[k]);
+    lai(el, 'vuaDoi');
+  }
+});
+document.getElementById('pv-gia-ton').addEventListener('click', () => {
+  const el = oDem('vietlai');
+  const truocLaKhong = dem.vietlai === 0;
+  dem.vietlai += 1;
+  el.textContent = String(dem.vietlai);
+  el.classList.add('warn');
+  // TỚI chỉ dùng cho cú nhảy 0 → 1. Từ 1 → 2 là số đổi, tức nhấp.
+  lai(el, truocLaKhong ? 'vuaToi' : 'vuaDoi');
+});
+
+/* 09 · chương chốt trên lane. */
+const laneCh = document.getElementById('pv-lane-ch');
+const SO_VACH = 26;
+let chotCh = 2;
+(function dungLane() {
+  for (let i = 0; i < SO_VACH; i += 1) {
+    const d = document.createElement('div');
+    d.className = 'pv-vach-ch' + (i < chotCh ? ' done' : i === chotCh ? ' now' : '');
+    laneCh.append(d);
+  }
+})();
+document.getElementById('pv-gia-chuong').addEventListener('click', () => {
+  const vach = [...laneCh.children];
+  if (chotCh >= vach.length - 1) return;
+  const dang = vach[chotCh];
+  dang.classList.remove('now');
+  dang.classList.add('done');
+  lai(dang, 'vuaChot');
+  chotCh += 1;
+  vach[chotCh].classList.add('now');
 });
 
 /* Tab ẩn thì dừng mọi vòng — luật của impeccable, và đúng cho một bề mặt mở suốt đêm. */
