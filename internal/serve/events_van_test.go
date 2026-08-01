@@ -90,6 +90,38 @@ func TestSSEVanSongVaoGiuaLuot(t *testing.T) {
 	}
 }
 
+// TestSSEVanSongKhongCoMayVanChay canh việc "không có văn sống" KHÔNG phải lỗi.
+//
+// Hai ca hợp lệ: `s.may == nil` (studio chạy chế độ chỉ đọc, ngoài loopback) và engine chưa
+// mở cho cuốn này. Cả hai đều phải cho `/events` chạy bình thường — dòng sự kiện đọc từ store
+// nên nó không cần engine. Trả lỗi ở đây sẽ làm giao diện mất luôn dòng sự kiện của một cuốn
+// đang xem, chỉ vì nó không chạy.
+func TestSSEVanSongKhongCoMayVanChay(t *testing.T) {
+	for _, ten := range []string{"không có bộ giám sát", "engine chưa mở"} {
+		t.Run(ten, func(t *testing.T) {
+			goc := t.TempDir()
+			newBook(t, goc, "sach", nil)
+			var may *boMay
+			if ten == "engine chưa mở" {
+				may = newBoMay(goc)
+			}
+			srv := &server{root: goc, choGhi: true, may: may}
+			rec := httptest.NewRecorder()
+			ctx, huy := contextVoiHanVan(t, 250*time.Millisecond)
+			defer huy()
+			srv.routes().ServeHTTP(rec,
+				httptest.NewRequest("GET", "/api/books/sach/events", nil).WithContext(ctx))
+
+			if rec.Code != 200 {
+				t.Fatalf("mã %d, muốn 200: %s", rec.Code, rec.Body.String())
+			}
+			if strings.Contains(rec.Body.String(), "event: stream_delta") {
+				t.Error("phát văn sống khi không có engine — không có nguồn nào để phát")
+			}
+		})
+	}
+}
+
 // contextVoiHanVan cho handler SSE một hạn chót để nó thoát vòng chờ.
 //
 // Handler SSE chạy vô hạn tới khi client đi; `httptest` không tự đóng, nên bài kiểm phải là
