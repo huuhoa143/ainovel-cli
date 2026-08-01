@@ -562,6 +562,7 @@ type truongSong struct {
 	InProgressChapter *int
 	Advance           *TienDo
 	Context           *NguCanh
+	Runtime           string
 }
 
 // chieuTruongSong chiếu host.UISnapshot (trạng thái sống của engine đang mở) thành phần
@@ -575,6 +576,12 @@ func chieuTruongSong(snap host.UISnapshot) truongSong {
 		PendingSteer:  snap.PendingSteer,
 		RewriteReason: snap.RewriteReason,
 		Recovery:      snap.RecoveryLabel,
+		// idle / running / pausing / paused / completed — sự thật engine tự khẳng định.
+		//
+		// Đây là trường phân biệt "engine đang viết" với "engine đã dừng, chờ bạn cấp phép
+		// chương sau". Không suy từ `agents == []`: danh sách vai rỗng cũng xảy ra trong một
+		// nhịp chuyển giữa hai bước, nên suy từ nó là đoán.
+		Runtime: snap.RuntimeState,
 		Advance: &TienDo{
 			Mode:          snap.AdvanceMode,
 			PermitChapter: snap.AdvancePermitChapter,

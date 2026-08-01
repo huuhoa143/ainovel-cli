@@ -278,6 +278,60 @@ button {
   margin-top: -1px;
 }
 
+/* ── huy hiệu nghiệm thu trên thanh trên ──────────────────────────────────
+   Một dây chuyền đang đứng chờ người dùng phải thấy được từ MỌI bề mặt — xem
+   ThanhTren.tsx cho lý do nó ở thanh trên chứ không trong một khu.
+
+   Chép nguyên khuôn `.nutMoi` ngay trên, kể cả lý do của nó: nền amber MỜ chứ không đặc.
+   `PRODUCT.md` nguyên tắc 5 giữ màu tín hiệu cho DỮ LIỆU, và một huy hiệu nền amber đặc ở
+   thanh trên sẽ hét to hơn nhịp đập của chính dây chuyền ngay bên cạnh nó. Amber chứ vàng
+   vì đây là "cần chú ý", không phải "đang chạy" — và nó dùng CÙNG bảng ký hiệu với dải ở
+   hai bề mặt kia (`kyTheoTone('amber')`), nên ba chỗ đọc ra là một việc. */
+.hieunghiemthu {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  height: 28px;
+  padding: 0 10px 0 8px;
+  background: color-mix(in oklch, var(--amber) 10%, var(--panel-2));
+  border: 1px solid color-mix(in oklch, var(--amber) 40%, var(--line));
+  border-radius: var(--r);
+  color: var(--ink);
+  font: 500 12.5px var(--ui);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.16s var(--ease), border-color 0.16s var(--ease);
+}
+.hieunghiemthu:hover {
+  background: color-mix(in oklch, var(--amber) 18%, var(--panel-2));
+  border-color: color-mix(in oklch, var(--amber) 58%, var(--line));
+}
+.hieunghiemthu .ky {
+  color: var(--amber);
+  font: 400 12px/1 var(--mono);
+}
+/* Bản ngắn ngủ sẵn trong DOM, chỉ hiện dưới điểm ngắt — xem `nghiemThuChoBanNgan`. */
+.hieunghiemthu .nhanNgan {
+  display: none;
+}
+
+/* ĐO ĐƯỢC ở 390px: bản đầy đủ (194px) nén bộ chọn tác phẩm còn 5px, tức tên cuốn đang mở
+   biến mất. Ngân sách thật cho huy hiệu ở đó là 123px; bản ngắn vừa khớp.
+
+   Cùng điểm ngắt 700px mà `.nutMoi` và `.slate` đang dùng — không mở một điểm ngắt thứ ba
+   cho thanh trên. Khối này phải nằm SAU `.hieunghiemthu .nhanNgan { display: none }`: cùng
+   độ đặc hiệu thì thứ tự trong tệp quyết định, đúng cái bẫy mà chú thích của `.slate` đã
+   trả giá để ghi. */
+@media (max-width: 700px) {
+  .hieunghiemthu .nhan {
+    display: none;
+  }
+  .hieunghiemthu .nhanNgan {
+    display: inline;
+  }
+}
+
 /* Dưới 700px chỉ còn dấu `+`. ĐO ĐƯỢC ở 390px: sau khi đã ẩn `.slate`, thanh trên còn
    đúng 12px dư (bộ chọn hết ở 262px, huy hiệu kết nối bắt đầu ở 274px), nên một nút mang
    chữ đẩy huy hiệu ra ngoài mép của một khung không cuộn được. `aria-label` trên nút giữ
@@ -911,6 +965,119 @@ button {
      cứu một va chạm sắp xảy ra. */
   line-height: 1.72;
   color: var(--ink-2);
+}
+
+/* ── dải quyết định của cửa nghiệm thu ────────────────────────────────────
+   Xem CuaNghiemThu.tsx cho lý do dải này tồn tại và vì sao nó KHÔNG là modal.
+
+   Cùng nồng độ amber 9% và cùng viền 26% như `.canhbao` ngay trên, và đó là chủ ý: hai
+   dải này đứng cạnh nhau trong `.bltren`, nên hai nồng độ khác nhau sẽ đọc thành "hai
+   mức báo động" trong khi thật ra chúng là hai LOẠI tin. Thứ tách chúng là thứ tự (dải
+   này đứng trên) và việc dải này có NÚT — cảnh báo thì không bao giờ có.
+
+   Không đẩy nồng độ lên cho "to hơn": ĐÃ ĐO ở cụm Xưởng, 14% kéo `--ink-3` xuống
+   4,55:1 và 12% xuống 4,71:1 — chỉ hơn sàn AA 0,21. `--ink-3` là sàn cứng, nên đường
+   duy nhất còn lại để nhấn là bố cục, không phải màu.
+
+   Bố cục: lưới hai cột `1fr auto` — chữ bên trái, hai nút căn phải. Lưới chứ không phải
+   flex vì bốn khối phụ (`.cntO`, `.loiDoc`, câu chỉ-đọc) phải trải HẾT bề rộng dưới cả
+   hai cột; với flex chúng sẽ chen vào cùng một hàng với hai cái nút. */
+.cuanghiemthu {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 3px 18px;
+  margin: 0;
+  padding: 10px 18px 11px;
+  background: color-mix(in oklch, var(--amber) 9%, var(--bg));
+  border-bottom: 1px solid color-mix(in oklch, var(--amber) 26%, var(--line-2));
+  min-width: 0;
+}
+
+/* Dòng đầu: ký hiệu + "Đang chờ bạn nghiệm thu chương N". Cùng khuôn `.canhbao h2` —
+   cùng cỡ, cùng màu amber, ký hiệu đứng trước chữ. */
+.cuanghiemthu .cnthead {
+  grid-column: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin: 0;
+  font: 500 12.5px/1.4 var(--ui);
+  color: var(--amber);
+  min-width: 0;
+}
+
+/* Ký hiệu KHÔNG có luật trần trong tệp này (mọi `.ky` đều bị giới hạn trong một
+   component khác), nên thiếu khối này thì `■` render trần — đúng thứ đã thấy ở
+   `xuong-1440-truoc-css.png`. Cùng cỡ/cùng font mono như `.nutMoi .ky`. */
+.cuanghiemthu .ky {
+  flex: none;
+  color: var(--amber);
+  font: 400 12px/1.4 var(--mono);
+}
+
+/* Kết luận của Editor, nguyên văn. `--ink-2` chứ `--ink-3`: đây là câu người vận hành
+   đọc để QUYẾT ĐỊNH, không phải một nhãn phụ. Không kẹp dòng — một kết luận bị cắt ở
+   giữa là thứ `PRODUCT.md` cấm, cùng luật đã ghi cho `.loiDoc`. */
+.cuanghiemthu .cntlydo {
+  grid-column: 1;
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--ink-2);
+  max-width: 84ch;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* `.lbl` cũng chỉ có luật bị giới hạn trong tệp này. Cùng vai và cùng màu với
+   `.trans .lbl`: nó đặt tên cho trường đứng sau nó. */
+.cuanghiemthu .cntlydo .lbl {
+  color: var(--ink-3);
+  margin-right: 2px;
+}
+
+/* Hai nút chiếm cột phải và trải cả hai hàng chữ, nên chúng căn giữa theo khối chữ thay
+   vì dính lên đỉnh dòng đầu. */
+.cuanghiemthu .cntnut {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: none;
+}
+
+/* Ô nhập "trả về viết lại" và ba khối phụ nằm dưới CẢ HAI cột. `.cntO` mở ra theo cú
+   bấm nên nó là hàng thứ ba, không phải một cột thứ ba. */
+.cuanghiemthu .cntO,
+.cuanghiemthu .loiDoc,
+.cuanghiemthu > .steerhint {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.cuanghiemthu .cntO {
+  margin-top: 8px;
+}
+
+/* Dưới 860px: một cột, nên hai nút xuống hàng riêng dưới chữ.
+   `justify-content: flex-start` ở đây — căn phải trên một hàng của chính nó đẩy hai nút
+   ra xa mắt vừa đọc xong câu kết luận, mà thứ tự đọc ở khổ hẹp là trên xuống dưới chứ
+   không phải trái sang phải. Cùng điểm ngắt 860px mà DESIGN.md:110 và cả rail đang bám
+   vào — không mở một điểm ngắt thứ hai cho một dải. */
+@media (max-width: 860px) {
+  .cuanghiemthu {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cuanghiemthu .cntnut {
+    grid-column: 1;
+    grid-row: auto;
+    align-self: stretch;
+    justify-content: flex-start;
+    margin-top: 7px;
+  }
 }
 
 /* ── trục sản xuất ── */

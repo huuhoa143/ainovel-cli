@@ -1,0 +1,167 @@
+import { render, screen } from '@testing-library/react';
+import { expect, test } from 'vitest';
+
+import { CHU, GIAI_THICH, kyTheoTone } from '@/lib/nhan';
+
+import { CuaNghiemThu } from './CuaNghiemThu';
+
+/** Cửa ĐANG chờ, ca đầy đủ nhất: có chương, có kết luận Editor, ghi được. */
+function cho(p: Partial<Parameters<typeof CuaNghiemThu>[0]> = {}) {
+  return render(
+    <CuaNghiemThu
+      advance={{
+        mode: 'review',
+        hold: true,
+        permit_chapter: 8,
+        hold_reason: 'nhịp tụt ở đoạn giữa; ba cảnh liên tiếp cùng một nhịp',
+      }}
+      runtime="" tacPham="b"
+      choGhi
+      dangChay={false}
+      onDoi={() => {}}
+      {...p}
+    />,
+  );
+}
+
+test('cửa KHÔNG chờ thì không vẽ gì — cả ba ca không-chờ', () => {
+  // Một dải amber rỗng nằm trên đầu buồng lái suốt phiên là một cảnh báo giả thường trực:
+  // người vận hành học cách bỏ qua nó, và lần nó nói thật thì họ cũng bỏ qua.
+  //
+  // Ba ca vào cùng một bài vì chúng là MỘT luật ("chỉ review + hold mới có cửa") và tách ra
+  // thì mỗi bài chỉ canh được một phần ba của nó. Ca `null` đứng đầu: engine đóng thì mọi nút
+  // ở đây chắc chắn trả 409.
+  const { container, rerender } = render(
+    <CuaNghiemThu advance={null} runtime="" tacPham="b" choGhi dangChay={false} onDoi={() => {}} />,
+  );
+  expect(container.querySelector('.cuanghiemthu')).toBeNull();
+
+  rerender(
+    <CuaNghiemThu
+      advance={{ mode: 'auto', hold: true }}
+      runtime="" tacPham="b"
+      choGhi
+      dangChay={false}
+      onDoi={() => {}}
+    />,
+  );
+  expect(container.querySelector('.cuanghiemthu')).toBeNull();
+
+  rerender(
+    <CuaNghiemThu
+      advance={{ mode: 'review', hold: false }}
+      runtime="" tacPham="b"
+      choGhi
+      dangChay={false}
+      onDoi={() => {}}
+    />,
+  );
+  expect(container.querySelector('.cuanghiemthu')).toBeNull();
+});
+
+test('cửa đang chờ: thấy số chương, thấy NGUYÊN VĂN kết luận Editor, thấy hai nút', () => {
+  const { container } = cho();
+
+  expect(container.querySelector('.cuanghiemthu')).not.toBeNull();
+  expect(container.textContent).toContain('8');
+  // Nguyên văn, không cắt và không làm dịu: câu của Editor biết rõ hơn giao diện chuyện gì
+  // đã xảy ra, và người vận hành quyết định dựa trên chính câu đó.
+  expect(container.textContent).toContain(
+    'nhịp tụt ở đoạn giữa; ba cảnh liên tiếp cùng một nhịp',
+  );
+  expect(screen.getAllByRole('button')).toHaveLength(2);
+});
+
+test('nhãn nút trả về mang ĐÚNG số chương, không phải một câu chung chung', () => {
+  // Người bấm phải thấy mình đang trả cuốn nào về đâu. "Trả chương về viết lại" không nói
+  // chương nào, và ở một dải nằm trên đầu MỌI bề mặt thì chương đang chờ có thể không phải
+  // chương người dùng vừa đọc.
+  cho();
+  expect(screen.getByRole('button', { name: CHU.traChuongVeVietLai(8) })).toBeDefined();
+  expect(screen.getByRole('button', { name: CHU.choDiTiep })).toBeDefined();
+});
+
+test('không có kết luận Editor thì vẫn đủ hai nút, và nói rõ là CHƯA có — không bịa', () => {
+  // Engine dừng ở biên trước, Editor kết luận sau. Khoảng giữa hai việc đó là một dây chuyền
+  // đang đứng im, nên cửa phải hiện; nhưng chỗ của kết luận không được lấp bằng một câu do
+  // giao diện nghĩ ra.
+  const { container } = cho({
+    advance: { mode: 'review', hold: true, permit_chapter: 8 },
+  });
+
+  expect(screen.getAllByRole('button')).toHaveLength(2);
+  expect(container.textContent).toContain(GIAI_THICH.nghiemThuChuaCoKetLuan);
+  expect(container.querySelector('.cntlydo')!.textContent).not.toContain(CHU.ketLuanEditor);
+});
+
+test('chưa cấp phép chương nào thì nhãn nút vẫn đọc được, không có "undefined"', () => {
+  // `TienDo.PermitChapter` khai `omitempty` (internal/serve/model.go:243), nên số 0 — "chưa
+  // cấp phép chương nào", đúng ca mà chế độ nghiệm thu tồn tại để tạo ra — RỤNG khỏi JSON và
+  // tới đây thành vắng mặt. Một nhãn dựng bằng chuỗi thẳng sẽ in "Trả chương undefined về
+  // viết lại" ở đúng ca thường gặp nhất.
+  const { container } = cho({ advance: { mode: 'review', hold: true } });
+
+  expect(container.querySelector('.cuanghiemthu')).not.toBeNull();
+  expect(container.textContent).not.toContain('undefined');
+  expect(screen.getAllByRole('button')).toHaveLength(2);
+  expect(
+    screen.getByRole('button', { name: CHU.traChuongVeVietLai(undefined) }),
+  ).toBeDefined();
+});
+
+test('choGhi === false: hai nút VÔ HIỆU, kèm câu giải thích vì sao', () => {
+  // Vẽ nút bấm được rồi gửi vào hư không là lỗi tệ nhất ở đây — cùng lý lẽ đã ghi trong
+  // `OCanThiep.tsx`. Hai khẳng định phải đi CÙNG nhau: một nút xám không có lời giải thích
+  // đọc ra như một lỗi của studio, không như một chế độ đang bật.
+  const { container } = cho({ choGhi: false });
+
+  for (const n of screen.getAllByRole('button')) {
+    expect((n as HTMLButtonElement).disabled).toBe(true);
+  }
+  expect(container.textContent).toContain(GIAI_THICH.nghiemThuChoDay);
+  expect(container.textContent).toContain(GIAI_THICH.canThiepTat);
+});
+
+test('chưa có tác phẩm đang mở thì khóa nút, dù studio ghi được', () => {
+  // Không bài nào của tôi lúc đầu chạm tới chốt `!!tacPham` — bỏ nó vẫn xanh 7/7 (đã thử đột
+  // biến). Hệ quả không phải giả thuyết: `KiemDinh` hôm nay KHÔNG nhận `tacPham`
+  // (`app/page.tsx`), nên người gắn dải vào bề mặt đó ở Task 5 rất dễ để trống, và lúc đó hai
+  // nút bấm được sẽ gọi `POST /api/books/undefined/advance`.
+  //
+  // Ở đây KHÔNG có câu "chế độ chỉ đọc": studio ghi được, chỉ là chưa có cuốn nào để ghi vào.
+  // Hai ca đó cần hai lời giải thích khác nhau, và câu sai còn tệ hơn không có câu nào.
+  const { container } = cho({ tacPham: undefined });
+
+  for (const n of screen.getAllByRole('button')) {
+    expect((n as HTMLButtonElement).disabled).toBe(true);
+  }
+  expect(container.textContent).not.toContain(GIAI_THICH.nghiemThuChoDay);
+});
+
+test('dải mang TÊN VÙNG và một ký hiệu hình học, không chỉ có màu', () => {
+  // Hai kênh thứ hai của cùng một dải, và cả hai đều không có bài nào giữ lúc đầu (đã thử đột
+  // biến: bỏ `aria-label`, bỏ ký hiệu — cả hai đều xanh 7/7).
+  //
+  // Ký hiệu: dải này là amber, và sau Task 7 màu sẽ là thứ đập vào mắt trước. Ảnh đen trắng
+  // và người mù màu chỉ còn ký hiệu — luật của `PRODUCT.md`, khuôn ở `TrangThai.tsx`.
+  // Tên vùng: đây là component DUY NHẤT vẽ ở hai bề mặt, nên tên vùng cũng là thứ duy nhất
+  // nói cho trình đọc màn hình biết hai chỗ đó là một việc.
+  const { container } = cho();
+  const dai = container.querySelector('.cuanghiemthu')!;
+
+  expect(dai.getAttribute('aria-label')).toBe(CHU.cuaNghiemThuVung);
+  expect(dai.querySelector('.ky')!.textContent).toBe(kyTheoTone('amber'));
+});
+
+test('choGhi chưa biết (undefined) thì khóa nút, nhưng KHÔNG nói studio chỉ đọc', () => {
+  // `undefined` là "đang hỏi `/api/config`", không phải "đã hỏi, câu trả lời là không" —
+  // cùng lớp `null` khác `false` mà cả hợp đồng `/studio` giữ. Nói "studio đang ở chế độ chỉ
+  // đọc" trong lúc chưa biết là khẳng định một điều chưa ai đo được, và nó hiện ra ở MỌI lần
+  // mở trang.
+  const { container } = cho({ choGhi: undefined });
+
+  for (const n of screen.getAllByRole('button')) {
+    expect((n as HTMLButtonElement).disabled).toBe(true);
+  }
+  expect(container.textContent).not.toContain(GIAI_THICH.nghiemThuChoDay);
+});

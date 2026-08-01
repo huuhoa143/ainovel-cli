@@ -324,6 +324,7 @@ func (s *server) handleStudio(w http.ResponseWriter, r *http.Request) {
 			snap.InProgressChapter = ts.InProgressChapter
 			snap.Advance = ts.Advance
 			snap.Context = ts.Context
+			snap.Runtime = ts.Runtime
 		}
 	}
 	writeJSON(w, snap)

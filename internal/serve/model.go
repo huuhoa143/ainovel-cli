@@ -235,6 +235,15 @@ type Snapshot struct {
 	RewriteReason     string `json:"rewrite_reason,omitempty"`
 	Recovery          string `json:"recovery,omitempty"`
 	InProgressChapter *int   `json:"in_progress_chapter"`
+
+	// Runtime là trạng thái engine tự khẳng định: idle / running / pausing / paused /
+	// completed. Rỗng khi engine đóng.
+	//
+	// KHÔNG có `omitempty` và cũng không phải con trỏ, vì `""` ở đây đã đủ nghĩa "không biết"
+	// và giao diện chỉ so với các giá trị cụ thể. Nó tồn tại vì `book.activity` KHÔNG thay
+	// được: `activity` suy từ mốc checkpoint trong store, nên nó còn nói "running" vài phút
+	// sau khi engine đã dừng — xem chú thích của `mayDangChay` trong web/lib/song.ts.
+	Runtime string `json:"runtime"`
 }
 
 // TienDo là chế độ đi tiếp và cửa nghiệm thu.
