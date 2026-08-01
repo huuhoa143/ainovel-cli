@@ -280,6 +280,17 @@ export interface Snapshot {
   advance: TienDo | null;
   context: NguCanh | null;
   in_progress_chapter: number | null;
+
+  /**
+   * Trạng thái engine tự khẳng định: `idle` | `running` | `pausing` | `paused` | `completed`.
+   * `''` khi engine đóng.
+   *
+   * KHÔNG thay được bằng `book.activity`. `activity` suy từ mốc checkpoint trong store, nên nó
+   * còn nói `running` vài phút sau khi engine đã dừng — xem `mayDangChay` trong lib/song.ts.
+   * Trường này là thứ phân biệt "engine đang viết" với "engine đã dừng, chờ bạn cấp phép
+   * chương sau", và cả màn Cửa nghiệm thu đứng trên phép phân biệt đó.
+   */
+  runtime: string;
   pending_steer?: string;
   rewrite_reason?: string;
   recovery?: string;

@@ -38,5 +38,18 @@ import type { Snapshot } from './types';
  * mạnh nhất có được, và nó đúng là sự thật mà thanh transport đang dùng.
  */
 export function mayDangChay(snapshot: Snapshot | undefined): boolean {
-  return snapshot?.book.activity === 'running';
+  if (!snapshot) return false;
+  // `runtime` THẮNG khi có, và đó là một lỗi ĐO ĐƯỢC chứ không phải sở thích kiến trúc.
+  //
+  // Bấm "Cho đi tiếp 1 chương" trên cuốn `mac-the-bien-di-vo`: engine nhận giấy phép và Writer
+  // bắt đầu chương 5 (`runtime: "running"`, `agents: [writer]`), nhưng checkpoint mới chưa kịp
+  // ghi nên `activity` vẫn `idle` — và khu văn sống ghi "Máy đang nghỉ" ngay TRÊN chữ nó đang
+  // nhận về. Chiều ngược cũng vậy: engine dừng ở cửa nghiệm thu mà checkpoint vừa ghi xong thì
+  // `activity` còn `running` vài phút, tức nhịp đập chạy trên một dây chuyền đã đứng.
+  //
+  // Lúc viết hàm này, `activity` là sự thật mạnh nhất có được — hợp đồng chưa mang `runtime`.
+  // Kế hoạch 4/4 thêm nó, nên phần "store không biết chuyện đó" trong chú thích ở trên chỉ còn
+  // đúng cho ca engine ĐÓNG.
+  if (snapshot.runtime) return snapshot.runtime === 'running';
+  return snapshot.book.activity === 'running';
 }

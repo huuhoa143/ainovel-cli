@@ -232,3 +232,39 @@ func TestVaiRongLaMangRongChuKhongPhaiNull(t *testing.T) {
 		t.Error("agents = nil → JSON `null` trong khi engine mở và đo được là không ai chạy")
 	}
 }
+
+// TestTienDoMangRuntimeDeThayCuaDangCho canh một khoảng hở ĐO ĐƯỢC bằng E2E: cửa nghiệm thu
+// chặn thật mà hợp đồng JSON không có tín hiệu nào để thấy điều đó.
+//
+// Spec ban đầu chiếu "cửa đang chờ bạn" vào `HasAdvanceHold`. Sai. `AdvanceHold` là một lần
+// TẠM DỪNG DO CAN THIỆP KÝ (engine.go:672 đặt nó từ `arbiter.AdvanceHoldOp`), không phải cửa
+// nghiệm thu theo chương. Chế độ `review` chặn bằng cách ĐỂ ENGINE DỪNG khi chưa có giấy phép
+// cho chương kế tiếp — `AdvanceHold` vẫn `nil` suốt.
+//
+// ĐO ĐƯỢC trên cuốn `mac-the-bien-di-vo`: bật `review`, engine viết xong chương 4 rồi dừng.
+// Host báo `RuntimeState: "paused"`, `AdvanceMode: "review"`, `AdvancePermitChapter: 0`,
+// `HasAdvanceHold: FALSE`. Tức với hợp đồng cũ, giao diện không bao giờ vẽ được cửa ở luồng
+// THƯỜNG — chỉ vẽ ở ca can thiệp, là ca hiếm hơn nhiều.
+//
+// `runtime` vào đây thay vì suy từ `agents == []`: danh sách vai rỗng cũng xảy ra trong một
+// nhịp chuyển giữa hai bước, nên suy từ nó là đoán. `RuntimeState` là sự thật mà engine tự
+// khẳng định, và TUI cũng đọc đúng trường đó (`snapshotRuntimeStateLabel`).
+func TestTienDoMangRuntimeDeThayCuaDangCho(t *testing.T) {
+	ra := chieuTruongSong(host.UISnapshot{
+		RuntimeState:         "paused",
+		AdvanceMode:          "review",
+		AdvancePermitChapter: 0,
+		// HasAdvanceHold cố ý để FALSE: đây đúng hình dạng đã đo ở luồng thường.
+	})
+
+	if ra.Runtime != "paused" {
+		t.Errorf("runtime = %q, muốn \"paused\".\n"+
+			"Không có trường này thì giao diện không phân biệt được \"engine đang viết\" với "+
+			"\"engine đã dừng, chờ bạn cấp phép chương sau\" — hai ca mà cả màn Cửa nghiệm thu "+
+			"tồn tại để phân biệt.", ra.Runtime)
+	}
+	if ra.Advance == nil || ra.Advance.Hold {
+		t.Errorf("advance = %+v — ca này `hold` PHẢI false; nếu nó true thì bài kiểm đang "+
+			"dựng sai hình dạng và không đo được điều nó nói", ra.Advance)
+	}
+}

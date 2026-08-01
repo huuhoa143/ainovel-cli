@@ -3,6 +3,7 @@ import { expect, test, vi } from 'vitest';
 
 import { snap } from '@/components/mau.test-helper';
 import type { Khu as KhuMa } from '@/lib/khu';
+import { CHU } from '@/lib/nhan';
 import type { Studio } from '@/lib/useStudio';
 import { BO_DEM_RONG, themChu } from '@/lib/vanSong';
 
@@ -19,6 +20,11 @@ import Trang, { Khu } from './page';
  * Hành động mở-tại-khu, giữ làm spy: mắt cuối của sợi dây Xưởng chỉ đo được ở đây.
  */
 const MO_TAI = vi.fn();
+
+/**
+ * Đổi khu, giữ làm spy: huy hiệu nghiệm thu ở thanh trên chỉ đo được tới đích ở tầng này.
+ */
+const CHON_KHU = vi.fn();
 
 const STUDIO_GIA: Studio = {
   // `books` dựng lại từ chính `snap()` chứ không ép kiểu một object hai trường: thanh trên
@@ -38,7 +44,7 @@ const STUDIO_GIA: Studio = {
   loi: undefined,
   chonTacPham: () => {},
   chonChuong: () => {},
-  chonKhu: () => {},
+  chonKhu: CHON_KHU,
   moTacPhamVuaTao: () => {},
   moTacPhamTai: MO_TAI,
   docChuong: () => {},
@@ -70,13 +76,18 @@ Element.prototype.scrollIntoView = function () {
  * canh định tuyến lại đi đo khả năng giả lập `fetch` của jsdom. `Khu` là một hàm thuần trên
  * đúng cái nó nhận.
  */
-function ve(khu: KhuMa, vanSong = BO_DEM_RONG) {
+function ve(
+  khu: KhuMa,
+  vanSong = BO_DEM_RONG,
+  p: Partial<Parameters<typeof Khu>[0]> = {},
+) {
   return render(
     <Khu
       khu={khu}
       snapshot={snap({ agents: [], idle_agents: [] })}
       sach={[snap({}).book]}
       tacPham="b"
+      choGhi
       chuongChon={undefined}
       onChonChuong={() => {}}
       onChonKhu={() => {}}
@@ -85,11 +96,13 @@ function ve(khu: KhuMa, vanSong = BO_DEM_RONG) {
       onMoTacPham={() => {}}
       onXongTaoSach={() => {}}
       onChotCungDung={() => {}}
+      onDoi={() => {}}
       nhapSan=""
       suKien={[]}
       song={undefined}
       vanSong={vanSong}
       dangChay
+      {...p}
     />,
   );
 }
@@ -148,6 +161,100 @@ test('`Trang` nối danh sách sách THẬT của studio xuống màn Xưởng',
     expect(container.querySelector('.khuxuong tbody tr[data-ma="b"]')).not.toBeNull();
   } finally {
     STUDIO_GIA.khu = truoc;
+  }
+});
+
+test('`Trang` nối cửa nghiệm thu lên thanh trên, và huy hiệu hiện ở khu KHÁC buồng lái', () => {
+  // Mắt cuối của sợi dây `snapshot.advance` → `Trang` → `ThanhTren`, và cùng lúc là phép đo
+  // DUY NHẤT cho luật "huy hiệu phải thấy từ MỌI bề mặt". Bộ kiểm của `ThanhTren` dựng
+  // component thẳng nên nó không biết gì về việc huy hiệu nằm trong hay ngoài `Khu`; đặt nhầm
+  // nó vào một bề mặt thì cả bộ vẫn xanh, trong khi hệ quả là một dây chuyền đang đứng chờ bị
+  // ẩn sau một lựa chọn điều hướng.
+  //
+  // Khu `chi-phi` chứ không phải buồng lái: đó là ca mà luật này tồn tại để đỡ.
+  const truocKhu = STUDIO_GIA.khu;
+  const truocSnap = STUDIO_GIA.snapshot;
+  STUDIO_GIA.khu = 'chi-phi';
+  STUDIO_GIA.snapshot = snap({
+    agents: [],
+    idle_agents: [],
+    advance: { mode: 'review', hold: true, permit_chapter: 8 },
+  });
+  try {
+    render(<Trang />);
+    expect(screen.getByRole('button', { name: CHU.nghiemThuChoBan })).toBeDefined();
+  } finally {
+    STUDIO_GIA.khu = truocKhu;
+    STUDIO_GIA.snapshot = truocSnap;
+  }
+});
+
+test('bấm huy hiệu ở `Trang` gọi hành động đổi khu THẬT của studio', () => {
+  // ĐO ĐƯỢC: thay `onChonKhu={s.chonKhu}` của thanh trên bằng một hàm rỗng thì cả 14 bài vẫn
+  // xanh — bộ kiểm của `ThanhTren` truyền spy CỦA CHÍNH NÓ vào, nên nó chỉ chứng minh
+  // component gọi đúng tham số, không chứng minh nó được nối vào hành động thật. Hệ quả: một
+  // huy hiệu amber bấm vào không đi đâu cả, và không lỗi nào nổ ra.
+  //
+  // Lần thứ tư của cùng lớp lỗi trong dự án này — sau `vanSong={s.vanSong}` (cụm D),
+  // `sach={s.workshop?.books}` và `onMoTacPham={s.moTacPhamTai}` (cụm Xưởng).
+  const truocKhu = STUDIO_GIA.khu;
+  const truocSnap = STUDIO_GIA.snapshot;
+  STUDIO_GIA.khu = 'chi-phi';
+  STUDIO_GIA.snapshot = snap({
+    agents: [],
+    idle_agents: [],
+    advance: { mode: 'review', hold: true, permit_chapter: 8 },
+  });
+  CHON_KHU.mockClear();
+  try {
+    render(<Trang />);
+    fireEvent.click(screen.getByRole('button', { name: CHU.nghiemThuChoBan }));
+    expect(CHON_KHU).toHaveBeenCalledWith('kiem-dinh');
+  } finally {
+    STUDIO_GIA.khu = truocKhu;
+    STUDIO_GIA.snapshot = truocSnap;
+  }
+});
+
+test('`Trang` KHÔNG vẽ huy hiệu khi engine đóng (advance null)', () => {
+  // Vế ngược, và nó cần một bài riêng: một `ThanhTren` luôn vẽ huy hiệu vẫn làm bài trên xanh.
+  // `snap()` để `advance: null` theo mặc định — đúng ca engine đóng.
+  render(<Trang />);
+  expect(screen.queryByRole('button', { name: CHU.nghiemThuChoBan })).toBeNull();
+});
+
+test('CÙNG một snapshot thì cả buồng lái và Kiểm định đều vẽ dải quyết định', () => {
+  // Bài kiểm mà Task 5 đòi thẳng, và nó là phép đo duy nhất cho luật "MỘT component cho hai bề
+  // mặt": hai bộ kiểm riêng của hai bề mặt đều xanh nếu một bên gắn dải mà bên kia quên, vì
+  // không bài nào của chúng biết bên kia tồn tại.
+  //
+  // Đi qua `Khu` chứ không dựng hai component thẳng: tầng định tuyến là chỗ prop được rót vào,
+  // nên đây cũng là chỗ đo được việc `Khu` truyền `advance`/`choGhi`/`onDoi` xuống CẢ HAI nhánh
+  // `case`. Gắn đủ cho một nhánh rồi quên nhánh kia là ca thật.
+  const cho = { advance: { mode: 'review', hold: true, permit_chapter: 8 } };
+
+  const a = ve('dong-san-xuat', BO_DEM_RONG, { snapshot: snap({ ...cho }) });
+  expect(a.container.querySelector('.cuanghiemthu')).not.toBeNull();
+
+  const b = ve('kiem-dinh', BO_DEM_RONG, { snapshot: snap({ ...cho }) });
+  expect(b.container.querySelector('.cuanghiemthu')).not.toBeNull();
+});
+
+test('`Khu` truyền `choGhi` xuống dải ở CẢ HAI bề mặt', () => {
+  // Nửa còn lại: `choGhi` nhét cứng thành `true` ở tầng định tuyến cho ra hai nút bấm được
+  // trên một studio chỉ đọc, tức gửi vào hư không. Bài trên xanh cả khi điều đó xảy ra.
+  const cho = { advance: { mode: 'review', hold: true, permit_chapter: 8 } };
+
+  for (const khu of ['dong-san-xuat', 'kiem-dinh'] as KhuMa[]) {
+    const { container } = ve(khu, BO_DEM_RONG, {
+      snapshot: snap({ ...cho }),
+      choGhi: false,
+    });
+    const dai = container.querySelector('.cuanghiemthu')!;
+    expect(dai).not.toBeNull();
+    for (const n of dai.querySelectorAll('button')) {
+      expect(n.disabled).toBe(true);
+    }
   }
 });
 

@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { expect, test } from 'vitest';
 
-import { CHU } from '@/lib/nhan';
+import { CHU, GIAI_THICH } from '@/lib/nhan';
 import type { Snapshot } from '@/lib/types';
 import { BO_DEM_RONG, moLuot, themChu, type BoDemVan } from '@/lib/vanSong';
 
@@ -20,19 +20,23 @@ function ve(
   dangChay: boolean,
   p: Partial<Snapshot> = {},
   vanSong: BoDemVan = BO_DEM_RONG,
+  q: Partial<Parameters<typeof BuongLai>[0]> = {},
 ) {
   return render(
     <BuongLai
       snapshot={snap({ agents: [], idle_agents: [], ...p })}
       tacPham="b"
+      choGhi
       chuongChon={undefined}
       onChonChuong={() => {}}
       onChonKhu={() => {}}
       onDocChuong={() => {}}
+      onDoi={() => {}}
       suKien={[]}
       song={undefined}
       vanSong={vanSong}
       dangChay={dangChay}
+      {...q}
     />,
   );
 }
@@ -66,6 +70,74 @@ test('dải việc tiếp theo được cho biết máy đang NGHỈ, không ph�
   const { container } = ve(false);
 
   expect(container.querySelector('.vtt')!.textContent).toContain(CHU.ttNghi(1, 3));
+});
+
+/* ── dải quyết định của cửa nghiệm thu (Task 5) ────────────────────────── */
+
+const CHO = { mode: 'review', hold: true, permit_chapter: 8 } as const;
+
+test('cửa đang chờ → dải quyết định đứng TRÊN dải trạng thái', () => {
+  // Thứ tự là nội dung, không phải trang trí: "dây chuyền đang chờ BẠN" là tin cấp cao hơn
+  // "dây chuyền đang làm gì" — cái thứ nhất là một việc phải làm, cái thứ hai là tin để ngó.
+  const { container } = ve(true, { advance: { ...CHO } });
+
+  const dai = container.querySelector('.cuanghiemthu');
+  expect(dai).not.toBeNull();
+
+  const tt = container.querySelector('.daitrangthai')!;
+  expect(dai!.compareDocumentPosition(tt) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test('cửa đang chờ lúc máy NGHỈ → dải quyết định vẫn đứng trên dải việc tiếp theo', () => {
+  // Ca thường gặp hơn ca trên: engine dừng ở biên chương rồi mới treo cửa. Hai bài vì luật đổi
+  // dải làm khối dưới đổi component, và một dải chèn vào giữa `.bltren` có thể đúng thứ tự với
+  // một khối mà sai với khối kia.
+  const { container } = ve(false, { advance: { ...CHO } });
+
+  const dai = container.querySelector('.cuanghiemthu')!;
+  const vtt = container.querySelector('.vtt')!;
+  expect(dai.compareDocumentPosition(vtt) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test('cửa KHÔNG chờ → buồng lái không có dải quyết định nào', () => {
+  // `snap()` để `advance: null` theo mặc định. Vế ngược cần bài riêng: một dải luôn vẽ vẫn làm
+  // hai bài trên xanh, và hệ quả là một khối amber thường trực trên đầu bề mặt đông nhất.
+  const { container } = ve(true);
+  expect(container.querySelector('.cuanghiemthu')).toBeNull();
+});
+
+test('dải ở buồng lái nhận `choGhi`, nên chế độ chỉ đọc khóa được hai nút', () => {
+  const { container } = ve(true, { advance: { ...CHO } }, BO_DEM_RONG, { choGhi: false });
+  const dai = container.querySelector('.cuanghiemthu')!;
+
+  for (const n of dai.querySelectorAll('button')) {
+    expect(n.disabled).toBe(true);
+  }
+  expect(dai.textContent).toContain(GIAI_THICH.nghiemThuChoDay);
+});
+
+test('dải ở buồng lái được cho biết máy đang chạy hay nghỉ', () => {
+  // Nhãn nút gửi của ô nhập là hai HỆ QUẢ khác nhau về tiền. Phải mở ô nhập mới đo được: chỉ
+  // hỏi hai cái nút ngoài thì nhét cứng `dangChay={false}` cho riêng dải này vẫn xanh.
+  //
+  // Tra trong `.cuanghiemthu` chứ không tra cả bề mặt: ô can thiệp ở hàng 4 dùng ĐÚNG hai nhãn
+  // đó, nên một phép tra toàn cục sẽ thấy nút của nó và xanh mà không cần dải nói gì.
+  // Cả HAI chiều: nhét cứng `true` cũng là một đột biến, và nó chỉ lộ ra ở ca máy nghỉ — đúng
+  // ca thường gặp nhất của cửa nghiệm thu.
+  const nhanNutGui = (dangChay: boolean) => {
+    const { container } = ve(dangChay, { advance: { ...CHO } });
+    const dai = container.querySelector('.cuanghiemthu')!;
+    fireEvent.click(
+      [...dai.querySelectorAll('button')].find(
+        (n) => n.textContent === CHU.traChuongVeVietLai(8),
+      )!,
+    );
+    return [...dai.querySelectorAll('button')].map((n) => n.textContent);
+  };
+
+  expect(nhanNutGui(true)).toContain(CHU.tiemVaoLuotDangChay);
+  cleanup();
+  expect(nhanNutGui(false)).toContain(CHU.danhThucLuotMoi);
 });
 
 /* ── bốn hàng của cột giữa (Task 13) ──────────────────────────────────── */

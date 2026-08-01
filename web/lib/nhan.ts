@@ -743,6 +743,46 @@ export const CHU = {
   /* Chữ thường: nó đứng SAU dấu hai chấm của nhãn trường, không mở đầu một câu. */
   khongDoDuoc: 'không đo được',
 
+  /* ── cửa nghiệm thu ────────────────────────────────────────────────────────
+   *
+   * `cuaNghiemThuVung` là tên VÙNG, đứng yên — cùng luật đã ghi ở `vttVung`,
+   * `vanSongVung`, `daiTrangThaiVung` và `cotPhaiVung`. Ở đây nó còn nặng hơn một chút:
+   * CÙNG một component vẽ ra ở HAI bề mặt (dải trên buồng lái và bề mặt Kiểm định), nên
+   * tên vùng cũng là thứ duy nhất nói cho trình đọc màn hình biết hai chỗ đó là một việc.
+   *
+   * `choDiTiep` KHÔNG khai lại ở đây: nút này gọi đúng route mà nút cùng tên ở transport
+   * gọi (`POST /advance`), nên hai chỗ phải nói cùng một câu. Khai lại là mở đường cho
+   * chúng trôi lệch — và thứ bắt được sẽ là `tsc` chứ không phải bộ kiểm, vì khai trùng
+   * khóa trong một object literal là JavaScript hợp lệ (bản sau thắng).
+   *
+   * Hai hàm nhận `n?: number` chứ không nhận `number`, và đó là hợp đồng chứ không phải
+   * phòng thủ: `TienDo.PermitChapter` khai `omitempty` (internal/serve/model.go:243) nên
+   * số 0 — "chưa cấp phép chương nào", đúng ca mà chế độ nghiệm thu tồn tại để tạo ra —
+   * rụng khỏi JSON và tới web thành vắng mặt. Nhãn phải đọc được ở ca đó.
+   */
+  cuaNghiemThuVung: 'Cửa nghiệm thu',
+  dangChoNghiemThu: (n?: number) =>
+    n === undefined ? 'Đang chờ bạn nghiệm thu' : `Đang chờ bạn nghiệm thu chương ${n}`,
+  ketLuanEditor: 'Kết luận của Editor',
+  traChuongVeVietLai: (n?: number) =>
+    n === undefined ? 'Trả chương đang chờ về viết lại' : `Trả chương ${n} về viết lại`,
+  /* Huy hiệu ở thanh trên. Dấu `·` chứ không phải dấu gạch: nó là cùng một dấu nối mà
+     `demTacPham` và các nhãn trạng thái khác của thanh trên đang dùng.
+
+     Bản NGẮN cho dưới 700px, và nó là một phép đo chứ một sở thích. ĐO ĐƯỢC ở 390px: thanh
+     trên còn 330px dùng được (390 trừ đệm 24 và ba khe 36), trong đó bộ chọn tác phẩm đòi
+     76px, nút `+` 27px và huy hiệu kết nối 104px — còn đúng **123px** cho huy hiệu này. Bản
+     đầy đủ cần 194px, và hệ quả đo được là bộ chọn tác phẩm bị nén còn **5px**: tên cuốn
+     đang mở biến mất khỏi màn hình. Đúng cái hỏng mà chú thích của `.slate` đã ghi một lần
+     ("bị nén về bề rộng 0 mà các đốm bên trong vẫn vẽ ra ngoài").
+
+     Giữ vế "chờ bạn" chứ vế "nghiệm thu": vế thứ hai nói CHỦ ĐỀ, còn vế thứ nhất nói cái
+     phải làm — và huy hiệu này tồn tại để nói điều thứ hai đó. Tên đầy đủ vẫn nằm ở
+     `aria-label` và `title`, nên phần mất là hình chứ không phải nghĩa — chép nguyên cách
+     `.nutMoi` đã xử khi nó rút về một dấu `+`. */
+  nghiemThuChoBan: 'Nghiệm thu · đang chờ bạn',
+  nghiemThuChoBanNgan: 'Chờ bạn',
+
   // bảng chương
   // "n chương ngoài tập 3" — phép lọc phải nói ra mình đã ẩn bao nhiêu.
   ngoaiPhamVi: (n: number, phamVi: string) => `${n} chương ngoài ${phamVi}`,
@@ -1215,6 +1255,37 @@ export const GIAI_THICH = {
     'Các nút điều khiển cần engine đang mở. Mở máy không gọi model lần nào — nó chỉ gắn engine vào tác phẩm.',
   cheDoReviewLaGi:
     'Chế độ nghiệm thu: engine dừng trước MỖI chương mới và chờ bạn cho đi tiếp từng chương một. Dùng khi muốn đọc soát trước khi nó viết thêm.',
+  /* ── cửa nghiệm thu ────────────────────────────────────────────────────────
+   *
+   * Câu "chưa có kết luận" hiện RA MÀN HÌNH, không nằm trong chú thích mã: chỗ dành cho
+   * kết luận của Editor mà để trống thì người vận hành đọc ra là "Editor thấy không sao"
+   * — một câu chưa ai nói. Và nó không được lấp bằng một lý do do giao diện nghĩ ra: cửa
+   * này tồn tại để người dùng quyết định dựa trên câu của Editor, nên một câu bịa ở đây
+   * làm hỏng đúng việc nó phục vụ.
+   *
+   * `nghiemThuChoDay` chép khuôn của `canThiepChoDay`, và câu giải thích dài thì DÙNG LẠI
+   * thẳng `canThiepTat`: cùng một chế độ chỉ-đọc, cùng một cách chữa (`--addr 127.0.0.1`).
+   * Hai bản của cùng một lời giải thích thì có ngày lệch, và lúc đó không có cách nào
+   * biết bản nào đúng.
+   */
+  nghiemThuChuaCoKetLuan:
+    'Editor chưa ghi kết luận nào cho chương này. Cửa vẫn đang chờ bạn: engine dừng ở biên trước, Editor kết luận sau.',
+  nghiemThuChoDay: 'Hai nút vô hiệu — studio đang ở chế độ chỉ đọc',
+  nghiemThuHuyHieuDanToi:
+    'Dây chuyền đã dừng ở biên chương và đang chờ bạn duyệt. Bấm để tới bề mặt Kiểm định: bản duyệt và hai nút quyết định ở cùng một chỗ.',
+  /**
+   * Vì sao "trả về viết lại" đi qua `/steer` — quyết định 7 của kế hoạch 4/4.
+   *
+   * Câu này hiện RA MÀN HÌNH khi ô nhập mở: "trả chương về viết lại" nghe như một lệnh xóa
+   * chương, nhưng thứ thật sự xảy ra là một chỉ thị can thiệp, và PHẠM VI ẢNH HƯỞNG do
+   * Arbiter quyết định — có thể nhiều hơn một chương. Người bấm phải biết điều đó trước khi
+   * gửi, không phải sau khi thấy hàng chờ dài ra.
+   *
+   * Một route riêng cho việc này là đưa quyết định phạm vi ảnh hưởng vào `serve`, tức nhân
+   * bản logic Arbiter — thứ `PRODUCT.md` cấm.
+   */
+  traVeVietLaiQuaSteer:
+    'Câu này đi vào dây chuyền như một chỉ thị can thiệp: Arbiter đọc nó, phân loại phạm vi ảnh hưởng rồi xếp các chương bị tác động vào hàng chờ viết lại. Có thể nhiều hơn một chương.',
   cheDoAutoLaGi:
     'Chế độ tự chạy: engine viết liên tục tới khi xong hoặc hết ngân sách. Không dừng chờ ai.',
   taoSachGiaiThich:
