@@ -5,6 +5,7 @@ import {
   CO_TOI_DA,
   SO_LUOT_GIU,
   moLuot,
+  nhanVach,
   themChu,
   type BoDemVan,
 } from './vanSong';
@@ -135,4 +136,14 @@ test('cắt một lượt quá trần phải bỏ phần ĐẦU, giữ phần CU
 test('id vẫn tăng sau khi bỏ lượt — không cấp lại id đã dùng', () => {
   const bd = boDemNhieuLuot(SO_LUOT_GIU + 3, 'x');
   expect(bd.idKe).toBeGreaterThan(SO_LUOT_GIU + 3);
+});
+
+test('nhãn vạch nói chương nào và lúc mấy giờ', () => {
+  const t = new Date('2026-08-01T23:11:04');
+  expect(nhanVach(2, t)).toBe('chương 2 · 23:11');
+});
+
+test('không biết chương thì nhãn chỉ có giờ, không bịa số chương', () => {
+  const t = new Date('2026-08-01T09:05:00');
+  expect(nhanVach(undefined, t)).toBe('09:05');
 });

@@ -14,14 +14,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   DongGia,
   LA_MOCK,
-  LOAI_SU_KIEN,
+  LOAI_SU_KIEN_UI,
+  LOAI_VAN_SONG,
   duongSuKien,
   layHoSo,
   laySnapshot,
   layWorkshop,
 } from './api';
+import { nhanSuKienUi } from './dongSuKien';
 import { KHU_MAC_DINH, laKhu, type Khu } from './khu';
 import type { Profile, Snapshot, StreamEvent, Workshop } from './types';
+import { BO_DEM_RONG, moLuot, nhanVach, themChu, type BoDemVan } from './vanSong';
 
 /** Số sự kiện giữ lại trong dòng. Nhật ký là cửa sổ, không phải log đầy đủ. */
 const GIU_SU_KIEN = 40;
@@ -102,6 +105,8 @@ export interface Studio {
   khu: Khu;
   song: CongDoanSong | undefined;
   suKien: StreamEvent[];
+  /** Chữ model đang sinh ra. Đường riêng, không đi qua `suKien` — xem lib/dongSuKien.ts. */
+  vanSong: BoDemVan;
   ketNoi: TinhTrangKetNoi;
   dangTai: boolean;
   loi: string | undefined;
@@ -162,6 +167,7 @@ export function useStudio(): Studio {
   const [khu, setKhu] = useState<Khu>(khuTuUrl);
   const [song, setSong] = useState<CongDoanSong>();
   const [suKien, setSuKien] = useState<StreamEvent[]>([]);
+  const [vanSong, setVanSong] = useState<BoDemVan>(BO_DEM_RONG);
   const [ketNoi, setKetNoi] = useState<TinhTrangKetNoi>('dang-mo');
   const [dangTai, setDangTai] = useState(true);
   const [loi, setLoi] = useState<string>();
@@ -173,10 +179,20 @@ export function useStudio(): Studio {
   const tacPhamRef = useRef<string>(undefined);
   const chuongRef = useRef<number | undefined>(undefined);
   const khuRef = useRef<Khu>(KHU_MAC_DINH);
+  /**
+   * Chương đang soạn, để đặt tên cho vạch ngăn lúc lệnh xóa tới.
+   *
+   * Ref chứ không phải giá trị đóng trong handler: effect dòng sự kiện cố ý KHÔNG có
+   * `snapshot` trong deps (mỗi lần làm mới snapshot sẽ đóng/mở lại stream và mất sự kiện
+   * trong khoảng đó), nên một handler đọc `snapshot` trực tiếp sẽ đóng băng ở snapshot đầu
+   * tiên và dán số chương CŨ lên mọi vạch ngăn về sau.
+   */
+  const chuongDangSoanRef = useRef<number | undefined>(undefined);
 
   tacPhamRef.current = tacPham;
   chuongRef.current = chuongChon;
   khuRef.current = khu;
+  chuongDangSoanRef.current = snapshot?.in_progress_chapter ?? undefined;
 
   /* ── 1. danh sách tác phẩm ─────────────────────────────────────────── */
   useEffect(() => {
@@ -229,6 +245,9 @@ export function useStudio(): Studio {
     seqRef.current = 0;
     setSuKien([]);
     setSong(undefined);
+    // Bộ đệm văn sống thuộc về MỘT tác phẩm. Giữ lại khi đổi cuốn là trưng chữ của cuốn
+    // trước dưới tiêu đề của cuốn sau — và không có gì trên màn hình nói ra chuyện đó.
+    setVanSong(BO_DEM_RONG);
 
     napSnapshot(tacPham, chuongTuUrl())
       .catch((e: unknown) => {
@@ -266,13 +285,15 @@ export function useStudio(): Studio {
       : new EventSource(duongSuKien(tacPham, batDauTu));
 
     const nhan = (raw: MessageEvent) => {
-      let ev: StreamEvent;
+      let tho: unknown;
       try {
-        ev = JSON.parse(raw.data as string) as StreamEvent;
+        tho = JSON.parse(raw.data as string);
       } catch {
         return; // một mục hỏng không được giết cả dòng
       }
-      if (ev.seq <= seqRef.current) return; // trùng do kết nối lại
+      // Trùng do kết nối lại, hoặc một payload không mang `seq` — xem lib/dongSuKien.ts.
+      const ev = nhanSuKienUi(tho, seqRef.current);
+      if (!ev) return;
       seqRef.current = ev.seq;
       setKetNoi('song');
 
@@ -289,7 +310,35 @@ export function useStudio(): Studio {
       }, NHIP_LAM_MOI_MS);
     };
 
-    for (const loai of LOAI_SU_KIEN) nguon.addEventListener(loai, nhan);
+    /**
+     * Văn sống đi ĐƯỜNG RIÊNG, và ba điểm khác biệt dưới đây đều là lý do nó phải riêng:
+     *
+     *   1. payload không có `seq`, nên nó không được chạm vào mốc nối lại của stream;
+     *   2. nó không phải một sự kiện, nên không vào danh sách `suKien`;
+     *   3. nó KHÔNG được đặt lại hẹn làm mới snapshot. Nhịp delta đã đo là trung vị 2ms, mà
+     *      hẹn là 1500ms — mỗi mẩu đặt lại hẹn một lần thì hẹn không bao giờ tới hạn, và
+     *      bảng chương, trục, transport đứng im suốt lúc engine đang viết.
+     */
+    const nhanDelta = (raw: MessageEvent) => {
+      let d: { text?: unknown };
+      try {
+        d = JSON.parse(raw.data as string) as { text?: unknown };
+      } catch {
+        return;
+      }
+      if (typeof d.text !== 'string' || !d.text) return;
+      setKetNoi('song');
+      setVanSong((b) => themChu(b, d.text as string));
+    };
+
+    const nhanXoa = () => {
+      setKetNoi('song');
+      setVanSong((b) => moLuot(b, nhanVach(chuongDangSoanRef.current, new Date())));
+    };
+
+    for (const loai of LOAI_SU_KIEN_UI) nguon.addEventListener(loai, nhan);
+    nguon.addEventListener(LOAI_VAN_SONG[0], nhanDelta);
+    nguon.addEventListener(LOAI_VAN_SONG[1], nhanXoa);
 
     if (nguon instanceof EventSource) {
       nguon.onopen = () => setKetNoi('song');
@@ -400,6 +449,7 @@ export function useStudio(): Studio {
       khu,
       song,
       suKien,
+      vanSong,
       ketNoi,
       dangTai,
       loi,
@@ -419,6 +469,7 @@ export function useStudio(): Studio {
       khu,
       song,
       suKien,
+      vanSong,
       ketNoi,
       dangTai,
       loi,

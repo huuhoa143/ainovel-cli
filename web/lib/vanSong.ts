@@ -1,3 +1,5 @@
+import { CHU } from './nhan';
+
 /**
  * Bộ đệm VĂN SỐNG phía client — chữ model đang sinh ra, đã nhận qua SSE.
  *
@@ -76,6 +78,18 @@ export function moLuot(bd: BoDemVan, nhan?: string): BoDemVan {
     luot: [...bd.luot, { id: bd.idKe, nhan, chu: '' }],
     idKe: bd.idKe + 1,
   });
+}
+
+/**
+ * Nhãn của một vạch ngăn: lượt này thuộc chương nào, mở lúc mấy giờ.
+ *
+ * Chương có thể chưa biết (`in_progress_chapter` là `null` khi không có chương nào đang
+ * soạn). Lúc đó nhãn chỉ có giờ — bịa một số chương vào một vạch ngăn là gán sai cả một đoạn
+ * văn cho một chương.
+ */
+export function nhanVach(chuong: number | undefined, luc: Date): string {
+  const gio = `${String(luc.getHours()).padStart(2, '0')}:${String(luc.getMinutes()).padStart(2, '0')}`;
+  return chuong === undefined ? gio : `${CHU.chuong.toLowerCase()} ${chuong} · ${gio}`;
 }
 
 /**
