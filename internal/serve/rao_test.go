@@ -82,7 +82,10 @@ func TestLaDiaChiCucBo(t *testing.T) {
 		{"0.0.0.0:8420", false},   // ca nguy hiểm nhất: nghe MỌI giao diện
 		{":8420", false},          // dạng viết tắt của 0.0.0.0
 		{"192.168.1.10:8420", false},
-		{"5.189.147.9:8420", false},
+		// RFC 5737 TEST-NET-3 — dải dành riêng cho tài liệu, không ai định tuyến tới.
+		// Cố ý KHÔNG dùng một IP thật của ai: repo này công khai, và một địa chỉ thật nằm
+		// trong bảng "không phải loopback" chỉ nói được một điều — máy đó là của người viết.
+		{"203.0.113.10:8420", false},
 		{"[::]:8420", false},
 	} {
 		if got := laDiaChiCucBo(c.addr); got != c.dat {

@@ -1,6 +1,6 @@
 # E2E với mô hình THẬT — kết quả đo
 
-Chạy 2026-07-31 trên `main` @ `f6914ab`. Provider `cx/gpt-5.5` qua `9router.lingoreup.com`.
+Chạy 2026-07-31 trên `main` @ `f6914ab`. Provider `cx/gpt-5.5` qua một router OpenAI-compatible tự dựng (tên miền riêng, không nêu).
 Đây là lần **đầu tiên** có người đọc chương do mô hình thật sinh ra; mọi lượt kiểm trước
 chỉ chứng minh máy móc đúng.
 
@@ -14,7 +14,7 @@ thử lại** trong cả phiên thành công.
 Lượt chạy đầu chết ở `architect_long` với `openai: stream ended before [DONE]`, thử lại 7
 lần rồi cầu dao bế tắc tạm dừng.
 
-Nguyên nhân: giao thức stream OpenAI kết thúc bằng `data: [DONE]`. 9router gửi ĐỦ nội
+Nguyên nhân: giao thức stream OpenAI kết thúc bằng `data: [DONE]`. Router đó gửi ĐỦ nội
 dung — kể cả mẩu cuối có `finish_reason: "stop"` và `usage` — nhưng không gửi dòng đó,
 chỉ đóng kết nối. `voocel/litellm@v1.8.8` coi đó là stream đứt giữa đường.
 
