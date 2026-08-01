@@ -285,6 +285,17 @@ export function Rail({
           nhầm mà bề mặt Cài đặt đã phải tách ra để tránh: người vận hành đọc nó thành
           "cấu hình của cuốn này". Tên nhóm nói thẳng ranh giới đó ra. */}
       <Nhom ma="chung" ten={CHU.nhomChung} khu={khu}>
+        {/* Xưởng đứng ĐẦU nhóm, trên cả Tác phẩm mới: thứ tự này là thứ tự câu hỏi. "Tôi
+            đang có gì" đi trước "thêm một cái nữa", và người vào nhóm này để đếm lại xưởng
+            thì không phải quét qua một nút tạo trước đã. */}
+        <MucDi
+          nhan={CHU.xuong}
+          ky="▦"
+          di="xuong"
+          khu={khu}
+          onChonKhu={onChonKhu}
+          chuGiai={GIAI_THICH.xuongRailGiaiThich}
+        />
         <MucDi
           nhan={CHU.cungDung}
           ky="⁂"
