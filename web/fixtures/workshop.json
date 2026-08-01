@@ -10,7 +10,11 @@
       "total_chapters": 300,
       "total_words": 138412,
       "activity": "running",
-      "updated_at": "2026-07-30T10:41:07Z"
+      "updated_at": "2026-07-30T10:41:07Z",
+      "cost_usd": 7.906347000000001,
+      "cost_per_chapter": 0.171877,
+      "chapters_per_hour": 3.4,
+      "engine_open": true
     },
     {
       "id": "mot-dem-khong-ten",
@@ -21,7 +25,11 @@
       "total_chapters": 12,
       "total_words": 31240,
       "activity": "complete",
-      "updated_at": "2026-07-29T20:14:52Z"
+      "updated_at": "2026-07-29T20:14:52Z",
+      "cost_usd": 2.1965540000000003,
+      "cost_per_chapter": 0.183046,
+      "chapters_per_hour": 2.15,
+      "engine_open": false
     },
     {
       "id": "bien-ky",
@@ -30,7 +38,11 @@
       "completed_chapters": 0,
       "total_chapters": 0,
       "total_words": 0,
-      "activity": "idle"
+      "activity": "idle",
+      "cost_usd": 0.0,
+      "cost_per_chapter": 0.0,
+      "chapters_per_hour": 0.0,
+      "engine_open": false
     }
   ]
 }

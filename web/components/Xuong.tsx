@@ -150,9 +150,15 @@ function Dong({
         ) : null}
       </td>
 
-      <td className="phase">{nhanPhase(b.phase)}</td>
+      {/* `data-nhan` là NHÃN CỘT đi theo từng ô, và nó chỉ hiện ra dưới 860px — chỗ bảng đổi
+          sang thẻ xếp dọc và `thead` biến mất. Không có nó thì một thẻ là một chồng số không
+          tên ("$7,91 · $0,172" chẳng nói gì). Chữ vẫn lấy từ `CHU` như mọi nhãn khác; CSS chỉ
+          đọc lại nó bằng `attr()`, không tự bịa chuỗi nào. */}
+      <td className="phase" data-nhan={CHU.colGiaiDoan}>
+        {nhanPhase(b.phase)}
+      </td>
 
-      <td className="tiendo">
+      <td className="tiendo" data-nhan={CHU.colTienDo}>
         <span className="sl">{tienDo(b.completed_chapters, b.total_chapters)}</span>
         {/* Thanh chỉ vẽ khi BIẾT tổng. `total_chapters === 0` là "chưa biết tổng", không phải
             "tổng bằng không": một thanh rỗng ở đó nói cuốn chưa đi được đoạn nào, một thanh
@@ -169,16 +175,18 @@ function Dong({
         ) : null}
       </td>
 
-      <td className="num tu">{soTu(b.total_words) ?? <Trong />}</td>
+      <td className="num tu" data-nhan={CHU.colSoTu}>
+        {soTu(b.total_words) ?? <Trong />}
+      </td>
 
-      <td className="num tien">
+      <td className="num tien" data-nhan={CHU.colChiPhi}>
         {/* Hai con số, hai nghĩa: tổng đã tiêu cho cuốn này, và giá thành mỗi chương đã
             nghiệm thu. Cái đầu luôn đo được (kể cả bằng 0), cái sau cần ít nhất một chương. */}
         <span className="tong">{tongTien(b.cost_usd)}</span>
         <span className="donGia">{gia ?? <Trong viSao={GIAI_THICH.xuongChuaDoDuocGiaThanh} />}</span>
       </td>
 
-      <td className="num nhip">
+      <td className="num nhip" data-nhan={CHU.colNhip}>
         {nhip ? (
           <>
             {nhip} <em>{CHU.chuongMoiGio}</em>
@@ -188,7 +196,9 @@ function Dong({
         )}
       </td>
 
-      <td className="sua">{sua ?? <Trong viSao={GIAI_THICH.xuongChuaBietSuaLucNao} />}</td>
+      <td className="sua" data-nhan={CHU.colSuaLanCuoi}>
+        {sua ?? <Trong viSao={GIAI_THICH.xuongChuaBietSuaLucNao} />}
+      </td>
 
       {/* Hành động: ĐIỀU HƯỚNG, và chỉ điều hướng. Không nút nào ở đây gọi một route ghi.
           Dùng `.nutPhu` sẵn có chứ không khai một lớp nút mới: ba nút này không khác gì nút

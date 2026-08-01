@@ -224,3 +224,25 @@ test('KHÔNG có nút Chạy, Dừng, Xóa hay Đổi tên trên bề mặt này
     expect(t).not.toMatch(/chạy|dừng|xoá|xóa|đổi tên/i);
   }
 });
+
+test('mỗi ô số mang NHÃN CỘT của nó, và nhãn đó đúng bằng nhãn ở `thead`', () => {
+  // Dưới 860px bảng đổi sang thẻ xếp dọc và `thead` biến mất; nhãn cột lúc đó chỉ còn tồn tại
+  // ở `data-nhan` của từng ô, mà CSS đọc lại bằng `attr()`. Bỏ một `data-nhan` thì ô đó thành
+  // một con số không tên trên điện thoại — và KHÔNG có gì đỏ: bộ kiểm này chạy trong jsdom,
+  // nơi không có bố cục nên không có điểm ngắt nào, và bảng ở đây luôn là bảng.
+  //
+  // Bài này canh cả hai chiều: ô nào cũng phải có nhãn, VÀ nhãn phải là nhãn của đúng cột đó
+  // (một `data-nhan` chép nhầm khóa `CHU` vẫn có mặt, vẫn hiện ra, và vẫn sai).
+  const { container } = ve({ id: 'a', chapters_per_hour: 3.4, updated_at: '2026-07-30T10:41:07Z' });
+  const cot = [...container.querySelectorAll('thead th')].map((e) => e.textContent);
+  const o = [...dong(container, 'a').querySelectorAll('td')];
+  expect(o).toHaveLength(cot.length);
+
+  // Cột 1 (tên) là tiêu đề của thẻ và cột cuối (hành động) là hàng nút — hai ô đó tự nói ra
+  // chúng là gì, nên chúng cố ý KHÔNG mang nhãn. Sáu ô giữa thì phải mang.
+  expect(o[0]!.getAttribute('data-nhan')).toBeNull();
+  expect(o[cot.length - 1]!.getAttribute('data-nhan')).toBeNull();
+  for (let i = 1; i < cot.length - 1; i++) {
+    expect(o[i]!.getAttribute('data-nhan')).toBe(cot[i]);
+  }
+});
