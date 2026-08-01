@@ -3,6 +3,7 @@ package serve
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/voocel/ainovel-cli/internal/host"
 )
@@ -166,5 +167,38 @@ func TestDongVanVaoMuonKhongLap(t *testing.T) {
 	manh, _ = d.sau(moc)
 	if len(manh) != 1 || manh[0].Chu != " Nó không trong." {
 		t.Errorf("mẩu mới sau mốc = %+v, muốn đúng một mẩu %q", manh, " Nó không trong.")
+	}
+}
+
+// TestDongVanHutKetThucKhiChannelDong canh lớp lỗi rò goroutine.
+//
+// Mỗi phiên engine chạy một `go p.van.hut(eng.Stream())`. `Host.Close()` đóng channel đó
+// (host.go:899). Nếu `hut` không kết thúc theo, mỗi lần mở-đóng một cuốn để lại một goroutine
+// treo — và studio là process chạy hàng giờ, mở nhiều cuốn.
+//
+// KHÔNG thêm một đường hủy thứ hai (ctx) vào `hut`: hai đường hủy cho một vòng lặp tạo ra khả
+// năng goroutine chết TRƯỚC engine, và lúc đó `emitDelta` đầy hàng rồi âm thầm bỏ mẩu.
+func TestDongVanHutKetThucKhiChannelDong(t *testing.T) {
+	d := &dongVan{}
+	ch := make(chan string, 3)
+	xong := make(chan struct{})
+	go func() {
+		d.hut(ch)
+		close(xong)
+	}()
+
+	ch <- "a"
+	ch <- "b"
+	close(ch)
+
+	select {
+	case <-xong:
+	case <-time.After(2 * time.Second):
+		t.Fatal("hut không kết thúc sau khi channel đóng — goroutine bị rò")
+	}
+
+	manh, _ := d.sau(0)
+	if len(manh) != 2 {
+		t.Errorf("hút được %d mẩu, muốn 2 — mẩu gửi trước lúc đóng không được mất", len(manh))
 	}
 }
