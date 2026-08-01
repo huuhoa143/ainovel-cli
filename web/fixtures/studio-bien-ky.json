@@ -19,6 +19,11 @@
     "arcs": [],
     "chapters": []
   },
+  "agents": null,
+  "idle_agents": null,
+  "advance": null,
+  "context": null,
+  "in_progress_chapter": null,
   "chapters": [],
   "transport": {
     "state": "idle",

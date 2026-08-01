@@ -1478,6 +1478,577 @@ td.who {
   font: 400 11.5px var(--mono);
 }
 
+/* ══ buồng lái ════════════════════════════════════════════════════════
+   Bề mặt `?khu=dong-san-xuat`. Đứng SAU mục canvas vì nó ghi đè `.canvas`:
+   canvas thường là một trang cuộn, buồng lái là một khung cố định có khu cuộn
+   riêng bên trong.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Buồng lái KHÔNG cuộn cả khối, khác mọi bề mặt khác.
+   Lý do là phép đo của spec §2: khu chữ máy là thứ DUY NHẤT chạy liên tục
+   (146/254 khung), và một khu tự cuộn nằm trong một trang cũng cuộn được thì
+   người dùng không biết mình vừa cuộn cái nào — hai bộ cuộn lồng nhau ăn chung
+   một con lăn. Nên khung đứng yên, và đúng MỘT chỗ trong nó cuộn theo chữ.
+
+   Hai hàng: `.bltren` cao theo nội dung (đầu trang + dải + cảnh báo), `.blgiua`
+   lấy hết phần còn lại. Bọc ba khối trên vào một hộp chứ không cho chúng làm ba
+   hàng của lưới vì khối cảnh báo là CÓ ĐIỀU KIỆN — xem chú thích trong
+   BuongLai.tsx. */
+.canvas.buonglai {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  min-height: 0;
+}
+.buonglai .bltren {
+  min-width: 0;
+}
+
+/* Mọi khối `auto` của buồng lái nén hơn khối cùng loại ở bề mặt khác, và đây là
+   phép trừ chứ không phải khẩu vị: khung KHÔNG cuộn, nên mỗi pixel một hàng
+   `auto` lấy là một pixel lấy THẲNG từ khu chữ đang chảy.
+   ĐO ĐƯỢC ở 1440×900 (cột giữa cao 802px) với bản chưa nén: đầu trang 55 · dải
+   trạng thái 124 · cảnh báo 92 · trục 131 · ô can thiệp 143 = 545px, để lại 257px
+   cho hai hàng `fr` — tức khu chữ được 169px, đúng 21% chiều cao của một bề mặt
+   tồn tại để xem chữ chảy. Sau khi nén: 443px, khu chữ được 239px (298px ở cuốn
+   không có cảnh báo). */
+.buonglai .head {
+  padding: 12px 18px 9px;
+}
+.buonglai .canhbao {
+  padding: 8px 18px 9px;
+}
+
+/* Cột giữa, bốn hàng — và tỉ lệ 2:1 giữa hàng 2 và hàng 3 là phép ĐO, không phải
+   cảm giác.
+   ĐO ĐƯỢC trên `scripts/sample.gif` (255 khung × 70ms = 17,9 giây, so từng khung
+   với khung trước): khu chữ máy đổi **146/254 khung** (57,5%), dòng sự kiện đổi
+   **5 lần rời nhau** trong cùng 17,9 giây và dồn hết vào 3 giây đầu rồi im 15
+   giây. Chia đôi hai khu đó là chia theo cảm giác; 2:1 là chia theo số lần chúng
+   thật sự có gì mới để nói.
+   `minmax(0, …)` chứ không `2fr`/`1fr` trần: một hàng `fr` không co xuống dưới
+   min-content, nên một dòng JSON dài trong khu chữ sẽ đẩy cả cột giữa cao hơn
+   khung và hàng ô can thiệp bị đẩy khỏi màn hình. */
+.blgiua {
+  display: grid;
+  grid-template-rows: auto minmax(0, 2fr) minmax(0, 1fr) auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ── hàng 1: dải trục ── */
+/* `max-height` là hàng rào, không phải hình: hàng này là `auto`, và một cuốn
+   phân tầng có ba lane cộng chú giải cao gần 150px — tức nó lấy mất của khu chữ
+   đúng phần mà phép đo 2:1 vừa chia cho khu chữ. Quá thì trục tự cuộn trong ô
+   của nó thay vì bóp hai hàng dưới. */
+.bltruc {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: 12px;
+  padding: 8px 18px 9px;
+  border-bottom: 1px solid var(--line-2);
+  min-width: 0;
+  max-height: 120px;
+  overflow-y: auto;
+}
+/* Tiêu đề đứng CẠNH trục, không trên nó: một hàng riêng cho ba chữ tốn 22px, và
+   22px ở đây là 22px lấy từ khu chữ. */
+.bltruc > h2 {
+  grid-row: 1;
+  font: 500 11px/1.5 var(--ui);
+  color: var(--ink-3);
+  margin: 0;
+  padding-top: 3px;
+  white-space: nowrap;
+}
+.bltruc > :not(h2) {
+  grid-column: 2;
+  min-width: 0;
+}
+.bltruc .lanes {
+  row-gap: 4px;
+}
+
+/* ── hàng 2: khu văn sống ── */
+/* `position: relative` để nút "về cuối" nổi TRONG khu chứ không thành một hàng
+   thứ ba của lưới — một nút chiếm hàng riêng sẽ làm khu chữ co lại đúng lúc nó
+   xuất hiện, tức màn hình nhảy ngay khi người dùng vừa cuộn lên. */
+.vansong {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+  border-bottom: 1px solid var(--line-2);
+}
+.vansong .vshead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 18px 6px;
+  border-bottom: 1px solid var(--line-2);
+}
+/* `--ink-2` chứ không `--ink-3` như nhãn nhóm khác: câu này là TRẠNG THÁI ("Máy
+   đang nói" / "Máy đang nghỉ"), không phải nhãn của một khối. */
+.vansong .vshead h2 {
+  margin: 0;
+  font: 500 11.5px/1.4 var(--ui);
+  color: var(--ink-2);
+}
+
+/* CHỖ CHỊU LỰC CỦA CẢ KHU NÀY.
+   `overflow-y: auto` cộng một chiều cao CÓ HẠN (`minmax(0, 2fr)` của hàng lưới
+   trên, cộng `min-height: 0` để hàng lưới thật sự co được). Thiếu một trong hai
+   thì `scrollHeight === clientHeight`, `dangODay()` luôn trả true, tự cuộn không
+   làm gì và nút "về cuối" không bao giờ hiện — mà bộ kiểm VẪN XANH, vì jsdom
+   không bố cục nên nó đặt tay ba số cuộn đó. Đây là chỗ duy nhất trong cả kế
+   hoạch mà chỉ mắt người mới kiểm được. */
+.vsthan {
+  overflow-y: auto;
+  min-height: 0;
+  padding: 10px 18px 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.vsthan::-webkit-scrollbar {
+  width: 6px;
+}
+.vsthan::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 3px;
+}
+
+.vsthan .luot + .luot {
+  margin-top: 4px;
+}
+
+/* Chữ máy phát: mono, KHÔNG serif.
+   ĐO ĐƯỢC (spec §2): khu này là đối số JSON của lời gọi tool, danh mục khế ước
+   có ✓, bảng kiểm chất lượng và báo cáo chương theo mục — không phải văn truyện.
+   Văn truyện chỉ xuất hiện ở bề mặt Bản thảo, và ở đó nó mới là serif 70ch.
+   `overflow-wrap: anywhere` là bắt buộc: một dòng JSON không có dấu cách nào sẽ
+   đẩy tràn ngang CẢ cột giữa, và `pre-wrap` một mình không ngắt trong từ. */
+.vsthan .chu {
+  margin: 0;
+  font: 400 12px/1.72 var(--mono);
+  color: var(--ink-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  tab-size: 2;
+}
+
+/* Vạch ngăn giữa hai lượt: một đường kẻ có nhãn nằm giữa.
+   Nó thay cho việc XÓA sạch khu chữ mà TUI làm ở mỗi lượt — trình duyệt cuộn lại
+   được nên vứt phần vừa đọc là bỏ phí. */
+.vach {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 14px 0 10px;
+  color: var(--ink-3);
+  font: 400 11px/1 var(--ui);
+}
+.vach::before,
+.vach::after {
+  content: '';
+  height: 1px;
+  background: var(--line-2);
+  flex: 1;
+}
+.vach span {
+  flex: none;
+  white-space: nowrap;
+}
+
+.vstrong {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.72;
+  color: var(--ink-3);
+  max-width: 74ch;
+}
+
+/* Nút "về cuối" — nổi trong khu chữ, ghim đáy phải.
+   Nền ĐẶC (`--raised`, không trong suốt) vì nó nằm ĐÈ lên chữ đang chảy: một nền
+   mờ ở đó cho hai lớp chữ chồng nhau đúng lúc chữ đang chạy. */
+.vecuoi {
+  position: absolute;
+  right: 20px;
+  bottom: 14px;
+  z-index: var(--z-sticky);
+  height: 25px;
+  padding: 0 11px;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink);
+  font: 400 11.5px var(--ui);
+  cursor: pointer;
+  box-shadow: 0 2px 8px oklch(0.1 0 0 / 0.45);
+  transition: background 0.16s var(--ease), border-color 0.16s var(--ease);
+}
+.vecuoi:hover {
+  background: color-mix(in oklch, var(--gold) 16%, var(--raised));
+  border-color: color-mix(in oklch, var(--gold) 45%, var(--line));
+}
+
+/* ── hàng 3: khu cuộn (dòng sự kiện → bảng chương → nhật ký) ── */
+/* `padding-bottom` thay cho khối `<div style={{height:8}}/>` mà `Canvas` từng
+   đặt ở cuối mình. Lý do gốc vẫn còn nguyên giá trị — "để hàng cuối bảng không
+   dính vào" thứ ngay dưới nó — chỉ khác cái ở dưới: trước là thanh transport,
+   giờ là ô can thiệp ghim đáy. Khoảng cách này là CSS chứ không còn là một thẻ
+   rỗng trong cây DOM. */
+.blcuon {
+  overflow-y: auto;
+  min-height: 0;
+  min-width: 0;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.blcuon::-webkit-scrollbar {
+  width: 6px;
+}
+.blcuon::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 3px;
+}
+.blcuon .sect {
+  padding: 13px 18px;
+}
+
+/* ── hàng 4: ô can thiệp, ghim đáy ── */
+/* Ghim chứ không cuộn: can thiệp là việc người vận hành làm GIỮA lúc đang đọc
+   chữ chảy, nên bắt họ cuộn đi tìm ô nhập là bắt họ rời mắt khỏi đúng thứ họ
+   đang can thiệp vào. Đây là dòng nhập của TUI, đặt đúng chỗ TUI đặt nó. */
+/* Tiêu đề và ô nhập trên CÙNG một hàng; câu giải thích xuống hàng dưới.
+   Xếp dọc như một `.sect` thường tốn 143px cho một dòng nhập — nhiều hơn cả ô
+   nhập lẫn tiêu đề cộng lại, và toàn bộ phần thừa đó lấy từ khu chữ. */
+.blcanthiep {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  column-gap: 12px;
+  padding: 8px 18px 9px;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  min-width: 0;
+}
+.blcanthiep > h2 {
+  flex: none;
+  font: 500 11px/1.5 var(--ui);
+  color: var(--ink-3);
+  margin: 0;
+  white-space: nowrap;
+}
+.blcanthiep > h2 .phu {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+.blcanthiep .steerbox {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+/* Câu giải thích rút về nhiều nhất HAI dòng: nó nằm dưới mắt suốt phiên và mỗi
+   dòng của nó là một dòng lấy từ khu chữ.
+   Hai chứ không phải một, và con số đó có lý do: ở ca ô nhập bị VÔ HIỆU, câu này
+   là chỗ DUY NHẤT nói vì sao — cắt nó về một dòng ở 1440px để lại đúng nửa vế
+   đầu ("Ô nhập vô hiệu — studio đang ở chế độ chỉ đọc") mà mất phần nói phải làm
+   gì. Chữ không bị xóa khỏi DOM, nên trình đọc màn hình và `aria-describedby`
+   của ô nhập vẫn nhận đủ câu.
+   `.loiDoc` KHÔNG bị kẹp: đó là lỗi nguyên văn từ server, và một câu lỗi bị cắt
+   là đúng thứ `PRODUCT.md` cấm ("nói rõ lỗi gì và làm gì tiếp, không làm dịu"). */
+.blcanthiep .steerhint {
+  flex: 1 0 100%;
+  margin: 5px 0 0;
+  font-size: 11px;
+  line-height: 1.72;
+  max-width: none;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+.blcanthiep .loiDoc {
+  flex: 1 0 100%;
+  margin: 5px 0 0;
+  font-size: 11.5px;
+  line-height: 1.72;
+}
+
+/* ══ dải trạng thái ═══════════════════════════════════════════════════
+   Cột trái của TUI, xoay ngang. Nó ngồi đúng vị trí mà dải "việc tiếp theo"
+   (`.vtt`) ngồi khi máy nghỉ, nên nó phải trông như CÙNG MỘT khe: cùng nền
+   `--panel`, cùng đường kẻ dưới, cùng khoảng đệm ngang. Hai dải khác nhau về
+   hình ở cùng một chỗ sẽ đọc thành "trang vừa nhảy", không phải "máy vừa đổi
+   trạng thái".
+   ══════════════════════════════════════════════════════════════════════ */
+.daitrangthai {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 9px 18px 10px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line-2);
+  min-width: 0;
+}
+.daitrangthai .dtnhan {
+  display: block;
+  font: 500 11px/1.4 var(--ui);
+  color: var(--ink-3);
+  margin-bottom: 5px;
+}
+.daitrangthai .dtvai {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.daitrangthai .dtton {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 34%;
+}
+.daitrangthai .dtngucanh {
+  flex: none;
+  width: 208px;
+}
+
+/* Cây vai — `<ul>`/`<li>` lồng nhau thật, xem lý do trong DaiTrangThai.tsx.
+   Bậc con vẽ bằng một đường kẻ dọc chứ bằng ký tự `└` như TUI: ký tự nằm trong
+   nội dung thì trình đọc màn hình đọc nó ra, mà quan hệ cha-con đã có sẵn trong
+   cấu trúc `<ul>` và sẽ bị đọc hai lần. */
+.cayvai,
+.cayvai ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cayvai ul {
+  margin-left: 5px;
+  padding-left: 10px;
+  border-left: 1px solid var(--line-2);
+}
+.cayvai li {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  line-height: 1.72;
+}
+/* `li` có con là một hộp flex xếp ngang; danh sách con phải xuống dòng riêng và
+   chiếm cả bề rộng, nếu không nó nằm cạnh tên vai cha như một anh em. */
+.cayvai li > ul {
+  flex: 1 0 100%;
+}
+.cayvai .vaiten {
+  font: 500 12.5px var(--ui);
+  color: var(--ink);
+}
+/* Tên công cụ dùng `--gold` — cùng quy ước với `.vttLive .b` ở dải kia và với ô
+   "công đoạn" của transport. Vàng ở đây đúng nghĩa của nó trong DESIGN.md ("đang
+   chạy, tiêu điểm"): công cụ này là thứ engine đang làm ngay lúc nhìn. */
+.cayvai .vaicongcu {
+  font: 400 11px var(--mono);
+  color: var(--gold);
+  white-space: nowrap;
+}
+.cayvai .vailuot {
+  font: 400 11px var(--mono);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.cayvai .vaiviec {
+  font-size: 11.5px;
+  color: var(--ink-2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.daitrangthai .dttrong,
+.daitrangthai .dtcho {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.72;
+  color: var(--ink-3);
+}
+.daitrangthai .dtcho {
+  margin-top: 5px;
+}
+
+.daitrangthai .dttonmuc {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 0 4px;
+  font-size: 11.5px;
+  line-height: 1.72;
+  color: var(--ink-2);
+}
+.daitrangthai .dttonmuc:last-child {
+  margin-bottom: 0;
+}
+/* Việc tồn mang amber ở mọi chỗ khác của bề mặt này (`.vttCanh`, `.rail .n.warn`),
+   nên nó mang amber ở đây. Ký hiệu ■ đi kèm để màu không phải kênh duy nhất. */
+.daitrangthai .dttonmuc .ky {
+  flex: none;
+  font-size: 8px;
+  color: var(--amber);
+}
+
+/* Thước ngữ cảnh. Vạch ở mốc 85% là mốc NÉN sắp tới, cùng mốc mà thanh transport
+   đánh dấu — hai chỗ nói về cùng một ngưỡng thì phải đánh dấu cùng một chỗ.
+   Vẽ bằng `background-image` chứ bằng một phần tử: mốc là thuộc tính của cái
+   thước, không phải một dữ liệu mà component phải tính rồi truyền xuống. */
+.daitrangthai .thuoc {
+  display: block;
+  height: 5px;
+  border-radius: 3px;
+  background-color: var(--raised);
+  background-image: linear-gradient(
+    to right,
+    transparent 0 calc(85% - 1px),
+    var(--red) calc(85% - 1px) 85%,
+    transparent 85% 100%
+  );
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+.daitrangthai .kim {
+  display: block;
+  height: 100%;
+  border-radius: 3px 0 0 3px;
+  background: var(--gold);
+}
+.daitrangthai .dtso {
+  font: 400 11px var(--mono);
+  color: var(--ink-2);
+}
+
+/* Dấu "không đo được" — engine đóng nên studio KHÔNG có nguồn cho ô này.
+   Gạch chân nét đứt để nó khác một giá trị thật mà KHÔNG chỉ khác bằng màu: đây
+   đúng ca mà luật "màu không bao giờ là kênh thông tin duy nhất" nói tới, và
+   người mù màu phải phân biệt được "không đo được" với một con số nhạt. */
+.khongdo {
+  color: var(--ink-3);
+  font-size: 11.5px;
+  border-bottom: 1px dashed var(--line);
+  cursor: help;
+}
+
+/* ── điểm gãy 1240px: bỏ cột phải ──
+   `.insp { display: none }` đã nằm ở mục khung ứng dụng đầu tệp và nó lo phần cột
+   phải cho MỌI bề mặt. Buồng lái không cần thêm gì: dải và cột giữa đều là
+   `minmax(0, 1fr)` nên chúng tự nhận phần bề rộng vừa trống ra. Ghi ra để người
+   sau khỏi đi tìm một khối không tồn tại. */
+
+/* ── điểm gãy 860px ──
+   Hai đổi thay, hai lý do khác nhau:
+
+   1. DẢI XẾP HAI HÀNG. Ba ô cạnh nhau ở 390px cho ô cây vai khoảng 90px, tức tên
+      vai và tên công cụ xuống dòng ở mỗi từ. Cây vai lấy cả một hàng, hai ô còn
+      lại chia hàng thứ hai.
+   2. BUỒNG LÁI THÔI LÀ KHUNG CỐ ĐỊNH, thành một cột cuộn. Lưới bốn hàng chỉ có
+      nghĩa khi còn đủ chiều cao để chia: ở 390×844, sau thanh trên (44), dải rail
+      ngang (38), transport đã xuống dòng (~76) và `.bltren` cao gần 200px vì mọi
+      thứ đều xuống dòng, phần còn lại cho bốn hàng là khoảng 480px — chia 2:1 ra
+      một khu chữ 280px và một khu sự kiện 140px, và mọi hàng đều thành khe hẹp.
+      Cột cuộn với khu chữ cao cố định đọc được; lưới ép thì không.
+      Ô can thiệp vẫn KHÔNG cuộn đi mất — `sticky` giữ nó ở đáy khung nhìn, tức
+      giữ đúng tính chất mà hàng thứ tư của lưới có ở màn hình rộng. */
+@media (max-width: 860px) {
+  .daitrangthai {
+    flex-wrap: wrap;
+    gap: 12px 20px;
+  }
+  .daitrangthai .dtvai {
+    flex: 1 0 100%;
+  }
+  /* `flex: 1 1 0` chứ không `1 1 auto`: với `auto` thì cơ sở co giãn là bề rộng
+     NỘI DUNG, và câu can thiệp còn tồn ("giữ nhịp chậm lại ở cảnh chia tay") dài
+     hơn cả hàng — hai ô đẩy nhau xuống hai hàng riêng và dải thành BA hàng.
+     ĐO ĐƯỢC ở 390px trước khi sửa: `.dtvai` ở y=197, `.dtton` y=311,
+     `.dtngucanh` y=364 — ba mốc khác nhau, tức ba hàng. */
+  .daitrangthai .dtton,
+  .daitrangthai .dtngucanh {
+    flex: 1 1 0;
+    max-width: none;
+    width: auto;
+    min-width: 130px;
+  }
+
+  .canvas.buonglai {
+    display: block;
+    overflow-y: auto;
+  }
+  .blgiua {
+    display: block;
+    overflow: visible;
+  }
+  /* Tiêu đề trở lại đứng TRÊN trục ở màn hình hẹp. Ở 1440px nó đứng cạnh để tiết
+     kiệm 22px chiều cao; ở 390px thì 92px bề rộng nó chiếm là 92px lấy của lane,
+     và lane mất bề rộng thì mất chính thứ nó vẽ ra — hình dạng cả cuốn.
+     ĐO ĐƯỢC ở 390px với tiêu đề đứng cạnh: khối lane rộng 190px cho 6 khối tập
+     (mỗi khối tối thiểu 40px + khe) = 255px, tức trục bị cắt và phải cuộn ngang. */
+  .bltruc {
+    display: block;
+    max-height: none;
+  }
+  .bltruc > h2 {
+    margin: 0 0 5px;
+    padding-top: 0;
+  }
+  /* Khu chữ cần một chiều cao CÓ HẠN để `overflow-y: auto` có nghĩa — không có
+     nó thì `.vsthan` cao bằng nội dung, `scrollHeight === clientHeight`, và tự
+     cuộn lẫn nút "về cuối" đều thành vô nghĩa. `vh` chứ không `px`: đây là phần
+     của MÀN HÌNH dành cho chữ đang chảy, không phải một con số tuyệt đối. */
+  .vansong {
+    display: block;
+  }
+  .vsthan {
+    max-height: 44vh;
+  }
+  .blcuon {
+    overflow: visible;
+  }
+  /* Ô can thiệp THÔI ghim ở màn hình hẹp, và đó là một thử-rồi-bỏ chứ không phải
+     một chỗ quên.
+     Bản đầu để `position: sticky; bottom: 0`. ĐO ĐƯỢC ở 390×844: thanh cao 98px
+     đè lên đáy khu chữ — mà đáy khu chữ chính là chỗ chữ MỚI hiện ra và là chỗ
+     tự cuộn vừa kéo tới, tức thanh giấu đúng thứ người dùng mở trang để xem, và
+     giấu 98/371 = 26% chiều cao khu đó. Một thanh ghim chỉ đáng khi thứ nó che
+     là thứ cũ; ở đây nó che thứ mới.
+     Đổi chỗ nó lên trên khu cuộn thì hết đè, nhưng thứ tự DOM sẽ lệch thứ tự
+     nhìn thấy — tức thứ tự Tab lệch, và `PRODUCT.md` xếp bàn phím là hạng nhất.
+     Nên ở đây nó đi theo dòng chảy như mọi khối khác. */
+}
+
+/* Màn hình rất hẹp: khoảng đệm ngang về cùng 12px với phần còn lại của canvas. */
+@media (max-width: 700px) {
+  .bltruc,
+  .blcanthiep,
+  .daitrangthai {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .vansong .vshead,
+  .vsthan {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .blcuon .sect {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .vecuoi {
+    right: 14px;
+  }
+}
+
 /* ══ inspector ════════════════════════════════════════════════════════ */
 
 .insp {

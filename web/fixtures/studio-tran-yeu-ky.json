@@ -1303,6 +1303,43 @@
       }
     ]
   },
+  "agents": [
+    {
+      "role": "writer",
+      "state": "working",
+      "tool": "draft_chapter",
+      "turn": 7,
+      "task": "viết chương 47",
+      "depth": 0
+    },
+    {
+      "role": "writer",
+      "state": "working",
+      "tool": "novel_context",
+      "depth": 1
+    },
+    {
+      "role": "editor",
+      "state": "working",
+      "tool": "review_chapter",
+      "turn": 2,
+      "depth": 0
+    }
+  ],
+  "idle_agents": [
+    "architect_long",
+    "arbiter"
+  ],
+  "pending_steer": "giữ nhịp chậm lại ở cảnh chia tay",
+  "advance": null,
+  "context": {
+    "tokens": 52400,
+    "window": 128000,
+    "percent": 41,
+    "scope": "baseline",
+    "strategy": "light_trim"
+  },
+  "in_progress_chapter": 47,
   "chapters": [
     {
       "chapter": 41,
