@@ -138,6 +138,7 @@ export default function Trang() {
             onChonKhu={s.chonKhu}
             onDocChuong={s.docChuong}
             onChonTacPham={s.chonTacPham}
+            onMoTacPham={s.moTacPhamTai}
             onXongTaoSach={xongTaoSach}
             onChotCungDung={chotCungDung}
             nhapSan={nhapTuCungDung}
@@ -203,6 +204,7 @@ export function Khu({
   onChonKhu,
   onDocChuong,
   onChonTacPham,
+  onMoTacPham,
   onXongTaoSach,
   onChotCungDung,
   nhapSan,
@@ -221,6 +223,8 @@ export function Khu({
   onChonKhu: (k: KhuMa) => void;
   onDocChuong: (n: number) => void;
   onChonTacPham: (id: string) => void;
+  /** Mở một cuốn từ bảng Xưởng ở một bề mặt cụ thể — xem `moTacPhamTai` trong useStudio. */
+  onMoTacPham: (id: string, khu: KhuMa, chuong?: number) => void;
   /** Tạo tác phẩm xong: đổi tác phẩm VÀ đổi khu — xem lý do ở `xongTaoSach`. */
   onXongTaoSach: (id: string) => void;
   onChotCungDung: (banNhap: string) => void;
@@ -235,7 +239,7 @@ export function Khu({
     // đổi theo cuốn đang mở (`laKhuMucMay('xuong')`). Truyền vào sẽ mời người sau dùng nó rồi
     // biến một bảng liệt kê mọi cuốn thành nửa-theo-tác-phẩm.
     case 'xuong':
-      return <Xuong sach={sach} />;
+      return <Xuong sach={sach} onMoTacPham={onMoTacPham} />;
     case 'ban-thao':
       return (
         <DocTruyen

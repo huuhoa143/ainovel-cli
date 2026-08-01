@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 
 import { sach } from '@/components/mau.test-helper';
 
-import { khuDap, tongXuong } from './xuong';
+import { cachMoTacPham, khuDap, tongXuong } from './xuong';
 
 test('cộng chương đã chốt, số từ, chi phí và số engine đang mở', () => {
   const t = tongXuong([
@@ -102,4 +102,29 @@ test('URL ghi rõ ĐÚNG khu mặc định vẫn thắng — `undefined` mới l
   expect(khuDap({ tpTuUrl: undefined, khuTuUrl: 'dong-san-xuat', soSach: 9 })).toBe(
     'dong-san-xuat',
   );
+});
+
+/* ── mở một cuốn từ bảng Xưởng ────────────────────────────────────────── */
+
+test('mở một cuốn KHÁC: phải đổi cuốn, tức xóa snapshot và để effect nạp lại', () => {
+  expect(cachMoTacPham('mac-the', 'tran-yeu', undefined)).toBe('doi-cuon');
+  expect(cachMoTacPham(undefined, 'tran-yeu', undefined)).toBe('doi-cuon');
+  expect(cachMoTacPham('mac-the', 'tran-yeu', 1)).toBe('doi-cuon');
+});
+
+test('mở ĐÚNG cuốn đang xem ở một chương: nạp lại tại chỗ, KHÔNG xóa snapshot', () => {
+  // Đây là ca làm treo màn hình nếu xử nhầm. `moTacPhamVuaTao` xóa snapshot rồi trông cậy
+  // vào effect §2 nạp lại — nhưng effect đó phụ thuộc `tacPham`, và đặt lại CÙNG một giá trị
+  // không làm React chạy lại effect. Kết quả: `snapshot === undefined` vĩnh viễn, và
+  // `page.tsx` đứng ở màn "đang đọc store…" không bao giờ thoát ra.
+  //
+  // Cuốn vừa tạo không bao giờ trùng cuốn đang xem nên `moTacPhamVuaTao` không gặp ca này.
+  // Bảng Xưởng thì gặp ngay lần bấm đầu tiên: cuốn đang mở LUÔN có một dòng trong bảng.
+  expect(cachMoTacPham('mac-the', 'mac-the', 1)).toBe('nap-lai');
+});
+
+test('mở ĐÚNG cuốn đang xem mà không chọn chương: chỉ đổi khu, không gọi mạng', () => {
+  // Bấm `Mở` trên chính cuốn đang xem là một cú điều hướng thuần. Nạp lại snapshot ở đó là
+  // một lượt đọc store không ai yêu cầu, và nó nháy cả bề mặt.
+  expect(cachMoTacPham('mac-the', 'mac-the', undefined)).toBe('chi-doi-khu');
 });

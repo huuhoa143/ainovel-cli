@@ -1,6 +1,7 @@
 'use client';
 
 import { donGia, nangSuat, ngayGio, so, soTu, tienDo, tongTien } from '@/lib/dinhdang';
+import type { Khu } from '@/lib/khu';
 import { CHU, GIAI_THICH, nhanPhase } from '@/lib/nhan';
 import type { Book } from '@/lib/types';
 import { tongXuong } from '@/lib/xuong';
@@ -35,7 +36,23 @@ import { tongXuong } from '@/lib/xuong';
  * `cost_usd === 0` thì NGƯỢC LẠI: đó là một phép đo có thật (chưa tốn gì) nên nó in ra
  * `$0,00`. Gộp hai ca lại là vứt đi một câu trả lời.
  */
-export function Xuong({ sach }: { sach: Book[] }) {
+export function Xuong({
+  sach,
+  onMoTacPham,
+}: {
+  sach: Book[];
+  /**
+   * Mở một cuốn ở một bề mặt, trong MỘT hành động.
+   *
+   * Ba tham số đi cùng nhau chứ không phải ba lời gọi nối tiếp, và đó là điều kiện đúng-sai
+   * chứ không phải chuyện gọn gàng: `useStudio` ghi cả ba mảnh vị trí vào URL trong một lần,
+   * và mọi hành động của nó đọc `tacPhamRef.current` — một ref chỉ được đặt lại lúc RENDER.
+   * Gọi "chọn tác phẩm" rồi "chọn khu" liền nhau trong một handler thì React gộp hai lần đặt
+   * state và không render ở giữa, nên lời gọi thứ hai ghi URL bằng cuốn CŨ. Lỗi đó đã đo được
+   * hai lần trong dự án này.
+   */
+  onMoTacPham: (id: string, khu: Khu, chuong?: number) => void;
+}) {
   const t = tongXuong(sach);
 
   return (
@@ -82,11 +99,12 @@ export function Xuong({ sach }: { sach: Book[] }) {
                 {CHU.colNhip}
               </th>
               <th scope="col">{CHU.colSuaLanCuoi}</th>
+              <th scope="col">{CHU.colHanhDong}</th>
             </tr>
           </thead>
           <tbody>
             {sach.map((b) => (
-              <Dong key={b.id} b={b} />
+              <Dong key={b.id} b={b} onMoTacPham={onMoTacPham} />
             ))}
           </tbody>
         </table>
@@ -98,7 +116,13 @@ export function Xuong({ sach }: { sach: Book[] }) {
   );
 }
 
-function Dong({ b }: { b: Book }) {
+function Dong({
+  b,
+  onMoTacPham,
+}: {
+  b: Book;
+  onMoTacPham: (id: string, khu: Khu, chuong?: number) => void;
+}) {
   const nhip = b.chapters_per_hour ? nangSuat(b.chapters_per_hour) : undefined;
   const gia = b.cost_per_chapter ? donGia(b.cost_per_chapter) : undefined;
   const sua = ngayGio(b.updated_at);
@@ -165,6 +189,28 @@ function Dong({ b }: { b: Book }) {
       </td>
 
       <td className="sua">{sua ?? <Trong viSao={GIAI_THICH.xuongChuaBietSuaLucNao} />}</td>
+
+      {/* Hành động: ĐIỀU HƯỚNG, và chỉ điều hướng. Không nút nào ở đây gọi một route ghi.
+          `Đọc` và `Xuất bản` chỉ có ở cuốn đã hoàn thành vì trước đó chúng dẫn tới hai bề mặt
+          nói "chưa có gì": bản thảo dở chừng và một tệp xuất thiếu chương. */}
+      <td className="lam">
+        <button type="button" className="nutnho" onClick={() => onMoTacPham(b.id, 'dong-san-xuat')}>
+          {CHU.moTacPham}
+        </button>
+        {b.phase === 'complete' ? (
+          <>
+            {/* Chương 1 đi CÙNG lời gọi. Tách ra thành "chọn chương" rồi "đổi khu" là mất
+                `?ch=` khỏi URL — đã đo được, và hư hại bị che vì bề mặt đọc tự chọn chương 1
+                khi vào mà chưa có. */}
+            <button type="button" className="nutnho" onClick={() => onMoTacPham(b.id, 'ban-thao', 1)}>
+              {CHU.docTacPham}
+            </button>
+            <button type="button" className="nutnho" onClick={() => onMoTacPham(b.id, 'nhap-xuat')}>
+              {CHU.xuatBan}
+            </button>
+          </>
+        ) : null}
+      </td>
     </tr>
   );
 }

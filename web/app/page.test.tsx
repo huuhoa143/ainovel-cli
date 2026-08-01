@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 
 import { snap } from '@/components/mau.test-helper';
@@ -15,6 +15,11 @@ import Trang, { Khu } from './page';
  * và một `useStudio` thật sẽ biến nó thành bài kiểm về khả năng giả lập `fetch` + `EventSource`
  * của jsdom — đo nhầm thứ, và hỏng vì những lý do không liên quan.
  */
+/**
+ * Hành động mở-tại-khu, giữ làm spy: mắt cuối của sợi dây Xưởng chỉ đo được ở đây.
+ */
+const MO_TAI = vi.fn();
+
 const STUDIO_GIA: Studio = {
   // `books` dựng lại từ chính `snap()` chứ không ép kiểu một object hai trường: thanh trên
   // đọc `b.activity` để vẽ đốm trạng thái, và một fixture ép kiểu làm `tsc` xanh trong khi
@@ -35,6 +40,7 @@ const STUDIO_GIA: Studio = {
   chonChuong: () => {},
   chonKhu: () => {},
   moTacPhamVuaTao: () => {},
+  moTacPhamTai: MO_TAI,
   docChuong: () => {},
   taiLai: () => {},
 };
@@ -76,6 +82,7 @@ function ve(khu: KhuMa, vanSong = BO_DEM_RONG) {
       onChonKhu={() => {}}
       onDocChuong={() => {}}
       onChonTacPham={() => {}}
+      onMoTacPham={() => {}}
       onXongTaoSach={() => {}}
       onChotCungDung={() => {}}
       nhapSan=""
@@ -139,6 +146,24 @@ test('`Trang` nối danh sách sách THẬT của studio xuống màn Xưởng',
   try {
     const { container } = render(<Trang />);
     expect(container.querySelector('.khuxuong tbody tr[data-ma="b"]')).not.toBeNull();
+  } finally {
+    STUDIO_GIA.khu = truoc;
+  }
+});
+
+test('`Trang` nối hành động mở-tại-khu THẬT của studio xuống nút `Mở` của Xưởng', () => {
+  // ĐO ĐƯỢC: thay `onMoTacPham={s.moTacPhamTai}` bằng một hàm rỗng thì cả 34 bài vẫn xanh.
+  // Bộ kiểm của `Xuong` truyền spy của chính nó vào, nên nó chỉ chứng minh component GỌI
+  // đúng — không chứng minh nó được nối vào hành động thật. Hệ quả: mọi nút trên bảng bấm
+  // vào không đi đâu cả, và không lỗi nào nổ ra. Cùng lớp với `vanSong={s.vanSong}` của cụm D
+  // và với `sach={s.workshop?.books}` ngay trên.
+  const truoc = STUDIO_GIA.khu;
+  STUDIO_GIA.khu = 'xuong';
+  MO_TAI.mockClear();
+  try {
+    const { container } = render(<Trang />);
+    fireEvent.click(container.querySelector<HTMLElement>('.khuxuong tbody tr[data-ma="b"] button')!);
+    expect(MO_TAI).toHaveBeenCalledWith('b', 'dong-san-xuat');
   } finally {
     STUDIO_GIA.khu = truoc;
   }

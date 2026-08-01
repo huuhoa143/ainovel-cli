@@ -25,6 +25,7 @@ import { nhanSuKienUi } from './dongSuKien';
 import { KHU_MAC_DINH, laKhu, type Khu } from './khu';
 import type { Profile, Snapshot, StreamEvent, Workshop } from './types';
 import { BO_DEM_RONG, moLuot, nhanVach, themChu, type BoDemVan } from './vanSong';
+import { cachMoTacPham } from './xuong';
 
 /** Số sự kiện giữ lại trong dòng. Nhật ký là cửa sổ, không phải log đầy đủ. */
 const GIU_SU_KIEN = 40;
@@ -115,6 +116,13 @@ export interface Studio {
   chonKhu: (k: Khu) => void;
   /** Mở tác phẩm vừa tạo: đổi tác phẩm + về bề mặt mặc định, một lần ghi URL. */
   moTacPhamVuaTao: (id: string) => void;
+  /**
+   * Mở một cuốn BẤT KỲ ở một bề mặt bất kỳ, một lần ghi URL.
+   *
+   * Bảng Xưởng cần nó vì mọi hành động trên dòng đều nhắm vào một cuốn KHÔNG phải cuốn đang
+   * xem — ghép từ `chonTacPham` rồi `chonKhu` sẽ ghi URL bằng cuốn cũ.
+   */
+  moTacPhamTai: (id: string, khu: Khu, chuong?: number) => void;
   /** Mở một chương để đọc: chọn chương + sang bề mặt đọc, một lần ghi URL. */
   docChuong: (n: number) => void;
   taiLai: () => void;
@@ -428,14 +436,50 @@ export function useStudio(): Studio {
     [napSnapshot],
   );
 
-  const moTacPhamVuaTao = useCallback((id: string) => {
-    setChuongChon(undefined);
-    setSnapshot(undefined);
-    setHoSo(undefined);
-    setTacPham(id);
-    setKhu(KHU_MAC_DINH);
-    ghiUrl(id, undefined, KHU_MAC_DINH);
-  }, []);
+  /**
+   * Mở một cuốn BẤT KỲ ở một bề mặt bất kỳ, trong MỘT hành động.
+   *
+   * Đây là dạng tổng quát của `moTacPhamVuaTao` ngay dưới, và bảng Xưởng cần đúng dạng tổng
+   * quát đó: mỗi dòng có `Mở` (→ buồng lái), và cuốn đã hoàn thành có thêm `Đọc` (→ bề mặt
+   * đọc, chương 1) và `Xuất bản` (→ Nhập & Xuất). Cả ba đều mở một cuốn KHÔNG phải cuốn đang
+   * xem, nên không cái nào ghép được từ các hành động sẵn có: `docChuong` và `chonKhu` đọc
+   * `tacPhamRef.current`, mà ref đó chỉ được đặt lại lúc render — gọi `chonTacPham(id)` rồi
+   * `docChuong(1)` trong cùng một handler sẽ ghi URL bằng cuốn CŨ. Lỗi đó đã đo được hai lần
+   * trong dự án này; hai chú thích ngay dưới ghi lại cả hai.
+   *
+   * Ba nhánh của `cachMoTacPham` (lib/xuong.ts) không thay thế nhau được, và nhánh giữa là
+   * nhánh làm treo màn hình — lý do đầy đủ nằm ở chú thích của hàm đó.
+   */
+  const moTacPhamTai = useCallback(
+    (id: string, k: Khu, chuong?: number) => {
+      const cach = cachMoTacPham(tacPhamRef.current, id, chuong);
+
+      setChuongChon(chuong);
+      setKhu(k);
+      setTacPham(id);
+      // Một lần ghi, cả ba mảnh. Hai lần ghi thì lần sau xóa tham số của lần trước.
+      ghiUrl(id, chuong, k);
+
+      if (cach === 'doi-cuon') {
+        // Effect §2 sẽ nạp lại vì `tacPham` đổi. Xóa để bề mặt không vẽ số của cuốn trước
+        // dưới tên cuốn sau.
+        setSnapshot(undefined);
+        setHoSo(undefined);
+        return;
+      }
+      if (cach === 'nap-lai') {
+        void napSnapshot(id, chuong).catch((e: unknown) => {
+          setLoi(e instanceof Error ? e.message : String(e));
+        });
+      }
+    },
+    [napSnapshot],
+  );
+
+  const moTacPhamVuaTao = useCallback(
+    (id: string) => moTacPhamTai(id, KHU_MAC_DINH),
+    [moTacPhamTai],
+  );
 
   const taiLai = useCallback(() => setLanTai((n) => n + 1), []);
 
@@ -457,6 +501,7 @@ export function useStudio(): Studio {
       chonChuong,
       chonKhu,
       moTacPhamVuaTao,
+      moTacPhamTai,
       docChuong,
       taiLai,
     }),
@@ -477,6 +522,7 @@ export function useStudio(): Studio {
       chonChuong,
       chonKhu,
       moTacPhamVuaTao,
+      moTacPhamTai,
       docChuong,
       taiLai,
     ],

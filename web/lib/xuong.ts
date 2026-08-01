@@ -82,3 +82,41 @@ export function khuDap(v: {
   if (v.tpTuUrl) return KHU_MAC_DINH;
   return v.soSach >= 2 ? 'xuong' : KHU_MAC_DINH;
 }
+
+/**
+ * Ba cách mở một cuốn từ bảng Xưởng, và chúng KHÔNG thay thế nhau được.
+ *
+ *   - `doi-cuon`    — cuốn khác cuốn đang xem. Xóa snapshot và hồ sơ, rồi để effect
+ *                     "snapshot của tác phẩm đang xem" trong `useStudio` nạp lại.
+ *   - `nap-lai`     — đúng cuốn đang xem, nhưng mở ở một chương cụ thể. Phải tự gọi
+ *                     `napSnapshot`, và tuyệt đối KHÔNG xóa snapshot.
+ *   - `chi-doi-khu` — đúng cuốn đang xem, không chọn chương. Chỉ là một cú điều hướng.
+ */
+export type CachMo = 'doi-cuon' | 'nap-lai' | 'chi-doi-khu';
+
+/**
+ * Mở cuốn nào, và mở bằng cách nào.
+ *
+ * # Vì sao đây là một hàm THUẦN chứ một nhánh `if` trong hành động
+ *
+ * Ca `nap-lai` làm TREO màn hình nếu xử nhầm, và nó không nhìn thấy được từ chỗ gọi. Effect
+ * nạp snapshot phụ thuộc `tacPham`; đặt lại CÙNG một giá trị không làm React chạy lại effect
+ * đó. Nên một hành động "mở cuốn" viết theo mẫu `moTacPhamVuaTao` — xóa snapshot rồi trông
+ * cậy effect nạp lại — sẽ để `snapshot === undefined` vĩnh viễn khi cuốn được mở đúng là cuốn
+ * đang xem, và `page.tsx` đứng mãi ở màn "đang đọc store…".
+ *
+ * `moTacPhamVuaTao` không gặp ca đó vì cuốn vừa tạo không bao giờ trùng cuốn đang xem. Bảng
+ * Xưởng thì gặp ngay lần bấm đầu tiên: cuốn đang mở LUÔN có một dòng trong bảng, và `Mở` trên
+ * chính dòng đó là cú bấm tự nhiên nhất.
+ *
+ * Tách ra đây để ca ấy có phép đo. Nằm trong hook thì nó chỉ đo được bằng cách giả lập cả
+ * `fetch` lẫn `EventSource`, tức bằng một bài kiểm đo nhầm thứ.
+ */
+export function cachMoTacPham(
+  cuonDangXem: string | undefined,
+  muonMo: string,
+  chuong: number | undefined,
+): CachMo {
+  if (cuonDangXem !== muonMo) return 'doi-cuon';
+  return chuong === undefined ? 'chi-doi-khu' : 'nap-lai';
+}

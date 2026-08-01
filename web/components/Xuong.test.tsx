@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { expect, test } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { expect, test, vi } from 'vitest';
 
 import { CHU } from '@/lib/nhan';
 
@@ -18,7 +18,7 @@ import { sach } from './mau.test-helper';
  * của cụm B, dịch sang bộ kiểm.
  */
 function ve(...s: Parameters<typeof sach>[0][]) {
-  return render(<Xuong sach={s.map((p) => sach(p))} />);
+  return render(<Xuong sach={s.map((p) => sach(p))} onMoTacPham={() => {}} />);
 }
 
 /** Chữ của từng ô trong dải tổng, theo đúng thứ tự vẽ. */
@@ -159,4 +159,68 @@ test('bề mặt nói ra vì sao KHÔNG có nút chạy ở đây', () => {
   // phải tự lấp bằng phỏng đoán. Khẳng định "không có nút chạy" nằm ở Task 5.
   const { container } = ve({ id: 'a' });
   expect(container.textContent).toContain('một đường tiêu tiền duy nhất');
+});
+
+/* ── hành động trên mỗi dòng ──────────────────────────────────────────── */
+
+test('cuốn chưa xong chỉ có `Mở`, và `Mở` đi tới buồng lái của ĐÚNG cuốn đó', () => {
+  const mo = vi.fn();
+  const { container } = render(
+    <Xuong sach={[sach({ id: 'a' }), sach({ id: 'b', phase: 'writing' })]} onMoTacPham={mo} />,
+  );
+
+  const nut = [...dong(container, 'b').querySelectorAll('button')].map((n) => n.textContent);
+  expect(nut).toEqual([CHU.moTacPham]);
+
+  fireEvent.click(dong(container, 'b').querySelector('button')!);
+  // Mã cuốn phải là mã của DÒNG, không phải cuốn đang xem. Đây là chỗ lỗi ref-trễ đã đo được
+  // hai lần trong dự án này rơi vào.
+  expect(mo).toHaveBeenCalledWith('b', 'dong-san-xuat');
+});
+
+test('cuốn đã hoàn thành có đủ ba: Mở · Đọc · Xuất bản', () => {
+  const mo = vi.fn();
+  const { container } = render(
+    <Xuong sach={[sach({ id: 'xong', phase: 'complete' })]} onMoTacPham={mo} />,
+  );
+
+  const nut = [...dong(container, 'xong').querySelectorAll('button')];
+  expect(nut.map((n) => n.textContent)).toEqual([CHU.moTacPham, CHU.docTacPham, CHU.xuatBan]);
+
+  fireEvent.click(nut[1]!);
+  // Chương 1 đi CÙNG lời gọi, không phải một lời gọi thứ hai: hai lần ghi URL thì lần sau
+  // xóa tham số của lần trước, và `?ch=` là thứ bị mất.
+  expect(mo).toHaveBeenLastCalledWith('xong', 'ban-thao', 1);
+
+  fireEvent.click(nut[2]!);
+  expect(mo).toHaveBeenLastCalledWith('xong', 'nhap-xuat');
+});
+
+test('KHÔNG có nút Chạy, Dừng, Xóa hay Đổi tên trên bề mặt này', () => {
+  // Hàng rào chống một lần "tiện tay thêm nút" trong tương lai, và nó canh HAI quyết định đã
+  // chốt của spec §4:
+  //
+  //   4 — chạy chỉ có ở transport, một đường tiêu tiền duy nhất. Hai nút cùng gọi POST /run
+  //       thì trạng thái khóa-lúc-đang-gửi của chúng không thấy nhau, nên bấm cả hai là trả
+  //       tiền hai lần. Và đây là bề mặt người ta QUÉT MẮT, không phải bề mặt để quyết định.
+  //   8 — xóa một cuốn là xóa hàng giờ chạy và hàng chục đô; việc đó để ở hệ tệp, nơi thấy
+  //       rõ mình đang phá cái gì.
+  //
+  // Dựng đủ cả cuốn đang chạy lẫn cuốn đã xong: nút chạy, nếu ai đó thêm, nhiều khả năng chỉ
+  // hiện ở một trong hai ca.
+  render(
+    <Xuong
+      sach={[
+        sach({ id: 'a', phase: 'writing', engine_open: true }),
+        sach({ id: 'b', phase: 'complete' }),
+      ]}
+      onMoTacPham={() => {}}
+    />,
+  );
+
+  const nhan = screen.getAllByRole('button').map((n) => n.textContent ?? '');
+  expect(nhan.length).toBeGreaterThan(0);
+  for (const t of nhan) {
+    expect(t).not.toMatch(/chạy|dừng|xoá|xóa|đổi tên/i);
+  }
 });
