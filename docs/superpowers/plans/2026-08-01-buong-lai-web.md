@@ -1457,3 +1457,60 @@ Giữ nguyên chú thích hiện có về việc tab không dùng transition ẩ
 
 Người thi hành ghi vào đây: kết quả phép thử đột biến từng cụm, lỗ hổng phát hiện được, và
 mọi chỗ kế hoạch này SAI. Kế hoạch sai là chuyện bình thường; giấu chuyện đó mới không.
+
+---
+
+### Cụm A (Task 1–5) — thi hành xong
+
+**Phép thử đột biến, Task 4** (mã sản xuất bị sửa, chạy `lib/vanSong.test.ts`, rồi hoàn nguyên):
+
+| # | Đột biến | Kết quả | Bài kiểm bắt được |
+|---|---|---|---|
+| 1 | `luot.slice(luot.length - SO_LUOT_GIU)` → `luot.slice(0, SO_LUOT_GIU)` | ĐỎ | "quá SO_LUOT_GIU lượt thì bỏ lượt CŨ NHẤT" |
+| 2 | `luot.length > 1` → `luot.length > 0` | ĐỎ | "MỘT lượt vượt trần thì không xóa sạch" |
+| 3 | `chu.slice(chu.length - CO_TOI_DA)` → `chu.slice(0, CO_TOI_DA)` | **XANH — LỖ HỔNG** | không bài nào |
+| 4 | `moLuot` bỏ nhánh lượt-rỗng | ĐỎ | "hai lệnh xóa liền nhau không để lại lượt rỗng" |
+| 5 (thêm) | `themChu`: `cuoi.chu + chu` → `chu` | ĐỎ | "mẩu kế tiếp nối vào lượt hiện tại" |
+| 6 (thêm) | `themChu` bỏ `if (!chu) return bd;` | **XANH — LỖ HỔNG** | không bài nào |
+
+**Lỗ hổng 3 — bài kiểm của chính kế hoạch này không canh được điều nó nói mình canh.**
+Bài "MỘT lượt vượt trần thì không xóa sạch — cắt từ ĐẦU lượt đó" dựng chuỗi bằng
+`'y'.repeat(CO_TOI_DA + 5000)`, tức MỘT ký tự lặp lại. Cắt đầu và cắt cuối cho ra hai chuỗi
+KHÁC NHAU nhưng cả hai đều `endsWith('y')` và đều đúng độ dài, nên khẳng định "giữ phần CUỐI"
+trong bài đó không đo được gì. Bịt bằng bài mới **"cắt một lượt quá trần phải bỏ phần ĐẦU,
+giữ phần CUỐI"**: chuỗi có đầu và cuối phân biệt được. Đã chạy lại đột biến 3 sau khi bịt → ĐỎ.
+
+**Lỗ hổng 6 — một nhánh phòng thủ không có bài kiểm nào.** Bỏ `if (!chu) return bd;` thì cả bộ
+vẫn xanh, trong khi hệ quả là thật: mẩu rỗng mở một lượt TRỐNG, rồi `moLuot` kế tiếp gắn nhãn
+vào đúng lượt trống đó (nhánh lượt-rỗng) thay vì mở lượt mới — vạch ngăn đầu tiên của phiên
+xem bị dời lên trên một lượt chưa có chữ nào. Bịt bằng bài **"mẩu rỗng không mở lượt ma, và
+không nuốt vạch ngăn kế tiếp"**. Chạy lại đột biến 6 → ĐỎ.
+
+Task 1 cũng được thử đột biến dù kế hoạch không đòi, vì cái đỏ duy nhất của nó là "không
+resolve được module" — thứ đó không chứng minh gì về từng khẳng định:
+`typeof ev.seq !== 'number'` → `ev.seq == null` cho ĐỎ ở bài "seq không phải số";
+`ev.seq <= mocSeq` → `<` cho ĐỎ ở bài "sự kiện cũ hoặc trùng bị bỏ".
+
+**Chỗ kế hoạch sai hoặc thiếu:**
+
+1. **Bài kiểm ở Task 4 không canh được hướng cắt** (lỗ hổng 3 ở trên). Số bài kiểm thực tế của
+   `vanSong.test.ts` sau Task 5 là **14**, không phải 12 như kế hoạch ghi.
+2. **Task 5 Bước 6 bảo `git add web/lib/nhan.ts`, nhưng Task 5 không sửa `nhan.ts`.** `nhanVach`
+   chỉ ĐỌC `CHU.chuong` sẵn có. Không có nhãn mới nào cần thêm ở cụm này.
+3. **`npm run build` KHÔNG chạy được trong worktree này, và không phải vì mã.** Turbopack (mặc
+   định của Next 16) từ chối `web/node_modules` vì nó là symlink trỏ ra ngoài gốc dự án:
+   `Symlink [project]/node_modules is invalid, it points out of the filesystem root`.
+   Đã đo trên mã NỀN (stash hết thay đổi): hỏng y hệt → môi trường, không phải hồi quy.
+   `npx next build --webpack` exit 0. Cổng "build exit 0" của các cụm sau cần biết điều này.
+4. **`web/node_modules` KHÔNG nằm trong `.gitignore`** (`git check-ignore` không khớp), nên nó
+   hiện ra là tệp chưa theo dõi. Một lệnh `git add -A` của bất kỳ ai sẽ nuốt 425MB vào commit.
+5. `LOAI_SU_KIEN` sau khi tách không còn nơi dùng (chỉ còn là khai báo hợp đồng đầy đủ). Giữ
+   nguyên theo kế hoạch, nhưng nó là mã chết cho tới khi có người dùng lại.
+6. Chú thích đầu `internal/serve/web_chu_test.go:15` nói "`web/` cố ý không có bộ chạy test" —
+   câu đó đã sai từ `61bc31e` (vitest được dựng ở đó), trước cụm này. Không sửa vì nằm ngoài
+   phạm vi Task 1–5; ghi ra để người làm cụm sau nhặt.
+
+**Cổng sau Task 5** (chạy toàn bộ, không lọc gói, không `-x`):
+`go build` 0 · `go vet` 0 · `gofmt -l .` rỗng · `go test -count=1 ./...` **30 gói ok / 0 FAIL**
+(đúng nền) · `npm test` **20/20** (nền 2/2) · `tsc --noEmit` 0 lỗi ·
+`next build --webpack` exit 0 · `npm run build` exit 1 (Turbopack, xem mục 3).
