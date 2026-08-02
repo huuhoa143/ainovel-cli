@@ -146,3 +146,65 @@ test('bấm nhãn chế độ ở chế độ tự chạy thì bật nghiệm th
   expect(DOI_CHE_DO).toHaveBeenCalledWith('tran-yeu-ky', 'review');
   await waitFor(() => expect(ON_DOI).toHaveBeenCalled());
 });
+
+/* ── "Chạy tiếp" ở ca tạm dừng ──────────────────────────────────────────
+ *
+ * `runtime === 'paused'` nghĩa còn một lượt DỞ đang treo, khác hẳn `idle` (engine mở, rỗng
+ * việc). Hai ca đó dẫn tới hai câu khác nhau cho cùng một nút, và người vận hành cần đúng
+ * câu ấy trước khi bấm một thứ tiêu tiền: "Chạy" nghe như bắt đầu một lượt mới, còn thực tế
+ * engine sẽ đi tiếp từ chỗ đang dở.
+ */
+
+test('runtime=paused thì nút hạng nhất là "Chạy tiếp", không phải "Chạy"', () => {
+  ve({ runtime: 'paused', advance: { ...AUTO } });
+  expect(screen.getByRole('button', { name: `▶ ${CHU.chayTiep}` })).toBeDefined();
+  expect(screen.queryByRole('button', { name: `▶ ${CHU.chay}` })).toBeNull();
+});
+
+test('runtime=idle vẫn là "Chạy" — hai ca không được gộp', () => {
+  // Vế ngược, và nó chịu lực: đổi nhãn thành "Chạy tiếp" ở MỌI ca cũng làm bài trên xanh,
+  // rồi một cuốn chưa viết chữ nào mời bạn "chạy tiếp" từ hư không.
+  ve({ runtime: 'idle', advance: { ...AUTO } });
+  expect(screen.getByRole('button', { name: `▶ ${CHU.chay}` })).toBeDefined();
+  expect(screen.queryByRole('button', { name: `▶ ${CHU.chayTiep}` })).toBeNull();
+});
+
+test('runtime=pausing thì KHÓA nút hạng nhất — lệnh dừng đã nhận rồi', () => {
+  // Bấm Chạy giữa lúc engine đang thu dọn là một lượt gọi chắc chắn thất bại hoặc tệ hơn là
+  // một lượt chạy chồng lên một lượt đang tắt.
+  ve({ runtime: 'pausing', advance: { ...AUTO } }, true);
+  const nut = screen.queryByRole('button', { name: `■ ${CHU.dung}` });
+  expect(nut).not.toBeNull();
+  expect((nut as HTMLButtonElement).disabled).toBe(true);
+});
+
+/* ── thứ tự nút: hạng nhất SÁT MÉP PHẢI ─────────────────────────────────
+ *
+ * jsdom không bố cục nên đây là phép đo về THỨ TỰ DOM, không về toạ độ — vị trí thật đã đo
+ * trên trình duyệt (bản cũ: nút Chạy dịch 107px khi bộ nút đổi từ 3 sang 4; bản mới: 0px).
+ * Nhưng thứ tự DOM chính là thứ giữ toạ độ đứng yên, nên nó canh được đúng cái luật.
+ *
+ * Vì sao hạng nhất đứng cuối: cụm nút đã ghim mép phải rồi, nhưng nút hạng nhất đứng ĐẦU cụm
+ * thì mỗi nút phụ thêm vào lại đẩy nó sang trái. Chạy và Dừng loại trừ nhau nên chúng dùng
+ * chung một ô neo — đúng như bàn transport của DAW, nơi play–stop là một chỗ cố định.
+ */
+
+function tenNutTheoThuTu() {
+  return [...document.querySelectorAll('.dieukhien button')].map((b) => b.textContent);
+}
+
+test('nút hạng nhất luôn là nút CUỐI, ở cả bốn bộ nút', () => {
+  const boCanKiem: [string, Partial<Snapshot>, boolean, string][] = [
+    ['engine đóng', {}, false, `▶ ${CHU.chay}`],
+    ['mở · tự chạy', { advance: { ...AUTO } }, false, `▶ ${CHU.chay}`],
+    ['mở · nghiệm thu', { advance: { ...REVIEW } }, false, `▶ ${CHU.chay}`],
+    ['đang chạy · nghiệm thu', { advance: { ...REVIEW } }, true, `■ ${CHU.dung}`],
+  ];
+  for (const [ten, p, chay, cuoi] of boCanKiem) {
+    cleanup();
+    ve(p, chay);
+    const ds = tenNutTheoThuTu();
+    expect(ds.length, ten).toBeGreaterThan(0);
+    expect(ds[ds.length - 1], ten).toBe(cuoi);
+  }
+});

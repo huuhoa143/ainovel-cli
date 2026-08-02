@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, test } from 'vitest';
 
-import { CHU } from '@/lib/nhan';
+import { CHU, GIAI_THICH } from '@/lib/nhan';
 import { BO_DEM_RONG, SO_LUOT_GIU, moLuot, themChu } from '@/lib/vanSong';
 
 import { VanSong } from './VanSong';
@@ -110,7 +110,9 @@ test('tên vùng KHÔNG đổi theo trạng thái máy, tiêu đề thì có', (
   rerender(<VanSong boDem={bd} dangChay={false} />);
 
   expect(screen.getByRole('region', { name: CHU.vanSongVung })).toBeDefined();
-  expect(screen.getByRole('heading', { name: CHU.mayNghi })).toBeDefined();
+  // Bộ đệm ở bài này CÓ chữ (`themChu(..., 'x')`), nên tiêu đề của ca nghỉ là "văn của lượt
+  // gần nhất", không phải "chưa có văn nào" — xem ba ca ở `VanSong.tsx`.
+  expect(screen.getByRole('heading', { name: CHU.vanLuotGanNhat })).toBeDefined();
 });
 
 /** jsdom không bố cục nên ba số cuộn đều là 0; đặt tay để mô phỏng một khu đã cuộn. */
@@ -209,10 +211,22 @@ test('máy nghỉ mà bộ đệm CÒN chữ thì giữ nguyên chữ, chỉ đ�
   render(<VanSong boDem={bd} dangChay={false} />);
 
   expect(screen.getByText('khế ước: ✓ 4/4 · 1.874 từ')).toBeDefined();
-  expect(screen.getByRole('heading', { name: /máy đang nghỉ/i })).toBeDefined();
+  // Tiêu đề nói về BỘ ĐỆM, không về máy — và ca này là ca thứ ba, tách khỏi ca bộ đệm rỗng.
+  // Bài này chính là bài bắt được bản sửa đầu của tôi, khi mọi ca "nghỉ" dùng chung câu
+  // "Chưa có văn nào trong phiên này" — tức một câu phủ nhận đống chữ ngay dưới nó.
+  expect(screen.getByRole('heading', { name: CHU.vanLuotGanNhat })).toBeDefined();
+  expect(screen.queryByRole('heading', { name: CHU.mayNghi })).toBeNull();
+});
+
+test('máy nghỉ và bộ đệm RỖNG thì nói chưa có văn — ca thứ hai, không lẫn với ca trên', () => {
+  render(<VanSong boDem={BO_DEM_RONG} dangChay={false} />);
+  expect(screen.getByRole('heading', { name: CHU.mayNghi })).toBeDefined();
 });
 
 test('máy nghỉ và bộ đệm rỗng thì nói việc tiếp theo, không nói "chờ chữ"', () => {
   render(<VanSong boDem={BO_DEM_RONG} dangChay={false} />);
-  expect(screen.getByText(/bấm chạy ở thanh dưới/i)).toBeDefined();
+  // Khớp qua chính chuỗi trong từ điển, không viết lại nó thành một regex thứ hai: bản
+  // trước dò `/bấm chạy ở thanh dưới/i` và nó đỏ khi câu thêm ký hiệu `▶` — đỏ vì một chi
+  // tiết chính tả, không vì điều đang canh (dải rỗng phải nói VIỆC TIẾP THEO).
+  expect(screen.getByText(GIAI_THICH.vanSongNghi)).toBeDefined();
 });

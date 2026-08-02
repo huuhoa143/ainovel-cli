@@ -72,8 +72,21 @@ export function VanSong({ boDem, dangChay }: { boDem: BoDemVan; dangChay: boolea
 
   return (
     <section className="vansong" aria-label={CHU.vanSongVung}>
+      {/* BA tiêu đề, không hai — và cái thứ ba là một lỗi mà bài kiểm cũ bắt được.
+          Khu này nói về BỘ ĐỆM của phiên xem, không về máy (xem `CHU.mayNghi`). Nhưng khi
+          máy nghỉ mà bộ đệm CÒN chữ thì "chưa có văn nào" là một câu sai ngay trên đống chữ
+          nó vừa phủ nhận. Ba ca, ba câu:
+            đang chạy            → máy đang nói
+            nghỉ + bộ đệm rỗng   → chưa có văn nào trong phiên này
+            nghỉ + bộ đệm có chữ → văn của lượt gần nhất  */}
       <div className="vshead">
-        <h2>{dangChay ? CHU.mayDangNoi : CHU.mayNghi}</h2>
+        <h2>
+          {dangChay
+            ? CHU.mayDangNoi
+            : boDem.luot.length === 0
+              ? CHU.mayNghi
+              : CHU.vanLuotGanNhat}
+        </h2>
       </div>
       <div className="vsthan" ref={thanRef} onScroll={theoCuon}>
         {boDem.luot.length === 0 ? (

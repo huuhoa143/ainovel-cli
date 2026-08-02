@@ -12,6 +12,7 @@ import {
   moMay,
 } from '@/lib/api';
 import { CHU, GIAI_THICH } from '@/lib/nhan';
+import { mayNaoDo } from '@/lib/song';
 import type { Snapshot } from '@/lib/types';
 
 /**
@@ -119,6 +120,17 @@ export function DieuKhien({
   const bietCheDo = snapshot.advance !== null;
   const choNghiemThu = snapshot.advance?.mode === 'review';
 
+  // Trạng thái engine đã hợp nhất — CÙNG hàm mà thanh transport và `mayDangChay` dùng. Đọc
+  // thẳng `snapshot.runtime` ở đây sẽ dựng lại đúng bản-thứ-hai vừa bị gỡ bỏ ở Transport.
+  const khoaMay = mayNaoDo(snapshot.runtime, snapshot.book.activity);
+  // `paused` = còn một lượt dở đang treo, nên nút nói "Chạy tiếp": bấm là ĐI TIẾP chứ không
+  // bắt đầu lại. `idle` (engine mở, rỗng việc) giữ nguyên "Chạy" — gộp hai ca là để một cuốn
+  // chưa viết chữ nào mời người dùng "chạy tiếp" từ hư không.
+  const nhanChay = khoaMay === 'paused' ? CHU.chayTiep : CHU.chay;
+  // `pausing` = lệnh Dừng đã nhận, engine đang thu dọn. Bấm thêm không nhanh hơn, và tệ hơn
+  // là một lượt chạy chồng lên một lượt đang tắt.
+  const dangThuDon = khoaMay === 'pausing';
+
   return (
     <div className="dieukhien" role="group" aria-label={CHU.dieuKhien}>
       {loi ? (
@@ -141,18 +153,8 @@ export function DieuKhien({
         //
         // "Mở máy" vẫn còn vì lý do nó ra đời: gắn engine KHÔNG gọi model lần nào, nên đó là
         // đường sửa model theo vai mà không tiêu tiền. Nó chỉ thôi làm nút duy nhất.
+        // Nút hạng nhất đứng CUỐI, tức sát mép phải — xem `dkChay` ở nhánh dưới.
         <>
-          <button
-            type="button"
-            className="dkNut dkChay"
-            disabled={khoa}
-            title={GIAI_THICH.taoSachSeTieuTien}
-            onClick={() =>
-              goi('chay', () => chaySach(tacPham).then(() => datMoMay(true)))
-            }
-          >
-            {dangGui === 'chay' ? CHU.dangGui : `▶ ${CHU.chay}`}
-          </button>
           <button
             type="button"
             className="dkNut dkPhu"
@@ -162,32 +164,20 @@ export function DieuKhien({
           >
             {dangGui === 'mo' ? CHU.dangGui : CHU.moMay}
           </button>
+          <button
+            type="button"
+            className="dkNut dkChay"
+            disabled={khoa}
+            title={GIAI_THICH.taoSachSeTieuTien}
+            onClick={() =>
+              goi('chay', () => chaySach(tacPham).then(() => datMoMay(true)))
+            }
+          >
+            {dangGui === 'chay' ? CHU.dangGui : `▶ ${nhanChay}`}
+          </button>
         </>
       ) : (
         <>
-          {/* Chạy và Dừng loại trừ nhau theo trạng thái thật, không phải hai nút luôn
-              hiện: một nút Dừng bấm được khi không có gì chạy là một nút nói dối. */}
-          {dangChay ? (
-            <button
-              type="button"
-              className="dkNut dkDung"
-              disabled={khoa}
-              onClick={() => goi('dung', () => dungSach(tacPham))}
-            >
-              {dangGui === 'dung' ? CHU.dangGui : `■ ${CHU.dung}`}
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="dkNut dkChay"
-              disabled={khoa}
-              title={GIAI_THICH.taoSachSeTieuTien}
-              onClick={() => goi('chay', () => chaySach(tacPham))}
-            >
-              {dangGui === 'chay' ? CHU.dangGui : `▶ ${CHU.chay}`}
-            </button>
-          )}
-
           {/* Cho đi tiếp CHỈ có nghĩa ở chế độ nghiệm thu. Ở chế độ tự chạy engine không
               chờ giấy phép nào, nên một nút cấp phép ở đó không làm gì cả. */}
           {choNghiemThu ? (
@@ -236,6 +226,37 @@ export function DieuKhien({
           >
             {dangGui === 'dong' ? CHU.dangGui : CHU.dongMay}
           </button>
+
+          {/* Ô NEO của nút hạng nhất — CUỐI cụm, tức sát mép phải.
+              Chạy và Dừng loại trừ nhau theo trạng thái thật, không phải hai nút luôn hiện:
+              một nút Dừng bấm được khi không có gì chạy là một nút nói dối. Vì loại trừ nhau
+              nên chúng dùng chung MỘT ô, và ô đó là chỗ cố định duy nhất của cả thanh.
+
+              Đứng cuối chứ không đứng đầu, và đây là một lỗi ĐO ĐƯỢC: ghim cả cụm nút vào mép
+              phải vẫn để nút Chạy dịch 107px khi bộ nút đổi từ 3 sang 4, vì mỗi nút phụ thêm
+              vào lại đẩy nó sang trái. Ghim cụm là chưa đủ; phải ghim đúng cái nút ấy — đúng
+              như bàn transport của DAW, nơi play–stop là một chỗ không bao giờ đổi. */}
+          {dangChay ? (
+            <button
+              type="button"
+              className="dkNut dkDung"
+              disabled={khoa || dangThuDon}
+              title={dangThuDon ? GIAI_THICH.dangThuDon : undefined}
+              onClick={() => goi('dung', () => dungSach(tacPham))}
+            >
+              {dangGui === 'dung' ? CHU.dangGui : `■ ${CHU.dung}`}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="dkNut dkChay"
+              disabled={khoa || dangThuDon}
+              title={dangThuDon ? GIAI_THICH.dangThuDon : GIAI_THICH.taoSachSeTieuTien}
+              onClick={() => goi('chay', () => chaySach(tacPham))}
+            >
+              {dangGui === 'chay' ? CHU.dangGui : `▶ ${nhanChay}`}
+            </button>
+          )}
         </>
       )}
     </div>

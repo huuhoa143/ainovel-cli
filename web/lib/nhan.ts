@@ -23,6 +23,7 @@ import type {
   Activity,
   BlockState,
   MarkState,
+  Runtime,
   Stage,
 } from './types';
 
@@ -71,9 +72,20 @@ export const TRANG_THAI_CHUONG: Record<Stage, NhanTrangThai> = {
 
 /* ── khối trên trục sản xuất (tập, cung) ──────────────────────────────── */
 
+/**
+ * `running` ở đây là "đang mở", KHÔNG phải "đang chạy" — và khoảng cách giữa hai chữ đó là
+ * cả một lỗi ĐO ĐƯỢC.
+ *
+ * Khối trên trục là một CON TRỎ: nó trả lời "công trình đang ở tập nào, cung nào". Nguồn là
+ * `timeline.volumes[].status` trong store, và store vẫn giữ `running` sau khi engine đã tắt
+ * — nên chữ "đang chạy" ở đây là một khẳng định về MÁY mà nguồn của nó không bảo đảm nổi.
+ *
+ * ĐO ĐƯỢC 2026-08-02: trục ghi "T1 · đang chạy" và "C1 · đang chạy" trong khi hero ngay trên
+ * nó ghi "Máy đang nghỉ" và `runtime` thật là `paused`. Ba câu, một màn hình, cùng một giây.
+ */
 export const TRANG_THAI_KHOI: Record<BlockState, NhanTrangThai> = {
   done: { nhan: 'xong', ky: '●', mau: 'teal' },
-  running: { nhan: 'đang chạy', ky: '▶', mau: 'gold' },
+  running: { nhan: 'đang mở', ky: '▶', mau: 'gold' },
   planned: { nhan: 'đã quy hoạch', ky: '◇', mau: 'muted' },
   unplanned: { nhan: 'chờ mở', ky: '□', mau: 'muted' },
 };
@@ -88,12 +100,46 @@ export const TRANG_THAI_VACH: Record<MarkState, NhanTrangThai> = {
   pending: { nhan: 'chưa tới', ky: '○', mau: 'muted' },
 };
 
-/* ── trạng thái máy (thanh transport, slate ở thanh trên) ─────────────── */
+/* ── trạng thái máy ───────────────────────────────────────────────────── */
 
+/**
+ * Bảng theo `Activity` — dành cho những chỗ CHỈ có `activity`, tức slate thanh trên và
+ * danh sách chọn tác phẩm, nơi mỗi dòng là một cuốn KHÁC cuốn đang mở nên không có
+ * `runtime` nào để hỏi.
+ *
+ * Thanh transport thì KHÔNG dùng bảng này nữa — xem `TRANG_THAI_MAY_RUNTIME` ngay dưới.
+ */
 export const TRANG_THAI_MAY: Record<Activity, NhanTrangThai> = {
   running: { nhan: 'đang chạy', ky: '▶', mau: 'gold' },
   idle: { nhan: 'đang nghỉ', ky: '○', mau: 'muted' },
   complete: { nhan: 'đã xong', ky: '●', mau: 'teal' },
+};
+
+/**
+ * Bảng theo `Runtime` — cho thanh transport, chỗ DUY NHẤT nói máy còn sống hay không.
+ *
+ * # Vì sao cần bảng thứ hai thay vì dùng lại bảng trên
+ *
+ * `Activity` có ba giá trị, `Runtime` có năm. Hai giá trị dôi ra không phải chi tiết kỹ
+ * thuật — chúng là hai câu người vận hành cần đọc được:
+ *
+ *   `paused`  — còn một lượt DỞ đang treo. Bấm Chạy là ĐI TIẾP, không phải bắt đầu lại.
+ *   `pausing` — lệnh Dừng đã nhận, engine đang thu dọn. Bấm nữa không nhanh hơn.
+ *
+ * Ép năm vào ba là mất cả hai câu, và ĐO ĐƯỢC là nó mất theo hướng tệ nhất: `paused` rơi
+ * vào "đang chạy" (2026-08-02, xem `mayNaoDo`), tức thanh dưới khẳng định máy đang tiêu
+ * tiền trong khi nó đang đứng im.
+ *
+ * `‖` cho cả hai trạng thái dừng, và `--amber` chứ không `--red`: chép nguyên luật đã ghi
+ * ở `.dkNut.dkDung` trong globals.css — đỏ trong hệ này nghĩa là LỖI, mà dừng có chủ ý
+ * không phải lỗi.
+ */
+export const TRANG_THAI_MAY_RUNTIME: Record<Runtime, NhanTrangThai> = {
+  running: { nhan: 'đang chạy', ky: '▶', mau: 'gold' },
+  pausing: { nhan: 'đang dừng…', ky: '‖', mau: 'amber' },
+  paused: { nhan: 'tạm dừng', ky: '‖', mau: 'amber' },
+  idle: { nhan: 'đang nghỉ', ky: '○', mau: 'muted' },
+  completed: { nhan: 'đã xong', ky: '●', mau: 'teal' },
 };
 
 /* ── vai trong tổ sản xuất ────────────────────────────────────────────── */
@@ -524,8 +570,38 @@ export const CHU = {
   // thanh trên
   chonTacPham: 'Chọn tác phẩm',
   tacPhamKhac: 'Các tác phẩm khác trong xưởng',
-  demTacPham: (tong: number, dangChay: number) =>
-    `${tong} tác phẩm · ${dangChay} đang chạy`,
+  /**
+   * "N tác phẩm · M cuốn có việc" — cố ý KHÔNG dùng chữ "đang chạy".
+   *
+   * Slate đếm theo `book.activity` của TỪNG cuốn, tức "có dấu vết sản xuất gần đây" suy từ
+   * mốc checkpoint. Với cuốn đang mở, con số đó mâu thuẫn được với thanh dưới — ĐO ĐƯỢC
+   * 2026-08-02: slate ghi "1 đang chạy" trong khi `runtime` của chính cuốn ấy là `paused`.
+   * Hai bên đọc hai trường khác nhau nên chúng LỆCH được, và đó là đúng: chúng nói hai
+   * chuyện. Dùng chung một bộ từ mới là chỗ sai.
+   *
+   * Bỏ hẳn vế sau khi không có cuốn nào: "0 cuốn có việc" là một câu thừa chiếm chỗ trên
+   * một thanh đã chật (ĐO ĐƯỢC ở 390px: thanh trên chỉ còn 12px dư).
+   */
+  demTacPham: (tong: number, coViec: number) =>
+    coViec > 0 ? `${tong} tác phẩm · ${coViec} cuốn có việc` : `${tong} tác phẩm`,
+
+  /* ── chip kết nối (góc trên phải) ──────────────────────────────────────────
+   *
+   * Bốn trạng thái, và cả bốn phải cùng một DẠNG CÂU. Bản trước là
+   * `dòng sự kiện · đang mở dòng · mất kết nối · chưa mở dòng`: ba cái sau là câu trạng
+   * thái, cái đầu là một danh từ — mà đó lại là trạng thái khoẻ, tức trạng thái người dùng
+   * thấy 99% thời gian. Người dùng nói nguyên văn: "có chữ Dòng sự kiện ở trên không biết
+   * như thế nào". Đúng vậy: ở trạng thái tốt nhất, chip là chỗ duy nhất không nói trạng
+   * thái gì — nó đọc thành một cái nhãn, hoặc một cái nút.
+   *
+   * Và cả bốn nói về TRÌNH DUYỆT (kênh SSE có nối được không), không về engine. Nên không
+   * câu nào được mượn chữ của trạng thái máy — xem `TRANG_THAI_MAY_RUNTIME`. Phạm vi ấy đi
+   * vào chú giải, vì bản thân chữ "đã nối" không tự nói ra nối cái gì. */
+  ketNoiSong: 'đã nối',
+  ketNoiDangMo: 'đang nối',
+  ketNoiMat: 'mất kết nối',
+  /** Xưởng rỗng: không có tác phẩm nên không mở dòng nào. Khác hẳn "đang nối". */
+  ketNoiChua: 'chưa mở dòng',
 
   // rail
   xuong: 'Xưởng',
@@ -585,6 +661,14 @@ export const CHU = {
   tiemVaoLuotDangChay: 'Tiêm vào lượt đang chạy',
   danhThucLuotMoi: 'Đánh thức lượt mới',
   chay: 'Chạy',
+  /**
+   * Nhãn riêng cho ca `runtime === 'paused'`, tức còn một lượt DỞ đang treo.
+   *
+   * Không dùng chung với `chay`: "Chạy" đọc ra là bắt đầu một lượt mới, còn thực tế engine
+   * sẽ đi tiếp từ chỗ đang dở. Trên một nút tiêu tiền, khoảng cách giữa hai câu đó là
+   * khoảng cách người vận hành cần biết trước khi bấm.
+   */
+  chayTiep: 'Chạy tiếp',
   dung: 'Dừng',
   choDiTiep: 'Cho đi tiếp 1 chương',
   cheDoNghiemThu: 'Nghiệm thu từng chương',
@@ -664,10 +748,19 @@ export const CHU = {
     tong > 0
       ? `Máy đang viết · ${xong}/${tong} chương đã chốt`
       : `Máy đang viết · ${xong} chương đã chốt`,
+  /**
+   * Dải "việc tiếp theo" KHÔNG khai lại trạng thái máy — nó nói TIẾN ĐỘ.
+   *
+   * Bản trước mở đầu bằng "Máy đang nghỉ", và ĐO ĐƯỢC 2026-08-02 nó sai theo hai lớp cùng
+   * lúc: `runtime` thật là `paused` (tức "tạm dừng", còn một lượt treo — khác hẳn "nghỉ"),
+   * và thanh dưới cách đó 750px lại đang nói một câu khác về cùng cỗ máy.
+   *
+   * Dải này không đọc `runtime` và không nên giả vờ đọc. Nó biết một điều mà thanh dưới
+   * không biết — đã chốt bao nhiêu chương và việc kế là gì — nên đó là điều nó nói. Câu
+   * trạng thái có đúng MỘT chỗ giữ: thanh dưới cùng.
+   */
   ttNghi: (xong: number, tong: number) =>
-    tong > 0
-      ? `Máy đang nghỉ · ${xong}/${tong} chương đã chốt`
-      : `Máy đang nghỉ · ${xong} chương đã chốt`,
+    tong > 0 ? `${xong}/${tong} chương đã chốt` : `${xong} chương đã chốt`,
   ttXong: (chuong: number, tu: string) => `Truyện đã viết xong · ${chuong} chương · ${tu} từ`,
   ttChuaCoChuong: 'Chưa có chương nào',
   docTuChuongDau: 'Đọc từ chương 1',
@@ -712,7 +805,25 @@ export const CHU = {
    */
   vanSongVung: 'Văn sống',
   mayDangNoi: 'Máy đang nói',
-  mayNghi: 'Máy đang nghỉ',
+  /**
+   * Khu văn sống nói về BỘ ĐỆM của phiên xem này, không nói về máy.
+   *
+   * Bản trước ghi "Máy đang nghỉ" — một câu về liveness, đặt ngay dưới một hero cũng ghi
+   * "Máy đang nghỉ", tức cùng một câu hai lần cách nhau 200px. Và khu này không đo được
+   * liveness: nó chỉ biết bộ đệm phía trình duyệt có giữ được lượt nào không. Một bề mặt
+   * khẳng định điều nó không đo được là một bề mặt sẽ nói sai, và ĐO ĐƯỢC là nó đã nói sai
+   * (2026-08-02: câu này hiện trong khi thanh dưới ghi ngược lại).
+   */
+  mayNghi: 'Chưa có văn nào trong phiên này',
+  /**
+   * Máy nghỉ nhưng bộ đệm CÒN chữ — ca thứ ba, và nó ra đời vì một bài kiểm cũ bắt được.
+   *
+   * Bản sửa đầu của tôi để mọi ca "nghỉ" dùng chung câu "Chưa có văn nào trong phiên này",
+   * và `VanSong.test.tsx` đỏ ngay: nó dựng đúng ca bộ đệm còn giữ báo cáo của lượt vừa xong.
+   * Một tiêu đề "chưa có văn nào" đứng ngay trên đống chữ nó vừa phủ nhận là đổi một câu sai
+   * lấy một câu sai khác.
+   */
+  vanLuotGanNhat: 'Văn của lượt gần nhất',
   /* Chữ thường: đây là nút hành động nhỏ nổi trong khu chữ, không phải nhãn của một vùng. */
   veCuoi: 'về cuối',
 
@@ -1195,7 +1306,7 @@ export const GIAI_THICH = {
   dangVietTuDiTiep:
     'Máy tự đi tiếp từng chương, không cần bạn bấm gì. Dòng sự kiện ở dưới chạy trực tiếp và chương vừa chốt hiện ngay trong bảng — không phải tải lại trang.',
   chayTiepOThanhDuoi:
-    'Máy đang nghỉ. Bấm ▶ Chạy ở thanh dưới cùng để nó viết tiếp — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước, việc mở máy không gọi model lần nào.',
+    'Bấm ▶ Chạy ở thanh dưới cùng để máy viết tiếp — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước, việc mở máy không gọi model lần nào.',
   chuaChayLanNao:
     'Tác phẩm đã tạo nhưng chưa viết chương nào. Bấm ▶ Chạy ở thanh dưới cùng để máy bắt đầu — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước.',
   /* ── dòng sự kiện, hai ca RỖNG ────────────────────────────────────────────
@@ -1211,8 +1322,13 @@ export const GIAI_THICH = {
    * ngược — và chỗ nói ngược là chỗ người vận hành nhìn để biết dây chuyền còn sống không. */
   chuaCoSuKienDangChay:
     'Máy đang chạy nhưng chưa có bước nào kết thúc để ghi vào đây. Bước đang chạy hiện ở dải trạng thái phía trên, và chữ nó đang sinh ra chảy ở khu Máy đang nói.',
+  /* Không khai lại trạng thái máy. Bản trước ghi "Máy đang nghỉ hoặc chưa phát bước nào" —
+     một câu hedge, và cái hedge đó chính là dấu hiệu nó đang đoán: khu này chỉ biết hàng sự
+     kiện rỗng, không biết engine đang làm gì. ĐO ĐƯỢC 2026-08-02 nó đoán sai (`runtime` thật
+     là `paused`, không phải `idle`) trong khi thanh dưới nói đúng. Nên nó nói đúng điều nó
+     biết, và trỏ sang chỗ giữ câu kia. */
   chuaCoSuKienDangNghi:
-    'Chưa nhận sự kiện nào từ engine kể từ lúc mở dòng. Máy đang nghỉ hoặc chưa phát bước nào.',
+    'Chưa nhận sự kiện nào từ engine kể từ lúc mở dòng. Trạng thái máy ở thanh dưới cùng.',
   /* ── khu văn sống, hai ca RỖNG ────────────────────────────────────────────
    *
    * Chỉ dùng khi bộ đệm KHÔNG còn lượt nào. Lúc bộ đệm còn chữ thì khu vẽ chính chữ đó, kể
@@ -1225,7 +1341,7 @@ export const GIAI_THICH = {
   vanSongTrong:
     'Chưa có lượt nào trong phiên xem này. Khi máy bắt đầu viết, chữ sẽ chảy ở đây.',
   vanSongNghi:
-    'Máy đang nghỉ, và phiên xem này chưa giữ được lượt nào để hiện lại. Bấm Chạy ở thanh dưới để nó viết tiếp — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước.',
+    'Phiên xem này chưa giữ được lượt nào để hiện lại. Bấm ▶ Chạy ở thanh dưới để máy viết tiếp — nếu thanh đó ghi "Mở máy cho tác phẩm này" thì bấm nút ấy trước.',
   /* ── dải trạng thái: hai câu cho HAI ca không được lẫn ─────────────────────
    *
    * `null` (engine đóng, KHÔNG đo được) và `[]`/`0` (đo được, bằng không) là hai sự thật khác
@@ -1253,6 +1369,10 @@ export const GIAI_THICH = {
   /* vòng đời sáng tác */
   vongDoiCanMoMay:
     'Các nút điều khiển cần engine đang mở. Mở máy không gọi model lần nào — nó chỉ gắn engine vào tác phẩm.',
+  dangThuDon:
+    'Lệnh dừng đã nhận. Engine đang kết thúc lượt hiện tại và ghi checkpoint — bấm thêm không làm nó nhanh hơn.',
+  chipKetNoi:
+    'Kênh sự kiện trực tiếp từ engine tới trình duyệt này. Nó nói đường truyền có thông không — KHÔNG nói engine đang chạy hay đang nghỉ; câu đó ở thanh dưới cùng.',
   cheDoReviewLaGi:
     'Chế độ nghiệm thu: engine dừng trước MỖI chương mới và chờ bạn cho đi tiếp từng chương một. Dùng khi muốn đọc soát trước khi nó viết thêm.',
   /* ── cửa nghiệm thu ────────────────────────────────────────────────────────

@@ -1,0 +1,1051 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>f · một sự thật, một chỗ nói — ainovel studio</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- CSS THẬT của app: token, màu, kích thước đều lấy từ đó. Preview không tự khai
+     lại token nào — nếu nó trông khác app thì preview sai, không phải app sai. -->
+<link rel="stylesheet" href="../../../web/app/globals.css">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   f · MỘT SỰ THẬT, MỘT CHỖ NÓI
+
+   Bản đề xuất để duyệt. Ba lỗi, ba bản sửa, mỗi bản đặt cạnh bản hiện tại.
+
+   Ba lỗi này KHÔNG cùng loại, và đó là điều quan trọng nhất của tờ này:
+     · Lỗi 1 là lỗi ĐÚNG-SAI — thanh dưới đang nói một câu sai về máy.
+     · Lỗi 2 là lỗi HÌNH HỌC — nút tiêu tiền đổi chỗ 1.222px giữa lúc chạy.
+     · Lỗi 3 là lỗi TỪ VỰNG — tám câu, năm sự thật, một bộ từ.
+
+   Mọi con số trong tờ này đo được trên app đang chạy ngày 2026-08-02, không
+   phải ước lượng. Chỗ nào là đo, tôi ghi "ĐO ĐƯỢC".
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Font: bắt buộc khai lại — `globals.css` dùng var(--ui)/var(--mono), mà hai biến
+   đó do next/font đặt lên <html> lúc build. Preview tĩnh không có bước đó. */
+:root {
+  --ui: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 14px/1.55 var(--ui);
+  margin: 0;
+  padding: 0 0 120px;
+  display: block;
+}
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+
+/* ── đầu tờ ─────────────────────────────────────────────────────────────── */
+.dauto {
+  padding: 56px 0 36px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 44px;
+}
+.dauto h1 {
+  font: 600 27px/1.25 var(--ui);
+  margin: 0 0 12px;
+  letter-spacing: -0.015em;
+}
+.dauto h1 em { font-style: normal; color: var(--ink-3); font-weight: 400; }
+.dauto p { margin: 0 0 10px; color: var(--ink-2); max-width: 74ch; }
+.dauto .ngay { font: 400 11.5px var(--mono); color: var(--ink-3); }
+
+/* ── mục ─────────────────────────────────────────────────────────────────── */
+section { margin: 0 0 64px; scroll-margin-top: 20px; }
+section > h2 {
+  font: 600 18px/1.3 var(--ui);
+  margin: 0 0 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+section > h2 .so {
+  font: 500 11px var(--mono);
+  color: var(--tren-mau);
+  background: var(--gold);
+  border-radius: 3px;
+  padding: 2px 7px;
+  letter-spacing: 0.04em;
+}
+section > h2 .loai {
+  font: 400 11px var(--mono);
+  color: var(--ink-3);
+  letter-spacing: 0.05em;
+}
+section > .dan { color: var(--ink-2); margin: 0 0 22px; max-width: 78ch; }
+section > .dan strong { color: var(--ink); font-weight: 500; }
+section > .dan code, .kod {
+  font: 400 12.5px var(--mono);
+  background: var(--panel-2);
+  border: 1px solid var(--line-2);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+
+/* ── khối bằng chứng ─────────────────────────────────────────────────────── */
+.bc {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  margin: 0 0 22px;
+  font: 400 12.5px/1.7 var(--mono);
+  color: var(--ink-2);
+  overflow-x: auto;
+}
+.bc .nhan {
+  font: 500 10.5px var(--ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  display: block;
+  margin-bottom: 10px;
+}
+.bc .nhan + .nhan, .bc br + .nhan { margin-top: 16px; }
+.bc b { color: var(--ink); font-weight: 500; }
+.bc .sai { color: var(--red); }
+.bc .dung { color: var(--teal); }
+
+/* ── nhãn TRƯỚC / SAU ────────────────────────────────────────────────────── */
+.cap { display: grid; gap: 18px; margin: 0 0 20px; }
+.mau > .tenmau {
+  font: 500 10.5px var(--ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mau.truoc > .tenmau { color: var(--red); }
+.mau.sau > .tenmau { color: var(--teal); }
+.mau > .tenmau .ghi {
+  font: 400 11px var(--mono);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ink-3);
+}
+
+/* khung mô phỏng đáy màn hình */
+.khungmp {
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+  background: var(--bg);
+}
+/* Mục 2 phải chạy ở BỀ RỘNG THẬT của cửa sổ, không ở bề rộng cột chữ.
+   Lý do là chính lỗi đang bàn: điểm xuống dòng phụ thuộc bề rộng khung, nên một
+   bản mô phỏng hẹp hơn app sẽ xuống dòng ở MỌI trạng thái và không còn tái hiện
+   được cái lật một-dòng ↔ hai-dòng. ĐO ĐƯỢC ở lượt kiểm đầu: trong cột 1124px,
+   bản "trước" cao 66–68px ở cả bốn tên công đoạn, tức mất hẳn hiện tượng cần xem. */
+.tranrong {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+}
+.khungmp .noi {
+  height: 46px;
+  background: repeating-linear-gradient(
+    -45deg, transparent, transparent 7px,
+    color-mix(in oklch, var(--line) 32%, transparent) 7px,
+    color-mix(in oklch, var(--line) 32%, transparent) 8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 400 11px var(--mono);
+  color: var(--ink-3);
+}
+
+/* ═══ THANH TRANSPORT — bản TRƯỚC (chép nguyên luật hiện tại) ══════════════
+   `display:flex; flex-wrap:wrap` với cụm nút là phần tử cuối. Bề rộng của dải
+   số phụ thuộc DỮ LIỆU, nên điểm xuống dòng cũng phụ thuộc dữ liệu — và cái
+   xuống dòng ấy kéo cả cụm nút đi 1.222px. */
+.tp {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  font: 400 11.5px var(--ui);
+  color: var(--ink-2);
+  padding: 0 4px;
+  position: relative;
+}
+.tp .o {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-right: 1px solid var(--line-2);
+  white-space: nowrap;
+}
+.tp .o:last-child { border-right: 0; }
+.tp .lbl { color: var(--ink-3); font-size: 11px; }
+.tp .m { color: var(--ink); font: 400 11.5px var(--mono); }
+.tp .ky { font-size: 10px; line-height: 1; }
+.tp .ky.gold { color: var(--gold); }
+.tp .ky.muted { color: var(--ink-3); }
+.tp .ky.teal { color: var(--teal); }
+.tp .ky.amber { color: var(--amber); }
+.tp .day { flex: 1 1 auto; border-right: 0; }
+.tp .obuoc .m {
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: bottom;
+}
+.tp .ctx { width: 46px; height: 4px; background: var(--panel-2); border-radius: 2px; overflow: hidden; display: inline-block; }
+.tp .ctx i { display: block; height: 100%; background: var(--ink-3); }
+
+/* cụm nút */
+.dk { display: flex; align-items: center; gap: 6px; padding: 6px 8px; }
+.dk button {
+  font: 500 11.5px var(--ui);
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--ink);
+  padding: 5px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+/* Ô NEO của nút hạng nhất: một bề rộng cho cả Chạy / Chạy tiếp / Dừng / Đang gửi…
+   Không có nó thì nút vẫn nhích 3px mỗi lần đổi nhãn (ĐO ĐƯỢC ở lượt kiểm hai) —
+   nhỏ, nhưng nó phá đúng cái lời hứa vừa đưa ra: một chỗ cố định. 108px là bề
+   rộng của nhãn dài nhất, "▶ Chạy tiếp". */
+.dk button.chinh, .dk button.dung {
+  min-width: 108px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.dk button.chinh { background: var(--gold); border-color: var(--gold); color: oklch(0.19 0.02 74); }
+/* Dừng KHÔNG dùng đỏ — chép nguyên luật của app (`globals.css .dkNut.dkDung`):
+   đỏ trong hệ này nghĩa là LỖI, mà dừng có chủ ý không phải lỗi. Viền amber nói
+   "sắp có hệ quả" mà không nói "đã sai". Bản preview đầu của tôi tự bịa một nút
+   nền đỏ ở đây; đó là preview nói sai về app, nên nó bị sửa. */
+.dk button.dung { background: var(--raised); border-color: var(--amber); color: var(--amber); }
+.dk button.phu { background: transparent; color: var(--ink-2); }
+.dk button.bat { border-color: var(--teal); color: var(--teal); }
+
+/* ═══ THANH TRANSPORT — bản SAU ═══════════════════════════════════════════
+   Hai vùng, một lưới. Vùng trái co giãn và CẮT khi hẹp; vùng phải cố định và
+   không bao giờ xuống dòng. Chiều cao là hằng số, nên canvas phía trên không
+   bị đẩy lên xuống mỗi vài giây. */
+.tp.moi {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  height: 38px;
+  padding: 0;
+}
+.tp.moi .dai {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  padding-left: 4px;
+  /* mép mờ: nói ra rằng còn số liệu bị cắt, thay vì cắt lặng lẽ */
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+}
+.tp.moi .dai::-webkit-scrollbar { display: none; }
+.tp.moi .dk {
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  /* Bề rộng SÀN: cụm nút đổi số nút theo trạng thái (2→4) và đổi nhãn khi đang
+     gửi. Không có sàn thì dải số bên trái co giãn theo, tức mọi con số cũng
+     nhảy chỗ mỗi lần trạng thái đổi. */
+  min-width: 268px;
+  justify-content: flex-end;
+}
+/* Ô trạng thái được ghim: nó là câu trả lời cho câu hỏi số một, nên nó KHÔNG
+   được nằm trong phần cắt được. */
+.tp.moi .o.ghim {
+  position: sticky;
+  left: 0;
+  background: var(--panel);
+  z-index: 2;
+  border-right: 1px solid var(--line);
+}
+
+/* đầu đọc — chỉ chạy khi runtime === running */
+.tp[data-chay="1"]::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto auto 0;
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  animation: dauDocMp 2.4s linear infinite;
+}
+@keyframes dauDocMp {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+.dap { animation: dapMp 1.6s var(--ease) infinite; }
+@keyframes dapMp {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.34; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tp[data-chay="1"]::before { animation: none; opacity: 0.8; }
+  .dap { animation: none; }
+}
+
+/* ── bảng điều khiển của preview ─────────────────────────────────────────── */
+.dieu {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  margin: 0 0 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 26px;
+  align-items: center;
+}
+.dieu .nhomd { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dieu .tend {
+  font: 500 10.5px var(--ui);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.dieu button {
+  font: 400 11.5px var(--mono);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.dieu button[aria-pressed="true"] {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--tren-mau);
+  font-weight: 500;
+}
+
+/* thước đo vị trí nút */
+.thuoc {
+  font: 400 12px/1.7 var(--mono);
+  color: var(--ink-2);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 12px 16px;
+  margin: 14px 0 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 18px;
+}
+.thuoc dt { color: var(--ink-3); }
+.thuoc dd { margin: 0; color: var(--ink); }
+.thuoc dd.xau { color: var(--red); }
+.thuoc dd.tot { color: var(--teal); }
+
+/* ── bảng từ vựng ────────────────────────────────────────────────────────── */
+table.tv {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 0 0 8px;
+}
+table.tv th {
+  text-align: left;
+  font: 500 10.5px var(--ui);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 0 12px 9px 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: bottom;
+}
+table.tv td {
+  padding: 9px 12px 9px 0;
+  border-bottom: 1px solid var(--line-2);
+  color: var(--ink-2);
+  vertical-align: top;
+}
+table.tv td.kod2 { font: 400 12px var(--mono); color: var(--ink-3); white-space: nowrap; }
+table.tv td .cu { color: var(--red); font: 400 12.5px var(--mono); }
+table.tv td .moi { color: var(--teal); font: 400 12.5px var(--mono); }
+table.tv tr.trung td { background: color-mix(in oklch, var(--red) 7%, transparent); }
+
+/* ── thanh trên thu nhỏ ──────────────────────────────────────────────────── */
+.bartren {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 9px 12px;
+  font-size: 12.5px;
+  flex-wrap: wrap;
+}
+.bartren .logo { font: 600 13px var(--ui); color: var(--ink); }
+.bartren .logo em { font-style: normal; color: var(--ink-3); font-weight: 400; }
+.bartren .day { flex: 1; min-width: 12px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 400 11px var(--mono);
+  color: var(--ink-2);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.chip .d { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
+.chip.mat .d { background: var(--red); }
+.chip.cho .d { background: var(--amber); }
+
+/* ── ghi chú ─────────────────────────────────────────────────────────────── */
+.ghichu {
+  border-left: 1px solid var(--line);
+  padding: 2px 0 2px 14px;
+  margin: 16px 0 0;
+  color: var(--ink-3);
+  font-size: 12.5px;
+  max-width: 76ch;
+}
+.ghichu b { color: var(--ink-2); font-weight: 500; }
+
+/* ── mục lục dính ────────────────────────────────────────────────────────── */
+.mucluc {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in oklch, var(--bg) 92%, transparent);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 34px;
+}
+.mucluc ul {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 10px 28px;
+  list-style: none;
+  display: flex;
+  gap: 22px;
+  font: 400 12px var(--mono);
+}
+.mucluc a { color: var(--ink-3); text-decoration: none; }
+.mucluc a:hover { color: var(--gold); }
+
+/* ═══ DƯỚI 900px — thanh dưới thành HAI TẦNG cố định ══════════════════════
+   Cột nút 268px không áp được cho điện thoại: ĐO ĐƯỢC ở 390px, nó chỉ chừa 62px
+   cho dải số, tức bóp nát đúng thứ thanh này tồn tại để hiện.
+
+   Nhưng câu trả lời KHÔNG phải quay về flex-wrap. Cái sai của flex-wrap không
+   phải là "hai dòng" — mà là "một dòng hay hai dòng tuỳ dữ liệu". Hai tầng CỐ
+   ĐỊNH giữ nguyên cả hai lời hứa: chiều cao là hằng số, và nút hạng nhất có một
+   ô neo — chỉ là neo ở góc phải-DƯỚI thay vì phải-giữa. */
+@media (max-width: 900px) {
+  .tp.moi {
+    grid-template-columns: 1fr;
+    grid-template-rows: 38px 40px;
+    height: 78px;
+  }
+  .tp.moi .dk {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    min-width: 0;
+    padding: 0 8px;
+  }
+  /* Nút phụ co lại được, nút hạng nhất thì KHÔNG — ô neo giữ nguyên 108px. */
+  .tp.moi .dk button:not(.chinh):not(.dung) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 860px) {
+  .wrap { padding: 0 16px; }
+  .mucluc ul { padding: 10px 16px; gap: 14px; overflow-x: auto; }
+  .dauto h1 { font-size: 22px; }
+  /* Bảng từ vựng có 5 cột dữ liệu, không nén xuống 390px được mà không mất chữ.
+     Cho nó cuộn ngang trong khung riêng thay vì đẩy cả trang cuộn — ĐO ĐƯỢC:
+     bản trước làm trang tràn 21px, tức mọi mục khác cũng lệch theo. */
+  table.tv { display: block; overflow-x: auto; white-space: nowrap; }
+  table.tv td, table.tv th { white-space: normal; min-width: 116px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="mucluc">
+  <ul>
+    <li><a href="#l1">1 · câu sai</a></li>
+    <li><a href="#l2">2 · nút nhảy chỗ</a></li>
+    <li><a href="#l3">3 · tám câu, năm sự thật</a></li>
+    <li><a href="#tong">bản đề xuất</a></li>
+  </ul>
+</nav>
+
+<div class="wrap">
+
+<header class="dauto">
+  <h1>f · một sự thật, một chỗ nói <em>— thanh trạng thái</em></h1>
+  <p>Bạn nói ba điều: thanh dưới đổi layout khi bấm nút, chữ <span class="kod">dòng sự kiện</span>
+     ở góc trên không rõ nghĩa, và trạng thái bị rải mỗi nơi một chỗ. Cả ba đều đúng.
+     Một trong ba không phải chuyện thẩm mỹ — nó là một <strong>câu sai</strong> mà thanh
+     dưới đang nói về cỗ máy.</p>
+  <p class="ngay">đo trên app thật · 127.0.0.1:8420 · 2026-08-02 · viewport 1512px</p>
+</header>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="l1">
+  <h2><span class="so">LỖI 1</span> Thanh dưới nói máy đang chạy, trong khi máy đang dừng
+      <span class="loai">· lỗi đúng–sai</span></h2>
+  <p class="dan">Đây là lỗi nặng nhất và nó không nhìn ra được bằng mắt — phải hỏi API mới
+     thấy. Lúc chụp hai ảnh của bạn, engine đang ở trạng thái <span class="kod">paused</span>.
+     Thanh dưới in <span class="kod">▶ đang chạy</span>.</p>
+
+  <div class="bc">
+    <span class="nhan">ĐO ĐƯỢC · GET /api/books/viet-truyen-dang-trung-sinh/studio</span>
+    "runtime":          <b class="dung">"paused"</b>   ← sự thật của engine, engine tự khai<br>
+    "book.activity":    <b class="sai">"running"</b>  ← suy từ checkpoint, TRỄ ở cả hai chiều<br>
+    "transport.state":  <b class="sai">"running"</b>  ← cùng nguồn trễ ấy<br>
+    <br>
+    <span class="nhan">ĐO ĐƯỢC · và trên màn hình, cùng khoảnh khắc đó</span>
+    thanh dưới · đầu đọc  <b class="dung">TẮT</b>          ← đọc <span class="kod">runtime</span> → đúng<br>
+    thanh dưới · ký hiệu  <b class="sai">▶ ĐANG ĐẬP</b>   ← đọc <span class="kod">transport.state</span> → sai<br>
+    thanh dưới · chữ      <b class="sai">"đang chạy"</b>  ← đọc <span class="kod">transport.state</span> → sai<br>
+    thanh dưới · nút      <b class="dung">"▶ Chạy"</b>     ← đọc <span class="kod">runtime</span> → đúng<br>
+  </div>
+
+  <p class="dan">Nên thanh dưới <strong>tự mâu thuẫn trong vòng 200 pixel</strong>: một vạch
+     đầu đọc đang tắt, một ký hiệu đang đập, chữ "đang chạy", và ngay cạnh là một nút mời bạn
+     bấm "Chạy". Bốn thứ, hai câu trả lời trái nhau.</p>
+
+  <p class="dan">Nguyên nhân đúng một dòng. <span class="kod">lib/song.ts</span> khai
+     <span class="kod">mayDangChay()</span> là <em>chỗ duy nhất được phép nói máy còn sống
+     hay không</em>, và nó ưu tiên <span class="kod">runtime</span>. Mọi bề mặt đã chuyển sang
+     dùng nó. <strong>Transport thì chuyển một nửa</strong> — nhận
+     <span class="kod">mayChay</span> để bật đầu đọc, nhưng phần CHỮ vẫn tra bảng
+     <span class="kod">TRANG_THAI_MAY[transport.state]</span>. Bản vá đã áp vào chuyển động
+     mà quên áp vào câu chữ.</p>
+
+  <div class="cap">
+    <div class="mau truoc">
+      <div class="tenmau">Trước <span class="ghi">— runtime = paused</span></div>
+      <div class="khungmp">
+        <footer class="tp">
+          <div class="o"><span class="ky gold dap">▶</span><span class="m">đang chạy</span></div>
+          <div class="o obuoc"><span class="lbl">công đoạn</span><span class="m">commit</span><span class="lbl">vừa xong</span></div>
+          <div class="o"><span class="lbl">tổ</span><span class="m">Writer · cx/gpt-5.5</span></div>
+          <div class="o day"></div>
+          <div class="o"><span class="lbl">tổng</span><span class="m">$7,05</span></div>
+          <div class="dk">
+            <button type="button">Tự chạy liên tục</button>
+            <button type="button" class="phu">Đóng máy</button>
+            <button type="button" class="chinh">▶ Chạy</button>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <div class="mau sau">
+      <div class="tenmau">Sau <span class="ghi">— runtime = paused, và thanh nói đúng thế</span></div>
+      <div class="khungmp">
+        <footer class="tp moi">
+          <div class="dai">
+            <div class="o ghim"><span class="ky amber">‖</span><span class="m">tạm dừng</span></div>
+            <div class="o obuoc"><span class="lbl">công đoạn</span><span class="m">commit</span><span class="lbl">vừa xong</span></div>
+            <div class="o"><span class="lbl">tổ</span><span class="m">Writer · cx/gpt-5.5</span></div>
+            <div class="o"><span class="lbl">tổng</span><span class="m">$7,05</span></div>
+          </div>
+          <div class="dk">
+            <button type="button" class="phu">Đóng máy</button>
+            <button type="button" class="chinh">▶ Chạy tiếp</button>
+          </div>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <p class="ghichu"><b>Và nó mở ra một trạng thái đang bị mất.</b>
+     <span class="kod">runtime</span> có <b>năm</b> giá trị — <span class="kod">running ·
+     pausing · paused · idle · completed</span> — còn bảng nhãn hiện tại chỉ có <b>ba</b> từ,
+     vì nó được viết cho <span class="kod">Activity</span> chứ không cho
+     <span class="kod">runtime</span>. <span class="kod">paused</span> vì thế không có chữ
+     nào của riêng nó và bị dồn vào "đang chạy". "Tạm dừng" khác "đang nghỉ" ở một điều người
+     vận hành cần biết: <b>còn một lượt dở đang treo</b>, bấm Chạy là đi tiếp chứ không phải
+     bắt đầu lại.</p>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="l2">
+  <h2><span class="so">LỖI 2</span> Nút Chạy đổi chỗ 1.222 pixel giữa lúc máy đang viết
+      <span class="loai">· lỗi hình học</span></h2>
+  <p class="dan">Đây là cái bạn thấy giữa hai ảnh. Không phải bạn bấm sai gì cả —
+     <strong>tên công đoạn dài ra là đủ</strong>. Thanh dưới là
+     <span class="kod">flex-wrap: wrap</span> và cụm nút là phần tử cuối, nên khi dải số vượt
+     bề rộng khung thì cụm nút rơi xuống dòng hai, tức nhảy từ mép phải về mép trái.</p>
+
+  <div class="bc">
+    <span class="nhan">ĐO ĐƯỢC · vị trí nút Chạy theo tên công đoạn, viewport 1512px</span>
+    "commit"                   → thanh cao 30px · 1 dòng · nút ở x=<b class="dung">1236</b><br>
+    "plan_chapter"             → thanh cao 30px · 1 dòng · nút ở x=<b class="dung">1236</b><br>
+    "writer (Viết chương 10)"  → thanh cao <b class="sai">55px</b> · <b class="sai">2 dòng</b> · nút ở x=<b class="sai">14</b><br>
+    "novel_context(chương 3)"  → thanh cao <b class="sai">55px</b> · <b class="sai">2 dòng</b> · nút ở x=<b class="sai">14</b><br>
+    <br>
+    biên độ nhảy ngang = <b class="sai">1.222px</b> · thanh cao thêm <b class="sai">25px</b>,
+    đẩy cả canvas phía trên
+  </div>
+
+  <p class="dan">Tên công đoạn đổi <strong>mỗi vài giây</strong> khi máy chạy
+     (<span class="kod">writer (Viết chương 10)</span> → <span class="kod">commit</span> →
+     <span class="kod">plan_chapter</span> → …). Nghĩa là nút tiêu tiền của sản phẩm này
+     <strong>đang tự đi lại</strong> suốt phiên. Và cụm nút còn tự đổi bề rộng nữa: 2 nút khi
+     máy chưa mở, 3 khi mở, 4 khi bật chế độ nghiệm thu, và nhãn đổi thành "Đang gửi…" lúc
+     bấm — mỗi lần đổi là một lần dải số bên trái xê dịch theo.</p>
+
+  <div class="dieu">
+    <div class="nhomd">
+      <span class="tend">Công đoạn</span>
+      <button type="button" data-buoc="commit" aria-pressed="true">commit</button>
+      <button type="button" data-buoc="plan_chapter" aria-pressed="false">plan_chapter</button>
+      <button type="button" data-buoc="writer (Viết chương 10)" aria-pressed="false">writer (Viết chương 10)</button>
+      <button type="button" data-buoc="novel_context(chương 108)" aria-pressed="false">novel_context(chương 108)</button>
+    </div>
+    <div class="nhomd">
+      <span class="tend">Bộ nút</span>
+      <button type="button" data-nut="2" aria-pressed="false">chưa mở máy · 2</button>
+      <button type="button" data-nut="3" aria-pressed="true">đang mở · 3</button>
+      <button type="button" data-nut="4" aria-pressed="false">nghiệm thu · 4</button>
+    </div>
+  </div>
+
+  <div class="cap">
+    <div class="mau truoc">
+      <div class="tenmau">Trước <span class="ghi">— cụm nút là phần tử cuối của một flex-wrap</span></div>
+      <div class="khungmp tranrong">
+        <div class="noi">canvas — bị đẩy lên xuống mỗi lần thanh dưới xuống dòng</div>
+        <footer class="tp" id="tpCu" data-chay="1">
+          <div class="o"><span class="ky gold dap">▶</span><span class="m">đang chạy</span></div>
+          <div class="o obuoc"><span class="lbl">công đoạn</span><span class="m" data-slot="buoc">commit</span><span class="lbl">vừa xong</span></div>
+          <div class="o"><span class="lbl">tổ</span><span class="m">Writer · cx/gpt-5.5</span></div>
+          <div class="o"><span class="lbl">ngữ cảnh</span><span class="ctx"><i style="width:62%"></i></span><span class="m">62%</span></div>
+          <div class="o day"></div>
+          <div class="o"><span class="lbl">năng suất</span><span class="m">0,7 chương/giờ</span></div>
+          <div class="o"><span class="lbl">giá thành</span><span class="m">$0,784 / chương</span></div>
+          <div class="o"><span class="lbl">tổng</span><span class="m">$7,05</span></div>
+          <div class="o"><span class="lbl">đã chạy</span><span class="m">12:39:38</span></div>
+          <div class="dk" data-slot="nutCu"></div>
+        </footer>
+      </div>
+    </div>
+
+    <div class="mau sau">
+      <div class="tenmau">Sau <span class="ghi">— hai vùng: số liệu cắt được, cụm nút ghim phải</span></div>
+      <div class="khungmp tranrong">
+        <div class="noi">canvas — chiều cao thanh dưới là hằng số (38px · 78px dưới 900px)</div>
+        <footer class="tp moi" id="tpMoi" data-chay="1">
+          <div class="dai">
+            <div class="o ghim"><span class="ky gold dap">▶</span><span class="m">đang chạy</span></div>
+            <div class="o obuoc"><span class="lbl">công đoạn</span><span class="m" data-slot="buoc">commit</span><span class="lbl">vừa xong</span></div>
+            <div class="o"><span class="lbl">tổ</span><span class="m">Writer · cx/gpt-5.5</span></div>
+            <div class="o"><span class="lbl">ngữ cảnh</span><span class="ctx"><i style="width:62%"></i></span><span class="m">62%</span></div>
+            <div class="o"><span class="lbl">năng suất</span><span class="m">0,7 chương/giờ</span></div>
+            <div class="o"><span class="lbl">giá thành</span><span class="m">$0,784 / chương</span></div>
+            <div class="o"><span class="lbl">tổng</span><span class="m">$7,05</span></div>
+            <div class="o"><span class="lbl">đã chạy</span><span class="m">12:39:38</span></div>
+          </div>
+          <div class="dk" data-slot="nutMoi"></div>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <dl class="thuoc">
+    <dt>nút Chạy · bản trước</dt><dd id="doCu">—</dd>
+    <dt>nút Chạy · bản sau</dt><dd id="doMoi">—</dd>
+    <dt>chiều cao thanh</dt><dd id="doCao">—</dd>
+  </dl>
+
+  <p class="ghichu"><b>Vì sao cắt chứ không xuống dòng.</b> Luật cũ trong
+     <span class="kod">globals.css</span> chọn xuống dòng vì <span class="kod">DESIGN.md:108</span>
+     ghi "trạng thái máy luôn hiện, không cuộn mất". Bản sau không phá luật đó — nó áp luật ấy
+     <em>chặt hơn</em>: ô trạng thái được <span class="kod">position: sticky</span> ghim ở mép
+     trái nên nó không bao giờ cuộn mất, còn thứ cuộn được chỉ là dải số phụ (giá, năng suất,
+     đã chạy). Cái luật ấy nói về <b>trạng thái</b>, không nói về mọi con số.</p>
+  <p class="ghichu"><b>Cụm nút có bề rộng sàn 268px</b> để nó không co giãn khi số nút đổi từ
+     2 lên 4. Không có sàn thì mọi con số bên trái vẫn xê dịch mỗi lần trạng thái đổi —
+     hết nhảy dọc lại nhảy ngang.</p>
+  <p class="ghichu"><b>Nút hạng nhất đứng SÁT MÉP PHẢI, và đây là bản sửa mà chính tờ này bắt
+     được.</b> Lượt kiểm đầu: cụm nút đã ghim phải rồi mà nút Chạy <em>vẫn dịch 107px</em> khi bộ
+     nút đổi từ 3 sang 4 — vì nó đứng đầu cụm, nên mỗi nút phụ thêm vào lại đẩy nó sang trái.
+     Ghim cả cụm là chưa đủ; phải ghim đúng cái nút ấy. Chạy và Dừng loại trừ nhau nên chúng
+     dùng chung một ô neo — đúng như bàn transport của DAW, nơi play–stop là một chỗ cố định
+     chứ không phải hai nút trôi nổi. Bấm thử "nghiệm thu · 4" ở trên và xem thước đo.</p>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="l3">
+  <h2><span class="so">LỖI 3</span> Tám câu trạng thái trên một màn hình, cho năm sự thật khác nhau
+      <span class="loai">· lỗi từ vựng</span></h2>
+  <p class="dan">Đây là chỗ bạn nói "quá nhiều trạng thái, phân tán mỗi nơi một chỗ". Tôi quét
+     màn buồng lái và đếm được <strong>tám</strong> cụm chữ nói về trạng thái, xếp theo chiều
+     dọc màn hình. Vấn đề không phải là tám — mà là chúng nói về <strong>năm sự thật khác
+     nhau</strong> bằng <strong>cùng một bộ từ</strong>, nên đọc thành một sự thật được nhắc
+     tám lần, rồi tự cãi nhau.</p>
+
+  <div class="bc">
+    <span class="nhan">ĐO ĐƯỢC · quét DOM buồng lái, xếp theo toạ độ y</span>
+    y=13   thanh trên   "4 tác phẩm · <b class="sai">1 đang chạy</b>"<br>
+    y=61   đầu canvas   "· <b>đang viết</b> · 111 chương · 2 tập"<br>
+    y=105  hero         "<b class="dung">Máy đang nghỉ</b> · 9/111 chương đã chốt"<br>
+    y=196  trục · Tập   "T1 · <b class="sai">đang chạy</b>"<br>
+    y=224  trục · Cung  "C1 · <b class="sai">đang chạy</b>"<br>
+    y=308  văn sống     "<b class="dung">Máy đang nghỉ</b>"<br>
+    y=787  can thiệp    "nói vào dây chuyền <b>đang chạy</b>"<br>
+    y=853  thanh dưới   "<b class="sai">đang chạy</b>"<br>
+  </div>
+
+  <p class="dan">Bốn câu nói "đang chạy", hai câu nói "đang nghỉ", cùng một cỗ máy, cùng một
+     giây. Người vận hành không có cách nào biết câu nào đúng.</p>
+
+  <table class="tv">
+    <thead>
+      <tr><th style="width:15%">Ở đâu</th><th style="width:21%">Đang nói</th><th style="width:17%">Nguồn</th><th style="width:22%">Sự thật nó THẬT SỰ nói</th><th>Đề xuất</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>góc trên phải</td>
+        <td><span class="cu">dòng sự kiện</span></td>
+        <td class="kod2">ketNoi (SSE)</td>
+        <td>trình duyệt có nối được kênh không</td>
+        <td><span class="moi">đã nối</span> / <span class="moi">đang nối</span> / <span class="moi">mất kết nối</span></td>
+      </tr>
+      <tr>
+        <td>slate thanh trên</td>
+        <td><span class="cu">1 đang chạy</span></td>
+        <td class="kod2">book.activity</td>
+        <td>bao nhiêu cuốn có checkpoint gần đây</td>
+        <td><span class="moi">1 cuốn có việc</span></td>
+      </tr>
+      <tr>
+        <td>đầu canvas</td>
+        <td>đang viết</td>
+        <td class="kod2">book.status</td>
+        <td>vòng đời của TÁC PHẨM, không của máy</td>
+        <td>giữ nguyên — đã khác từ</td>
+      </tr>
+      <tr class="trung">
+        <td>hero buồng lái</td>
+        <td><span class="cu">Máy đang nghỉ · 9/111…</span></td>
+        <td class="kod2">runtime</td>
+        <td>máy có đang chạy không</td>
+        <td>bỏ chữ trạng thái — chỉ nói <span class="moi">việc tiếp theo</span></td>
+      </tr>
+      <tr>
+        <td>trục · Tập/Cung</td>
+        <td><span class="cu">T1 · đang chạy</span></td>
+        <td class="kod2">timeline (suy)</td>
+        <td>con trỏ: đang ở khối nào</td>
+        <td><span class="moi">T1 · đang mở</span></td>
+      </tr>
+      <tr class="trung">
+        <td>văn sống</td>
+        <td><span class="cu">Máy đang nghỉ</span></td>
+        <td class="kod2">runtime</td>
+        <td>bộ đệm văn có gì không</td>
+        <td><span class="moi">Chưa có văn trong phiên này</span></td>
+      </tr>
+      <tr>
+        <td>ô can thiệp</td>
+        <td>dây chuyền đang chạy</td>
+        <td class="kod2">chữ tĩnh</td>
+        <td>không nói gì — là hướng dẫn</td>
+        <td>giữ nguyên</td>
+      </tr>
+      <tr>
+        <td>thanh dưới</td>
+        <td><span class="cu">▶ đang chạy</span></td>
+        <td class="kod2">transport.state</td>
+        <td>máy có đang chạy không — <b>và đang sai</b></td>
+        <td><span class="moi">đọc runtime</span> · xem lỗi 1</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="dan" style="margin-top:22px">Sau khi tách: <strong>một chỗ duy nhất</strong> nói máy
+     còn sống hay không — thanh dưới. Bảy chỗ còn lại nói bảy chuyện khác nhau bằng bảy bộ từ
+     khác nhau, nên không chỗ nào cãi chỗ nào được nữa.</p>
+
+  <div class="cap" style="margin-top:24px">
+    <div class="mau truoc">
+      <div class="tenmau">Trước <span class="ghi">— "dòng sự kiện" là một danh từ, không phải một trạng thái</span></div>
+      <div class="bartren">
+        <span class="logo">ainovel <em>studio</em></span>
+        <span class="day"></span>
+        <span class="chip"><span class="d"></span>dòng sự kiện</span>
+      </div>
+    </div>
+    <div class="mau sau">
+      <div class="tenmau">Sau <span class="ghi">— bốn trạng thái, cùng một dạng câu</span></div>
+      <div class="bartren">
+        <span class="logo">ainovel <em>studio</em></span>
+        <span class="day"></span>
+        <span class="chip" title="kênh sự kiện trực tiếp từ engine"><span class="d"></span>đã nối</span>
+        <span class="chip cho"><span class="d"></span>đang nối</span>
+        <span class="chip mat"><span class="d"></span>mất kết nối</span>
+      </div>
+    </div>
+  </div>
+
+  <p class="ghichu"><b>Vì sao "dòng sự kiện" đọc không ra.</b> Bốn trạng thái của chip là
+     <span class="kod">dòng sự kiện · đang mở dòng · mất kết nối · chưa mở dòng</span>. Ba cái
+     sau là câu trạng thái; cái đầu là một <em>danh từ</em>. Nên đúng ở trạng thái khoẻ nhất —
+     trạng thái bạn thấy 99% thời gian — chip lại là chỗ duy nhất không nói trạng thái gì.
+     Nó đọc thành một cái nhãn, hoặc một cái nút.</p>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="tong">
+  <h2><span class="so">GỘP</span> Thanh dưới, đủ năm trạng thái của engine
+      <span class="loai">· bản đề xuất</span></h2>
+  <p class="dan">Bấm thử từng trạng thái. Chú ý hai điều: <strong>nút không đổi chỗ</strong>, và
+     mỗi trạng thái có một câu của riêng nó thay vì bị dồn vào ba từ.</p>
+
+  <div class="dieu">
+    <div class="nhomd">
+      <span class="tend">runtime</span>
+      <button type="button" data-tt="running" aria-pressed="true">running</button>
+      <button type="button" data-tt="pausing" aria-pressed="false">pausing</button>
+      <button type="button" data-tt="paused" aria-pressed="false">paused</button>
+      <button type="button" data-tt="idle" aria-pressed="false">idle</button>
+      <button type="button" data-tt="completed" aria-pressed="false">completed</button>
+      <button type="button" data-tt="dong" aria-pressed="false">engine đóng</button>
+      <button type="button" data-tt="gui" aria-pressed="false">đang gửi lệnh</button>
+    </div>
+  </div>
+
+  <div class="khungmp">
+    <div class="noi">canvas</div>
+    <footer class="tp moi" id="tpTong" data-chay="1">
+      <div class="dai">
+        <div class="o ghim"><span class="ky gold dap" data-slot="ky">▶</span><span class="m" data-slot="nhan">đang chạy</span></div>
+        <div class="o obuoc"><span class="lbl">công đoạn</span><span class="m">writer (Viết chương 10)</span><span class="lbl">đang chạy</span></div>
+        <div class="o"><span class="lbl">tổ</span><span class="m">Writer · cx/gpt-5.5</span></div>
+        <div class="o"><span class="lbl">ngữ cảnh</span><span class="ctx"><i style="width:62%"></i></span><span class="m">62%</span></div>
+        <div class="o"><span class="lbl">năng suất</span><span class="m">0,7 chương/giờ</span></div>
+        <div class="o"><span class="lbl">giá thành</span><span class="m">$0,784 / chương</span></div>
+        <div class="o"><span class="lbl">tổng</span><span class="m">$7,05</span></div>
+        <div class="o"><span class="lbl">đã chạy</span><span class="m">12:39:38</span></div>
+      </div>
+      <div class="dk" data-slot="nutTong"></div>
+    </footer>
+  </div>
+
+  <table class="tv" style="margin-top:26px">
+    <thead><tr><th style="width:13%">runtime</th><th style="width:17%">Ký hiệu · chữ</th><th style="width:27%">Nút</th><th>Nó nói điều gì mà bản cũ không nói được</th></tr></thead>
+    <tbody>
+      <tr><td class="kod2">running</td><td><span class="moi">▶ đang chạy</span></td><td>Đóng máy · <b>■ Dừng</b></td><td>— (bản cũ đúng ở đúng ca này)</td></tr>
+      <tr><td class="kod2">pausing</td><td><span class="moi">‖ đang dừng…</span></td><td>Đóng máy · <em>ô neo để trống</em></td><td>lệnh Dừng đã nhận, engine đang thu dọn — bấm nữa vô ích</td></tr>
+      <tr><td class="kod2">paused</td><td><span class="moi">‖ tạm dừng</span></td><td>Đóng máy · <b>▶ Chạy tiếp</b></td><td>còn một lượt treo; Chạy là <b>đi tiếp</b> chứ không bắt đầu lại</td></tr>
+      <tr><td class="kod2">idle</td><td><span class="moi">○ đang nghỉ</span></td><td>Tự chạy liên tục · Đóng máy · <b>▶ Chạy</b></td><td>engine mở nhưng rỗng việc</td></tr>
+      <tr><td class="kod2">completed</td><td><span class="moi">● đã xong</span></td><td>Xuất bản · Đóng máy · <b>Đọc bản thảo</b></td><td>hết việc thật — và lối ra là đọc/xuất, không phải chạy</td></tr>
+      <tr><td class="kod2">(đóng)</td><td><span class="moi">— chưa mở máy</span></td><td>Mở máy · <b>▶ Chạy</b></td><td>không có engine nào để nói trạng thái</td></tr>
+    </tbody>
+  </table>
+
+  <p class="ghichu"><b>Dưới 900px: hai tầng cố định.</b> App hiện đặt
+     <span class="kod">.dieukhien { flex-wrap: wrap }</span> ở khung hẹp, có lý do ghi kèm —
+     bóp nút cho vừa thì mất chữ, mà nút mất chữ là nút bấm nhầm. Cột nút 268px cũng không áp
+     được: ĐO ĐƯỢC ở 390px, nó chỉ chừa <b>62px</b> cho dải số, tức bóp nát đúng thứ thanh này
+     tồn tại để hiện. Nhưng câu trả lời không phải quay về <span class="kod">flex-wrap</span> —
+     cái sai của nó không phải "hai dòng" mà là <em>"một dòng hay hai dòng tuỳ dữ liệu"</em>.
+     Nên dưới 900px thanh thành <b>hai tầng cố định</b>: tầng trên là ô trạng thái ghim + dải số
+     cuộn ngang, tầng dưới là cụm nút trọn bề rộng. Chiều cao vẫn hằng số (78px), ô neo của nút
+     hạng nhất vẫn 108px — chỉ đổi từ góc phải-giữa sang phải-dưới. Thu cửa sổ xuống dưới 900px
+     để xem.</p>
+
+  <p class="ghichu"><b>Ba cái tôi CỐ Ý không đổi.</b>
+     (1) Vị trí thanh dưới — nó ở đáy vì điểm neo là bàn transport của DAW, đúng chỗ.
+     (2) Bộ token và màu — không thêm màu nào, <span class="kod">‖</span> dùng
+     <span class="kod">--amber</span> vốn đã là màu "cần chú ý".
+     (3) Thứ tự các ô số liệu — nó theo thứ tự câu hỏi của người vận hành và không có gì sai.</p>
+</section>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   Preview này ĐO chứ không minh hoạ.
+
+   Con số vị trí nút ở mục 2 là `getBoundingClientRect()` thật trên chính hai
+   thanh đang hiện phía trên nó, không phải số tôi gõ tay. Bấm đổi công đoạn và
+   xem nó tự tính lại — nếu bản "sau" có ngày nhảy chỗ thì tờ này sẽ tự khai ra.
+
+   Mọi nút đều dựng bằng createElement + textContent, không innerHTML: đây là
+   một artifact thiết kế nhưng nó vẫn là mã, và một thói quen xấu chép đi rất xa.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Nút hạng nhất đứng CUỐI, tức sát mép phải — đây là bản sửa thứ hai và nó do
+   chính tờ này bắt được.
+   Lượt kiểm đầu: cụm nút đã ghim phải rồi mà nút Chạy VẪN dịch 107px khi bộ nút
+   đổi từ 3 sang 4, vì nó đứng đầu cụm nên mỗi nút phụ thêm vào lại đẩy nó sang
+   trái. Ghim cả cụm là chưa đủ; phải ghim đúng CÁI NÚT ấy.
+   Chạy và Dừng loại trừ nhau nên chúng dùng chung một ô — đúng như bàn transport
+   của DAW: play–stop là một chỗ cố định, không phải hai nút trôi nổi. */
+const BO_NUT = {
+  2: [['phu', 'Mở máy'], ['chinh', '▶ Chạy']],
+  3: [['', 'Tự chạy liên tục'], ['phu', 'Đóng máy'], ['chinh', '▶ Chạy']],
+  4: [['bat', 'Chế độ nghiệm thu'], ['', 'Cho đi tiếp'], ['phu', 'Đóng máy'], ['dung', '■ Dừng']],
+};
+
+function veNut(o, bo) {
+  if (!o) return;
+  o.replaceChildren();
+  for (const [lop, chu] of bo) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    if (lop) b.className = lop;
+    b.textContent = chu;
+    o.appendChild(b);
+  }
+}
+
+/* Neo là mép PHẢI của khung, không phải x tuyệt đối: tờ này cuộn được và co
+   giãn theo cửa sổ, nên x tuyệt đối sẽ đổi vì lý do không liên quan tới lỗi.
+   Và đo đúng NÚT HẠNG NHẤT (Chạy hoặc Dừng), không phải nút đầu cụm: câu hỏi là
+   "cái nút tiêu tiền có đứng yên không", không phải "cụm nút có đứng yên không". */
+function khoangTuMepPhai(idThanh) {
+  const thanh = document.getElementById(idThanh);
+  const nut = thanh?.querySelector('.dk button.chinh, .dk button.dung');
+  if (!thanh || !nut) return null;
+  return Math.round(thanh.getBoundingClientRect().right - nut.getBoundingClientRect().left);
+}
+
+function doLai() {
+  const dCu = khoangTuMepPhai('tpCu');
+  const dMoi = khoangTuMepPhai('tpMoi');
+  const hCu = document.getElementById('tpCu')?.getBoundingClientRect().height ?? 0;
+  const hMoi = document.getElementById('tpMoi')?.getBoundingClientRect().height ?? 0;
+
+  const eCu = document.getElementById('doCu');
+  const eMoi = document.getElementById('doMoi');
+  const eCao = document.getElementById('doCao');
+
+  if (doLai.cuTruoc != null && dCu != null && dCu !== doLai.cuTruoc) {
+    eCu.className = 'xau';
+    eCu.textContent = `cách mép phải ${dCu}px — VỪA NHẢY ${Math.abs(dCu - doLai.cuTruoc)}px`;
+  } else {
+    eCu.className = hCu > 45 ? 'xau' : '';
+    eCu.textContent = dCu == null ? '—'
+      : `cách mép phải ${dCu}px${hCu > 45 ? ' — đã rơi xuống dòng hai' : ''}`;
+  }
+
+  if (doLai.moiTruoc != null && dMoi != null && dMoi !== doLai.moiTruoc) {
+    eMoi.className = 'xau';
+    eMoi.textContent = `cách mép phải ${dMoi}px — nhảy ${Math.abs(dMoi - doLai.moiTruoc)}px`;
+  } else {
+    eMoi.className = 'tot';
+    eMoi.textContent = dMoi == null ? '—' : `cách mép phải ${dMoi}px — đứng yên`;
+  }
+
+  eCao.className = hCu === hMoi ? '' : '';
+  eCao.textContent = `trước ${Math.round(hCu)}px · sau ${Math.round(hMoi)}px`;
+
+  doLai.cuTruoc = dCu;
+  doLai.moiTruoc = dMoi;
+}
+
+function chonMot(thuoc, nut) {
+  document.querySelectorAll(`[${thuoc}]`).forEach((x) => x.setAttribute('aria-pressed', 'false'));
+  nut.setAttribute('aria-pressed', 'true');
+}
+
+/* — công đoạn — */
+document.querySelectorAll('[data-buoc]').forEach((b) => {
+  b.addEventListener('click', () => {
+    chonMot('data-buoc', b);
+    document.querySelectorAll('#tpCu [data-slot="buoc"], #tpMoi [data-slot="buoc"]')
+      .forEach((s) => { s.textContent = b.dataset.buoc; });
+    requestAnimationFrame(doLai);
+  });
+});
+
+/* — bộ nút — */
+document.querySelectorAll('[data-nut]').forEach((b) => {
+  b.addEventListener('click', () => {
+    chonMot('data-nut', b);
+    const bo = BO_NUT[b.dataset.nut];
+    veNut(document.querySelector('[data-slot="nutCu"]'), bo);
+    veNut(document.querySelector('[data-slot="nutMoi"]'), bo);
+    requestAnimationFrame(doLai);
+  });
+});
+
+/* — bảng trạng thái ở mục gộp — */
+const TT = {
+  running:   { ky: '▶', lop: 'gold dap', nhan: 'đang chạy',   chay: true,  nut: [['phu', 'Đóng máy'], ['dung', '■ Dừng']] },
+  pausing:   { ky: '‖', lop: 'amber',    nhan: 'đang dừng…',  chay: false, nut: [['phu', 'Đóng máy']] },
+  paused:    { ky: '‖', lop: 'amber',    nhan: 'tạm dừng',    chay: false, nut: [['phu', 'Đóng máy'], ['chinh', '▶ Chạy tiếp']] },
+  idle:      { ky: '○', lop: 'muted',    nhan: 'đang nghỉ',   chay: false, nut: [['', 'Tự chạy liên tục'], ['phu', 'Đóng máy'], ['chinh', '▶ Chạy']] },
+  completed: { ky: '●', lop: 'teal',     nhan: 'đã xong',     chay: false, nut: [['', 'Xuất bản'], ['phu', 'Đóng máy'], ['chinh', 'Đọc bản thảo']] },
+  dong:      { ky: '—', lop: 'muted',    nhan: 'chưa mở máy', chay: false, nut: [['phu', 'Mở máy'], ['chinh', '▶ Chạy']] },
+  gui:       { ky: '▶', lop: 'gold dap', nhan: 'đang chạy',   chay: true,  nut: [['phu', 'Đóng máy'], ['dung', 'Đang gửi…']] },
+};
+
+document.querySelectorAll('[data-tt]').forEach((b) => {
+  b.addEventListener('click', () => {
+    chonMot('data-tt', b);
+    const t = TT[b.dataset.tt];
+    const bar = document.getElementById('tpTong');
+    const ky = bar.querySelector('[data-slot="ky"]');
+    ky.className = 'ky ' + t.lop;
+    ky.textContent = t.ky;
+    bar.querySelector('[data-slot="nhan"]').textContent = t.nhan;
+    if (t.chay) bar.setAttribute('data-chay', '1');
+    else bar.removeAttribute('data-chay');
+    veNut(bar.querySelector('[data-slot="nutTong"]'), t.nut);
+  });
+});
+
+/* khởi tạo */
+veNut(document.querySelector('[data-slot="nutCu"]'), BO_NUT[3]);
+veNut(document.querySelector('[data-slot="nutMoi"]'), BO_NUT[3]);
+veNut(document.querySelector('[data-slot="nutTong"]'), TT.running.nut);
+requestAnimationFrame(doLai);
+window.addEventListener('resize', () => {
+  doLai.cuTruoc = null;
+  doLai.moiTruoc = null;
+  doLai();
+});
+</script>
+</body>
+</html>

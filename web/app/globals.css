@@ -2552,55 +2552,61 @@ div:has(> .qcrow) {
 
 /* ══ transport ════════════════════════════════════════════════════════ */
 
+/* ═══ THANH TRANSPORT — HAI VÙNG, chiều cao HẰNG SỐ ════════════════════════
+   Bản trước là `display:flex; flex-wrap:wrap` với cụm nút (`children`) là phần tử
+   cuối. Nó có lý do đúng ở thời điểm ấy — DESIGN.md:108 "luôn hiện, không cuộn
+   mất" — nhưng cách thi hành đó đổi một lỗi lấy một lỗi nặng hơn.
+
+   ĐO ĐƯỢC ở 1512px, 2026-08-02:
+     công đoạn "commit"                  → 1 dòng · 30px · nút Chạy ở x=1236
+     công đoạn "writer (Viết chương 10)" → 2 dòng · 55px · nút Chạy ở x=14
+   Tức nút TIÊU TIỀN của sản phẩm nhảy 1.222px, và thanh cao thêm 25px đẩy cả
+   canvas — chỉ vì tên công đoạn dài ra. Tên ấy đổi mỗi vài giây khi máy chạy, nên
+   nó tự đi lại suốt phiên. Người dùng nói nguyên văn: "bấm Chạy thấy layout bị
+   thay đổi".
+
+   Luật cũ KHÔNG bị phá, nó được áp chặt hơn: câu ấy nói về TRẠNG THÁI MÁY, không
+   về mọi con số. Nên ô trạng thái được ghim `sticky` (không bao giờ cuộn mất),
+   còn giá/năng suất/đã chạy thì cắt được — chúng là số liệu phụ và câu đầy đủ đã
+   nằm trong chú giải của từng ô. */
 .trans {
   grid-area: trans;
-  display: flex;
+  display: grid;
+  /* Vùng trái CO ĐƯỢC tới 0 (`minmax(0,1fr)`, không phải `1fr` — `1fr` có
+     `min-width:auto` nên nó vẫn đẩy được cụm nút đi). Vùng phải tự nhiên. */
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: stretch;
   background: var(--panel);
   border-top: 1px solid var(--line);
   font: 400 11.5px var(--ui);
   color: var(--ink-2);
-  padding: 0 4px;
-  /* XUỐNG DÒNG, không cuộn ngang — DESIGN.md:108 "luôn hiện, không cuộn mất".
-     Không đặt sau một điểm ngắt: bề rộng nội dung phụ thuộc DỮ LIỆU (944px khi
-     mọi số là "—", 1253px khi phiên đang chạy có số thật), nên mọi điểm ngắt cố
-     định đều cắt mất `đã chạy` ở nửa dải bên trên nó. Xem chú thích `.khung`.
-
-     `overflow-x: auto` còn lại là lưới an toàn cho ca bệnh lý duy nhất mà xuống
-     dòng không cứu được: MỘT ô rộng hơn cả khung. Bình thường không có thanh
-     cuộn nào vì `scrollWidth === clientWidth`. */
+}
+/* Dải số liệu: vùng DUY NHẤT được phép cắt. */
+.trans .dai {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
-  flex-wrap: wrap;
   scrollbar-width: none;
+  padding-left: 4px;
+  /* Mép mờ 26px: nói ra rằng còn số liệu bên phải. Cắt lặng lẽ thì người vận hành
+     tưởng con số không tồn tại, chứ không tưởng nó bị khuất. */
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
 }
-.trans::-webkit-scrollbar {
+.trans .dai::-webkit-scrollbar {
   display: none;
 }
+/* Ô trạng thái GHIM ở mép trái vùng cắt — đây là chỗ DESIGN.md:108 được giữ. */
+.trans .cell.ghim {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
 @media (max-width: 1240px) {
-  /* ⚠ Phần thanh cuộn dưới đây ĐANG NGỦ và cố ý giữ lại. Từ khi transport
-     `flex-wrap: wrap` ở mọi bề rộng, `scrollWidth === clientWidth` nên không có
-     thanh cuộn nào hiện ra — đã đo ở 365/390/901/1024/1240/1359/1440px, tràn 0px
-     ở tất cả.
-     GIỮ vì còn đúng MỘT ca xuống dòng không cứu được: một ô đơn lẻ rộng hơn cả
-     khung (ví dụ khung rất hẹp mà `.cell.buoc` đã ở mức chặn 216px). Lúc đó phải
-     THẤY được là còn nội dung bên phải, nếu không người dùng tưởng con số bị mất.
-     ĐỪNG đọc khối này thành "đường cuộn còn hoạt động", và cũng đừng dọn nó đi vì
-     "không bao giờ chạy" — nó là lưới an toàn, không phải mã chết.
-     Ngược lại, `.trans .token { display: none }` ở cuối khối thì KHÔNG ngủ: nó
-     vẫn chạy và vẫn cần. */
-  .trans {
-    scrollbar-width: thin;
-    scrollbar-color: var(--line) transparent;
-  }
-  .trans::-webkit-scrollbar {
-    display: block;
-    height: 4px;
-  }
-  .trans::-webkit-scrollbar-thumb {
-    background: var(--line);
-    border-radius: 2px;
-  }
   .trans .cell {
     padding: 0 9px;
   }
@@ -2612,23 +2618,20 @@ div:has(> .qcrow) {
     display: none;
   }
 }
-/* `border-bottom` + `min-height` ở MỌI bề rộng, không chỉ dưới điểm ngắt: một hàng
-   đã xuống dòng là một hàng thật nên nó cần kẻ ngang của riêng nó — `border-right`
-   của ô cuối hàng dừng giữa khung và không chia được hàng nào. `min-height` để hàng
-   không bó sát chữ khi không còn chiều cao 30px của grid. Khi thanh vừa MỘT hàng,
-   kẻ dưới trùng mép đáy khung nên không thêm nét nào nhìn thấy được. */
+/* `border-bottom` đã BỎ cùng với `flex-wrap`. Nó tồn tại để chia hai hàng khi thanh
+   xuống dòng; giờ thanh không xuống dòng nữa nên nó chỉ còn là một nét thừa trùng
+   mép đáy khung. `min-height` giữ lại: nó là sàn chiều cao của thanh. */
 .trans .cell {
   display: flex;
   align-items: center;
   gap: 7px;
   padding: 0 11px;
   border-right: 1px solid var(--line-2);
-  border-bottom: 1px solid var(--line-2);
   min-height: 28px;
   white-space: nowrap;
   flex: none;
 }
-.trans .cell:last-child {
+.trans .dai > .cell:last-child {
   border-right: 0;
 }
 /* Ô công đoạn là ô DUY NHẤT có bề rộng không chặn: nội dung là câu mô tả tự do
@@ -4901,12 +4904,22 @@ div:has(> .qcrow) {
  * `margin-left: auto` KHÔNG dùng ở đây: ô `.push` trong transport đã chiếm chỗ đó. Nhóm
  * này đứng cuối theo thứ tự DOM và tự nằm bên phải.
  */
+/* Cụm nút là vùng PHẢI của lưới transport: không bao giờ xuống dòng, không bao giờ
+   bị dải số đẩy đi. Xem khối `.trans` để biết lỗi 1.222px mà nó sửa. */
 .dieukhien {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 6px;
   padding: 0 10px;
   flex-shrink: 0;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  /* Bề rộng SÀN, không phải cố định. Cụm này đổi SỐ nút theo trạng thái (2 khi máy
+     chưa mở, 3 khi mở, 4 ở chế độ nghiệm thu) và đổi NHÃN khi đang gửi. Không có
+     sàn thì mỗi lần đổi trạng thái là một lần cả dải số bên trái xê dịch theo —
+     hết nhảy dọc lại nhảy ngang. 268px là bộ 3 nút, bộ hay gặp nhất. */
+  min-width: 268px;
 }
 
 .dkNut {
@@ -4927,6 +4940,18 @@ div:has(> .qcrow) {
 .dkNut:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* Ô NEO của nút hạng nhất — một bề rộng cho cả Chạy / Chạy tiếp / Dừng / Đang gửi…
+   Không có nó thì nút vẫn nhích vài pixel mỗi lần đổi nhãn (ĐO ĐƯỢC: 3px giữa
+   "▶ Chạy" và "■ Dừng"). Nhỏ, nhưng nó phá đúng lời hứa vừa đưa ra: một chỗ cố
+   định. 108px là bề rộng của nhãn dài nhất, "▶ Chạy tiếp". */
+.dkNut.dkChay,
+.dkNut.dkDung {
+  min-width: 108px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Chạy mang màu tín hiệu duy nhất (vàng) vì nó là hành động khởi động một việc TIÊU TIỀN.
@@ -4965,11 +4990,30 @@ div:has(> .qcrow) {
 }
 
 @media (max-width: 900px) {
-  /* Thanh transport đã chật ở khung hẹp. Cho nhóm nút xuống dòng thay vì bóp chúng: một
-     nút bị bóp mất chữ là nút bấm nhầm. */
+  /* HAI TẦNG CỐ ĐỊNH, không phải quay về xuống-dòng-tuỳ-dữ-liệu.
+
+     Cột nút 268px không áp được cho điện thoại: ĐO ĐƯỢC ở 390px, nó chỉ chừa 62px
+     cho dải số — tức bóp nát đúng thứ thanh này tồn tại để hiện. Nhưng câu trả lời
+     không phải `flex-wrap`: cái sai của `flex-wrap` không phải "hai dòng", mà là
+     "một dòng hay hai dòng TUỲ DỮ LIỆU". Hai tầng cố định giữ nguyên cả hai lời hứa
+     — chiều cao là hằng số, và nút hạng nhất có một ô neo — chỉ đổi neo từ góc
+     phải-giữa sang phải-dưới. */
+  .trans {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
   .dieukhien {
-    flex-wrap: wrap;
+    min-width: 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
     padding: 6px 10px;
+  }
+  /* Nút phụ co lại được; nút hạng nhất thì KHÔNG — ô neo giữ nguyên (xem `.dkChay`).
+     Nút phụ mất vài chữ vẫn đoán được từ ngữ cảnh; nút tiêu tiền thì không được phép. */
+  .dkNut:not(.dkChay):not(.dkDung) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .dkLoi {
     max-width: 100%;
