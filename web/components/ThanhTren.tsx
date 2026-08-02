@@ -31,6 +31,7 @@ export function ThanhTren({
   onChonKhu,
   onTaoTacPham,
   dangOTaoTacPham,
+  dauChot,
 }: {
   workshop: Workshop | undefined;
   dangXem: Book | undefined;
@@ -48,6 +49,15 @@ export function ThanhTren({
   /** Vắng = máy này không tạo được tác phẩm; nút KHÔNG được vẽ. Xem lý do ở page.tsx. */
   onTaoTacPham?: () => void;
   dangOTaoTacPham?: boolean;
+  /**
+   * Họ 10 (đồng thanh) — chỗ thứ ba, và là chỗ mang con số THÔ của sự kiện: `9/111`.
+   *
+   * Ba chỗ nhấp CÙNG màu, CÙNG lúc, CÙNG thời lượng. Đó không phải trang trí mà là một bài
+   * dạy: vạch trên lane, chip đếm ở rail và tiến độ ở đây là MỘT sự thật nhìn từ ba góc.
+   * Học một lần rồi từ đó chỉ cần liếc một trong ba. Ba chỗ nhấp lệch nhịp thì thành màn
+   * trình diễn đèn — cùng nhịp mới đọc ra là một sự kiện.
+   */
+  dauChot: number;
 }) {
   const [mo, setMo] = useState(false);
   const boc = useRef<HTMLDivElement>(null);
@@ -99,7 +109,12 @@ export function ThanhTren({
                 hệt nhau ở cả ba và không có cách nào biết mình đang mở cái nào. */}
             <b>{tenSach(dangXem)}</b>
             {dangXem.name ? <span className="ma">{dangXem.id}</span> : null}
-            <span className="meta">
+            {/* `key` là thứ làm hoạt ảnh chạy LẠI: CSS chỉ phát keyframes khi phần tử được
+                dựng. Dấu 0 = chưa chốt lần nào → không lớp nào, tức mở trang không nhấp. */}
+            <span
+              key={dauChot}
+              className={`meta${dauChot > 0 ? ' dongThanh' : ''}`}
+            >
               {tienDo(dangXem.completed_chapters, dangXem.total_chapters)}
             </span>
             {nhieuHon1 ? (

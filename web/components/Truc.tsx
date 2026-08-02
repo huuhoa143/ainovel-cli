@@ -32,11 +32,22 @@ export function Truc({
   capabilities,
   chuongChon,
   onChonChuong,
+  vuaChot,
 }: {
   timeline: Timeline;
   capabilities: Capabilities;
   chuongChon: number | undefined;
   onChonChuong: (n: number) => void;
+  /**
+   * Họ 09 — chương vừa chuyển sang `done`.
+   *
+   * Nhận qua prop chứ KHÔNG tự gọi `useVuaChot(marks)` ở đây, dù `marks` đã có sẵn trong
+   * tệp này. Lý do là họ 10: chip đếm ở rail và ô tiến độ ở thanh trên phải nhấp CÙNG nhịp
+   * với vạch, mà hai bề mặt đó là anh em của buồng lái chứ không phải con. Gọi hook ở hai
+   * chỗ là dựng hai bộ nhớ và hai đồng hồ cho cùng một sự kiện — và hai bản sao của một sự
+   * thật thì có ngày lệch, đúng lớp lỗi mà `mayNaoDo` vừa phải gom lại.
+   */
+  vuaChot: ReadonlySet<number>;
 }) {
   const marks = timeline.chapters ?? [];
   const tong = marks.length;
@@ -71,7 +82,12 @@ export function Truc({
             đẩy chữ "Chương" xuống ngang với dòng chú thích và nó trông như nhãn
             của dòng chú thích chứ không phải của lane. */}
         <div className="lane-lbl neo-dau">{CHU.chuong}</div>
-        <LaneChuong marks={marks} chuongChon={chuongChon} onChonChuong={onChonChuong} />
+        <LaneChuong
+          marks={marks}
+          chuongChon={chuongChon}
+          onChonChuong={onChonChuong}
+          vuaChot={vuaChot}
+        />
       </div>
 
       <ChuGiai marks={marks} />
@@ -171,10 +187,13 @@ function LaneChuong({
   marks,
   chuongChon,
   onChonChuong,
+  vuaChot,
 }: {
   marks: ChapterMark[];
   chuongChon: number | undefined;
   onChonChuong: (n: number) => void;
+  /** Họ 09 — chương vừa chuyển sang `done`. Xem `lib/chotChuong.ts`. */
+  vuaChot: ReadonlySet<number>;
 }) {
   const oLane = useRef<HTMLDivElement>(null);
   const [beRong, setBeRong] = useState(0);
@@ -217,7 +236,7 @@ function LaneChuong({
           {trong.map((m) => (
             <i
               key={m.chapter}
-              className={m.state}
+              className={`${m.state}${vuaChot.has(m.chapter) ? ' vuaChot' : ''}`}
               onClick={() => onChonChuong(m.chapter)}
               title={`chương ${m.chapter} · ${TRANG_THAI_VACH[m.state].nhan}`}
               style={{
@@ -230,10 +249,14 @@ function LaneChuong({
         </div>
       ) : (
         <div className="chlane" role="img" aria-label={nhan}>
-          {nhomVach(trong).map((d) => (
+          {/* Tập vừa chốt đi vào `nhomVach` chứ không chỉ vào `className`: hoạt ảnh họ 09
+              đổ đầy cả phần tử, nên chạy nó trên một dải gộp 40 chương là nói "cả bốn mươi
+              chương vừa chốt". Tách ra một dải một-chương giữ nguyên tổng trọng số nên
+              không có gì xê dịch — xem `nhomVach` trong lib/truc.ts. */}
+          {nhomVach(trong, vuaChot).map((d) => (
             <i
               key={d.from}
-              className={d.state}
+              className={`${d.state}${d.vuaChot ? ' vuaChot' : ''}`}
               style={{
                 flexGrow: d.len,
                 flexShrink: 1,
