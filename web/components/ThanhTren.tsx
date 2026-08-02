@@ -237,7 +237,10 @@ export function ThanhTren({
       ) : null}
 
       <div className="right">
-        <span className="kbd live" data-tt={ketNoi} title={tenKetNoi(ketNoi)}>
+        {/* Chú giải nói PHẠM VI, không lặp lại nhãn. Bản trước để `title` bằng đúng chữ đang
+            hiện — một chú giải không thêm gì. Chữ "đã nối" tự nó không nói nối cái gì, và
+            đó chính là câu người dùng hỏi. */}
+        <span className="kbd live" data-tt={ketNoi} title={GIAI_THICH.chipKetNoi}>
           <span className="dot" aria-hidden="true" />
           {tenKetNoi(ketNoi)}
         </span>
@@ -250,18 +253,23 @@ function tenSach(b: Book): string {
   return b.name ? b.name : b.id;
 }
 
-/** Nhãn của tình trạng stream — chữ, không chỉ màu đốm. */
+/**
+ * Nhãn của tình trạng stream — chữ, không chỉ màu đốm.
+ *
+ * Bốn nhãn nằm ở `lib/nhan.ts` như mọi nhãn khác, và cả bốn cùng một dạng câu: xem chú
+ * thích ở đó để biết vì sao bản trước ("dòng sự kiện") đọc không ra.
+ */
 function tenKetNoi(t: TinhTrangKetNoi): string {
   switch (t) {
     case 'song':
-      return 'dòng sự kiện';
+      return CHU.ketNoiSong;
     case 'mat':
-      return 'mất kết nối';
-    // Xưởng rỗng: không có tác phẩm nên không mở dòng nào. Nói "đang mở dòng" ở
+      return CHU.ketNoiMat;
+    // Xưởng rỗng: không có tác phẩm nên không mở dòng nào. Nói "đang nối" ở
     // đây là một câu không bao giờ thành sự thật.
     case 'khong':
-      return 'chưa mở dòng';
+      return CHU.ketNoiChua;
     default:
-      return 'đang mở dòng';
+      return CHU.ketNoiDangMo;
   }
 }

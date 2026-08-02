@@ -176,8 +176,9 @@ test('khu văn sống được cho biết máy đang chạy hay đang nghỉ', (
   ve(true, {}, themChu(BO_DEM_RONG, 'x'));
   expect(screen.getByRole('heading', { name: CHU.mayDangNoi })).toBeDefined();
 
+  // Bộ đệm CÓ chữ, nên ca nghỉ ở đây là "văn của lượt gần nhất" — xem ba ca ở `VanSong.tsx`.
   ve(false, {}, themChu(BO_DEM_RONG, 'x'));
-  expect(screen.getByRole('heading', { name: CHU.mayNghi })).toBeDefined();
+  expect(screen.getByRole('heading', { name: CHU.vanLuotGanNhat })).toBeDefined();
 });
 
 test('ô can thiệp nói ra hệ quả đúng với trạng thái máy', () => {
