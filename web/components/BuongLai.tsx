@@ -91,6 +91,7 @@ export function BuongLai({
   song,
   vanSong,
   dangChay,
+  vuaChot,
 }: {
   snapshot: Snapshot;
   tacPham: string | undefined;
@@ -128,6 +129,8 @@ export function BuongLai({
   /** Chữ model đang sinh ra. Đường riêng, không đi qua `suKien` — xem lib/dongSuKien.ts. */
   vanSong: BoDemVan;
   dangChay: boolean;
+  /** Họ 09 — chỉ đi thẳng xuống `Truc`; buồng lái không đọc nó. Xem `lib/chotChuong.ts`. */
+  vuaChot: ReadonlySet<number>;
 }) {
   const canhBao = snapshot.warnings ?? [];
 
@@ -213,6 +216,7 @@ export function BuongLai({
             capabilities={snapshot.capabilities}
             chuongChon={chuongChon}
             onChonChuong={onChonChuong}
+            vuaChot={vuaChot}
           />
         </div>
 

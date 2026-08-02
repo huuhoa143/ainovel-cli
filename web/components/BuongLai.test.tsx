@@ -27,6 +27,7 @@ function ve(
       snapshot={snap({ agents: [], idle_agents: [], ...p })}
       tacPham="b"
       choGhi
+      vuaChot={new Set<number>()}
       chuongChon={undefined}
       onChonChuong={() => {}}
       onChonKhu={() => {}}

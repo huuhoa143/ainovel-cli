@@ -61,6 +61,8 @@ export interface DaiVach {
   state: MarkState;
   /** Số chương trong dải — cũng là trọng số độ rộng. */
   len: number;
+  /** Dải này là MỘT chương vừa chốt, tách ra để hoạt ảnh họ 09 chạy đúng chỗ. */
+  vuaChot?: boolean;
 }
 
 /**
@@ -76,19 +78,38 @@ export interface DaiVach {
  * dải vẫn đúng bằng số chương của nó, và ranh giới nằm đúng chỗ trạng thái đổi.
  * Lane thưa (còn khoảng hở) vẫn vẽ từng chương để đếm được bằng mắt.
  */
-export function nhomVach(marks: ChapterMark[]): DaiVach[] {
+export function nhomVach(
+  marks: ChapterMark[],
+  /**
+   * Chương VỪA chốt — mỗi chương trong tập này được TÁCH thành một dải riêng.
+   *
+   * Vì sao phải tách: hoạt ảnh họ 09 đổ đầy PHẦN TỬ từ trái. Trên một dải gộp 40 chương,
+   * nó đọc ra là "cả bốn mươi chương vừa chốt" — một lời nói dối lớn gấp bốn mươi lần sự
+   * thật, và nói đúng vào lúc người vận hành đang tin nhất.
+   *
+   * Tách KHÔNG làm xê dịch gì: độ rộng dải là `flexGrow: len`, nên 40 = 39 + 1 cho ra đúng
+   * cùng tổng trọng số. Ranh giới mới biến mất ở lượt nạp sau, khi tập rỗng trở lại.
+   */
+  vuaChot: ReadonlySet<number> = KHONG_CHOT,
+): DaiVach[] {
   const dai: DaiVach[] = [];
   for (const m of marks) {
+    const chot = vuaChot.has(m.chapter);
     const cuoi = dai[dai.length - 1];
-    if (cuoi && cuoi.state === m.state && m.chapter === cuoi.to + 1) {
+    // Không gộp chương vừa chốt vào dải trước, và cũng không gộp gì vào một dải vừa chốt:
+    // thiếu vế thứ hai thì chương kế tiếp nuốt mất dải một-chương vừa tách ra.
+    if (cuoi && !chot && !cuoi.vuaChot && cuoi.state === m.state && m.chapter === cuoi.to + 1) {
       cuoi.to = m.chapter;
       cuoi.len += 1;
       continue;
     }
-    dai.push({ from: m.chapter, to: m.chapter, state: m.state, len: 1 });
+    dai.push({ from: m.chapter, to: m.chapter, state: m.state, len: 1, vuaChot: chot });
   }
   return dai;
 }
+
+/** Mặc định của `nhomVach`: không có chương nào vừa chốt. */
+const KHONG_CHOT: ReadonlySet<number> = new Set();
 
 /**
  * Chương tương ứng với một điểm bấm trong dải.

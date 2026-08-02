@@ -26,18 +26,51 @@ import { Transport } from '@/components/Transport';
 import { VanPhong } from '@/components/VanPhong';
 import { Xuong } from '@/components/Xuong';
 import { DangTai, KhongTaiDuoc, XuongTrong } from '@/components/XuongTrong';
+import { useVuaChot } from '@/lib/chotChuong';
 import { dungInspector, type Khu as KhuMa } from '@/lib/khu';
 import { trangThaiCua } from '@/lib/nghiemThu';
 import { mayDangChay } from '@/lib/song';
 import { useMay } from '@/lib/useMay';
 import type { CongDoanSong } from '@/lib/useStudio';
-import type { Book, Snapshot } from '@/lib/types';
+import type { Book, ChapterMark, Snapshot } from '@/lib/types';
 import type { BoDemVan } from '@/lib/vanSong';
 import { useStudio } from '@/lib/useStudio';
+
+/** Danh sách rỗng ỔN ĐỊNH: `?? []` mới mỗi lần render sẽ làm effect của hook chạy vô ích. */
+const KHONG_CO_VACH: ChapterMark[] = [];
 
 export default function Trang() {
   const s = useStudio();
   const may = useMay();
+
+  /**
+   * Họ 09 (chương chốt) + họ 10 (đồng thanh) — gọi ĐÚNG MỘT LẦN, ở đây.
+   *
+   * Ở tầng này chứ không trong `Truc` (nơi đã có sẵn `marks`) vì họ 10 đòi ba bề mặt nhấp
+   * CÙNG một nhịp: vạch trên lane, chip đếm ở rail, và tiến độ ở thanh trên. Rail và thanh
+   * trên là anh em của buồng lái, nên `Trang` là tổ tiên chung gần nhất — và cũng là chỗ
+   * duy nhất giữ được "một sự kiện, một dấu". Gọi hook ở mỗi bề mặt là dựng ba bộ nhớ và ba
+   * đồng hồ cho cùng một sự kiện; chúng sẽ lệch nhịp, mà cùng nhịp mới là cả điểm của họ 10.
+   */
+  const chot = useVuaChot(s.snapshot?.timeline.chapters ?? KHONG_CO_VACH);
+
+  /**
+   * Dấu cho họ 10, gộp CẢ "vừa xảy ra" lẫn "còn đang nhấp" vào một con số.
+   *
+   * `0` khi không nhấp, `chot.dau` khi đang nhấp. Hai bề mặt kia dùng nó làm `key`, nên:
+   *   · mỗi lần chốt, số đổi → React dựng lại phần tử → hoạt ảnh chạy;
+   *   · khi tập được dọn, số về 0 → dựng lại lần nữa, lần này KHÔNG lớp nào → sạch.
+   *
+   * ĐO ĐƯỢC trên app thật vì sao cần vế thứ hai: bản trước chỉ truyền `chot.dau`, và vì đó
+   * là bộ đếm tăng dần nên lớp `dongThanh` DÍNH LẠI vĩnh viễn sau lần chốt đầu tiên (đo ở
+   * t=3.200ms: vạch trên lane đã sạch, hai chỗ kia vẫn còn lớp). Hôm nay nó vô hại — không
+   * gì dựng lại phần tử đó — nhưng nó là một quả mìn hẹn giờ: ngày ai đó thêm một `key` hay
+   * một nhánh render mới, hai chỗ ấy nhấp lên vì một sự kiện đã qua từ lâu.
+   *
+   * Và nó phá đúng lời hứa của họ 10 — "cùng màu, cùng lúc, CÙNG THỜI LƯỢNG". Ba chỗ phải
+   * cùng sống cùng tắt, nên cả ba đọc từ một nguồn duy nhất là `chot.vua`.
+   */
+  const dauDongThanh = chot.vua.size > 0 ? chot.dau : 0;
 
   // Chốt bản nháp từ cùng dựng: chuyển sang khu Tác phẩm mới với bản nháp đã có. Không tự
   // tạo luôn — người dùng còn phải đặt tên thư mục, và một cú tạo ngầm sẽ tiêu tiền mà họ
@@ -107,6 +140,7 @@ export default function Trang() {
             : undefined
         }
         dangOTaoTacPham={s.khu === 'tac-pham-moi'}
+        dauChot={dauDongThanh}
       />
 
       {/* Chưa có tệp cấu hình thì dẫn THẲNG vào cài đặt, không hiện studio trống.
@@ -133,6 +167,7 @@ export default function Trang() {
             hoSo={s.hoSo}
             khu={s.khu}
             onChonKhu={s.chonKhu}
+            dauChot={dauDongThanh}
           />
           <Khu
             khu={s.khu}
@@ -166,6 +201,7 @@ export default function Trang() {
             song={s.song}
             vanSong={s.vanSong}
             dangChay={mayDangChay(s.snapshot)}
+            vuaChot={chot.vua}
           />
           {coInsp ? (
             <Inspector
@@ -241,6 +277,7 @@ export function Khu({
   song,
   vanSong,
   dangChay,
+  vuaChot,
 }: {
   khu: KhuMa;
   snapshot: Snapshot;
@@ -274,6 +311,8 @@ export function Khu({
   song: CongDoanSong | undefined;
   vanSong: BoDemVan;
   dangChay: boolean;
+  /** Họ 09 — chỉ buồng lái đọc; các khu khác không có lane chương. */
+  vuaChot: ReadonlySet<number>;
 }) {
   switch (khu) {
     // Xưởng là bề mặt của CẢ xưởng, nên nó cố ý KHÔNG nhận `tacPham`: nội dung của nó không
@@ -370,6 +409,7 @@ export function Khu({
           song={song}
           vanSong={vanSong}
           dangChay={dangChay}
+          vuaChot={vuaChot}
         />
       );
   }

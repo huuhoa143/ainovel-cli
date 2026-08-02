@@ -22,6 +22,7 @@ function ve(p: Partial<Parameters<typeof ThanhTren>[0]> = {}) {
       workshop={{ root: '/w', books: [b] }}
       dangXem={b}
       ketNoi="song"
+      dauChot={0}
       onChon={() => {}}
       onChonKhu={() => {}}
       cuaNghiemThu={undefined}
@@ -79,6 +80,7 @@ test('KHÔNG chờ thì không có huy hiệu — cả ba ca không-chờ', () =
       workshop={{ root: '/w', books: [sach()] }}
       dangXem={sach()}
       ketNoi="song"
+      dauChot={0}
       onChon={() => {}}
       onChonKhu={() => {}}
       cuaNghiemThu={undefined}
@@ -95,7 +97,8 @@ test('KHÔNG chờ thì không có huy hiệu — cả ba ca không-chờ', () =
         workshop={{ root: '/w', books: [sach()] }}
         dangXem={sach()}
         ketNoi="song"
-        onChon={() => {}}
+        dauChot={0}
+      onChon={() => {}}
         onChonKhu={() => {}}
         cuaNghiemThu={trangThaiCua(a, '')}
       />,
@@ -128,4 +131,27 @@ test('huy hiệu KHÔNG phụ thuộc việc có tác phẩm nào đang xem hay 
     cuaNghiemThu: trangThaiCua({ mode: 'review', hold: true }, ''),
   });
   expect(screen.getByRole('button', { name: CHU.nghiemThuChoBan })).toBeDefined();
+});
+
+/* ── họ 10 · đồng thanh, chỗ thứ ba ─────────────────────────────────────
+ *
+ * Ô tiến độ `9/111` là chỗ mang con số THÔ của sự kiện chốt chương. Ba chỗ nhấp cùng màu,
+ * cùng lúc, cùng thời lượng — đó là bài dạy rằng vạch trên lane, chip ở rail và con số này
+ * là MỘT sự thật nhìn từ ba góc.
+ */
+
+test('mở trang (dauChot=0) thì ô tiến độ KHÔNG nhấp', () => {
+  const { container } = ve();
+  expect(container.querySelector('.meta')?.className).not.toContain('dongThanh');
+});
+
+test('chốt một chương thì ô tiến độ nhấp', () => {
+  const { container } = ve({ dauChot: 1 });
+  expect(container.querySelector('.meta')?.className).toContain('dongThanh');
+});
+
+test('dấu về 0 thì lớp được DỌN — cùng thời lượng với hai chỗ kia', () => {
+  // Xem lý do đầy đủ (và phép đo trên app thật) ở `dauDongThanh` trong app/page.tsx.
+  const { container } = ve({ dauChot: 0 });
+  expect(container.querySelectorAll('.dongThanh')).toHaveLength(0);
 });

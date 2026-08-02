@@ -59,11 +59,26 @@ export function Rail({
   hoSo,
   khu,
   onChonKhu,
+  dauChot,
 }: {
   snapshot: Snapshot | undefined;
   hoSo: Profile | undefined;
   khu: Khu;
   onChonKhu: (k: Khu) => void;
+  /**
+   * Họ 10 (đồng thanh) — bộ đếm sự kiện chốt chương, dùng chung với lane và thanh trên.
+   *
+   * Chip "Bản thảo" ĐÃ tự nhấp khi số đổi (họ 08, `useDauDoi`), nên câu hỏi hợp lý là vì
+   * sao cần thêm một đường nữa. Vì hai lý do đo được:
+   *
+   *   · Họ 08 nhấp theo `completed_chapters` từ `book`, còn lane nhấp theo `timeline`.
+   *     Hai trường đó đến từ hai phép tính ở server và không đổi cùng một nhịp, nên hai
+   *     chỗ nhấp LỆCH nhau — mà "cùng thời điểm" chính là thứ làm nên họ 10.
+   *   · Họ 08 dùng `nhapDem` (vàng, "một con số vừa đổi"), họ 10 dùng `dongThanh` (teal,
+   *     "một chương vừa chốt"). Cùng màu với vạch trên lane là thứ dạy người dùng rằng ba
+   *     chỗ đó là MỘT sự thật nhìn từ ba góc.
+   */
+  dauChot: number;
 }) {
   const oRail = useRef<HTMLElement>(null);
 
@@ -144,6 +159,9 @@ export function Rail({
             thống chứ không của người viết truyện: cửa đầu tiên nên là thứ người dùng muốn
             nhất. Bề mặt mặc định vẫn là Dòng sản xuất — đổi cả cửa đó là đổi sản phẩm,
             không phải sửa rail. */}
+        {/* Bản thảo là mục DUY NHẤT nhận `dauChot`: nó đếm chương đã chốt, tức đúng con số
+            mà sự kiện ấy làm đổi. Rải nó ra các mục khác sẽ biến một tin thành một đợt
+            nhấp toàn rail — đúng thứ họ 10 tồn tại để KHÔNG làm. */}
         <MucDi
           nhan={CHU.banThao}
           ky="✎"
@@ -151,6 +169,7 @@ export function Rail({
           khu={khu}
           onChonKhu={onChonKhu}
           dem={banThao}
+          dauChot={dauChot}
           chuGiai={
             dangSoan > 0
               ? `${banThao ?? 0} chương đã chốt · ${dangSoan} đang soạn`
@@ -493,6 +512,7 @@ function MucDi({
   neo,
   phu,
   nhanPhu,
+  dauChot,
 }: {
   nhan: string;
   ky: string;
@@ -504,6 +524,8 @@ function MucDi({
   canhBao?: boolean;
   neo?: string;
   phu?: boolean;
+  /** Họ 10 — chỉ mục "Bản thảo" truyền vào. Xem chú thích ở `Rail`. */
+  dauChot?: number;
   /**
    * Nhãn báo trước, cho mục VẪN BẤM ĐƯỢC mà biết trước là sẽ rỗng.
    *
@@ -521,7 +543,14 @@ function MucDi({
      `vuaToi` vì nó là loại tin mạnh hơn. */
   const dauDem = useDauDoi(dem);
   const dauToi = useDauToi(!!canhBao);
-  const nhanDem = dauToi > 0 ? ' vuaToi' : dauDem > 0 ? ' vuaDoi' : '';
+  /* Ba loại tin, và thứ tự ưu tiên là thứ tự sức nặng:
+       vuaToi   — việc tồn xuất hiện từ không có gì (mạnh nhất: từ "không cần bạn" sang "cần bạn")
+       dongThanh— một chương vừa chốt (họ 10: cùng màu, cùng nhịp với vạch trên lane)
+       vuaDoi   — con số đổi vì một lý do khác
+     Không cộng dồn hai lớp: hai hoạt ảnh trên một phần tử là một cái nuốt cái kia, và cái
+     thắng lại tuỳ thứ tự khai trong CSS — tức một hành vi không ai đọc ra được từ chỗ này. */
+  const nhanDem =
+    dauToi > 0 ? ' vuaToi' : (dauChot ?? 0) > 0 ? ' dongThanh' : dauDem > 0 ? ' vuaDoi' : '';
 
 
   return (
@@ -550,7 +579,7 @@ function MucDi({
            nên một lớp bật-rồi-tắt không đủ. Dấu 0 = chưa đổi lần nào → không lớp nào, tức mở
            trang không nhấp. Xem lib/dauDoi.ts. */
         <span
-          key={`${dauToi}-${dauDem}`}
+          key={`${dauToi}-${dauDem}-${dauChot ?? 0}`}
           className={`n${canhBao ? ' warn' : ''}${nhanDem}`}
         >
           {dem}

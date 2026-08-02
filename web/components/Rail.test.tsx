@@ -26,13 +26,61 @@ Element.prototype.scrollIntoView = function () {
   /* jsdom không bố cục */
 };
 
-function ve(khu: Khu = 'dong-san-xuat') {
+function ve(khu: Khu = 'dong-san-xuat', dauChot = 0) {
   const chon = vi.fn();
   const r = render(
-    <Rail snapshot={snap({})} hoSo={undefined} khu={khu} onChonKhu={chon} />,
+    <Rail
+      snapshot={snap({})}
+      hoSo={undefined}
+      khu={khu}
+      onChonKhu={chon}
+      dauChot={dauChot}
+    />,
   );
   return { ...r, chon };
 }
+
+/* ── họ 10 · đồng thanh ──────────────────────────────────────────────────
+ *
+ * Một chương chốt thì ba chỗ nhấp CÙNG màu, CÙNG lúc: vạch trên lane, chip này, và tiến độ
+ * ở thanh trên. Chỉ chip "Bản thảo" được nhận dấu — nó đếm đúng con số mà sự kiện làm đổi.
+ */
+
+test('dauChot=0 (mở trang) thì KHÔNG chip nào mang lớp đồng thanh', () => {
+  // Cùng luật với mọi họ khác: mở trang thấy chín chương đã chốt từ hôm qua, và nếu chúng
+  // làm chip nhấp thì cái nhấp đó không còn nghĩa gì.
+  const { container } = ve();
+  expect(container.querySelectorAll('.dongThanh')).toHaveLength(0);
+});
+
+test('chốt một chương → ĐÚNG MỘT chip nhấp, và là chip Bản thảo', () => {
+  const { container } = ve('dong-san-xuat', 1);
+  const nhap = [...container.querySelectorAll('.dongThanh')];
+  expect(nhap).toHaveLength(1);
+
+  // Rải ra các mục khác sẽ biến một tin thành một đợt nhấp toàn rail — đúng thứ họ 10 tồn
+  // tại để KHÔNG làm.
+  const muc = nhap[0]!.closest('.mucdi');
+  expect(muc?.querySelector('.nhan')?.textContent).toBe(CHU.banThao);
+});
+
+test('dấu về 0 sau khi hết nhấp thì lớp được DỌN, không dính lại', () => {
+  // ĐO ĐƯỢC trên app thật: bản trước truyền thẳng bộ đếm `chot.dau`, và vì nó chỉ tăng nên
+  // lớp `dongThanh` dính vĩnh viễn sau lần chốt đầu (t=3.200ms: vạch trên lane đã sạch, hai
+  // chỗ kia vẫn còn lớp). Hôm nay vô hại, nhưng nó phá đúng lời hứa "cùng thời lượng" của
+  // họ 10 — và là mìn hẹn giờ cho ngày ai đó thêm một `key` mới.
+  const { container } = ve('dong-san-xuat', 0);
+  expect(container.querySelectorAll('.dongThanh')).toHaveLength(0);
+});
+
+test('đồng thanh THẮNG nhấp-số-đổi: một phần tử không mang hai hoạt ảnh', () => {
+  // Chốt chương làm `completed_chapters` đổi, nên họ 08 (`vuaDoi`) cũng muốn nhấp cùng lúc.
+  // Hai hoạt ảnh trên một phần tử thì cái nào thắng tuỳ thứ tự khai trong CSS — một hành vi
+  // không ai đọc ra được từ mã component.
+  const { container } = ve('dong-san-xuat', 3);
+  const chip = container.querySelector('.dongThanh');
+  expect(chip?.className).not.toContain('vuaDoi');
+});
 
 test('rail có mục Xưởng, và bấm vào nó đi tới khu `xuong`', () => {
   const { chon } = ve();

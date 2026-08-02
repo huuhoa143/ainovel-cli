@@ -88,6 +88,7 @@ function ve(
       sach={[snap({}).book]}
       tacPham="b"
       choGhi
+      vuaChot={new Set<number>()}
       chuongChon={undefined}
       onChonChuong={() => {}}
       onChonKhu={() => {}}
