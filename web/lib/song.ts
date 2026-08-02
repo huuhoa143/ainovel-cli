@@ -1,4 +1,39 @@
-import type { Snapshot } from './types';
+import type { Activity, Runtime, Snapshot } from './types';
+
+/** Tập đóng của `Runtime`, để canh cửa cho một chuỗi đến từ dây. Cùng vai với `laKhu`. */
+const RUNTIME: readonly string[] = ['idle', 'running', 'pausing', 'paused', 'completed'];
+
+/**
+ * Trạng thái máy đã hợp nhất — MỘT khoá cho cả nhãn, nhịp đập, lẫn bộ nút.
+ *
+ * # Vì sao một khoá thay vì để mỗi bề mặt tự suy
+ *
+ * ĐO ĐƯỢC trên app thật (2026-08-02, cuốn `viet-truyen-dang-trung-sinh`): API trả
+ * `runtime: "paused"` cùng lúc với `transport.state: "running"`, và thanh dưới in ra CẢ HAI —
+ * vạch đầu đọc tắt (đọc `mayDangChay`, đúng) trong khi ký hiệu ▶ đang đập và chữ ghi "đang
+ * chạy" (tra `TRANG_THAI_MAY[transport.state]`, sai), ngay cạnh một nút mời bấm "▶ Chạy".
+ *
+ * Nguyên nhân không phải ai cẩu thả. `mayDangChay` ra đời sau transport, và transport được
+ * đấu dây một nửa: nhận `mayChay` cho chuyển động, còn câu chữ ở lại nguồn cũ. Một bản vá
+ * kiểu "nhớ dùng đúng trường" sẽ hỏng lại y hệt ở bề mặt thứ ba. Nên chỗ suy ra trạng thái
+ * chỉ còn ĐÚNG MỘT, và `mayDangChay` cũng chỉ là một câu hỏi đặt cho nó.
+ *
+ * # Ba luật, ba lý do khác nhau
+ *
+ * 1. `runtime` hợp lệ thì THẮNG — nó là engine tự khai; `activity` suy từ mốc checkpoint nên
+ *    trễ ở CẢ HAI chiều (xem `mayDangChay` dưới).
+ * 2. `runtime` vắng (`''`, engine đóng) thì rơi về `activity` — sự thật mạnh nhất còn lại.
+ * 3. `runtime` LẠ cũng rơi về `activity`, không trả nguyên chuỗi ra ngoài. Ca đến được: một
+ *    bản engine mới hơn web thêm trạng thái thứ sáu. Trả nguyên chuỗi thì tra bảng ra
+ *    `undefined` và thanh dưới TRẮNG đúng ô trả lời câu hỏi số một. Rơi về `activity` là mất
+ *    độ chính xác; trắng ô là mất câu trả lời.
+ */
+export function mayNaoDo(runtime: string | undefined, activity: Activity): Runtime {
+  if (runtime && RUNTIME.includes(runtime)) return runtime as Runtime;
+  // `Activity` dùng `complete`, `Runtime` dùng `completed`. Ánh xạ ở ĐÂY, một lần, thay vì
+  // để mỗi bề mặt tự đoán xem hai chữ đó có phải một không.
+  return activity === 'complete' ? 'completed' : activity;
+}
 
 /**
  * Máy còn đang chạy hay không — sự thật DUY NHẤT được phép bật nhịp đập.
@@ -50,6 +85,8 @@ export function mayDangChay(snapshot: Snapshot | undefined): boolean {
   // Lúc viết hàm này, `activity` là sự thật mạnh nhất có được — hợp đồng chưa mang `runtime`.
   // Kế hoạch 4/4 thêm nó, nên phần "store không biết chuyện đó" trong chú thích ở trên chỉ còn
   // đúng cho ca engine ĐÓNG.
-  if (snapshot.runtime) return snapshot.runtime === 'running';
-  return snapshot.book.activity === 'running';
+  //
+  // Phép suy ấy giờ nằm ở `mayNaoDo`, không còn viết lại ở đây: hàm này TỪNG là bản thứ hai
+  // của cùng một luật, và bản thứ hai chính là thứ để thanh transport trôi mất một nửa.
+  return mayNaoDo(snapshot.runtime, snapshot.book.activity) === 'running';
 }

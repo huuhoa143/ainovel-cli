@@ -45,6 +45,21 @@ export interface Capabilities {
 
 export type Activity = 'running' | 'idle' | 'complete';
 
+/**
+ * Trạng thái engine TỰ KHẲNG ĐỊNH — năm giá trị, không ba.
+ *
+ * Cố ý KHÔNG dùng làm kiểu của `Snapshot.runtime`: trên dây nó là một `string` Go
+ * (`host.UISnapshot.RuntimeState`), và một bản engine mới hơn web thêm giá trị thứ sáu là
+ * chuyện đến được. Khai `runtime: Runtime` sẽ làm `tsc` xanh trên một điều chưa ai bảo đảm,
+ * rồi mã đọc phải một chuỗi ngoài tập này mà không có nhánh nào đỡ. Nên: dây là `string`,
+ * còn tập đóng này chỉ dùng SAU khi đã qua `mayNaoDo` (lib/song.ts) — cùng cách `laKhu`
+ * canh cửa cho `Khu`.
+ *
+ * Khác `Activity` ở hai chỗ mang tin: có `pausing`/`paused` (Activity gộp cả hai vào `idle`
+ * hoặc tệ hơn là để chúng trôi thành `running`), và dùng `completed` thay vì `complete`.
+ */
+export type Runtime = 'idle' | 'running' | 'pausing' | 'paused' | 'completed';
+
 export interface Book {
   id: string;
   /** Rỗng khi chưa đặt tên. */

@@ -188,7 +188,12 @@ export default function Trang() {
         song={s.song}
         suKien={s.suKien}
         trong={xuongTrong}
-        mayChay={mayDangChay(s.snapshot)}
+        // Truyền hai trường THÔ, không truyền một boolean đã suy sẵn: transport cần phân
+        // biệt năm trạng thái engine, mà một boolean chỉ chở được hai. Phép chọn giữa
+        // `runtime` và `activity` nằm ở `mayNaoDo` — cùng hàm mà `mayDangChay` đang dùng,
+        // nên hai bề mặt không thể lệch nhau nữa.
+        runtime={s.snapshot?.runtime}
+        hoatDong={s.snapshot?.book.activity ?? 'idle'}
       >
         {/* Điều khiển sống TRONG transport: đó là chỗ trả lời "dây chuyền còn sống không",
             nên nút bấm phải ở cùng chỗ với câu trả lời. Đặt nó trong một bề mặt riêng sẽ

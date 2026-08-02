@@ -1,9 +1,10 @@
 'use client';
 
 import { daChay, donGia, nangSuat, phanTram, so, tongTien } from '@/lib/dinhdang';
-import { CHU, GIAI_THICH, TRANG_THAI_MAY, giaiCongDoan, nhanVai } from '@/lib/nhan';
+import { CHU, GIAI_THICH, TRANG_THAI_MAY_RUNTIME, giaiCongDoan, nhanVai } from '@/lib/nhan';
 import { nguCanhMoiNhat } from '@/lib/nguCanh';
-import type { StreamEvent, Transport as TransportData } from '@/lib/types';
+import { mayNaoDo } from '@/lib/song';
+import type { Activity, StreamEvent, Transport as TransportData } from '@/lib/types';
 import type { CongDoanSong } from '@/lib/useStudio';
 
 /**
@@ -25,7 +26,8 @@ export function Transport({
   song,
   suKien,
   trong,
-  mayChay,
+  runtime,
+  hoatDong,
   children,
 }: {
   /**
@@ -40,18 +42,24 @@ export function Transport({
   song: CongDoanSong | undefined;
   suKien: StreamEvent[];
   /**
-   * MÁY còn sống không — bật ĐẦU ĐỌC ở mép trên.
+   * `Snapshot.runtime` — engine TỰ KHẲNG ĐỊNH trạng thái của nó. `''` khi engine đóng.
    *
-   * Tên là `mayChay` chứ không `dangChay` vì trong chính tệp này đã có một `dangChay` khác
-   * nghĩa: `song?.dangChay` nói BƯỚC hiện tại còn chạy, suy từ payload sự kiện. Hai thứ đó
-   * lệch nhau được — một bước vừa xong trong khi máy vẫn sống, và ngược lại một bước treo
-   * mãi trên một engine đã chết.
+   * Nhận chuỗi thô chứ không nhận một `boolean` đã suy sẵn, và đó là bản sửa cho một lỗi ĐO
+   * ĐƯỢC (2026-08-02): bản trước nhận `mayChay?: boolean` và dùng nó cho ĐẦU ĐỌC, trong khi
+   * phần chữ vẫn tra `TRANG_THAI_MAY[transport.state]`. Hai kênh, hai nguồn — nên khi
+   * `runtime="paused"` gặp `transport.state="running"` thì vạch tắt còn chữ ghi "đang chạy".
    *
-   * Nhận qua prop chứ không tự suy: sự thật liveness nằm ở `runtime` của engine, và
-   * `mayDangChay` (lib/song.ts) là chỗ DUY NHẤT được phép nói ra nó. Một đầu đọc chạy trên
-   * dây chuyền đã chết là đúng lỗi mà chú thích của `.dap` đã trả giá để ghi lại.
+   * Một `boolean` cũng KHÔNG chở nổi câu cần nói: nó chỉ phân biệt chạy/không, mà "tạm dừng"
+   * (còn một lượt treo) khác "đang nghỉ" (rỗng việc) ở đúng chỗ người vận hành cần biết.
    */
-  mayChay?: boolean;
+  runtime: string | undefined;
+  /**
+   * `book.activity` — chỉ dùng khi `runtime` vắng, tức engine ĐÓNG.
+   *
+   * Suy từ mốc checkpoint nên trễ ở cả hai chiều; đây là sự thật mạnh nhất còn lại khi không
+   * có engine nào để hỏi. Việc chọn giữa hai nguồn nằm ở `mayNaoDo`, không ở đây.
+   */
+  hoatDong: Activity;
   /**
    * true khi xưởng đã đọc xong và KHÔNG có tác phẩm nào. Cần tách khỏi ca "chưa
    * đọc xong": để "đang đọc store…" đứng mãi ở thanh dưới là nói dối, vì lúc đó
@@ -61,16 +69,25 @@ export function Transport({
 }) {
   if (!transport) {
     return (
+      // Cùng hai vùng như nhánh chính, không phải một hàng phẳng: nếu nhánh này khác cấu
+      // trúc thì lưới CSS không áp được và cụm nút nhảy sang trái đúng lúc đang tải — tức
+      // đúng cái vừa sửa, chỉ ở một ca hiếm hơn nên khó thấy hơn.
       <footer className="trans">
-        <div className="cell">
-          <span className="lbl">{trong ? CHU.khongCoGiTheoDoi : CHU.dangTai}</span>
+        <div className="dai">
+          <div className="cell ghim">
+            <span className="lbl">{trong ? CHU.khongCoGiTheoDoi : CHU.dangTai}</span>
+          </div>
         </div>
         {children}
       </footer>
     );
   }
 
-  const may = TRANG_THAI_MAY[transport.state];
+  // MỘT phép suy cho cả chữ, ký hiệu, nhịp đập và đầu đọc. Bốn kênh, một nguồn — xem lý do
+  // đầy đủ (và cái giá đã trả) ở `mayNaoDo` trong lib/song.ts.
+  const khoaMay = mayNaoDo(runtime, hoatDong);
+  const may = TRANG_THAI_MAY_RUNTIME[khoaMay];
+  const mayChay = khoaMay === 'running';
   const buoc = song?.buoc ?? transport.last_step;
   const dangChay = song?.dangChay ?? false;
   const nhanBuoc = dangChay ? CHU.buocDangChayNgan : CHU.congDoanVuaXong;
@@ -89,9 +106,22 @@ export function Transport({
 
   return (
     <footer className="trans" data-chay={mayChay ? '1' : undefined} aria-label="Trạng thái dây chuyền">
-      <div className="cell">
+      {/* HAI VÙNG, không một hàng xuống dòng được.
+          Bản trước là `flex-wrap: wrap` với cụm nút (`children`) là phần tử cuối, nên điểm
+          xuống dòng phụ thuộc DỮ LIỆU — và ĐO ĐƯỢC ở 1512px, đổi tên công đoạn từ "commit"
+          sang "writer (Viết chương 10)" đẩy nút Chạy đi 1.222px, từ mép phải về mép trái,
+          đồng thời thanh cao thêm 25px và đẩy cả canvas. Tên công đoạn đổi mỗi vài giây khi
+          máy chạy, nên nút tiêu tiền tự đi lại suốt phiên.
+          Giờ dải số có vùng riêng và tự cắt khi hẹp; cụm nút là anh em của nó nên không có
+          gì đẩy được nó nữa. */}
+      <div className="dai">
+      {/* `ghim` = sticky ở mép trái vùng cắt. DESIGN.md:108 đòi trạng thái máy "luôn hiện,
+          không cuộn mất", và giờ dải số cuộn được nên lời hứa ấy phải thành một lớp thật.
+          Luật đó nói về TRẠNG THÁI, không nói về mọi con số — nên giá, năng suất và đã chạy
+          vẫn cắt được. */}
+      <div className="cell ghim">
         <span
-          className={`ky ${may.mau}${transport.state === 'running' ? ' dap' : ''}`}
+          className={`ky ${may.mau}${mayChay ? ' dap' : ''}`}
           aria-hidden="true"
         >
           {may.ky}
@@ -183,6 +213,7 @@ export function Transport({
       <div className="cell">
         <span className="lbl">{CHU.daChay}</span>
         <span className="m">{chay ?? CHU.khongCo}</span>
+      </div>
       </div>
 
       {children}
