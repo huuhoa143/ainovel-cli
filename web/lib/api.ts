@@ -528,15 +528,20 @@ export class DongGia {
  */
 const HEADER_RAO = { 'X-Ainovel-Studio': '1', 'Content-Type': 'application/json' };
 
+/** GET nhưng phải mang header rào — dùng cho GET có tác dụng phụ. */
+async function ghiDoc<T>(duong: string): Promise<T> {
+  return ghi(duong, 'GET');
+}
+
 async function ghi<T>(
   duong: string,
-  method: 'POST' | 'PUT' | 'DELETE',
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
   than?: unknown,
 ): Promise<T> {
   const res = await fetch(`${GOC}${duong}`, {
     method,
     headers: HEADER_RAO,
-    body: than === undefined ? '{}' : JSON.stringify(than),
+    body: method === 'GET' ? undefined : than === undefined ? '{}' : JSON.stringify(than),
     cache: 'no-store',
   });
   if (!res.ok) {
@@ -710,8 +715,10 @@ export function xoaSach(book: string): Promise<{ book: string; deleted: boolean 
 export function lietKeModel(
   provider?: string,
 ): Promise<{ provider: string; models: string[]; count: number }> {
+  // Qua đường GHI dù là GET: server đặt `/api/models` sau hàng rào chống CSRF vì nó phát
+  // một yêu cầu ra ngoài kèm khóa API. `doc()` không gắn header rào nên sẽ ăn 403.
   const q = provider ? `?provider=${encodeURIComponent(provider)}` : '';
-  return doc(`/api/models${q}`);
+  return ghiDoc(`/api/models${q}`);
 }
 
 export function doiCheDoTien(

@@ -202,9 +202,13 @@ func (s *server) routes() *http.ServeMux {
 		// Cấu hình: GET không qua `raoGhi` vì nó chỉ đọc (và đã che khóa), PUT thì qua.
 		mux.HandleFunc("GET /api/config", s.handleDocCauHinh)
 		mux.HandleFunc("PUT /api/config", raoGhi(s.handleGhiCauHinh))
-		// Liệt kê model của một nhà cung cấp. GET vì nó không đổi gì trong cấu hình —
-		// nhưng nó dùng khóa để đi hỏi ra ngoài, nên chỉ mắc ở nhóm cho ghi.
-		mux.HandleFunc("GET /api/models", s.handleLietKeModel)
+		// Liệt kê model của một nhà cung cấp — QUA raoGhi, dù là GET.
+		//
+		// Nó không đổi gì trong cấu hình, nhưng nó phát một yêu cầu RA NGOÀI kèm khóa API.
+		// Một GET không hàng rào thì trang bất kỳ kích được bằng \:
+		// không đọc nổi kết quả, nhưng vẫn khiến studio gọi ra ngoài. Và nó lệch luật của
+		// chính tệp này — mọi thứ chạm khóa đều nằm sau hàng rào.
+		mux.HandleFunc("GET /api/models", raoGhi(s.handleLietKeModel))
 		mux.HandleFunc("GET /api/books/{book}/models", s.handleDocVaiModel)
 		mux.HandleFunc("PUT /api/books/{book}/models", raoGhi(s.handleGhiVaiModel))
 

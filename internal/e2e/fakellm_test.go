@@ -122,6 +122,21 @@ type fakeLLM struct {
 	// arbiter → headless giống hệt ca thật, chỉ khác là không tốn khóa nào.
 	tuChoi401 bool
 
+	// khongSentinel bỏ dòng `data: [DONE]` ở cuối stream, giữ nguyên mọi thứ khác —
+	// kể cả chunk mang `finish_reason` và chunk `usage`.
+	//
+	// Đây KHÔNG phải một ca giả tưởng: đã đo trên một gateway tương thích OpenAI thật,
+	// `grep -c DONE` trên toàn phản hồi ra 0 trong khi chunk trước đó mang
+	// `finish_reason: "stop"` kèm `usage`. Bản litellm chưa vá coi đó là stream bị cắt,
+	// nên engine bỏ một lượt sinh HOÀN CHỈNH rồi thử lại bảy lần và không cuốn nào viết
+	// nổi chương đầu.
+	khongSentinel bool
+
+	// cutGiuaChung đóng stream NGAY SAU chunk nội dung đầu tiên: không finish_reason,
+	// không usage, không sentinel. Đây mới là stream cụt thật, và nó PHẢI còn báo lỗi —
+	// nếu không thì bản vá `khongSentinel` đã nới quá tay và engine sẽ chốt chương dở.
+	cutGiuaChung bool
+
 	mu    sync.Mutex
 	calls []call
 	srv   *httptest.Server
@@ -301,6 +316,9 @@ func (f *fakeLLM) writeSSE(w http.ResponseWriter, rep reply) {
 		// một chương trong một chunk, và observer/ctxpack chạy trên delta.
 		for _, part := range splitForStream(rep.Text, 200) {
 			send(chunk(map[string]any{"content": part}, nil))
+			if f.cutGiuaChung {
+				return // đứt ngang: chưa có finish_reason nào
+			}
 		}
 		send(chunk(map[string]any{}, "stop"))
 	}
@@ -308,6 +326,9 @@ func (f *fakeLLM) writeSSE(w http.ResponseWriter, rep reply) {
 		"id": "cmpl-fake", "model": "fake-vi", "choices": []any{},
 		"usage": map[string]int{"prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20},
 	})
+	if f.khongSentinel {
+		return
+	}
 	fmt.Fprint(w, "data: [DONE]\n\n")
 	if flusher != nil {
 		flusher.Flush()
