@@ -18,7 +18,7 @@ import { sach, tongGia } from './mau.test-helper';
  * của cụm B, dịch sang bộ kiểm.
  */
 function ve(...s: Parameters<typeof sach>[0][]) {
-  return render(<Xuong sach={s.map((p) => sach(p))} tong={tongGia()} onChonKhu={() => {}} onMoTacPham={() => {}} />);
+  return render(<Xuong sach={s.map((p) => sach(p))} tong={tongGia()} onChonKhu={() => {}} onMoTacPham={() => {}} onXoaXong={() => {}} />);
 }
 
 /** Chữ của từng ô trong dải tổng, theo đúng thứ tự vẽ. */
@@ -176,11 +176,11 @@ test('lời giải "vì sao không có nút chạy" vẫn còn, nhưng ở CHÚ 
 test('cuốn chưa xong chỉ có `Chi tiết`, và nó đi tới xưởng sản xuất của ĐÚNG cuốn đó', () => {
   const mo = vi.fn();
   const { container } = render(
-    <Xuong sach={[sach({ id: 'a' }), sach({ id: 'b', phase: 'writing' })]} tong={tongGia()} onChonKhu={() => {}} onMoTacPham={mo} />,
+    <Xuong sach={[sach({ id: 'a' }), sach({ id: 'b', phase: 'writing' })]} tong={tongGia()} onChonKhu={() => {}} onMoTacPham={mo} onXoaXong={() => {}} />,
   );
 
   const nut = [...dong(container, 'b').querySelectorAll('button')].map((n) => n.textContent);
-  expect(nut).toEqual([CHU.chiTiet]);
+  expect(nut).toEqual([CHU.chiTiet, CHU.xoaTacPham]);
 
   fireEvent.click(dong(container, 'b').querySelector('button')!);
   // Mã cuốn phải là mã của DÒNG, không phải cuốn đang xem. Đây là chỗ lỗi ref-trễ đã đo được
@@ -191,11 +191,16 @@ test('cuốn chưa xong chỉ có `Chi tiết`, và nó đi tới xưởng sản
 test('cuốn đã hoàn thành có đủ ba: Chi tiết · Đọc · Xuất bản', () => {
   const mo = vi.fn();
   const { container } = render(
-    <Xuong sach={[sach({ id: 'xong', phase: 'complete' })]} tong={tongGia()} onChonKhu={() => {}} onMoTacPham={mo} />,
+    <Xuong sach={[sach({ id: 'xong', phase: 'complete' })]} tong={tongGia()} onChonKhu={() => {}} onMoTacPham={mo} onXoaXong={() => {}} />,
   );
 
   const nut = [...dong(container, 'xong').querySelectorAll('button')];
-  expect(nut.map((n) => n.textContent)).toEqual([CHU.chiTiet, CHU.docTacPham, CHU.xuatBan]);
+  expect(nut.map((n) => n.textContent)).toEqual([
+    CHU.chiTiet,
+    CHU.docTacPham,
+    CHU.xuatBan,
+    CHU.xoaTacPham,
+  ]);
 
   fireEvent.click(nut[1]!);
   // Chương 1 đi CÙNG lời gọi, không phải một lời gọi thứ hai: hai lần ghi URL thì lần sau
@@ -207,14 +212,17 @@ test('cuốn đã hoàn thành có đủ ba: Chi tiết · Đọc · Xuất bả
 });
 
 test('KHÔNG có nút Chạy, Dừng, Xóa hay Đổi tên trên bề mặt này', () => {
-  // Hàng rào chống một lần "tiện tay thêm nút" trong tương lai, và nó canh HAI quyết định đã
-  // chốt của spec §4:
+  // Hàng rào chống một lần "tiện tay thêm nút" trong tương lai. Nó canh quyết định 4 của
+  // spec §4, và CỐ Ý không còn canh quyết định 8:
   //
   //   4 — chạy chỉ có ở transport, một đường tiêu tiền duy nhất. Hai nút cùng gọi POST /run
   //       thì trạng thái khóa-lúc-đang-gửi của chúng không thấy nhau, nên bấm cả hai là trả
   //       tiền hai lần. Và đây là bề mặt người ta QUÉT MẮT, không phải bề mặt để quyết định.
-  //   8 — xóa một cuốn là xóa hàng giờ chạy và hàng chục đô; việc đó để ở hệ tệp, nơi thấy
-  //       rõ mình đang phá cái gì.
+  //   8 — ĐÃ ĐẢO. Xem chú thích đầu Xuong.tsx: tiền đề "mọi cuốn đều là hàng giờ chạy và
+  //       hàng chục đô" sai — ba cuốn 0 chương do tạo hỏng đã nằm lại trên bảng này và chỉ
+  //       gỡ được bằng `rm -rf` ngoài terminal. Xóa giờ CÓ, và bài kiểm ngay dưới canh nó.
+  //
+  // Đổi tên vẫn không: tên thư mục đi vào đường dẫn của mọi tệp trong cuốn.
   //
   // Dựng đủ cả cuốn đang chạy lẫn cuốn đã xong: nút chạy, nếu ai đó thêm, nhiều khả năng chỉ
   // hiện ở một trong hai ca.
@@ -224,15 +232,86 @@ test('KHÔNG có nút Chạy, Dừng, Xóa hay Đổi tên trên bề mặt này
         sach({ id: 'a', phase: 'writing', engine_open: true }),
         sach({ id: 'b', phase: 'complete' }),
       ]}
-      tong={tongGia()} onChonKhu={() => {}} onMoTacPham={() => {}}
+      tong={tongGia()} onChonKhu={() => {}} onMoTacPham={() => {}} onXoaXong={() => {}}
     />,
   );
 
   const nhan = screen.getAllByRole('button').map((n) => n.textContent ?? '');
   expect(nhan.length).toBeGreaterThan(0);
   for (const t of nhan) {
-    expect(t).not.toMatch(/chạy|dừng|xoá|xóa|đổi tên/i);
+    expect(t).not.toMatch(/chạy|dừng|đổi tên/i);
   }
+});
+
+/**
+ * Xóa phải đứng CUỐI hàng, sau mọi nút điều hướng.
+ *
+ * Không phải chuyện thẩm mỹ: tay người ta đi theo thói quen vị trí, nên một hành động không
+ * hoàn tác được nằm xen giữa `Chi tiết` và `Đọc` là mời bấm nhầm. Bài này khóa vị trí đó lại.
+ */
+test('nút Xóa đứng cuối hàng, sau mọi nút điều hướng', () => {
+  const { container } = render(
+    <Xuong
+      sach={[sach({ id: 'xong', phase: 'complete' })]}
+      tong={tongGia()}
+      onChonKhu={() => {}}
+      onMoTacPham={() => {}}
+      onXoaXong={() => {}}
+    />,
+  );
+  const nhan = [...dong(container, 'xong').querySelectorAll('button')].map((n) => n.textContent);
+  expect(nhan.at(-1)).toBe(CHU.xoaTacPham);
+});
+
+/**
+ * Bấm Xóa MỞ hộp xác nhận, không xóa ngay.
+ *
+ * Đây là lớp chặn gần người dùng nhất. Server còn đòi gõ lại đúng tên nữa, nhưng một giao diện
+ * xóa ngay khi bấm là giao diện sai kể cả khi server cứu được.
+ *
+ * Bài này thay bài cũ rình `window.confirm`: hộp gốc của trình duyệt đã bị thay bằng
+ * `<dialog>` vì nó dựng một hộp nền sáng mang tiêu đề `127.0.0.1:8420 says` giữa giao diện
+ * nền tối — xem chú thích đầu components/HopXacNhan.tsx.
+ */
+test('bấm Xóa mở hộp xác nhận, và hộp nói ra CÁI MẤT', () => {
+  const { container } = render(
+    <Xuong
+      sach={[sach({ id: 'a', completed_chapters: 2, cost_usd: 1.5 })]}
+      tong={tongGia()}
+      onChonKhu={() => {}}
+      onMoTacPham={() => {}}
+      onXoaXong={() => {}}
+    />,
+  );
+  const hop = container.querySelector('dialog.hopxn')!;
+  expect(hop).not.toBeNull();
+  expect(hop.hasAttribute('open')).toBe(false);
+
+  fireEvent.click([...dong(container, 'a').querySelectorAll('td.lam button')].at(-1)!);
+
+  expect(hop.hasAttribute('open')).toBe(true);
+  // Số chương và số tiền là hai con số BUỘC phải đọc trước khi xóa.
+  expect(hop.textContent).toContain('2 chương');
+  expect(hop.textContent).toMatch(/1[.,]50/);
+});
+
+/**
+ * Focus mặc định vào HỦY, không vào Xóa.
+ *
+ * Người ta bấm Enter theo phản xạ khi một hộp bật lên, nên Enter phải rơi vào nút KHÔNG làm gì.
+ */
+test('hộp xác nhận đặt focus vào Hủy', () => {
+  const { container } = render(
+    <Xuong
+      sach={[sach({ id: 'a' })]}
+      tong={tongGia()}
+      onChonKhu={() => {}}
+      onMoTacPham={() => {}}
+      onXoaXong={() => {}}
+    />,
+  );
+  fireEvent.click([...dong(container, 'a').querySelectorAll('td.lam button')].at(-1)!);
+  expect(document.activeElement?.textContent).toBe(CHU.huy);
 });
 
 test('mỗi ô số mang NHÃN CỘT của nó, và nhãn đó đúng bằng nhãn ở `thead`', () => {

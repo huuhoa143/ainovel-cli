@@ -5475,8 +5475,14 @@ div:has(> .qcrow) {
 .bangxuong thead th:nth-child(8) {
   width: 10%;
 }
+/* 15%, không phải 13%. ĐO ĐƯỢC ở bảng 1006px: 13% cho 131px, trừ đệm ngang 28px còn 103px,
+   mà `Chi tiết` + khe 8px + `Xóa` cần 110px — thiếu 7px nên `Xóa` rớt xuống dòng dưới và mỗi
+   hàng cao thêm 24px vô cớ. `min-width` KHÔNG cứu được: `table-layout: fixed` bỏ qua nó, bề
+   rộng cột chỉ nghe `width` khai ở thead.
+   2% lấy từ cột tên (cột duy nhất không khai bề rộng, nhận phần còn lại) vì nó là cột có
+   nhiều chỗ trống nhất — tên tác phẩm và mã slug đều ngắn hơn ô. */
 .bangxuong thead th:nth-child(9) {
-  width: 13%;
+  width: 15%;
 }
 
 /* Dải chật giữa điểm ngắt 860px và khoảng 1100px: rail vẫn ăn 194px, mà bảng đã phải gánh
@@ -5639,6 +5645,53 @@ div:has(> .qcrow) {
   padding: 4px 9px;
   font: 500 11px/1.4 var(--ui);
   margin: 0 4px 4px 0;
+}
+
+/* `Xóa`: hành động PHÁ HỦY nhưng HIẾM, đặt trên một bề mặt để QUÉT MẮT.
+
+   Bản đầu dùng `.nutPhu.nguyHiem` và nó sai ở hai tầng cùng lúc. Đo được trên hàng thật:
+
+     1. `.nutPhu` mang sẵn `background: var(--raised)` + viền 1px, nên thêm `color: --red`
+        vào ra một CHIP ĐỎ CÓ NỀN. Đúng thứ điều khoản nhật ký đã cấm — "khác màu chữ, không
+        phải nền cả dòng" — vì một khối màu trong danh sách dài làm mắt nhảy tới nó rồi mất
+        mạch đọc. Ba hàng là ba khối đỏ.
+     2. Nó lệch `Chi tiết` bên cạnh ở BỐN thuộc tính: 11px/500 so với 12px/400, bo 3px so với
+        5px, đệm 4px so với 3px, và một cái có nền còn cái kia không. Hai nút cạnh nhau lệch
+        bốn thứ thì không đọc ra là hai cấp bậc — nó đọc ra là hỏng.
+
+   Còn màu: DESIGN.md chốt `--red` là màu của LỖI, và ghi thẳng tiền lệ "`Dừng` mang viền
+   amber, KHÔNG đỏ: đỏ nghĩa là lỗi, còn dừng có chủ ý không phải lỗi". Xóa có chủ ý cũng
+   không phải lỗi, nên lúc NGHỈ nó không được mang màu lỗi.
+
+   Nên: nghỉ thì lùi hẳn (chữ mờ, không nền, không viền) — nó là việc hiếm, không phải việc
+   bề mặt này mời làm. Đỏ chỉ hiện lúc CHỈ THẲNG VÀO NÓ (hover/focus), tức đúng khoảnh khắc
+   người dùng đã tỏ ý và cần biết nút này phá hủy. Vẫn không tô nền ở trạng thái nào. */
+.bangxuong td.lam .nutXoa {
+  background: none;
+  border: 1px solid transparent;
+  /* Ba dòng dưới KHỚP TỪNG CHUỖI với `.nutChiTiet`, không phải "trông giống". Hai nút cùng
+     hàng lệch hệ chữ thì không đọc ra hai cấp bậc — nó đọc ra là hỏng, và bản đầu lệch bốn
+     thuộc tính một lúc. `lib/nutXoa.test.ts` đối chiếu chúng với nhau nên chép nguyên văn. */
+  border-radius: var(--r);
+  color: var(--ink-3);
+  font: 400 12px var(--ui);
+  padding: 3px 9px;
+  /* Tách khỏi nhóm điều hướng: khoảng cách NGOÀI nhóm phải rộng hơn khoảng cách trong nhóm,
+     nếu không `Chi tiết` và `Xóa` đọc thành một cặp cùng loại. */
+  margin: 0 0 4px 8px;
+  cursor: pointer;
+  transition: color 120ms ease-out, border-color 120ms ease-out;
+}
+
+.bangxuong td.lam .nutXoa:hover:not(:disabled),
+.bangxuong td.lam .nutXoa:focus-visible {
+  color: var(--red);
+  border-color: color-mix(in oklch, var(--red) 42%, transparent);
+}
+
+.bangxuong td.lam .nutXoa:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 /* ── dưới 860px: bảng thành thẻ xếp dọc ── */
@@ -6832,4 +6885,80 @@ button[aria-busy="true"]::after {
 /* Nhãn "Cần bạn" ngắt hai dòng ở cột 12%; cùng luật. */
 .bangxuong td.canban .dau {
   line-height: 1.4;
+}
+
+/* ── hộp xác nhận ───────────────────────────────────────────────────────── */
+/* Thay `window.confirm`, vốn dựng một hộp NỀN SÁNG mang tiêu đề `127.0.0.1:8420 says` giữa
+   một giao diện nền tối — phá thế giới hình ảnh ở đúng khoảnh khắc người dùng cần tin vào bề
+   mặt nhất. Dùng `<dialog>` gốc nên bẫy focus, `Escape` và `::backdrop` có sẵn. */
+.hopxn {
+  max-width: 46ch;
+  margin: auto;
+  padding: 22px var(--mang) var(--mang);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  /* Bóng có ĐỘ LỆCH và độ nhòe, không phải vầng sáng quanh viền. */
+  box-shadow: 0 18px 44px -12px oklch(0 0 0 / 0.66);
+}
+
+.hopxn::backdrop {
+  background: oklch(0.11 0.006 74 / 0.72);
+}
+
+.hopxn h2 {
+  margin: 0 0 10px;
+  font: 500 15px/1.45 var(--ui);
+  color: var(--ink);
+}
+
+/* Thân là phần BUỘC phải đọc, nên nó không được mờ hơn mức đọc thoải mái. */
+.hopxn p {
+  margin: 0 0 20px;
+  font: 400 13px/1.72 var(--ui);
+  color: var(--ink-2);
+}
+
+/* Khoảng cách NGOÀI nhóm rộng hơn trong nhóm: hai nút là một nhóm, tách khỏi thân. */
+.hopxnNut {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.hopxnNut button {
+  padding: 6px 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink);
+  font: 400 13px var(--ui);
+  cursor: pointer;
+  transition:
+    border-color 0.14s var(--ease),
+    color 0.14s var(--ease);
+}
+
+.hopxnNut button:hover:not(:disabled) {
+  border-color: var(--ink-3);
+}
+
+/* Nút phá hủy: đỏ ở ĐÂY là đúng chỗ duy nhất nó được phép đứng yên mà mang màu lỗi — đây là
+   khoảnh khắc người dùng đã chỉ đích danh hành động, không phải một bề mặt để quét mắt.
+   Vẫn KHÔNG tô nền: một nút nền đỏ đọc thành "đã có lỗi", không phải "sắp phá". */
+.hopxnNut .hopxnLam {
+  background: none;
+  border-color: color-mix(in oklch, var(--red) 46%, transparent);
+  color: var(--red);
+}
+
+.hopxnNut .hopxnLam:hover:not(:disabled) {
+  border-color: var(--red);
+  background: color-mix(in oklch, var(--red) 10%, transparent);
+}
+
+.hopxnNut button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }

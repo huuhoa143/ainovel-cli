@@ -220,3 +220,68 @@ test('hồ sơ truyện cũng theo nhịp sự kiện — số ở rail không �
     expect((r.result.current.hoSo as { characters?: number } | undefined)?.characters).toBe(9),
   );
 });
+
+/**
+ * Làm mới NỀN — bề mặt không được đứng im khi không có engine nào mở.
+ *
+ * Đây là lỗ hổng đã đo được trên máy thật, và nó im lặng tuyệt đối: dòng sự kiện chỉ mở khi
+ * `tacPham && snapshot`, nên đứng ở màn Quản lý mà thêm một cuốn dưới thư mục gốc thì server
+ * trả 4 cuốn còn bảng hiện 3 — mãi mãi. Không lỗi, không cảnh báo, chỉ có một người dùng học
+ * được thói quen bấm F5.
+ *
+ * Hai bài dưới canh hai nguồn kích hoạt, và chúng bắt hai ca khác nhau nên không thay nhau
+ * được: nhịp bắt thay đổi xảy ra trong lúc đang nhìn, `focus` bắt thay đổi xảy ra lúc tab ẩn
+ * (nhịp không chạy khi ẩn).
+ */
+test('nhịp nền nạp lại xưởng khi không có engine nào mở', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  try {
+    const r = await mo('/', xuong(3));
+    const truoc = LAY_WORKSHOP.mock.calls.length;
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(9000);
+    });
+
+    expect(LAY_WORKSHOP.mock.calls.length).toBeGreaterThan(truoc);
+    expect(r.result.current.workshop).toBeDefined();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test('quay lại tab thì nạp lại ngay, không đợi hết một nhịp', async () => {
+  await mo('/', xuong(3));
+  const truoc = LAY_WORKSHOP.mock.calls.length;
+
+  await act(async () => {
+    window.dispatchEvent(new Event('focus'));
+    await Promise.resolve();
+  });
+
+  await waitFor(() => expect(LAY_WORKSHOP.mock.calls.length).toBeGreaterThan(truoc));
+});
+
+/**
+ * Tab ẩn thì DỪNG. Làm mới một bề mặt không ai nhìn là tiêu I/O đổi lấy không gì, và
+ * `/api/workshop` quét meta của từng cuốn nên nó không miễn phí.
+ */
+test('tab ẩn thì nhịp nền không gọi gì', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  const goc = Object.getOwnPropertyDescriptor(Document.prototype, 'visibilityState');
+  try {
+    await mo('/', xuong(3));
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    const truoc = LAY_WORKSHOP.mock.calls.length;
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30000);
+    });
+
+    expect(LAY_WORKSHOP.mock.calls.length).toBe(truoc);
+  } finally {
+    if (goc) Object.defineProperty(Document.prototype, 'visibilityState', goc);
+    else delete (document as unknown as Record<string, unknown>).visibilityState;
+    vi.useRealTimers();
+  }
+});

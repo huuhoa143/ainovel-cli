@@ -317,6 +317,24 @@ Dải cạnh màu bị cấm (xem danh sách CẤM). Nên:
 - vai đã đặt riêng vs thừa hưởng: khác **nền** (`--panel-2` vs `--panel`)
 - dòng nhật ký lỗi/cảnh báo: khác **màu chữ**, không phải nền cả dòng — một dòng nền đỏ trong danh sách dài làm mắt nhảy tới nó rồi mất mạch đọc theo thời gian
 - `Dừng` mang viền amber, KHÔNG đỏ: đỏ nghĩa là lỗi, còn dừng có chủ ý không phải lỗi
+- `Xóa` trong bảng: lúc NGHỈ là chữ `--ink-3`, không nền không viền; `--red` chỉ hiện ở
+  `:hover`/`:focus-visible`, và vẫn không tô nền
+
+#### Hành động phá hủy trên bề mặt để quét mắt
+
+Điều khoản `Xóa` ở trên là suy ra từ hai điều khoản ngay trên nó, không phải một ngoại lệ:
+xóa có chủ ý cũng không phải lỗi (nên nghỉ thì không mang màu lỗi), và một khối màu trong
+danh sách dài làm mắt nhảy tới nó (nên không tô nền). Bản đầu của nút này vi phạm cả hai —
+nó dùng `.nutPhu.nguyHiem`, mà `.nutPhu` có sẵn `background: var(--raised)` + viền, nên ba
+hàng thành ba chip đỏ có nền.
+
+Luật chung: **hành động phá hủy lùi lúc nghỉ, tuyên bố lúc được chỉ vào.** Sức nặng của nó
+thuộc về lời xác nhận — nơi đọc ra số chương và số tiền sắp mất — chứ không thuộc màu sắc ở
+trạng thái nghỉ. Một bề mặt liệt kê mười cuốn không được có mười điểm báo động.
+
+Kèm theo: hai nút cùng một hàng phải cùng hệ chữ. Bản đầu lệch `Chi tiết` ở bốn thuộc tính
+(11px/500 so với 12px/400, bo 3px so với 5px, đệm 4px so với 3px, có nền so với không) — bốn
+chỗ lệch thì không đọc ra hai cấp bậc, nó đọc ra là hỏng.
 
 ### Biểu mẫu tiếng Việt
 

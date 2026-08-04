@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { LoiApi, layCauHinh, luuCauHinh, type SuaCauHinh } from '@/lib/api';
+import { LoiApi, layCauHinh, lietKeModel, luuCauHinh, type SuaCauHinh } from '@/lib/api';
 import { CHU, GIAI_THICH } from '@/lib/nhan';
 import type { CauHinhDoc, NhaCungCap } from '@/lib/types';
 
@@ -425,7 +425,45 @@ function MacDinh({ du, onXong }: { du: CauHinhDoc; onXong: () => void }) {
   const [loi, datLoi] = useState<string | null>(null);
   const [xong, datXong] = useState<string[] | null>(null);
 
+  // Danh sách model HỎI THẲNG nhà cung cấp.
+  //
+  // `null` = chưa hỏi lần nào. Phân biệt với `[]` (hỏi rồi, nhà cung cấp không có model
+  // nào) là cần thiết: chỉ được cảnh báo "model này không có thật" khi ĐÃ hỏi được.
+  const [dsNapVe, datDsNapVe] = useState<string[] | null>(null);
+  const [dangNap, datDangNap] = useState(false);
+  const [loiNap, datLoiNap] = useState<string | null>(null);
+
   const nccChon = du.providers.find((n) => n.name === provider);
+
+  // Đổi nhà cung cấp là danh sách cũ hết giá trị — model của gateway này không nói gì về
+  // gateway kia. Giữ lại là mời người dùng chọn một cái tên chắc chắn sai.
+  useEffect(() => {
+    datDsNapVe(null);
+    datLoiNap(null);
+  }, [provider]);
+
+  const nap = () => {
+    datDangNap(true);
+    datLoiNap(null);
+    lietKeModel(provider)
+      .then((r) => datDsNapVe(r.models))
+      .catch((e: unknown) => datLoiNap(e instanceof LoiApi ? e.message : String(e)))
+      .finally(() => datDangNap(false));
+  };
+
+  // Gộp danh sách gõ tay trong cấu hình với danh sách vừa hỏi được. Giữ cả hai vì chúng
+  // trả lời hai câu khác nhau: cái gõ tay là "tôi hay dùng mấy con này", cái hỏi được là
+  // "nhà cung cấp thật sự có mấy con này".
+  const dsGoiY = Array.from(
+    new Set([...(nccChon?.models ?? []).map((m) => m.name), ...(dsNapVe ?? [])]),
+  );
+
+  // Đã hỏi được danh sách mà model đang đặt không nằm trong đó → lượt chạy tới sẽ 404.
+  //
+  // Đây chính là lỗi đã xảy ra trên máy thật: provider đặt `cx/gpt-5.5` còn ô này để
+  // `gpt-5.5`, và ba lượt tạo tác phẩm chết liên tiếp với một thông báo nói về credentials
+  // chứ không nói về tên model. Nói ra ở ĐÂY, lúc còn sửa được bằng một cú chọn.
+  const modelLa = dsNapVe !== null && dsNapVe.length > 0 && !dsNapVe.includes(model);
   // Kiểu văn đang đặt mà KHÔNG có thật: engine bỏ qua âm thầm. Nói ra, vì đây đúng là
   // ca đã xảy ra thật (một cuốn 8 chương chạy với `tien_hiep` và không nhận được tham
   // chiếu thể loại nào).
@@ -492,11 +530,37 @@ function MacDinh({ du, onXong }: { du: CauHinhDoc; onXong: () => void }) {
             required
           />
           <datalist id="ds-model">
-            {(nccChon?.models ?? []).map((m) => (
-              <option key={m.name} value={m.name} />
+            {dsGoiY.map((m) => (
+              <option key={m} value={m} />
             ))}
           </datalist>
         </label>
+
+        {/* Nạp danh sách CŨNG LÀ kiểm tra kết nối, nên nút chỉ có một.
+            Gọi được nghĩa là địa chỉ gốc đúng và khóa còn sống; đó là toàn bộ những gì
+            một nút "kiểm tra" riêng kiểm được, mà lại không tiêu một đồng nào. */}
+        <div className="oNhap">
+          <span />
+          <div className="hangBo">
+            <button type="button" onClick={nap} disabled={dangNap || !provider}>
+              {dangNap ? CHU.dangNapModel : CHU.napModel}
+            </button>
+            {dsNapVe !== null && !loiNap ? (
+              <span className="mo">{GIAI_THICH.napModelXong(dsNapVe.length)}</span>
+            ) : null}
+          </div>
+        </div>
+
+        {loiNap ? <p className="loiDoc">{loiNap}</p> : null}
+
+        {modelLa ? (
+          <p className="vphacap">
+            <span className="ky" aria-hidden="true">
+              ■
+            </span>
+            <span>{GIAI_THICH.modelKhongCoThat(model, provider)}</span>
+          </p>
+        ) : null}
 
         <label className="oNhap">
           <span>{CHU.kieuVanMacDinh}</span>

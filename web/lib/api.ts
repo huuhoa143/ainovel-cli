@@ -528,7 +528,11 @@ export class DongGia {
  */
 const HEADER_RAO = { 'X-Ainovel-Studio': '1', 'Content-Type': 'application/json' };
 
-async function ghi<T>(duong: string, method: 'POST' | 'PUT', than?: unknown): Promise<T> {
+async function ghi<T>(
+  duong: string,
+  method: 'POST' | 'PUT' | 'DELETE',
+  than?: unknown,
+): Promise<T> {
   const res = await fetch(`${GOC}${duong}`, {
     method,
     headers: HEADER_RAO,
@@ -680,6 +684,34 @@ export function taoSach(
   prompt: string,
 ): Promise<{ book: string; dir: string; state: string }> {
   return ghi('/api/books', 'POST', { id, prompt });
+}
+
+/**
+ * Xóa một tác phẩm. Không hoàn tác được, không có thùng rác.
+ *
+ * Server đòi thân yêu cầu chứa ĐÚNG tên cuốn, và hàm này truyền `book` vào cả hai chỗ —
+ * đường dẫn lẫn thân. Nghe như thừa, nhưng nó chặn đúng kiểu tai nạn nguy hiểm nhất: giao
+ * diện dựng URL từ một biến và thân từ một biến khác, rồi xóa nhầm cuốn đang mở. Ở đây hai
+ * chỗ đến từ MỘT tham số nên chúng không thể lệch nhau.
+ *
+ * Việc xác nhận với người dùng là của bề mặt gọi hàm này, không phải của tầng API.
+ */
+export function xoaSach(book: string): Promise<{ book: string; deleted: boolean }> {
+  return ghi(`/api/books/${encodeURIComponent(book)}`, 'DELETE', { xac_nhan: book });
+}
+
+/**
+ * Danh sách model mà một nhà cung cấp thật sự phục vụ.
+ *
+ * Gọi hàm này CŨNG LÀ kiểm tra kết nối: nó dùng khóa đang lưu để hỏi thẳng nhà cung cấp,
+ * nên gọi được nghĩa là địa chỉ gốc đúng và khóa còn sống. Lỗi trả về đã được server dịch
+ * sang câu nói ra nguyên nhân ("khóa API sai hoặc hết hạn") thay vì một mã HTTP trần.
+ */
+export function lietKeModel(
+  provider?: string,
+): Promise<{ provider: string; models: string[]; count: number }> {
+  const q = provider ? `?provider=${encodeURIComponent(provider)}` : '';
+  return doc(`/api/models${q}`);
 }
 
 export function doiCheDoTien(

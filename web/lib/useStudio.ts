@@ -38,6 +38,27 @@ const GIU_SU_KIEN = 40;
 const NHIP_LAM_MOI_MS = 1500;
 
 /**
+ * Nhịp làm mới NỀN — cho những gì dòng sự kiện không với tới.
+ *
+ * # Vì sao phải có nó
+ *
+ * Dòng sự kiện chỉ mở khi có một tác phẩm ĐANG MỞ (`if (!tacPham || !snapshot) return`).
+ * Hệ quả đo được: đứng ở màn Quản lý, tạo thêm một cuốn dưới thư mục gốc, thì server trả về
+ * 4 cuốn còn bảng vẫn hiện 3 — và nó hiện 3 mãi mãi, vì không có gì gọi lại. Người dùng chỉ
+ * còn cách F5.
+ *
+ * Và ngay cả khi có engine mở, dòng sự kiện chỉ chảy khi CÓ SỰ KIỆN. Một engine đang nghỉ
+ * không phát gì, nên một cuốn bị đổi từ CLI hay từ một tab khác vẫn không thấy.
+ *
+ * # Vì sao 8 giây, và vì sao chỉ khi tab đang hiện
+ *
+ * `/api/workshop` quét meta của từng cuốn, nên nó không miễn phí. 8 giây đủ nhanh để không
+ * ai kịp nghĩ tới F5, và đủ chậm để một xưởng vài chục cuốn không bị nghiền. Tab ẩn thì
+ * dừng hẳn: làm mới một bề mặt không ai nhìn là tiêu I/O đổi lấy không gì.
+ */
+const NHIP_NEN_MS = 8000;
+
+/**
  * 'khong' = KHÔNG có dòng nào để mở, khác hẳn 'dang-mo'.
  *
  * Xưởng rỗng thì useStudio không bao giờ mở EventSource (cần có tác phẩm), nên
@@ -469,6 +490,45 @@ export function useStudio(): Studio {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tacPham, lanTai, !!snapshot, napSnapshot, napLaiXuong, napLaiHoSo]);
+
+  /* ── 4. làm mới nền ────────────────────────────────────────────────── */
+
+  /**
+   * Hai nguồn kích hoạt, và chúng bắt hai ca KHÁC nhau — bỏ cái nào cũng còn lỗ:
+   *
+   *   nhịp        — thay đổi xảy ra TRONG LÚC đang nhìn (một tab khác tạo cuốn, CLI chạy
+   *                 song song). Không có nhịp thì bề mặt đứng im trước mắt người dùng.
+   *   quay lại    — thay đổi xảy ra trong lúc tab bị ẩn. Nhịp không chạy khi ẩn, nên nếu
+   *                 chỉ có nhịp thì lúc quay lại vẫn phải đợi hết một chu kỳ mới thấy — và
+   *                 đó đúng là khoảnh khắc người ta bấm F5.
+   *
+   * Chỉ nạp lại XƯỞNG theo nhịp. Snapshot nặng hơn nhiều và đã có dòng sự kiện lo khi engine
+   * chạy; nó chỉ được nạp lại ở lần quay lại tab, tức một lần cho mỗi lần rời đi.
+   */
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const dangHien = () => document.visibilityState === 'visible';
+
+    const nhip = setInterval(() => {
+      if (dangHien()) void napLaiXuong();
+    }, NHIP_NEN_MS);
+
+    const quayLai = () => {
+      if (!dangHien()) return;
+      void napLaiXuong();
+      const id = tacPhamRef.current;
+      if (id) void napSnapshot(id, chuongRef.current).catch(() => undefined);
+    };
+
+    document.addEventListener('visibilitychange', quayLai);
+    window.addEventListener('focus', quayLai);
+    return () => {
+      clearInterval(nhip);
+      document.removeEventListener('visibilitychange', quayLai);
+      window.removeEventListener('focus', quayLai);
+    };
+  }, [napLaiXuong, napSnapshot]);
 
   /* ── hành động ─────────────────────────────────────────────────────── */
 

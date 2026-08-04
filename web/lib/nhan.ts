@@ -691,6 +691,7 @@ export const CHU = {
   /** Chú giải của bộ chuyển màn — nói PHẠM VI, thứ không đọc được từ tên màn. */
   doiMan: (ten: string, pham: string) => `Sang màn ${ten} — ${pham}`,
 
+
   /* Bản ghi phiên chạy của MỘT cuốn — tên cũ là "Cài đặt", và tên cũ sai.
      Xem chú thích đổi tên ở đầu lib/khu.ts: bề mặt này chỉ đọc, nói về quá khứ của một
      cuốn, và đã phải tự in ra một câu chỉ đường sang Cấu hình máy. */
@@ -1201,6 +1202,12 @@ export const CHU = {
   batDauLuc: 'Bắt đầu',
   nhaCungCap: 'Nhà cung cấp',
   model: 'Model',
+  napModel: 'Nạp danh sách model',
+  dangNapModel: 'Đang hỏi nhà cung cấp…',
+  xoaTacPham: 'Xóa',
+  /** Tiêu đề hộp xác nhận. Câu hỏi ở đây, phần MẤT GÌ ở thân — không lặp lại nhau. */
+  xacNhanXoaDe: (ten: string) => `Xóa "${ten}"?`,
+  dangXoa: 'Đang xóa…',
   kieuVan: 'Kiểu văn',
   mucQuyHoach: 'Mức quy hoạch',
   cheDoTien: 'Chế độ',
@@ -1370,6 +1377,38 @@ export const GIAI_THICH = {
   canBanTuDia:
     'Đọc từ meta/run.json của từng cuốn — đây là ý định đã ký trên đĩa, không phải lời ' +
     'engine khẳng định nó đang đứng chờ. Chỉ cuốn đang mở engine mới nói được câu đó.',
+  xoaKhongHoanTac:
+    'Xóa hẳn tác phẩm này khỏi đĩa — bản thảo và nhật ký phán quyết mất theo, không hoàn tác được.',
+
+  napModelXong: (n: number) =>
+    n === 0
+      ? 'Gọi được nhà cung cấp, nhưng nó không trả model nào — gõ tay tên model.'
+      : `Gọi được nhà cung cấp · ${n} model · khóa còn dùng được`,
+
+  /**
+   * Model đang đặt không nằm trong danh sách nhà cung cấp vừa trả về.
+   *
+   * Câu này nói ra HẬU QUẢ chứ không chỉ nói "sai", vì hậu quả là thứ đã xảy ra thật và
+   * người dùng đã không nối được nó với nguyên nhân: lỗi engine in ra là
+   * `No active credentials for provider` — một câu về KHÓA, trong khi khóa hoàn toàn đúng
+   * và thứ sai là tên model.
+   */
+  modelKhongCoThat: (model: string, ncc: string) =>
+    `${ncc} không có model tên "${model}". Lượt chạy tới sẽ dừng ngay ở Arbiter, và ` +
+    `thông báo lúc đó sẽ nói về khóa API chứ không nói về tên model. Chọn một tên trong ô trên.`,
+
+  /**
+   * Xác nhận xóa. Nói ra CÁI MẤT, không hỏi chung chung "bạn có chắc không".
+   *
+   * "Bạn có chắc không" là câu người ta bấm Đồng ý theo phản xạ. Liệt kê số chương và số
+   * tiền đã tiêu thì không — đó là những con số buộc phải đọc.
+   */
+  xacNhanXoa: (_ten: string, chuong: number, tien: string) =>
+    chuong > 0
+      ? `Mất ${chuong} chương đã chốt và toàn bộ nhật ký phán quyết — ${tien} đã tiêu. ` +
+        `Bản thảo trên đĩa bị xóa theo, không hoàn tác được.`
+      : `Cuốn này chưa có chương nào, nên chỉ mất phần nền đã dựng. Không hoàn tác được.`,
+
   tongTienMauSo:
     'Tổng chỉ cộng những cuốn đã có meta/usage.json. Cuốn chưa chạy lần nào không có số ' +
     'liệu để cộng, nên nó không nằm trong con số này.',
