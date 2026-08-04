@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>i · ba màn — bản đã chốt và đã thi hành</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../web/app/globals.css">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   i · BA MÀN — BẢN ĐÃ CHỐT VÀ ĐÃ THI HÀNH
+
+   Tờ h dựng bốn cơ chế chuyển màn để chọn bằng mắt. Đã chọn: C — rail mang cả
+   ba màn ở đỉnh. Tờ này ghi lại bản đã chốt, và nó khác mọi tờ trước ở một
+   điểm: phần thi hành ĐÃ XONG, nên đây là bản ghi quyết định chứ không phải
+   một lời đề nghị.
+
+   Ba câu người dùng đã nói, và cả ba đều thành luật:
+     · "lúc đầu vào là trang quản lý"          → màn mở đầu là Quản lý
+     · "bấm vào chi tiết mới tới xưởng sản xuất" → nhãn nút là "Chi tiết"
+     · "cài đặt chung cho mọi sản xuất luôn"     → màn Cài đặt chung
+
+   Mọi con số trong tờ này là số THẬT, đọc từ `/api/workshop` và
+   `/api/workshop/cost` của xưởng đang chạy lúc 2026-08-04. Ba cuốn, và cả ba
+   TRÙNG TÊN "Trấn Yêu Ký" — đó là ca thật, không phải fixture cho đẹp, và nó
+   chính là lý do mã thư mục hiện cạnh mọi cái tên.
+
+   (Đừng viết đường dẫn có dấu sao trong chú thích CSS: chuỗi sao rồi gạch chéo
+   ĐÓNG comment sớm và nuốt cả khối bên dưới. Tờ h đã mất nguyên khối `:root`
+   vì lỗi đó.)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --ui: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+
+/* VỎ ỨNG DỤNG ≠ TRANG TÀI LIỆU. `globals.css` đặt `body { overflow: hidden }`
+   cho khung ứng dụng cố định; tờ này là trang đọc dài nên phải khai lại. */
+html, body { height: auto; min-height: 100%; overflow: visible; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 400 14px/1.55 var(--ui); margin: 0; padding: 0 0 120px; display: block;
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+
+.dauto { padding: 54px 0 32px; border-bottom: 1px solid var(--line); margin-bottom: 38px; }
+.dauto h1 { font: 600 27px/1.25 var(--ui); margin: 0 0 12px; letter-spacing: -0.015em; }
+.dauto h1 em { font-style: normal; color: var(--ink-3); font-weight: 400; }
+.dauto p { margin: 0 0 10px; color: var(--ink-2); max-width: 76ch; }
+.dauto .ngay { font: 400 11.5px var(--mono); color: var(--ink-3); }
+
+section { margin: 0 0 56px; }
+section > h2 { font: 600 18px/1.3 var(--ui); margin: 0 0 6px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+section > h2 .so { font: 500 11px var(--mono); color: oklch(0.19 0.02 74); background: var(--gold); border-radius: 3px; padding: 2px 7px; }
+section > .dan { color: var(--ink-2); margin: 0 0 20px; max-width: 78ch; line-height: 1.72; }
+section > .dan strong { color: var(--ink); font-weight: 500; }
+.kod { font: 400 12.5px var(--mono); background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 3px; padding: 1px 5px; color: var(--ink); }
+.ghichu { border-top: 1px solid var(--line); padding: 12px 0 0; margin: 18px 0 0; color: var(--ink-3); font-size: 12.5px; max-width: 80ch; line-height: 1.72; }
+.ghichu b { color: var(--ink-2); font-weight: 500; }
+
+table.t { width: 100%; border-collapse: collapse; margin: 0 0 8px; font-size: 13px; }
+table.t th { text-align: left; font: 500 11px var(--ui); color: var(--ink-3); padding: 0 10px 7px; border-bottom: 1px solid var(--line); }
+table.t td { padding: 9px 10px; border-bottom: 1px solid var(--line-2); color: var(--ink-2); vertical-align: top; line-height: 1.72; }
+table.t td b { color: var(--ink); font-weight: 500; }
+table.t td.m { font: 400 12px var(--mono); }
+
+/* ── app mini: ba màn bấm được ─────────────────────────────────────────── */
+.app {
+  border: 1px solid var(--line); border-radius: var(--r); overflow: hidden;
+  background: var(--bg); margin: 0 0 10px;
+}
+.app .a-bar {
+  display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 10px;
+  background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.app .a-logo { font: 500 12.5px var(--ui); color: var(--ink-2); }
+.app .a-logo em { font-style: normal; color: var(--ink-3); }
+.app .a-goc {
+  display: flex; align-items: baseline; gap: 6px; padding: 3px 8px;
+  background: var(--panel-2); border: 1px solid var(--line-2); border-radius: var(--r);
+  font: 400 11px var(--mono); color: var(--ink-2);
+}
+.app .a-pick {
+  display: flex; align-items: baseline; gap: 7px; padding: 3px 9px;
+  background: var(--panel-2); border: 1px solid var(--line-2); border-radius: var(--r);
+  font: 400 12.5px var(--ui); color: var(--ink);
+}
+.app .a-pick .ma { font: 400 11px var(--mono); color: var(--ink-3); }
+.app .a-than { display: grid; grid-template-columns: 186px 1fr; min-height: 340px; }
+.app .a-rail { background: var(--panel); border-right: 1px solid var(--line); padding: 5px 7px 10px; }
+
+.mman { display: flex; flex-direction: column; gap: 1px; background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: var(--r); padding: 2px; margin: 0 0 10px; }
+.mman button {
+  display: block; width: 100%; text-align: left; background: none; border: 0;
+  border-radius: 3px; padding: 6px 8px 7px; cursor: pointer; color: var(--ink-2);
+}
+.mman button:hover { background: var(--raised); color: var(--ink); }
+.mman button[aria-current] { background: var(--raised); color: var(--gold); }
+.mman .t { display: block; font: 500 13px/1.35 var(--ui); }
+.mman .p { display: block; font: 400 11px/1.5 var(--ui); color: var(--ink-3); }
+
+.app .a-khu { display: flex; align-items: center; gap: 7px; width: 100%; text-align: left;
+  background: none; border: 0; border-radius: var(--r); padding: 5px 8px; cursor: pointer;
+  color: var(--ink-2); font: 400 12.5px var(--ui); }
+.app .a-khu:hover { background: var(--panel-2); color: var(--ink); }
+.app .a-khu[aria-current] { background: var(--raised); color: var(--gold); }
+.app .a-khu .g { width: 14px; font-size: 11px; color: var(--ink-3); }
+.app .a-khu[aria-current] .g { color: var(--gold); }
+.app .a-grp { font: 500 10.5px var(--ui); color: var(--ink-3); padding: 11px 8px 6px; }
+.app .a-cv { padding: 0; overflow: hidden; }
+.app .a-cv h3 { font: 600 15px var(--ui); margin: 0; padding: 12px 14px 10px; }
+.app .a-trans {
+  display: flex; align-items: center; gap: 14px; height: 30px; padding: 0 12px;
+  background: var(--panel); border-top: 1px solid var(--line);
+  font: 400 11.5px var(--ui); color: var(--ink-3);
+}
+.app .a-trans .nut { margin-left: auto; background: var(--gold); color: oklch(0.19 0.02 74);
+  border: 0; border-radius: var(--r); padding: 3px 12px; font: 500 11.5px var(--ui); }
+.app .a-khongtrans { padding: 9px 12px; border-top: 1px solid var(--line); background: var(--panel);
+  font: 400 11.5px var(--ui); color: var(--ink-3); }
+
+.cb { display: block; padding: 8px 14px; border-bottom: 1px solid var(--line);
+  background: color-mix(in oklch, var(--amber) 8%, var(--bg)); font-size: 12.5px; }
+.cb .h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.cb .k { color: var(--amber); font-size: 9px; }
+.cb .n { color: var(--ink); font-weight: 500; }
+.cb .c { color: var(--ink-2); }
+.cb .l { display: block; margin-top: 3px; color: var(--ink-3); font-size: 12px; line-height: 1.72; max-width: 74ch; }
+.cb.roi { background: none; }
+.cb.roi .k { color: var(--ink-3); }
+
+.xt { display: flex; flex-wrap: wrap; background: var(--panel); border-bottom: 1px solid var(--line); padding: 0 4px; }
+.xt span { display: flex; align-items: baseline; gap: 6px; padding: 6px 12px;
+  border-right: 1px solid var(--line-2); font: 500 12px var(--mono); color: var(--ink); white-space: nowrap; }
+.xt span em { font: 400 11.5px var(--ui); font-style: normal; color: var(--ink-3); }
+.xt span i { font: 400 11px var(--ui); font-style: normal; color: var(--amber); }
+
+table.bg { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.bg th { text-align: left; font: 500 11px var(--ui); color: var(--ink-3);
+  padding: 7px 10px; border-bottom: 1px solid var(--line); }
+table.bg td { padding: 8px 10px; border-bottom: 1px solid var(--line-2); color: var(--ink-2); }
+table.bg td b { display: block; color: var(--ink); font-weight: 400; }
+table.bg td .ma { font: 400 11px var(--mono); color: var(--ink-3); }
+table.bg td.n { text-align: right; font: 400 12px var(--mono); color: var(--ink); }
+table.bg td .amb { color: var(--amber); font-size: 12px; }
+table.bg .ct { background: var(--panel-2); border: 1px solid color-mix(in oklch, var(--gold) 42%, var(--line));
+  border-radius: var(--r); color: var(--ink); font: 400 12px var(--ui); padding: 3px 9px; cursor: pointer; }
+
+.bo { display: grid; grid-template-columns: 110px 1fr 68px 62px; align-items: center;
+  gap: 10px; padding: 5px 14px; border-bottom: 1px solid var(--line-2); }
+.bo .bt { font: 400 12.5px var(--ui); color: var(--ink-2); }
+.bo .bh { height: 8px; background: var(--panel-2); border-radius: 2px; overflow: hidden; }
+.bo .bh i { display: block; height: 100%; background: var(--gold); }
+.bo .bv { font: 500 12px var(--mono); color: var(--ink); text-align: right; }
+.bo .bc { font: 400 12px var(--mono); color: var(--teal); text-align: right; }
+
+.kdai { display: flex; gap: 8px; padding: 12px 14px; flex-wrap: wrap; }
+.kmot { flex: 1 1 150px; background: var(--panel); border: 1px solid var(--line-2);
+  border-radius: var(--r); padding: 9px 10px; }
+.kmot.r { background: var(--panel-2); }
+.kmot .kt { font: 500 12.5px var(--ui); color: var(--ink); }
+.kmot .kn { font: 400 11px var(--ui); color: var(--ink-3); display: block; margin-bottom: 7px; }
+.kmot .kv { font: 400 12px var(--mono); color: var(--ink-2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="dauto">
+  <h1>i · ba màn — <em>bản đã chốt và đã thi hành</em></h1>
+  <p>Tờ <span class="kod">h</span> dựng bốn cơ chế chuyển màn để chọn bằng mắt. Đã chọn <strong>C</strong>:
+     rail mang cả ba màn ở đỉnh. Tờ này ghi lại bản đã chốt. Khác mọi tờ trước, phần thi hành
+     <strong>đã xong</strong>, nên đây là bản ghi quyết định chứ không phải một lời đề nghị.</p>
+  <p class="ngay">số THẬT từ /api/workshop và /api/workshop/cost · 3 tác phẩm · 2026-08-04</p>
+</div>
+
+<section>
+  <h2><span class="so">BẢN ĐỒ</span> Mười chín khu đi đâu</h2>
+  <p class="dan">Ranh giới không phải do tờ này vẽ ra — nó đã có sẵn trong mã và đang được ghi bằng
+     một cái <strong>tên nhóm</strong>. <span class="kod">laKhuMucMay()</span> trong
+     <span class="kod">lib/khu.ts</span> khai đúng những khu không đọc <span class="kod">tacPham</span>.
+     Cái tên thua, và phép đo nói rõ vì sao. Đứng ở Cấu hình máy (thứ sửa
+     <span class="kod">~/.ainovel/config.json</span> cho MỌI cuốn) thì thanh trên vẫn là bộ chọn của một
+     cuốn, rail vẫn liệt kê 14 khu của cuốn đó, transport vẫn mời <span class="kod">▶ Chạy</span> cho cuốn đó.
+     <strong>Ba trong bốn vùng của khung nói về cuốn A trong khi canvas nói về cả máy.</strong></p>
+
+  <table class="t">
+    <thead><tr><th style="width:19%">Màn</th><th style="width:15%">Phạm vi</th><th>Khu</th></tr></thead>
+    <tbody>
+      <tr><td><b>▦ Quản lý</b><br><span class="kod">?khu=xuong</span></td><td>cả xưởng</td>
+          <td>Xưởng (danh sách + dải việc cần bạn + tổng) · Tác phẩm mới · Cùng dựng</td></tr>
+      <tr><td><b>⚙ Cài đặt chung</b><br><span class="kod">?khu=cau-hinh</span></td><td>mọi tác phẩm</td>
+          <td>Nhà cung cấp &amp; khóa · Model theo vai <b>(mới — mặc định, không cần engine mở)</b> ·
+              Chi phí toàn xưởng <b>(mới — cần route Go mới)</b></td></tr>
+      <tr><td><b>▤ Xưởng sản xuất</b><br><span class="kod">?tp=…&amp;khu=…</span></td><td>một tác phẩm</td>
+          <td>Bản thảo · Dòng sản xuất · Kiểm định · Hàng chờ viết lại · Nhập&amp;Xuất ·
+              Dàn ý · Nhân vật · Luật thế giới · Phục bút · Văn phong ·
+              Nhật ký phán quyết · Chi phí · Tổ sản xuất · <b>Phiên chạy</b> (tên cũ: Cài đặt)</td></tr>
+    </tbody>
+  </table>
+
+  <p class="ghichu"><b>Hai lần đổi tên, và cả hai đều là đổi tên cho ĐÚNG.</b>
+     <span class="kod">cai-dat</span> → <span class="kod">phien-chay</span>: bề mặt đó là BẢN GHI của
+     một cuốn (chỉ đọc, từ <span class="kod">meta/run.json</span>), còn thứ người ta tìm khi gõ
+     "cài đặt" là cấu hình máy sửa được. Bằng chứng là chính nó đã phải in ra một câu chỉ đường sang
+     chỗ khác: <i>"Muốn đổi mặc định cho mọi lượt sau thì sửa ở Cấu hình máy"</i>. Một bề mặt phải chỉ
+     đường khỏi chính nó là một bề mặt mang sai tên. Mã khu đổi theo vì mã khu đi vào thanh địa chỉ,
+     tức nó là chữ người dùng đọc.</p>
+</section>
+
+<section>
+  <h2><span class="so">THỬ</span> Bấm qua lại giữa ba màn</h2>
+  <p class="dan">Bấm một hàng màn ở đỉnh rail để đổi màn; bấm <b>Chi tiết</b> trong bảng để xuống một cuốn.
+     Chú ý ba vùng khung đổi theo: <strong>thanh trên</strong> (bộ chọn cuốn ↔ gốc xưởng),
+     <strong>rail</strong> (khu của màn đang mở), và <strong>transport</strong> (chỉ có ở xưởng sản xuất).</p>
+
+  <div class="app" id="app"></div>
+  <p class="ghichu"><b>Transport không còn "luôn hiện".</b> Nó nói năng suất · giá thành · thời lượng của
+     MỘT cuốn và mang một nút tiêu tiền thật. Đặt nó dưới màn Quản lý là dán một điều khiển
+     cấp-tác-phẩm vào đáy một bề mặt cấp-xưởng, và mời một cú bấm không chủ ý vào giữa một màn đang
+     được quét mắt. Đây cũng là luật đã cấm nút chạy trong bảng Xưởng; trước đây nó bị lách qua
+     đường transport.</p>
+</section>
+
+<section>
+  <h2><span class="so">ĐỔI</span> Cái gì đổi, cái gì giữ</h2>
+  <table class="t">
+    <thead><tr><th style="width:17%">Chỗ</th><th style="width:36%">Trước</th><th>Sau</th></tr></thead>
+    <tbody>
+      <tr><td><b>Màn mở đầu</b></td>
+          <td>Xưởng nếu ≥2 cuốn, buồng lái nếu đúng 1</td>
+          <td><b>Quản lý</b>, bất kể mấy cuốn. <span class="kod">?tp=</span> vẫn thắng</td></tr>
+      <tr><td><b>Rail</b></td>
+          <td>18 mục · 4 nhóm, ba nhóm dưới thu SẴN</td>
+          <td>3 màn ở đỉnh (luôn hiện) + khu của màn đang mở, các nhóm mở SẴN</td></tr>
+      <tr><td><b>Thanh trên</b></td>
+          <td>bộ chọn cuốn ở mọi bề mặt, kể cả bề mặt toàn cục</td>
+          <td>bộ chọn cuốn chỉ ở xưởng sản xuất; hai màn kia hiện gốc xưởng</td></tr>
+      <tr><td><b>Transport</b></td>
+          <td>luôn hiện, kể cả dưới bảng liệt kê mọi cuốn</td>
+          <td>chỉ ở xưởng sản xuất; hàng lưới bị bỏ hẳn ở hai màn kia</td></tr>
+      <tr><td><b>Nút vào một cuốn</b></td>
+          <td><span class="kod">Mở</span>, trùng nghĩa với <span class="kod">Mở máy</span> (khởi động engine)</td>
+          <td><span class="kod">Chi tiết</span></td></tr>
+      <tr><td><b>Model theo vai</b></td>
+          <td>chỉ sửa được khi engine ĐANG MỞ, và chỉ sống hết lượt đó</td>
+          <td>thêm bản MẶC ĐỊNH ở Cài đặt chung, không cần engine
+              (<span class="kod">PUT /api/config</span> nhận <span class="kod">roles</span> từ bản này)</td></tr>
+      <tr><td><b>Chi phí toàn xưởng</b></td>
+          <td>không có nguồn vì <span class="kod">/cost</span> là per-book</td>
+          <td>route mới <span class="kod">GET /api/workshop/cost</span> cộng ở server</td></tr>
+      <tr><td><b>Biện giải trong thân màn</b></td>
+          <td>hai đoạn văn cao 110px dưới một bảng cao 182px</td>
+          <td>về <span class="kod">title</span> của nút Chi tiết: vẫn còn, không còn chắn màn</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="so">RANH</span> Chỗ cố ý không làm, và một ràng buộc về SỰ THẬT</h2>
+
+  <p class="dan"><strong>Engine chỉ mở được MỘT cuốn mỗi lần.</strong>
+     <span class="kod">boMay.soToiDa == 1</span> (<span class="kod">internal/serve/engine.go:69</span>),
+     và cuốn thứ hai nhận <span class="kod">errQuaNhieuMay</span>. Nên "xưởng sản xuất hàng loạt" chỉ có
+     thể nghĩa là <b>quản lý</b> nhiều cuốn cộng một hàng ưu tiên rõ ràng, <b>không</b> phải chạy song
+     song. Màn Quản lý vì thế nói "máy đang chạy cuốn X" chứ không dựng một hàng đợi: vẽ hàng đợi cho
+     một cơ chế chưa có là hứa một thứ bấm vào không chạy.</p>
+
+  <p class="dan"><strong>Hai loại "đang chờ", và chúng không được gộp.</strong>
+     <span class="kod">snapshot.advance</span> chỉ tồn tại khi engine ĐANG MỞ. Nó là lời engine tự
+     khẳng định rằng nó đứng ở cửa, và nhiều nhất một cuốn nói được câu đó. Còn
+     <span class="kod">meta/run.json</span> giữ <b>ý định đã ký</b> của mọi cuốn, kể cả cuốn đã đóng
+     engine từ lâu. Màn Quản lý đọc loại thứ hai, và chữ trên bề mặt nói đúng loại đó: <i>"có một mốc
+     tạm dừng đã ký"</i>, không phải <i>"đang chờ bạn"</i>. Gọi nó là "đang chờ bạn" thì sẽ dựng một hàng
+     chờ cho những cuốn không có engine nào đứng chờ cả.</p>
+
+  <table class="t">
+    <thead><tr><th style="width:26%">Không làm</th><th>Vì sao</th></tr></thead>
+    <tbody>
+      <tr><td><b>Chạy / dừng ở màn Quản lý</b></td>
+          <td>Một đường tiêu tiền duy nhất. Hai nút cùng gọi <span class="kod">POST /run</span> thì
+              trạng thái khóa-lúc-đang-gửi của chúng không thấy nhau. Và đây là bề mặt người ta QUÉT MẮT.</td></tr>
+      <tr><td><b>Xóa / đổi tên tác phẩm</b></td>
+          <td>Xóa một cuốn là xóa hàng giờ chạy và hàng chục đô. Việc đó để ở hệ tệp, nơi thấy rõ mình
+              đang phá cái gì. (Quyết định 8 của spec, giữ nguyên.)</td></tr>
+      <tr><td><b>Số "mấy cuốn đang chờ" ở dải màn</b></td>
+          <td>Mỗi cuốn một loại việc và cộng chúng lại không ra nghĩa. Một dấu có/không là điều duy
+              nhất chứng minh được, nên hàng "Quản lý" mang một dấu chứ không một con số.</td></tr>
+      <tr><td><b>Độ suy luận theo vai ở Cài đặt chung</b></td>
+          <td><span class="kod">RoleConfig</span> nhận provider + model; <span class="kod">reasoning_effort</span>
+              theo vai không đi qua đường ghi này. Vẽ một ô cho nó là vẽ một ô lưu xong không có tác dụng.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   Một bộ dữ liệu THẬT, ba màn, một bộ vỏ. Số đọc từ /api/workshop và
+   /api/workshop/cost lúc 2026-08-04.
+
+   Cả ba cuốn trùng tên "Trấn Yêu Ký" — ca thật, và là lý do mã thư mục hiện
+   cạnh mọi cái tên. Một preview dùng ba tên khác nhau sẽ giấu mất đúng ca mà
+   bảng thật phải chịu.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const GOC = '/Users/robin/Personal/ainovel-cli/output/';
+const SACH = [
+  { id: 'tran-yeu-ky',  ten: 'Trấn Yêu Ký', xong: 5, tong: 300, tu: 643,   tien: 7.373, nhip: '0,5',
+    hold: true, steer: true,
+    ly: "Dừng lại cho tôi đọc trước khi sang cung 'Cửu Tuyền Đường Mở Cổng' — muốn kiểm tuyến Bạch gia đã đủ dày chưa sau khi chương 4 viết lại xong" },
+  { id: 'chay-thu',     ten: 'Trấn Yêu Ký', xong: 2, tong: 300, tu: 5803,  tien: 0, nhip: '51,4', hold: false, steer: false },
+  { id: 'thanh-van-lo', ten: 'Trấn Yêu Ký', xong: 2, tong: 300, tu: 5803,  tien: 0, nhip: null,   hold: false, steer: false },
+];
+const TONG = { tien: 7.373, tietKiem: 2.1786, dem: 1, thieuUsage: 3 };
+const VAI = [['Chấp bút', 4.1826, 1.7342], ['Biên tập', 1.9064, 0], ['Kiến trúc', 1.284, 0.4028], ['Phán quan', 0, 0.0416]];
+const KHU_SX = [
+  { grp: 'Truyện của bạn', muc: [['✎','Bản thảo','5'],['▤','Dòng sản xuất',''],['◆','Kiểm định','7'],['■','Hàng chờ viết lại','1'],['⇄','Nhập & Xuất','']] },
+  { grp: 'Thế giới truyện', muc: [['☰','Dàn ý phân tầng','4'],['●','Nhân vật','5'],['⬢','Luật thế giới','5'],['◇','Phục bút','3'],['✒','Văn phong','']] },
+  { grp: 'Chi phí & vận hành', muc: [['⌗','Nhật ký phán quyết','4'],['$','Chi phí',''],['☗','Tổ sản xuất',''],['⚙','Phiên chạy','']] },
+];
+const KHU_QL = [['▦','Xưởng'],['+','Tác phẩm mới'],['⁂','Cùng dựng']];
+const KHU_CD = [['⌸','Nhà cung cấp & khóa'],['⌗','Model theo vai'],['$','Chi phí toàn xưởng']];
+const MAN = [
+  ['quanly', 'Quản lý', 'cả xưởng'],
+  ['caidat', 'Cài đặt chung', 'mọi tác phẩm'],
+  ['sanxuat', 'Xưởng sản xuất', null],
+];
+const tien = (n) => '$' + n.toFixed(2).replace('.', ',');
+const el = (t, lop, chu) => { const e = document.createElement(t); if (lop) e.className = lop; if (chu !== undefined) e.textContent = chu; return e; };
+
+const st = { man: 'quanly', khu: 'Xưởng', tp: SACH[0] };
+
+function ve() {
+  const app = document.getElementById('app');
+  app.replaceChildren();
+
+  /* ── thanh trên: bộ chọn cuốn CHỈ ở màn sản xuất ── */
+  const bar = el('div', 'a-bar');
+  const lg = el('div', 'a-logo'); lg.append(document.createTextNode('ainovel ')); lg.append(el('em', null, 'studio')); bar.append(lg);
+  if (st.man === 'sanxuat') {
+    const pk = el('div', 'a-pick');
+    pk.append(el('b', null, st.tp.ten));
+    pk.append(el('span', 'ma', st.tp.id));
+    pk.append(el('span', 'ma', st.tp.xong + '/' + st.tp.tong));
+    bar.append(pk);
+  } else {
+    const g = el('div', 'a-goc'); g.append(el('span', null, '▦')); g.append(el('span', null, GOC)); bar.append(g);
+  }
+  app.append(bar);
+
+  const than = el('div', 'a-than');
+
+  /* ── rail: ba màn ở đỉnh, rồi khu của màn đang mở ── */
+  const rail = el('div', 'a-rail');
+  const mm = el('div', 'mman');
+  for (const [ma, ten, pham] of MAN) {
+    const b = el('button'); b.type = 'button';
+    if (st.man === ma) b.setAttribute('aria-current', 'page');
+    b.append(el('span', 't', ten));
+    b.append(el('span', 'p', pham ?? st.tp.ten));
+    b.addEventListener('click', () => {
+      st.man = ma;
+      st.khu = ma === 'quanly' ? 'Xưởng' : ma === 'caidat' ? 'Nhà cung cấp & khóa' : 'Dòng sản xuất';
+      ve();
+    });
+    mm.append(b);
+  }
+  rail.append(mm);
+
+  const themKhu = (ky, ten) => {
+    const b = el('button', 'a-khu'); b.type = 'button';
+    if (st.khu === ten) b.setAttribute('aria-current', 'page');
+    b.append(el('span', 'g', ky)); b.append(el('span', null, ten));
+    b.addEventListener('click', () => { st.khu = ten; ve(); });
+    rail.append(b);
+  };
+  if (st.man === 'quanly') for (const [k, t] of KHU_QL) themKhu(k, t);
+  if (st.man === 'caidat') for (const [k, t] of KHU_CD) themKhu(k, t);
+  if (st.man === 'sanxuat') for (const nh of KHU_SX) { rail.append(el('div', 'a-grp', nh.grp)); for (const [k, t] of nh.muc) themKhu(k, t); }
+  than.append(rail);
+
+  /* ── canvas ── */
+  const cv = el('div', 'a-cv');
+  cv.append(el('h3', null, st.man === 'quanly' ? 'Quản lý' : st.khu));
+  if (st.man === 'quanly') veQuanLy(cv);
+  else if (st.man === 'caidat') veCaiDat(cv);
+  else veSanXuat(cv);
+  than.append(cv);
+  app.append(than);
+
+  /* ── transport: CHỈ ở màn sản xuất ── */
+  if (st.man === 'sanxuat') {
+    const tr = el('div', 'a-trans');
+    for (const s of ['○ đang nghỉ', 'công đoạn plan', 'năng suất 0,5 chương/giờ', 'tổng ' + tien(st.tp.tien)]) tr.append(el('span', null, s));
+    const n = el('button', 'nut', '▶ Chạy'); n.type = 'button'; tr.append(n);
+    app.append(tr);
+  } else {
+    app.append(el('div', 'a-khongtrans', 'Không có transport ở màn này — không có cuốn nào đang mở để nói về.'));
+  }
+}
+
+function veQuanLy(cv) {
+  /* dải việc cần bạn: ý định ĐÃ KÝ trên đĩa, không phải "engine đang đứng ở cửa" */
+  const co = SACH.filter((s) => s.hold || s.steer);
+  if (co.length) {
+    for (const s of co) {
+      const d = el('div', 'cb');
+      const h = el('div', 'h');
+      h.append(el('span', 'k', '■'));
+      h.append(el('span', 'n', s.ten));
+      h.append(el('span', 'c', [s.hold && 'có một mốc tạm dừng đã ký', s.steer && 'có một ý kiến can thiệp chưa xử lý'].filter(Boolean).join(' · ')));
+      d.append(h);
+      if (s.ly) d.append(el('span', 'l', s.ly));
+      cv.append(d);
+    }
+  } else {
+    const d = el('div', 'cb roi'); d.append(el('span', 'k', '○')); d.append(el('span', 'c', 'Không có việc nào đang chờ bạn')); cv.append(d);
+  }
+
+  /* dải tổng: ô tiền mang MẪU SỐ của chính nó */
+  const xt = el('div', 'xt');
+  const o = (v, n, mau) => { const s = el('span'); s.append(document.createTextNode(v + ' ')); s.append(el('em', null, n)); if (mau) s.append(el('i', null, mau)); xt.append(s); };
+  o('3', 'tác phẩm'); o('9', 'chương đã chốt'); o('12.249', 'từ');
+  o(tien(TONG.tien), 'đã tiêu', 'đo được ở ' + TONG.dem + '/3 cuốn');
+  o('0', 'engine đang mở');
+  cv.append(xt);
+
+  const tb = el('table', 'bg');
+  const th = el('thead'); const tr = el('tr');
+  for (const [t, c] of [['Tác phẩm',''],['Tiến độ',''],['Chi phí','n'],['Nhịp','n'],['Cần bạn',''],['Hành động','']]) tr.append(el('th', c, t));
+  th.append(tr); tb.append(th);
+  const bd = el('tbody');
+  for (const s of SACH) {
+    const r = el('tr');
+    const c1 = el('td'); c1.append(el('b', null, s.ten)); c1.append(el('span', 'ma', s.id)); r.append(c1);
+    r.append(el('td', null, s.xong + '/' + s.tong));
+    r.append(el('td', 'n', tien(s.tien)));
+    r.append(el('td', 'n', s.nhip ?? '—'));
+    const c5 = el('td');
+    if (s.hold || s.steer) c5.append(el('span', 'amb', '■ ' + [s.hold && 'mốc tạm dừng', s.steer && 'ý kiến chờ xử lý'].filter(Boolean).join(' · ')));
+    else c5.append(document.createTextNode('—'));
+    r.append(c5);
+    const c6 = el('td'); const b = el('button', 'ct', 'Chi tiết'); b.type = 'button';
+    b.addEventListener('click', () => { st.tp = s; st.man = 'sanxuat'; st.khu = 'Dòng sản xuất'; ve(); });
+    c6.append(b); r.append(c6);
+    bd.append(r);
+  }
+  tb.append(bd); cv.append(tb);
+}
+
+function veCaiDat(cv) {
+  if (st.khu === 'Chi phí toàn xưởng') {
+    const xt = el('div', 'xt');
+    for (const [v, n] of [[tien(TONG.tien), 'đã tiêu'], [tien(TONG.tietKiem), 'bộ đệm tiết kiệm'], [String(TONG.dem), 'cuốn đã đo được']]) {
+      const s = el('span'); s.append(document.createTextNode(v + ' ')); s.append(el('em', null, n)); xt.append(s);
+    }
+    cv.append(xt);
+    const dinh = VAI[0][1];
+    for (const [ten, v, cache] of VAI) {
+      const h = el('div', 'bo');
+      h.append(el('span', 'bt', ten));
+      const bh = el('span', 'bh'); const i = el('i'); i.style.width = Math.round(v / dinh * 100) + '%'; bh.append(i); h.append(bh);
+      h.append(el('span', 'bv', tien(v)));
+      h.append(el('span', 'bc', cache > 0 ? tien(cache) : ''));
+      cv.append(h);
+    }
+    const g = el('div', 'cb'); g.append(el('span', 'k', '■'));
+    g.append(el('span', 'c', TONG.thieuUsage + ' lượt mô hình không trả số liệu dùng, nên mọi con số trên đây đều thiếu một phần.'));
+    cv.append(g);
+    return;
+  }
+  if (st.khu === 'Model theo vai') {
+    const d = el('div', 'kdai');
+    for (const [ten, nguon, model] of [['Mặc định','đặt riêng','gpt-5.5'],['Kiến trúc','thừa hưởng mặc định','gpt-5.5'],['Chấp bút','đặt riêng','gpt-5.5'],['Biên tập','đặt riêng','gpt-5.5-mini']]) {
+      const k = el('div', 'kmot' + (nguon === 'đặt riêng' ? ' r' : ''));
+      k.append(el('span', 'kt', ten)); k.append(el('span', 'kn', nguon)); k.append(el('span', 'kv', model));
+      d.append(k);
+    }
+    cv.append(d);
+    const g = el('div', 'cb roi'); g.append(el('span', 'k', '○'));
+    g.append(el('span', 'c', 'Không cần engine mở — đây là mặc định cho mọi lượt chạy sau.'));
+    cv.append(g);
+    return;
+  }
+  const d = el('div', 'kdai');
+  const k = el('div', 'kmot r');
+  k.append(el('span', 'kt', 'openai')); k.append(el('span', 'kn', 'đã đặt khóa · sk-…ade'));
+  k.append(el('span', 'kv', 'https://api.openai.com/v1'));
+  d.append(k); cv.append(d);
+}
+
+function veSanXuat(cv) {
+  const d = el('div', 'cb roi');
+  d.append(el('span', 'k', '○'));
+  d.append(el('span', 'c', st.tp.ten + ' · ' + st.tp.xong + '/' + st.tp.tong + ' chương · ' + st.khu));
+  cv.append(d);
+  const p = el('div'); p.style.padding = '12px 14px'; p.style.color = 'var(--ink-3)'; p.style.fontSize = '12.5px'; p.style.lineHeight = '1.72';
+  p.textContent = 'Mười bốn khu của cuốn này nằm ở rail bên trái, ba nhóm mở sẵn. Thanh transport ở đáy nói về ĐÚNG cuốn đang mở — và chỉ ở màn này nó mới có nghĩa.';
+  cv.append(p);
+}
+
+ve();
+</script>
+</body>
+</html>
