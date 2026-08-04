@@ -195,24 +195,40 @@ export function DieuKhien({
               khi đổi: `SetAdvanceMode` chạm engine THẬT và `snapshot.advance.mode` đọc từ cùng
               `p.eng.Snapshot()` đó, nên `onDoi()` của `goi` đã mang về đúng giá trị mới. Giữ
               một bản thứ hai trong state là dựng lại đúng cái nguồn thứ hai vừa bỏ. */}
+          {/* Công tắc HAI TRẠNG THÁI, không phải một nút đổi chữ.
+              Bản trước là một nút mà nhãn của nó là TRẠNG THÁI HIỆN TẠI, còn bấm vào thì ra
+              trạng thái KHÁC — trong khi hai nút bên cạnh (`Đóng máy`, `Dừng`) lấy HÀNH ĐỘNG
+              làm nhãn. Ba nút cạnh nhau, hai luật đặt tên. Người vận hành đọc "Tự chạy liên
+              tục" thành "bấm để tự chạy" và hỏi vì sao nút không có tác dụng — nó đang báo
+              chế độ đã bật sẵn.
+              Hiện cả hai lựa chọn cùng lúc thì không còn chỗ để hiểu nhầm: thấy được cái nào
+              đang bật, và bấm là CHỌN chứ không phải đảo. Nhãn nhóm nói ra đây là chế độ,
+              vì "tự chạy" và "nghiệm thu" đứng trơ thì không tự nói chúng loại trừ nhau. */}
           {bietCheDo ? (
-            <button
-              type="button"
-              className={`dkNut${choNghiemThu ? ' dkBat' : ''}`}
-              disabled={khoa}
-              title={choNghiemThu ? GIAI_THICH.cheDoReviewLaGi : GIAI_THICH.cheDoAutoLaGi}
-              onClick={() =>
-                goi('chedo', () =>
-                  doiCheDoTien(tacPham, choNghiemThu ? 'auto' : 'review'),
-                )
-              }
-            >
-              {dangGui === 'chedo'
-                ? CHU.dangGui
-                : choNghiemThu
-                  ? CHU.cheDoNghiemThu
-                  : CHU.cheDoTuChay}
-            </button>
+            <div className="dkChon" role="group" aria-label={CHU.cheDoDiTiep}>
+              <span className="dkChonDe">{CHU.cheDoDiTiep}</span>
+              {(
+                [
+                  ['auto', CHU.cheDoTuChay, GIAI_THICH.cheDoAutoLaGi],
+                  ['review', CHU.cheDoNghiemThu, GIAI_THICH.cheDoReviewLaGi],
+                ] as const
+              ).map(([che, nhan, viSao]) => {
+                const dangBat = che === (choNghiemThu ? 'review' : 'auto');
+                return (
+                  <button
+                    key={che}
+                    type="button"
+                    className={`dkChonNut${dangBat ? ' dkBat' : ''}`}
+                    aria-pressed={dangBat}
+                    disabled={khoa || dangBat}
+                    title={viSao}
+                    onClick={() => goi('chedo', () => doiCheDoTien(tacPham, che))}
+                  >
+                    {dangGui === 'chedo' && !dangBat ? CHU.dangGui : nhan}
+                  </button>
+                );
+              })}
+            </div>
           ) : null}
 
           {/* Đóng máy nhả khóa tệp và nhả suất engine cho cuốn khác. Không có nó thì mở

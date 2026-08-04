@@ -204,6 +204,7 @@ export default function Trang() {
           />
           <Khu
             khu={s.khu}
+            onXoaXong={s.taiLai}
             snapshot={s.snapshot}
             // `?? []` ở đây KHÔNG biến "chưa tải" thành "xưởng rỗng": nhánh này chỉ chạy khi
             // `s.snapshot` đã có, mà snapshot chỉ có sau khi `tacPham` được chọn, mà `tacPham`
@@ -314,6 +315,7 @@ export function Khu({
   onDocChuong,
   onChonTacPham,
   onMoTacPham,
+  onXoaXong,
   onXongTaoSach,
   onChotCungDung,
   onDoiCauHinh,
@@ -350,6 +352,8 @@ export function Khu({
   onChonTacPham: (id: string) => void;
   /** Mở một cuốn từ bảng Xưởng ở một bề mặt cụ thể — xem `moTacPhamTai` trong useStudio. */
   onMoTacPham: (id: string, khu: KhuMa, chuong?: number) => void;
+  /** Nạp lại cả xưởng sau khi xóa một tác phẩm. */
+  onXoaXong: () => void;
   /** Tạo tác phẩm xong: đổi tác phẩm VÀ đổi khu — xem lý do ở `xongTaoSach`. */
   onXongTaoSach: (id: string) => void;
   onChotCungDung: (banNhap: string) => void;
@@ -370,7 +374,15 @@ export function Khu({
     // đổi theo cuốn đang mở (`laKhuMucMay('xuong')`). Truyền vào sẽ mời người sau dùng nó rồi
     // biến một bảng liệt kê mọi cuốn thành nửa-theo-tác-phẩm.
     case 'xuong':
-      return <Xuong sach={sach} tong={tong} onChonKhu={onChonKhu} onMoTacPham={onMoTacPham} />;
+      return (
+        <Xuong
+          sach={sach}
+          tong={tong}
+          onChonKhu={onChonKhu}
+          onMoTacPham={onMoTacPham}
+          onXoaXong={onXoaXong}
+        />
+      );
     case 'kenh-vai-chung':
       return <KenhVaiChung onDoiCauHinh={onDoiCauHinh} />;
     case 'chi-phi-xuong':

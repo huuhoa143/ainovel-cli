@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { LoiApi, layCauHinh, luuCauHinh } from '@/lib/api';
 import { CHU, GIAI_THICH } from '@/lib/nhan';
+import { useModelNapVe, type ModelNapVe } from '@/lib/modelNapVe';
 import type { CauHinhDoc } from '@/lib/types';
 
 import { HoSoKhung } from './HoSoKhung';
@@ -78,11 +79,31 @@ export function KenhVaiChung({ onDoiCauHinh }: { onDoiCauHinh: () => void }) {
   // "bốn kênh đổi được", và việc kênh đầu ghi vào một trường khác là chuyện của tầng ghi.
   const vaiRieng = du.role_names.filter((v) => v !== 'default');
 
+  // MỘT bộ nạp cho cả màn, không phải mỗi kênh một bộ. Bốn kênh cùng hỏi một nhà cung cấp
+  // là bốn lần gọi ra ngoài cho cùng một câu trả lời.
+  const napVe = useModelNapVe();
+
   return (
     <HoSoKhung tieuDe={CHU.kenhVaiChung} motTa={`${du.provider} · ${du.model}`}>
       <section className="sect">
         <p className="steerhint">{GIAI_THICH.kenhVaiChungGiaiThich}</p>
         <p className="steerhint">{GIAI_THICH.kenhVaiChungThuaHuong}</p>
+
+        {/* MỘT nút cho cả màn: bốn kênh thường trỏ cùng một nhà cung cấp, nên nạp riêng
+            từng ô là bốn lần gọi ra ngoài cho cùng một câu trả lời. */}
+        <div className="hangBo">
+          <button
+            type="button"
+            onClick={() => napVe.nap(du.provider)}
+            disabled={napVe.dangNap !== null}
+          >
+            {napVe.dangNap ? CHU.dangNapModel : CHU.napModel}
+          </button>
+          {napVe.daHoi(du.provider) && !napVe.loi ? (
+            <span className="mo">{GIAI_THICH.napModelXong(napVe.modelCua(du.provider).length)}</span>
+          ) : null}
+        </div>
+        {napVe.loi ? <p className="loiDoc">{napVe.loi}</p> : null}
 
         {/* Cuốn đang mở engine KHÔNG nhận cấu hình mới cho tới lần mở lại — engine giữ bản
             `cfg` từ lúc `host.New`. Nói ra ở đây, cạnh chỗ bấm lưu, chứ không ở đầu trang:
@@ -108,6 +129,7 @@ export function KenhVaiChung({ onDoiCauHinh }: { onDoiCauHinh: () => void }) {
             /* Mặc định không "gỡ" được: gỡ mặc định là để engine không có model nào. */
             goDuoc={false}
             du={du}
+            napVe={napVe}
             onXong={() => {
               tai();
               onDoiCauHinh();
@@ -126,6 +148,7 @@ export function KenhVaiChung({ onDoiCauHinh }: { onDoiCauHinh: () => void }) {
                 rieng={!!dat}
                 goDuoc={!!dat}
                 du={du}
+              napVe={napVe}
                 onXong={() => {
                   tai();
                   onDoiCauHinh();
@@ -153,6 +176,7 @@ function MotKenhChung({
   rieng,
   goDuoc,
   du,
+  napVe,
   onXong,
 }: {
   vai: string;
@@ -162,6 +186,7 @@ function MotKenhChung({
   rieng: boolean;
   goDuoc: boolean;
   du: CauHinhDoc;
+  napVe: ModelNapVe;
   onXong: () => void;
 }) {
   const [p, datP] = useState(provider);
@@ -177,7 +202,12 @@ function MotKenhChung({
   }, [provider, model]);
 
   const doi = p !== provider || m !== model;
-  const dsModel = du.providers.find((x) => x.name === p)?.models ?? [];
+  const dsModel = Array.from(
+    new Set([
+      ...(du.providers.find((x) => x.name === p)?.models ?? []).map((x) => x.name),
+      ...napVe.modelCua(p),
+    ]),
+  );
 
   /**
    * Danh sách nhà cung cấp, LUÔN chứa cái đang được chọn.
@@ -252,7 +282,7 @@ function MotKenhChung({
         <input value={m} onChange={(e) => datM(e.target.value)} list={`dsc-${vai}`} required />
         <datalist id={`dsc-${vai}`}>
           {dsModel.map((x) => (
-            <option key={x.name} value={x.name} />
+            <option key={x} value={x} />
           ))}
         </datalist>
       </label>

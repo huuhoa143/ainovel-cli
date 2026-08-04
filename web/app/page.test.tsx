@@ -98,6 +98,7 @@ function ve(
       onDocChuong={() => {}}
       onChonTacPham={() => {}}
       onMoTacPham={() => {}}
+      onXoaXong={() => {}}
       onXongTaoSach={() => {}}
       onChotCungDung={() => {}}
       onDoiCauHinh={() => {}}

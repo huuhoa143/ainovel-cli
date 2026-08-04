@@ -1,5 +1,9 @@
 'use client';
 
+import { useState } from 'react';
+
+import { LoiApi, xoaSach } from '@/lib/api';
+import { HopXacNhan } from './HopXacNhan';
 import { donGia, nangSuat, ngayGio, so, soTu, tienDo, tongTien } from '@/lib/dinhdang';
 import type { Khu } from '@/lib/khu';
 import { CHU, GIAI_THICH, nhanPhase } from '@/lib/nhan';
@@ -37,10 +41,20 @@ import { useDauDoi } from '@/lib/dauDoi';
  * bảng cao 182px, hai đoạn biện giải cao 110px — lời giải thích nặng bằng hơn nửa thứ nó
  * giải thích. Lý do vẫn còn, nhưng nó về `title` của đúng chỗ người dùng sẽ hỏi.
  *
- * # Vì sao KHÔNG có xóa và đổi tên (quyết định 8, giữ nguyên)
+ * # Vì sao GIỜ CÓ xóa (đảo quyết định 8)
  *
- * Xóa một cuốn là xóa hàng giờ chạy và hàng chục đô. Việc đó để ở hệ tệp, nơi thấy rõ mình
- * đang phá cái gì.
+ * Quyết định cũ là "xóa để ở hệ tệp, nơi thấy rõ mình đang phá cái gì". Lý lẽ đúng, tiền đề
+ * sai: nó giả định mọi cuốn trên bảng đều là hàng giờ chạy và hàng chục đô.
+ *
+ * Thực tế đo được: một khóa API sai làm ba lượt tạo hỏng liên tiếp, để lại ba cuốn 0 chương
+ * 0 đô nằm trên bảng này. Không cuốn nào đáng "thấy rõ mình đang phá cái gì", và cách duy
+ * nhất gỡ chúng là mở terminal — đúng việc studio tồn tại để khỏi phải làm.
+ *
+ * Nên xóa vào bảng, còn phần "thấy rõ đang phá cái gì" chuyển thành trách nhiệm của lời xác
+ * nhận: nó đọc ra SỐ CHƯƠNG và SỐ TIỀN sắp mất, và server còn đòi gõ lại đúng tên. Cuốn rỗng
+ * thì hai con số đó bằng không và câu xác nhận nói thẳng như vậy.
+ *
+ * Đổi tên vẫn KHÔNG có: tên thư mục đi vào đường dẫn của mọi tệp trong cuốn.
  *
  * # `0` KHÔNG phải "chưa đo được", và đó vẫn là luật chính của bảng này
  *
@@ -53,6 +67,7 @@ export function Xuong({
   tong,
   onChonKhu,
   onMoTacPham,
+  onXoaXong,
 }: {
   sach: Book[];
   /** Tờ `/api/workshop/cost`, nạp ở `Trang`. `du === undefined` = chưa có, không phải rỗng. */
@@ -68,6 +83,8 @@ export function Xuong({
    * hai lần trong dự án này.
    */
   onMoTacPham: (id: string, khu: Khu, chuong?: number) => void;
+  /** Nạp lại cả xưởng sau khi xóa — bảng phải khớp đĩa ngay, không đợi F5. */
+  onXoaXong: () => void;
   /**
    * Đi tới một khu mức MÁY (Tác phẩm mới / Cùng dựng) — không kèm tác phẩm nào.
    *
@@ -80,6 +97,26 @@ export function Xuong({
   const t = tongXuong(sach);
   const tien = tienCuaXuong(tong.du);
   const viec = vieccanBanCuaXuong(tong.du, sach);
+  // MỘT hộp cho cả màn, không phải mỗi hàng một hộp. `<dialog>` nằm trong markup bảng là HTML
+  // không hợp lệ (trình duyệt được phép nhấc nó ra khỏi `<td>`), và nút của nó sẽ lọt vào mọi
+  // phép đếm nút của hàng — đã đo: bài kiểm đếm ra `['Chi tiết','Xóa','Hủy','Xóa']`.
+  const [xinXoa, datXinXoa] = useState<Book | null>(null);
+  const [dangXoa, datDangXoa] = useState(false);
+  const [loiXoa, datLoiXoa] = useState<string | null>(null);
+
+  const xacNhanXoa = () => {
+    if (!xinXoa) return;
+    datDangXoa(true);
+    datLoiXoa(null);
+    xoaSach(xinXoa.id)
+      .then(() => {
+        datXinXoa(null);
+        onXoaXong();
+      })
+      .catch((e: unknown) => datLoiXoa(e instanceof LoiApi ? e.message : String(e)))
+      .finally(() => datDangXoa(false));
+  };
+
   const dangChay = sach.find((b) => b.activity === 'running');
   const engineMo = sach.find((b) => b.engine_open);
 
@@ -151,11 +188,32 @@ export function Xuong({
                 b={b}
                 viec={viec.find((v) => v.sach.id === b.id)}
                 onMoTacPham={onMoTacPham}
+                onXinXoa={datXinXoa}
               />
             ))}
           </tbody>
         </table>
       </div>
+
+      {loiXoa ? <p className="loiDoc">{loiXoa}</p> : null}
+
+      <HopXacNhan
+        moRa={xinXoa !== null}
+        tieuDe={xinXoa ? CHU.xacNhanXoaDe(xinXoa.id) : ''}
+        than={
+          xinXoa
+            ? GIAI_THICH.xacNhanXoa(
+                xinXoa.id,
+                xinXoa.completed_chapters ?? 0,
+                tongTien(xinXoa.cost_usd) ?? '$0,00',
+              )
+            : ''
+        }
+        nhanLam={CHU.xoaTacPham}
+        onLam={xacNhanXoa}
+        onHuy={() => datXinXoa(null)}
+        dangLam={dangXoa}
+      />
 
       <DaiTaoMoi onChonKhu={onChonKhu} />
     </main>
@@ -311,10 +369,12 @@ function Dong({
   b,
   viec,
   onMoTacPham,
+  onXinXoa,
 }: {
   b: Book;
   viec: ViecCanBan | undefined;
   onMoTacPham: (id: string, khu: Khu, chuong?: number) => void;
+  onXinXoa: (b: Book) => void;
 }) {
   const nhip = b.chapters_per_hour ? nangSuat(b.chapters_per_hour) : undefined;
   const gia = b.cost_per_chapter ? donGia(b.cost_per_chapter) : undefined;
@@ -413,11 +473,24 @@ function Dong({
         {sua ?? <Trong viSao={GIAI_THICH.xuongChuaBietSuaLucNao} />}
       </td>
 
-      {/* Hành động: ĐIỀU HƯỚNG, và chỉ điều hướng. Không nút nào ở đây gọi một route ghi.
+      {/* Hành động: điều hướng, CỘNG một ngoại lệ — Xóa.
           `Chi tiết` là nhãn của chính người dùng ("bấm vào chi tiết mới tới xưởng sản xuất"),
           và nó thay cho `Mở` cũ vì "Mở" mơ hồ đúng chỗ đắt nhất: studio còn có `Mở máy`, một
           nút KHỞI ĐỘNG ENGINE. `Đọc` và `Xuất bản` chỉ có ở cuốn đã hoàn thành vì trước đó
-          chúng dẫn tới hai bề mặt nói "chưa có gì". */}
+          chúng dẫn tới hai bề mặt nói "chưa có gì".
+
+          # Vì sao Xóa được phép phá luật "chỉ điều hướng"
+
+          Luật cũ tồn tại để chặn ĐIỀU KHIỂN ENGINE lọt vào bảng này: `▶ Chạy` là hành động
+          cấp-một-tác-phẩm và nó tiêu tiền, nên nó thuộc màn sản xuất chứ không thuộc một bề
+          mặt liệt kê cả xưởng.
+
+          Xóa không cùng loại. Nó là hành động cấp-QUẢN-LÝ theo đúng định nghĩa, và bảng này
+          là chỗ DUY NHẤT nhìn thấy cuốn cần bỏ — bắt người dùng vào xưởng sản xuất của một
+          cuốn để xóa chính nó là bắt họ mở cái sắp vứt. Trước bản này không có đường xóa nào
+          trong studio, và cái giá đã đo được: ba cuốn 0 chương do tạo hỏng nằm lại trên bảng,
+          gỡ được chỉ bằng cách mở terminal chạy `rm -rf` — đúng việc studio tồn tại để khỏi
+          phải làm. */}
       <td className="lam">
         <button
           type="button"
@@ -440,6 +513,17 @@ function Dong({
             </button>
           </>
         ) : null}
+
+        {/* Xóa đứng CUỐI, sau mọi nút điều hướng: tay người ta đi theo thói quen vị trí,
+            nên một hành động phá hủy không được nằm xen giữa các hành động vô hại. */}
+        <button
+          type="button"
+          className="nutXoa"
+          onClick={() => onXinXoa(b)}
+          title={GIAI_THICH.xoaKhongHoanTac}
+        >
+          {CHU.xoaTacPham}
+        </button>
       </td>
     </tr>
   );
