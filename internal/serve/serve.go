@@ -232,7 +232,7 @@ func (s *server) routes() *http.ServeMux {
 	}
 
 	if s.webDir != "" {
-		mux.Handle("/", http.FileServer(http.Dir(s.webDir)))
+		mux.Handle("/", webTinh(s.webDir))
 	}
 	return mux
 }
@@ -546,4 +546,43 @@ func writeErr(w http.ResponseWriter, code int, err error) {
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	_ = enc.Encode(map[string]string{"error": err.Error()})
+}
+
+// webTinh phục vụ bản dựng web tĩnh, và đặt `Cache-Control` KHÁC NHAU cho hai loại tệp.
+//
+// # Vì sao `http.FileServer` trần là một lỗi, không phải mặc định vô hại
+//
+// Nó không gửi `Cache-Control` nào cả — chỉ `Last-Modified`. Khi thiếu header đó, trình
+// duyệt áp *heuristic caching*: giữ bản đã tải khoảng 10% khoảng thời gian kể từ
+// `Last-Modified` và KHÔNG hỏi lại server. Với một tệp sửa vài giờ trước, đó là hàng chục
+// phút phục vụ đồ cũ trong im lặng.
+//
+// ĐO ĐƯỢC trên máy thật: sau khi dựng lại giao diện, trình duyệt vẫn hiện nút phiên bản cũ
+// dù bản dựng trên đĩa đã đổi — và cách duy nhất thoát ra là tải lại cứng. Bắt người dùng
+// nhớ `Cmd+Shift+R` sau mỗi lần cập nhật là chuyển một lỗi của server thành nghĩa vụ của họ.
+//
+// # Vì sao hai luật chứ không một
+//
+// Next.js băm nội dung vào TÊN tệp của mọi thứ dưới `/_next/static/`. Tên đổi khi nội dung
+// đổi, nên bản cũ không bao giờ bị nhầm là bản mới:
+//
+//	/_next/static/**  → immutable một năm. Tải một lần, không hỏi lại lần nào nữa.
+//	mọi thứ khác      → `no-cache`, tức PHẢI hỏi lại server trước khi dùng.
+//
+// `index.html` thuộc nhóm thứ hai, và nó là mắt xích quyết định: nó chứa tên băm của các
+// chunk. Nó mới thì mọi thứ khác tự mới theo; nó cũ thì trình duyệt còn đi lấy chunk cũ dù
+// chunk mới đã nằm sẵn trên đĩa.
+//
+// `no-cache` KHÔNG phải `no-store`: bản sao vẫn được giữ, chỉ là phải hỏi lại. `Last-Modified`
+// làm lượt hỏi đó trả 304 rỗng, nên giá của việc luôn-đúng gần bằng không.
+func webTinh(dir string) http.Handler {
+	tep := http.FileServer(http.Dir(dir))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/_next/static/") {
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		} else {
+			w.Header().Set("Cache-Control", "no-cache")
+		}
+		tep.ServeHTTP(w, r)
+	})
 }
