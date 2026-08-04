@@ -190,6 +190,8 @@ func (s *server) routes() *http.ServeMux {
 	if s.choGhi && s.may != nil {
 		mux.HandleFunc("GET /api/engine", s.handleMay)
 		mux.HandleFunc("POST /api/books", raoGhi(s.handleTaoSach))
+		// Xóa nằm ở nhóm GHI: bản chỉ-đọc không được phép xóa gì của ai.
+		mux.HandleFunc("DELETE /api/books/{book}", raoGhi(s.handleXoaSach))
 		mux.HandleFunc("POST /api/books/{book}/open", raoGhi(s.handleMoMay))
 		mux.HandleFunc("POST /api/books/{book}/run", raoGhi(s.handleChay))
 		mux.HandleFunc("POST /api/books/{book}/steer", raoGhi(s.handleCanThiep))
@@ -200,6 +202,9 @@ func (s *server) routes() *http.ServeMux {
 		// Cấu hình: GET không qua `raoGhi` vì nó chỉ đọc (và đã che khóa), PUT thì qua.
 		mux.HandleFunc("GET /api/config", s.handleDocCauHinh)
 		mux.HandleFunc("PUT /api/config", raoGhi(s.handleGhiCauHinh))
+		// Liệt kê model của một nhà cung cấp. GET vì nó không đổi gì trong cấu hình —
+		// nhưng nó dùng khóa để đi hỏi ra ngoài, nên chỉ mắc ở nhóm cho ghi.
+		mux.HandleFunc("GET /api/models", s.handleLietKeModel)
 		mux.HandleFunc("GET /api/books/{book}/models", s.handleDocVaiModel)
 		mux.HandleFunc("PUT /api/books/{book}/models", raoGhi(s.handleGhiVaiModel))
 

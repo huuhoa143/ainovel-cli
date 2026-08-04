@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -223,10 +224,55 @@ func (b *boMay) tao(id, yeuCau string) (*phienMay, error) {
 	if yeuCau == "" {
 		return nil, errors.New("thiếu câu yêu cầu truyện")
 	}
+
+	// Cuốn này đã có trên đĩa TRƯỚC lượt gọi chưa?
+	//
+	// Phải hỏi ở đây, trước `mo`. Hỏi sau thì lúc nào cũng thấy "đã có" — vì chính `mo`
+	// vừa tạo nó — và nhánh dọn sẽ không bao giờ chạy.
+	dir, err := (&server{root: b.root}).bookDir(id)
+	if err != nil {
+		return nil, err
+	}
+	_, errStat := os.Stat(dir)
+	moiTinh := errors.Is(errStat, os.ErrNotExist)
+
 	p, err := b.mo(id)
 	if err != nil {
 		return nil, err
 	}
+
+	// Từ đây xuống, MỌI nhánh lỗi phải trả máy về đúng trạng thái trước lượt gọi.
+	//
+	// Bản trước chỉ `return nil, err`, và cái giá của nó đã đo được trên máy thật: một
+	// khóa API sai làm Arbiter trả 404, rồi để lại BA thứ rác cùng lúc —
+	//
+	//   1. thư mục cuốn đã nằm trên đĩa (meta/ đủ 6 tệp, 0 chương), hiện lên bảng Quản lý
+	//      như một tác phẩm bình thường;
+	//   2. engine vẫn MỞ. `soToiDa` là 1, nên một cuốn chết giữ luôn cái slot duy nhất và
+	//      người dùng không mở được cuốn nào khác — studio coi như hỏng;
+	//   3. không có đường nào gỡ hai thứ trên từ giao diện.
+	//
+	// Lỗi khi đang tạo là chuyện BÌNH THƯỜNG (gõ sai tên model, khóa hết hạn, mạng rớt).
+	// Một thao tác thất bại phải không để lại dấu vết, nếu không mỗi lần gõ sai là một
+	// lần người dùng phải mở terminal đi dọn tay.
+	donDep := func(err error) error {
+		if errDong := b.dong(id); errDong != nil {
+			slog.Warn("dọn sau khi tạo hỏng: đóng engine không xong",
+				"module", "serve", "book", id, "err", errDong)
+		}
+		// CHỈ xóa thư mục nếu chính lượt này tạo ra nó. Cuốn có sẵn mà tạo đè lỗi thì xóa
+		// là mất bản thảo của người ta — thà để lại rác còn hơn.
+		if moiTinh {
+			if errXoa := os.RemoveAll(dir); errXoa != nil {
+				slog.Warn("dọn sau khi tạo hỏng: xóa thư mục không xong",
+					"module", "serve", "book", id, "dir", dir, "err", errXoa)
+			}
+		}
+		slog.Info("tạo tác phẩm hỏng, đã dọn", "module", "serve",
+			"book", id, "xóa_thư_mục", moiTinh, "err", err)
+		return err
+	}
+
 	plan, err := startup.PrepareQuick(startup.Request{
 		Mode:        startup.ModeQuick,
 		UserPrompt:  yeuCau,
@@ -234,13 +280,13 @@ func (b *boMay) tao(id, yeuCau string) (*phienMay, error) {
 		Interactive: true,
 	})
 	if err != nil {
-		return nil, err
+		return nil, donDep(err)
 	}
 	if err := p.eng.PrepareUserRules(plan.RawPrompt); err != nil {
-		return nil, err
+		return nil, donDep(err)
 	}
 	if err := p.eng.StartPrepared(plan.RawPrompt); err != nil {
-		return nil, err
+		return nil, donDep(err)
 	}
 	p.chayTu = mocBayGio()
 	b.theoDoi(p)
