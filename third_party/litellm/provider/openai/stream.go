@@ -1,0 +1,163 @@
+package openai
+
+import (
+	"bufio"
+	"encoding/json"
+	"io"
+	"net/http"
+	"strings"
+
+	"github.com/voocel/litellm"
+)
+
+type stream struct {
+	resp             *http.Response
+	scanner          *bufio.Scanner
+	includeReasoning bool
+	pending          []litellm.Event
+	done             bool
+	model            string
+	toolIDs          map[int]string
+	finish           litellm.FinishReason
+}
+
+func newStream(resp *http.Response, req *litellm.Request) *stream {
+	scanner := bufio.NewScanner(resp.Body)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+	return &stream{
+		resp:             resp,
+		scanner:          scanner,
+		includeReasoning: thinkingEnabled(req),
+		model:            req.Model,
+		toolIDs:          make(map[int]string),
+	}
+}
+
+func (s *stream) Next() (litellm.Event, error) {
+	if len(s.pending) > 0 {
+		event := s.pending[0]
+		s.pending = s.pending[1:]
+		return event, nil
+	}
+	if s.done {
+		return nil, io.EOF
+	}
+	for s.scanner.Scan() {
+		line := s.scanner.Text()
+		if line == "" || line[0] == ':' {
+			continue
+		}
+		data, ok := strings.CutPrefix(line, "data: ")
+		if !ok {
+			if trimmed, found := strings.CutPrefix(line, "data:"); found {
+				data = strings.TrimSpace(trimmed)
+				ok = true
+			}
+		}
+		if !ok {
+			continue
+		}
+		if data == "[DONE]" {
+			s.done = true
+			return litellm.DoneEvent{FinishReason: s.finish, Provider: "openai", Model: s.model}, nil
+		}
+		var chunk streamChunk
+		if err := json.Unmarshal([]byte(data), &chunk); err != nil {
+			return nil, litellm.NewProviderErrorWithCause("openai", litellm.ErrorTypeProvider, "openai: parse stream chunk", err)
+		}
+		if chunk.Model != "" {
+			s.model = chunk.Model
+		}
+		events := s.events(chunk)
+		if len(events) == 0 {
+			continue
+		}
+		s.pending = append(s.pending, events[1:]...)
+		return events[0], nil
+	}
+	if err := s.scanner.Err(); err != nil {
+		return nil, litellm.NewNetworkError("openai", "stream read error", err)
+	}
+	s.done = true
+	// EOF mà ĐÃ có finish_reason = lượt sinh đã kết thúc, chỉ thiếu sentinel vận chuyển.
+	//
+	// `finish_reason` là dấu kết thúc NGỮ NGHĨA của đặc tả; `[DONE]` chỉ là sentinel vận
+	// chuyển. Nhiều gateway tương thích OpenAI phát đủ chunk cuối — `finish_reason` kèm cả
+	// `usage` — rồi đóng kết nối mà không gửi sentinel. Bản gốc coi đó là stream bị cắt và
+	// báo lỗi, nên một lượt sinh HOÀN CHỈNH bị bỏ rồi thử lại tới bảy lần, mỗi lần gửi lại
+	// toàn bộ prompt.
+	//
+	// Vẫn báo lỗi khi chưa có finish_reason nào: đó mới là stream cụt thật, và nhận nó là
+	// cam kết một chương dở dang. Điều kiện này chính là chỗ phân biệt hai ca mà tầng trên
+	// KHÔNG phân biệt được — ở đây có `s.finish`, ở trên chỉ có một câu lỗi.
+	if s.finish != "" {
+		return litellm.DoneEvent{FinishReason: s.finish, Provider: "openai", Model: s.model}, nil
+	}
+	return nil, litellm.NewProviderError("openai", litellm.ErrorTypeProvider, "openai: stream ended before [DONE]")
+}
+
+func (s *stream) Close() error {
+	return s.resp.Body.Close()
+}
+
+func (s *stream) events(chunk streamChunk) []litellm.Event {
+	events := make([]litellm.Event, 0, 4)
+	if chunk.Usage != nil {
+		events = append(events, litellm.UsageEvent{Usage: convertUsage(chunk.Usage, s.model)})
+	}
+	for _, choice := range chunk.Choices {
+		if choice.Delta.Content != "" {
+			events = append(events, litellm.ContentDelta{
+				Text:        choice.Delta.Content,
+				OutputIndex: litellm.IntPtr(choice.Index),
+			})
+		}
+		if choice.Delta.Refusal != "" {
+			events = append(events, litellm.RefusalDelta{
+				Text:        choice.Delta.Refusal,
+				OutputIndex: litellm.IntPtr(choice.Index),
+			})
+		}
+		if s.includeReasoning {
+			if text, summary := extractDeltaReasoning(choice.Delta); text != "" {
+				events = append(events, litellm.ReasoningDelta{
+					Text:    text,
+					Summary: summary,
+					Index:   litellm.IntPtr(choice.Index),
+				})
+			}
+		}
+		for _, call := range choice.Delta.ToolCalls {
+			index := call.Index
+			id := call.ID
+			if id != "" {
+				s.toolIDs[index] = id
+			} else {
+				id = s.toolIDs[index]
+			}
+			if call.ID != "" || (call.Function != nil && call.Function.Name != "") {
+				start := litellm.ToolUseStart{
+					ID:    id,
+					Name:  "",
+					Index: &index,
+				}
+				if call.Function != nil {
+					start.Name = call.Function.Name
+				}
+				events = append(events, start)
+			}
+			if call.Function != nil && call.Function.Arguments != "" {
+				events = append(events, litellm.ToolUseDelta{
+					ID:             id,
+					Index:          &index,
+					ArgumentsDelta: []byte(call.Function.Arguments),
+				})
+			}
+		}
+		if choice.FinishReason != "" {
+			s.finish = litellm.NormalizeFinishReason(choice.FinishReason)
+		}
+	}
+	return events
+}

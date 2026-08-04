@@ -317,6 +317,8 @@ func NewModelSet(cfg Config) (*ModelSet, error) {
 		fallbacks: make(map[string][]modelTarget),
 		config:    cfg,
 	}
+	// Van stream của kênh mặc định. Đặt ngay sau literal vì `Default` dựng bên trong nó, và
+	// một kênh mặc định bỏ sót cờ này là ca hỏng NẶNG nhất: arbiter luôn dùng model mặc định.
 
 	// 创建角色覆盖模型
 	for role, rc := range cfg.Roles {
