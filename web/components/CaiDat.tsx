@@ -16,7 +16,19 @@ import { HoSoKhung, tinhTrangNguon } from './HoSoKhung';
 import { KenhVai } from './KenhVai';
 
 /**
- * Cài đặt: phiên chạy này được khởi động với cấu hình gì.
+ * Phiên chạy: cuốn này được khởi động với cấu hình gì.
+ *
+ * # Tên cũ là "Cài đặt", và tên cũ sai
+ *
+ * Bề mặt này là một BẢN GHI của một cuốn — quá khứ, chỉ đọc, từ `meta/run.json`. Thứ người
+ * dùng đi tìm khi gõ "cài đặt" là cấu hình máy sửa được. Bằng chứng nằm ngay trong chính tệp
+ * này, ở `GIAI_THICH.kenhVaiCanMayMo`: bề mặt đã phải in ra một câu chỉ đường sang chỗ khác
+ * cho việc mà người ta vào đây để làm. Một bề mặt phải chỉ đường khỏi chính nó là một bề mặt
+ * mang sai tên.
+ *
+ * Từ bản ba màn, chữ "Cài đặt" thuộc màn Cài đặt chung (cấu hình áp cho mọi tác phẩm), và
+ * bề mặt này mang tên đúng việc nó làm. Mã khu cũng đổi theo (`cai-dat` → `phien-chay`) vì mã
+ * khu đi vào thanh địa chỉ, tức nó là chữ người dùng đọc — xem chú thích ở đầu lib/khu.ts.
  *
  * # Bề mặt CHỈ ĐỌC, và đó là một sự thật kỹ thuật chứ không phải việc còn tồn
  *
@@ -45,7 +57,7 @@ export function CaiDat({ tacPham }: { tacPham: string | undefined }) {
   const du = tai.du;
 
   return (
-    <HoSoKhung tieuDe={CHU.caiDat} motTa={tt || !du ? undefined : motTa(du)}>
+    <HoSoKhung tieuDe={CHU.phienChayKhu} motTa={tt || !du ? undefined : motTa(du)}>
       {tt ??
         (du ? (
           du.state === 'no_file' ? (

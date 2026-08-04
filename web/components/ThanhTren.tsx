@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { DauHieu } from './DauHieu';
 import { tienDo } from '@/lib/dinhdang';
 import type { Khu } from '@/lib/khu';
 import type { TrangThaiCua } from '@/lib/nghiemThu';
-import { CHU, GIAI_THICH, TRANG_THAI_MAY, kyTheoTone } from '@/lib/nhan';
+import { CHU, GIAI_THICH, TRANG_THAI_KET_NOI, TRANG_THAI_MAY, kyTheoTone } from '@/lib/nhan';
 import type { Book, Workshop } from '@/lib/types';
 import type { TinhTrangKetNoi } from '@/lib/useStudio';
 
@@ -27,6 +28,7 @@ export function ThanhTren({
   dangXem,
   ketNoi,
   cuaNghiemThu,
+  theoTacPham,
   onChon,
   onChonKhu,
   onTaoTacPham,
@@ -44,6 +46,15 @@ export function ThanhTren({
    * mức MÁY thành nửa-theo-tác-phẩm.
    */
   cuaNghiemThu: TrangThaiCua | undefined;
+  /**
+   * Màn đang mở có phải màn theo tác phẩm không — `manTheoTacPham(man)`.
+   *
+   * Nhận một BOOLEAN đã suy chứ không nhận `Man`: thanh trên không cần biết ba màn là những
+   * màn nào, nó chỉ cần biết "canvas dưới kia đang nói về một cuốn hay về cả xưởng". Cho nó
+   * cả enum là mời người sau thêm nhánh thứ ba rồi thứ tư ở đây, và lúc đó ranh giới bị chép
+   * làm hai bản.
+   */
+  theoTacPham: boolean;
   onChon: (id: string) => void;
   onChonKhu: (k: Khu) => void;
   /** Vắng = máy này không tạo được tác phẩm; nút KHÔNG được vẽ. Xem lý do ở page.tsx. */
@@ -85,11 +96,33 @@ export function ThanhTren({
 
   return (
     <header className="bar">
+      {/* Ổ KHOÁ: dấu hiệu + chữ. Dấu hiệu dùng chung hình học với favicon — xem
+          lib/dauHieu.ts. Dưới 700px phần CHỮ ẩn đi còn dấu hiệu ở lại: chữ tốn 88px trong
+          khi dấu hiệu chỉ tốn 20px, và một thanh trên không có gì của thương hiệu thì cũng
+          không còn là thanh của sản phẩm nào. */}
       <div className="logo">
-        {CHU.sanPham} <em>{CHU.beMat}</em>
+        <DauHieu />
+        <span className="ten">
+          {CHU.sanPham} <em>{CHU.beMat}</em>
+        </span>
       </div>
 
-      {dangXem ? (
+      {/* Bộ chọn tác phẩm chỉ ở màn XƯỞNG SẢN XUẤT.
+          Ở màn Quản lý và Cài đặt chung, canvas nói về CẢ xưởng; một bộ chọn cuốn đứng trên
+          nó là một điều khiển không nói về thứ đang hiện. Đo được ở bản trước: đứng ở bảng
+          liệt kê ba cuốn, thanh trên vẫn ghi "Trấn Yêu Ký · 5/300" — người đọc phải tự đoán
+          con số đó nói về dòng nào trong bảng. Nó không nói về dòng nào cả.
+
+          Thay vào đó hai màn kia hiện GỐC XƯỞNG: đó là phạm vi thật của chúng, và nó cũng
+          là thứ người vận hành cần đối chiếu khi có nhiều thư mục output trên một máy. */}
+      {!theoTacPham ? (
+        <div className="gocxuong" title={GIAI_THICH.thanhTrenGocXuong}>
+          <span className="ky" aria-hidden="true">
+            ▦
+          </span>
+          <span className="duong">{workshop?.root ?? CHU.khongCo}</span>
+        </div>
+      ) : dangXem ? (
         <div className="pickwrap" ref={boc}>
           <button
             type="button"
@@ -255,9 +288,20 @@ export function ThanhTren({
         {/* Chú giải nói PHẠM VI, không lặp lại nhãn. Bản trước để `title` bằng đúng chữ đang
             hiện — một chú giải không thêm gì. Chữ "đã nối" tự nó không nói nối cái gì, và
             đó chính là câu người dùng hỏi. */}
-        <span className="kbd live" data-tt={ketNoi} title={GIAI_THICH.chipKetNoi}>
+        {/* Hai bản nhãn nằm CẢ HAI trong DOM, CSS chọn bản nào hiện — chép nguyên cách huy
+            hiệu nghiệm thu xử, và cùng lý do: một `matchMedia` ở đây là bản thứ hai của một
+            điểm ngắt mà `globals.css` đã giữ, và hai bản của cùng một con số thì có ngày lệch.
+            `aria-label` giữ bản ĐẦY ĐỦ ở mọi bề rộng: phần mất đi khi hẹp là hình, không phải
+            nghĩa. */}
+        <span
+          className="kbd live"
+          data-tt={ketNoi}
+          title={TRANG_THAI_KET_NOI[ketNoi].giaiThich}
+          aria-label={TRANG_THAI_KET_NOI[ketNoi].nhan}
+        >
           <span className="dot" aria-hidden="true" />
-          {tenKetNoi(ketNoi)}
+          <span className="nhan">{TRANG_THAI_KET_NOI[ketNoi].nhan}</span>
+          <span className="nhanNgan">{TRANG_THAI_KET_NOI[ketNoi].nhanNgan}</span>
         </span>
       </div>
     </header>
@@ -268,23 +312,3 @@ function tenSach(b: Book): string {
   return b.name ? b.name : b.id;
 }
 
-/**
- * Nhãn của tình trạng stream — chữ, không chỉ màu đốm.
- *
- * Bốn nhãn nằm ở `lib/nhan.ts` như mọi nhãn khác, và cả bốn cùng một dạng câu: xem chú
- * thích ở đó để biết vì sao bản trước ("dòng sự kiện") đọc không ra.
- */
-function tenKetNoi(t: TinhTrangKetNoi): string {
-  switch (t) {
-    case 'song':
-      return CHU.ketNoiSong;
-    case 'mat':
-      return CHU.ketNoiMat;
-    // Xưởng rỗng: không có tác phẩm nên không mở dòng nào. Nói "đang nối" ở
-    // đây là một câu không bao giờ thành sự thật.
-    case 'khong':
-      return CHU.ketNoiChua;
-    default:
-      return CHU.ketNoiDangMo;
-  }
-}

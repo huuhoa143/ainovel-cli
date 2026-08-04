@@ -4,7 +4,7 @@ import { expect, test, vi } from 'vitest';
 import { CHU } from '@/lib/nhan';
 
 import { Xuong } from './Xuong';
-import { sach } from './mau.test-helper';
+import { sach, tongGia } from './mau.test-helper';
 
 /**
  * Bề mặt Xưởng: dải tổng và bảng một dòng một cuốn.
@@ -18,7 +18,7 @@ import { sach } from './mau.test-helper';
  * của cụm B, dịch sang bộ kiểm.
  */
 function ve(...s: Parameters<typeof sach>[0][]) {
-  return render(<Xuong sach={s.map((p) => sach(p))} onMoTacPham={() => {}} />);
+  return render(<Xuong sach={s.map((p) => sach(p))} tong={tongGia()} onChonKhu={() => {}} onMoTacPham={() => {}} />);
 }
 
 /** Chữ của từng ô trong dải tổng, theo đúng thứ tự vẽ. */
@@ -154,23 +154,33 @@ test('tiến độ: số đi kèm thanh, và thanh KHÔNG vẽ khi chưa biết 
   expect(chua?.querySelector('.thanh .day')).toBeNull();
 });
 
-test('bề mặt nói ra vì sao KHÔNG có nút chạy ở đây', () => {
+test('lời giải "vì sao không có nút chạy" vẫn còn, nhưng ở CHÚ GIẢI của nút Chi tiết', () => {
   // Không tìm thấy nút chạy mà không có lời giải thích là một khoảng lặng người vận hành
-  // phải tự lấp bằng phỏng đoán. Khẳng định "không có nút chạy" nằm ở Task 5.
+  // phải tự lấp bằng phỏng đoán. Lời giải đó vẫn bắt buộc phải tồn tại — bài này giữ nguyên
+  // yêu cầu ấy, chỉ đổi chỗ nó phải nằm.
+  //
+  // Vì sao đổi chỗ: ĐO ĐƯỢC ở 1512×900, bản trước in hai đoạn văn biện giải cao 110px ngay
+  // dưới một bảng cao 182px — lời giải thích nặng bằng hơn nửa thứ nó giải thích, ở giữa màn
+  // mở đầu. Nó về `title` của đúng chỗ người dùng sẽ hỏi (nút đi vào một cuốn), chứ không
+  // biến mất.
   const { container } = ve({ id: 'a' });
-  expect(container.textContent).toContain('một đường tiêu tiền duy nhất');
+  const nut = container.querySelector('.nutChiTiet');
+  expect(nut?.getAttribute('title')).toContain('một đường tiêu tiền duy nhất');
+  // Và nó KHÔNG còn nằm trong thân màn: một màn quản lý đang xin lỗi vì chính nó thì không
+  // còn là màn quản lý.
+  expect(container.textContent).not.toContain('một đường tiêu tiền duy nhất');
 });
 
 /* ── hành động trên mỗi dòng ──────────────────────────────────────────── */
 
-test('cuốn chưa xong chỉ có `Mở`, và `Mở` đi tới buồng lái của ĐÚNG cuốn đó', () => {
+test('cuốn chưa xong chỉ có `Chi tiết`, và nó đi tới xưởng sản xuất của ĐÚNG cuốn đó', () => {
   const mo = vi.fn();
   const { container } = render(
-    <Xuong sach={[sach({ id: 'a' }), sach({ id: 'b', phase: 'writing' })]} onMoTacPham={mo} />,
+    <Xuong sach={[sach({ id: 'a' }), sach({ id: 'b', phase: 'writing' })]} tong={tongGia()} onChonKhu={() => {}} onMoTacPham={mo} />,
   );
 
   const nut = [...dong(container, 'b').querySelectorAll('button')].map((n) => n.textContent);
-  expect(nut).toEqual([CHU.moTacPham]);
+  expect(nut).toEqual([CHU.chiTiet]);
 
   fireEvent.click(dong(container, 'b').querySelector('button')!);
   // Mã cuốn phải là mã của DÒNG, không phải cuốn đang xem. Đây là chỗ lỗi ref-trễ đã đo được
@@ -178,14 +188,14 @@ test('cuốn chưa xong chỉ có `Mở`, và `Mở` đi tới buồng lái củ
   expect(mo).toHaveBeenCalledWith('b', 'dong-san-xuat');
 });
 
-test('cuốn đã hoàn thành có đủ ba: Mở · Đọc · Xuất bản', () => {
+test('cuốn đã hoàn thành có đủ ba: Chi tiết · Đọc · Xuất bản', () => {
   const mo = vi.fn();
   const { container } = render(
-    <Xuong sach={[sach({ id: 'xong', phase: 'complete' })]} onMoTacPham={mo} />,
+    <Xuong sach={[sach({ id: 'xong', phase: 'complete' })]} tong={tongGia()} onChonKhu={() => {}} onMoTacPham={mo} />,
   );
 
   const nut = [...dong(container, 'xong').querySelectorAll('button')];
-  expect(nut.map((n) => n.textContent)).toEqual([CHU.moTacPham, CHU.docTacPham, CHU.xuatBan]);
+  expect(nut.map((n) => n.textContent)).toEqual([CHU.chiTiet, CHU.docTacPham, CHU.xuatBan]);
 
   fireEvent.click(nut[1]!);
   // Chương 1 đi CÙNG lời gọi, không phải một lời gọi thứ hai: hai lần ghi URL thì lần sau
@@ -214,7 +224,7 @@ test('KHÔNG có nút Chạy, Dừng, Xóa hay Đổi tên trên bề mặt này
         sach({ id: 'a', phase: 'writing', engine_open: true }),
         sach({ id: 'b', phase: 'complete' }),
       ]}
-      onMoTacPham={() => {}}
+      tong={tongGia()} onChonKhu={() => {}} onMoTacPham={() => {}}
     />,
   );
 

@@ -141,6 +141,22 @@ type thanCauHinh struct {
 		Models  []bootstrap.ModelConfig `json:"models,omitempty"`
 	} `json:"provider_config,omitempty"`
 
+	// Roles là model MẶC ĐỊNH theo vai, áp cho mọi lượt chạy sau.
+	//
+	// # Vì sao nó THAY CẢ MAP chứ không trộn từng khóa
+	//
+	// Một vai không có mặt trong map nghĩa là "thừa hưởng mặc định" — đó là cách duy nhất
+	// nói ra việc BỎ một ghi đè. Trộn từng khóa thì thêm được mà không bao giờ xóa được,
+	// và bề mặt sẽ có một ô người dùng đặt rồi không gỡ ra được nữa.
+	//
+	// Con trỏ vì `nil` (không gửi) và `{}` (gửi map rỗng = gỡ hết ghi đè) là hai ý định
+	// khác nhau — cùng lý lẽ đã ghi cho `Style` và `APIKey` ở trên.
+	//
+	// `GET /api/config` đã trả `roles` từ lâu; trước bản này nó ĐỌC được mà không GHI
+	// được, nên bề mặt Cài đặt chung sẽ phải hiện một bảng chỉ để nhìn. Đó đúng là khiếm
+	// khuyết mà màn Cài đặt chung tồn tại để xoá.
+	Roles *map[string]bootstrap.RoleConfig `json:"roles,omitempty"`
+
 	XoaNhaCungCap *string `json:"remove_provider,omitempty"`
 }
 
@@ -206,6 +222,16 @@ func (s *server) handleGhiCauHinh(w http.ResponseWriter, r *http.Request) {
 	}
 	if than.ReasoningEffort != nil {
 		cfg.ReasoningEffort = *than.ReasoningEffort
+	}
+	if than.Roles != nil {
+		// Map rỗng → `nil`, không phải `map[]{}`: `Roles` mang `omitempty`, nên một map rỗng
+		// vẫn rụng khỏi JSON lúc ghi. Đặt nil tường minh để thứ nằm trên đĩa khớp với thứ
+		// trong bộ nhớ, thay vì để hai lượt ghi liên tiếp cho hai kết quả khác nhau.
+		if len(*than.Roles) == 0 {
+			cfg.Roles = nil
+		} else {
+			cfg.Roles = *than.Roles
+		}
 	}
 	if than.Style != nil {
 		if err := kiemKieuVan(*than.Style); err != nil {

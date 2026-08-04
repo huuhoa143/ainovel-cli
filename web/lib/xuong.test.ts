@@ -57,36 +57,25 @@ test('chi phí DƯỚI xu: làm tròn TỪNG CUỐN, để tổng cộng đúng 
 /* ── luật đáp lúc mở trang ────────────────────────────────────────────── */
 
 test('có tp trên URL thì đáp thẳng vào buồng lái — người quay lại không phải bấm thêm nhịp', () => {
-  expect(khuDap({ tpTuUrl: 'mac-the', khuTuUrl: undefined, soSach: 5 })).toBe('dong-san-xuat');
+  expect(khuDap({ tpTuUrl: 'mac-the', khuTuUrl: undefined })).toBe('dong-san-xuat');
 });
 
-test('không có tp và xưởng nhiều cuốn thì đáp vào Xưởng', () => {
-  expect(khuDap({ tpTuUrl: undefined, khuTuUrl: undefined, soSach: 3 })).toBe('xuong');
-});
-
-test('không có tp mà đúng MỘT cuốn thì đáp vào buồng lái, không phải bảng một dòng', () => {
-  expect(khuDap({ tpTuUrl: undefined, khuTuUrl: undefined, soSach: 1 })).toBe('dong-san-xuat');
-});
-
-test('ĐÚNG HAI cuốn đã là Xưởng — mốc của spec §7.1 là ≥ 2, không phải > 2', () => {
-  // Bốn bài của kế hoạch dùng 5 · 3 · 1 · 9, tức không bài nào đứng ở mốc. ĐO ĐƯỢC: đổi
-  // `>= 2` thành `> 2` vẫn xanh cả bốn — trong khi hệ quả là một xưởng hai cuốn không bao
-  // giờ thấy được màn Xưởng, đúng ca nhỏ nhất mà một bảng bắt đầu có nghĩa (hai dòng thì
-  // đã có cái để so).
-  expect(khuDap({ tpTuUrl: undefined, khuTuUrl: undefined, soSach: 2 })).toBe('xuong');
-});
-
-test('xưởng RỖNG không do luật này xử — nó vẫn trả khu mặc định, không trả Xưởng', () => {
-  // `page.tsx` dẫn thẳng vào Tác phẩm mới trước mọi nhánh khác, nên số 0 không bao giờ tới
-  // đây trên đường thật. Bài này chốt rằng nếu nó có tới thì hàm KHÔNG mở một bảng rỗng —
-  // và nó chặn cách viết `soSach !== 1`, một cách viết thỏa cả bốn bài của kế hoạch.
-  expect(khuDap({ tpTuUrl: undefined, khuTuUrl: undefined, soSach: 0 })).toBe('dong-san-xuat');
+test('URL im thì đáp vào màn QUẢN LÝ, bất kể xưởng có mấy cuốn', () => {
+  // Điều khoản này đã ĐỔI ở bản ba màn, và bài kiểm cũ chốt đúng luật cũ: "một cuốn thì vào
+  // buồng lái, vì một bảng một dòng không quyết định gì". Lập luận đó đúng khi Xưởng là một
+  // BẢNG; giờ Quản lý là một MÀN mang dải việc-cần-bạn, tổng cả xưởng và hai đường tạo tác
+  // phẩm — tức nó trả lời được cả cho một xưởng một cuốn.
+  //
+  // Hàm không còn nhận `soSach`, nên bài này không còn tham số nào để đổi. Đó là điểm
+  // chính: luật mới KHÔNG có nhánh theo số cuốn, và một tham số thừa ở một hàm luật là lời
+  // mời khôi phục nhánh cũ.
+  expect(khuDap({ tpTuUrl: undefined, khuTuUrl: undefined })).toBe('xuong');
 });
 
 test('khu ghi rõ trên URL luôn THẮNG luật đáp', () => {
   // Tải lại trang ở bất kỳ màn nào phải về đúng màn đó. Luật đáp chỉ quyết định khi URL im.
-  expect(khuDap({ tpTuUrl: undefined, khuTuUrl: 'chi-phi', soSach: 9 })).toBe('chi-phi');
-  expect(khuDap({ tpTuUrl: 'mac-the', khuTuUrl: 'ban-thao', soSach: 9 })).toBe('ban-thao');
+  expect(khuDap({ tpTuUrl: undefined, khuTuUrl: 'chi-phi' })).toBe('chi-phi');
+  expect(khuDap({ tpTuUrl: 'mac-the', khuTuUrl: 'ban-thao' })).toBe('ban-thao');
 });
 
 test('URL ghi rõ ĐÚNG khu mặc định vẫn thắng — `undefined` mới là "URL im"', () => {
@@ -99,7 +88,7 @@ test('URL ghi rõ ĐÚNG khu mặc định vẫn thắng — `undefined` mới l
   //
   // Hàm này nhận `Khu | undefined` chính vì thế: phân biệt đó là việc của người gọi, và
   // người gọi phải đọc tham số THÔ.
-  expect(khuDap({ tpTuUrl: undefined, khuTuUrl: 'dong-san-xuat', soSach: 9 })).toBe(
+  expect(khuDap({ tpTuUrl: undefined, khuTuUrl: 'dong-san-xuat' })).toBe(
     'dong-san-xuat',
   );
 });

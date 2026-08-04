@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import type { Khu } from '@/lib/khu';
+import type { Man } from '@/lib/man';
 import { CHU, GIAI_THICH } from '@/lib/nhan';
 import type { Profile, Snapshot, TinhTrangNguon } from '@/lib/types';
 import { useDauDoi, useDauToi } from '@/lib/dauDoi';
@@ -58,13 +59,37 @@ export function Rail({
   snapshot,
   hoSo,
   khu,
+  man,
   onChonKhu,
+  onChonMan,
+  canBan,
+  tenCuonNgan,
   dauChot,
 }: {
   snapshot: Snapshot | undefined;
   hoSo: Profile | undefined;
   khu: Khu;
+  /** Màn đang mở. Suy từ `khu` ở `useStudio`, truyền xuống để không suy lại ở đây. */
+  man: Man;
   onChonKhu: (k: Khu) => void;
+  onChonMan: (m: Man) => void;
+  /**
+   * Có việc tồn ở màn Quản lý — bật dấu amber trên hàng màn đó.
+   *
+   * Cùng luật đã có cho nhóm rail đang đóng: một hàng chờ thật không được ẩn sau một lựa
+   * chọn điều hướng. Giờ ranh giới bị ẩn không phải là nhóm mà là MÀN, nên dấu phải leo lên
+   * một tầng — người đang đứng trong xưởng sản xuất không thấy bảng Quản lý, và một cuốn
+   * khác có ý kiến can thiệp chưa xử lý thì họ phải biết.
+   */
+  canBan: boolean;
+  /**
+   * Tên cuốn đang mở, làm dòng phạm vi cho hàng "Xưởng sản xuất".
+   *
+   * Đây là chỗ rail trả lời câu mà cả bản trước không trả lời được từ hai màn kia: đứng ở
+   * Cài đặt chung, cuốn nào sẽ mở ra nếu tôi bấm sang xưởng sản xuất. `undefined` thì hàng
+   * đó rơi về chữ chung ("một tác phẩm") — không bịa một cái tên.
+   */
+  tenCuonNgan: string | undefined;
   /**
    * Họ 10 (đồng thanh) — bộ đếm sự kiện chốt chương, dùng chung với lane và thanh trên.
    *
@@ -151,6 +176,105 @@ export function Rail({
         hopTruot.current = el;
       }}
     >
+      {/* ── Bộ chuyển MÀN: luôn thấy, không thu được, đứng trên mọi thứ khác ──
+          Đây là câu trả lời cho "các màn khác đâu rồi ta". Điều hướng cấp một không được
+          nằm sau một cú bấm mở nhóm.
+
+          Ba hàng này KHÔNG mang ký hiệu, khác hẳn mục khu ngay dưới — và đó là chủ ý: chúng
+          là một TẦNG khác, nên sự khác nhau phải đọc được từ hình dạng chứ không từ việc
+          phải nhớ ba biểu tượng nữa. Cái chúng mang thay vào đó là PHẠM VI ("cả xưởng" /
+          "mọi tác phẩm" / "một tác phẩm"), tức đúng điều đang bị đọc nhầm. */}
+      <div className="manrail" role="group" aria-label="Màn">
+        <MucMan
+          ma="quan-ly"
+          ten={CHU.manQuanLy}
+          pham={CHU.manQuanLyPhu}
+          man={man}
+          onChonMan={onChonMan}
+          canhBao={canBan}
+        />
+        <MucMan
+          ma="cai-dat-chung"
+          ten={CHU.manCaiDatChung}
+          pham={CHU.manCaiDatChungPhu}
+          man={man}
+          onChonMan={onChonMan}
+        />
+        <MucMan
+          ma="xuong-san-xuat"
+          ten={CHU.manXuongSanXuat}
+          pham={tenCuonNgan ?? CHU.manXuongSanXuatPhu}
+          man={man}
+          onChonMan={onChonMan}
+        />
+      </div>
+
+      {man === 'quan-ly' ? (
+        // Không bọc nhóm: ba mục dưới một tiêu đề màn đã tự thành một nhóm. Thêm một nhãn
+        // nhóm nữa là đặt tên cho một tập hợp chỉ có một tập hợp.
+        <div className="nhomrail" data-mo="1">
+          <div className="mucnhom">
+            <MucDi
+              nhan={CHU.xuong}
+              ky="▦"
+              di="xuong"
+              khu={khu}
+              onChonKhu={onChonKhu}
+              chuGiai={GIAI_THICH.xuongRailGiaiThich}
+            />
+            <MucDi
+              nhan={CHU.taoTacPham}
+              ky="+"
+              di="tac-pham-moi"
+              khu={khu}
+              onChonKhu={onChonKhu}
+              chuGiai={GIAI_THICH.taoSachGiaiThich}
+            />
+            <MucDi
+              nhan={CHU.cungDung}
+              ky="⁂"
+              di="cung-dung"
+              khu={khu}
+              onChonKhu={onChonKhu}
+              chuGiai={GIAI_THICH.cungDungGiaiThich}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {man === 'cai-dat-chung' ? (
+        <div className="nhomrail" data-mo="1">
+          <div className="mucnhom">
+            <MucDi
+              nhan={CHU.cauHinh}
+              ky="⌸"
+              di="cau-hinh"
+              khu={khu}
+              onChonKhu={onChonKhu}
+              chuGiai={GIAI_THICH.cauHinhLaMucMay}
+            />
+            <MucDi
+              nhan={CHU.kenhVaiChung}
+              ky="⌗"
+              di="kenh-vai-chung"
+              khu={khu}
+              onChonKhu={onChonKhu}
+              chuGiai={GIAI_THICH.kenhVaiChungGiaiThich}
+            />
+            <MucDi
+              nhan={CHU.chiPhiXuong}
+              ky="$"
+              di="chi-phi-xuong"
+              khu={khu}
+              onChonKhu={onChonKhu}
+              chuGiai={GIAI_THICH.chiPhiXuongGiaiThich}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {man !== 'xuong-san-xuat' ? null : (
+        <>
       {/* Nhóm 1 mở sẵn và không thu được: đây là nhóm chứa bề mặt đang mở ở mọi lần vào
           đầu tiên, nên thu nó lại là để người dùng đối diện một rail rỗng. */}
       <Nhom ma="truyen" ten={CHU.nhomTruyen} luonMo>
@@ -302,64 +426,72 @@ export function Rail({
           onChonKhu={onChonKhu}
         />
         <MucNguon
-          nhan={CHU.caiDat}
+          nhan={CHU.phienChayKhu}
           ky="⚙"
-          di="cai-dat"
+          di="phien-chay"
           khu={khu}
           onChonKhu={onChonKhu}
           nguon={hoSo?.caiDat}
-          chuGiai={GIAI_THICH.railCaiDat}
-          viSaoThieu={GIAI_THICH.thieuEndpointCaiDat}
+          chuGiai={GIAI_THICH.railPhienChay}
+          viSaoThieu={GIAI_THICH.thieuEndpointPhienChay}
         />
       </Nhom>
-
-      {/* Nhóm mức MÁY, tách khỏi ba nhóm trên có chủ ý.
-          Cấu hình máy sửa ~/.ainovel/config.json — nó áp cho mọi tác phẩm và mọi lượt
-          chạy sau, không thuộc cuốn đang mở. Để nó lẫn vào nhóm vận hành là mời đúng cái
-          nhầm mà bề mặt Cài đặt đã phải tách ra để tránh: người vận hành đọc nó thành
-          "cấu hình của cuốn này". Tên nhóm nói thẳng ranh giới đó ra. */}
-      <Nhom ma="chung" ten={CHU.nhomChung} khu={khu}>
-        {/* Xưởng đứng ĐẦU nhóm, trên cả Tác phẩm mới: thứ tự này là thứ tự câu hỏi. "Tôi
-            đang có gì" đi trước "thêm một cái nữa", và người vào nhóm này để đếm lại xưởng
-            thì không phải quét qua một nút tạo trước đã. */}
-        <MucDi
-          nhan={CHU.xuong}
-          ky="▦"
-          di="xuong"
-          khu={khu}
-          onChonKhu={onChonKhu}
-          chuGiai={GIAI_THICH.xuongRailGiaiThich}
-        />
-        <MucDi
-          nhan={CHU.cungDung}
-          ky="⁂"
-          di="cung-dung"
-          khu={khu}
-          onChonKhu={onChonKhu}
-          chuGiai={GIAI_THICH.cungDungGiaiThich}
-        />
-        {/* Vẫn còn ở đây dù thanh trên đã có nút tạo tác phẩm: nút trên thanh vắng mặt khi
-            máy không ghi được, và bỏ mục này đi thì lúc đó không còn đường nào tới bề mặt.
-            Hai đường tới cùng một bề mặt ĐIỀU HƯỚNG là chuyện lành — khác hẳn hai nút cùng
-            gọi một API tiêu tiền. */}
-        <MucDi
-          nhan={CHU.taoTacPham}
-          ky="+"
-          di="tac-pham-moi"
-          khu={khu}
-          onChonKhu={onChonKhu}
-          chuGiai={GIAI_THICH.taoSachGiaiThich}
-        />
-        <MucDi
-          nhan={CHU.cauHinh}
-          ky="⌸"
-          di="cau-hinh"
-          khu={khu}
-          onChonKhu={onChonKhu}
-          chuGiai={GIAI_THICH.cauHinhLaMucMay}
-        />
-      </Nhom>
+        </>
+      )}
     </nav>
+  );
+}
+
+/**
+ * Một hàng của bộ chuyển màn.
+ *
+ * # Vì sao nó KHÔNG dùng lại `MucDi`
+ *
+ * Hai thứ trông gần giống nhau mà khác tầng là chỗ dùng lại sai nhất. `MucDi` mang một ký
+ * hiệu và một số đếm việc tồn; hàng màn mang một dòng phạm vi và không bao giờ mang số. Ép
+ * chúng vào một component sẽ sinh ra một loạt prop bật/tắt, và mỗi prop ấy là một cách để
+ * hai tầng lẫn vào nhau trở lại.
+ *
+ * `aria-current="page"` dùng CHUNG với mục khu, và đó là đúng: ở mọi lúc chỉ có một màn và
+ * một khu đang mở, nên hai `aria-current` trong rail nói hai câu thật ở hai tầng — trình đọc
+ * màn hình đọc được cả "đang ở màn nào" lẫn "đang ở khu nào".
+ */
+function MucMan({
+  ma,
+  ten,
+  pham,
+  man,
+  onChonMan,
+  canhBao,
+}: {
+  ma: Man;
+  ten: string;
+  /** Phạm vi của màn — thứ đang bị đọc nhầm, nên nó ở trên bề mặt chứ không trong `title`. */
+  pham: string;
+  man: Man;
+  onChonMan: (m: Man) => void;
+  canhBao?: boolean;
+}) {
+  const dangMo = man === ma;
+  return (
+    <button
+      type="button"
+      className="mucman"
+      aria-current={dangMo ? 'page' : undefined}
+      title={CHU.doiMan(ten, pham)}
+      onClick={() => onChonMan(ma)}
+    >
+      <span className="tenMan">{ten}</span>
+      {/* Dấu việc tồn của MÀN. Không phải một con số: `/api/workshop/cost` nói được "cuốn
+          nào có ý định đã ký", còn "bao nhiêu việc" thì mỗi cuốn một loại việc và cộng
+          chúng lại không ra nghĩa gì. Một dấu có/không là điều duy nhất chứng minh được. */}
+      {canhBao && !dangMo ? (
+        <span className="dauton" aria-hidden="true">
+          ■
+        </span>
+      ) : null}
+      <span className="phamMan">{pham}</span>
+    </button>
   );
 }
 
@@ -369,14 +501,21 @@ const KHOA_NHOM_MO = 'ainovel.rail.nhomMo';
 /**
  * Nhóm rail thu gọn được.
  *
- * # Vì sao thu gọn, và vì sao mặc định là ĐÓNG
+ * # Vì sao thu gọn, và vì sao mặc định giờ là MỞ
  *
  * Mười sáu mục cùng sức nặng là mười sáu cánh cửa không cái nào được ưu tiên — người dùng
- * nói nguyên văn "quá ngợp". Thu ba nhóm dưới lại còn năm mục thấy được, tức đúng số cửa
- * mà mọi công cụ viết truyện khác dừng ở (không tool nào vượt 5 khu mức một).
+ * nói nguyên văn "quá ngợp", nên ba nhóm dưới từng đóng sẵn.
  *
- * Mặc định đóng là quyết định về LẦN ĐẦU: người quay lại chỉ trả giá một cú bấm và trạng
- * thái đó được ghi nhớ, còn người lần đầu thì cái giá của một rail dày là họ không bắt đầu.
+ * Phép chữa đó có giá của nó, và người dùng cũng đã trả: "các màn khác đâu rồi ta". Đóng sẵn
+ * chữa được sự ngợp bằng cách giấu đi, mà thứ bị giấu gồm cả điều hướng cấp một.
+ *
+ * Bản ba màn chữa đúng chỗ đau thay vì đổi bên: rail này giờ chỉ phục vụ MỘT màn, nên nó
+ * không còn mười sáu cửa mà mười bốn của cùng một tác phẩm, và ba màn thì luôn hiện ở đỉnh.
+ * Mười bốn mục trong ba nhóm cao khoảng 440px — vừa một cột 900px cùng với bộ chuyển màn.
+ * Không còn lý do nào để giấu, nên mặc định là mở.
+ *
+ * Phép thu vẫn còn: nó là của NGƯỜI DÙNG, không phải của thiết kế. Ai không dùng nhóm Thế
+ * giới truyện thì thu nó lại và studio nhớ điều đó.
  *
  * # Vì sao thu bằng CSS chứ không bằng cách thôi render
  *
@@ -410,7 +549,9 @@ function Nhom({
   canhBao?: boolean;
   children: React.ReactNode;
 }) {
-  const [mo, datMo] = useState(!!luonMo);
+  // Mặc định MỞ — xem chú thích ngay trên về vì sao điều khoản này đã đổi. `luonMo` vẫn khác:
+  // nhóm đó không có nút thu, còn nhóm thường mở sẵn nhưng thu được và nhớ lựa chọn.
+  const [mo, datMo] = useState(true);
   const oNhom = useRef<HTMLDivElement>(null);
 
   // MỘT effect cho cả hai luật, không phải hai — thứ tự giữa chúng là một luật thật:

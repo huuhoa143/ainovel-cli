@@ -266,3 +266,91 @@ func docCauHinhTho(t *testing.T, duong string) map[string]any {
 	}
 	return m
 }
+
+// TestCauHinhGhiDuocModelTheoVai.
+//
+// `GET /api/config` trả `roles` từ trước bản này, nhưng `PUT` không nhận nó — tức bề mặt
+// đọc được mà không ghi được, và màn Cài đặt chung sẽ phải hiện một bảng chỉ để nhìn. Đó
+// đúng là khiếm khuyết mà màn ấy tồn tại để xoá, nên nó cần một phép đo.
+func TestCauHinhGhiDuocModelTheoVai(t *testing.T) {
+	dungNhaCauHinh(t)
+	s := &server{root: t.TempDir(), choGhi: true, may: newBoMay(t.TempDir())}
+
+	// Phải có provider + model hợp lệ trước: `validateModelRef` đòi vai trỏ tới một
+	// provider có thật, nên một bài kiểm chỉ gửi `roles` sẽ đỏ vì cấu hình nền, không vì
+	// mã đang đo.
+	if rec := goiCauHinh(t, s, "PUT", `{
+	  "provider": "google", "model": "gemini-2.5-pro",
+	  "provider_config": {"name": "google", "type": "openai", "api_key": "sk-test"}
+	}`); rec.Code != http.StatusOK {
+		t.Fatalf("dựng cấu hình nền: %d — %s", rec.Code, rec.Body.String())
+	}
+
+	rec := goiCauHinh(t, s, "PUT", `{"roles": {
+	  "writer": {"provider": "google", "model": "gemini-2.5-pro"},
+	  "editor": {"provider": "google", "model": "gemini-2.5-flash"}
+	}}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("ghi roles = %d, phải 200: %s", rec.Code, rec.Body.String())
+	}
+
+	doc := giaiCauHinh(t, goiCauHinh(t, s, "GET", ""))
+	roles, _ := doc["roles"].(map[string]any)
+	writer, _ := roles["writer"].(map[string]any)
+	if writer == nil || writer["model"] != "gemini-2.5-pro" {
+		t.Fatalf("roles.writer không được ghi: %v", roles)
+	}
+	editor, _ := roles["editor"].(map[string]any)
+	if editor == nil || editor["model"] != "gemini-2.5-flash" {
+		t.Fatalf("roles.editor không được ghi: %v", roles)
+	}
+
+	// Map RỖNG = gỡ hết ghi đè. Đây là cách duy nhất nói ra việc bỏ một vai; không có nó
+	// thì bề mặt có một ô đặt được mà không gỡ ra được.
+	if rec := goiCauHinh(t, s, "PUT", `{"roles": {}}`); rec.Code != http.StatusOK {
+		t.Fatalf("gỡ roles = %d: %s", rec.Code, rec.Body.String())
+	}
+	doc = giaiCauHinh(t, goiCauHinh(t, s, "GET", ""))
+	if r, co := doc["roles"]; co && r != nil {
+		if m, _ := r.(map[string]any); len(m) > 0 {
+			t.Errorf("gửi map rỗng phải gỡ hết ghi đè, còn lại: %v", r)
+		}
+	}
+
+	// Vai KHÔNG gửi thì không đổi: `roles` vắng mặt nghĩa là "không nói gì về vai".
+	if rec := goiCauHinh(t, s, "PUT", `{"roles": {"writer": {"provider":"google","model":"gemini-2.5-pro"}}}`); rec.Code != http.StatusOK {
+		t.Fatalf("đặt lại writer: %s", rec.Body.String())
+	}
+	if rec := goiCauHinh(t, s, "PUT", `{"style": ""}`); rec.Code != http.StatusOK {
+		t.Fatalf("ghi style: %s", rec.Body.String())
+	}
+	doc = giaiCauHinh(t, goiCauHinh(t, s, "GET", ""))
+	roles, _ = doc["roles"].(map[string]any)
+	if _, co := roles["writer"]; !co {
+		t.Error("PUT không nhắc tới roles đã xoá mất ghi đè đang có")
+	}
+}
+
+// TestCauHinhVaiLaKhongHopLeBiTuChoi: một vai không có thật phải bị chặn, và cấu hình cũ
+// phải còn nguyên. Không có nhánh này thì một lần gõ nhầm khoá người dùng ra khỏi studio —
+// trên web không có `vim` để sửa lại tệp.
+func TestCauHinhVaiLaKhongHopLeBiTuChoi(t *testing.T) {
+	dungNhaCauHinh(t)
+	s := &server{root: t.TempDir(), choGhi: true, may: newBoMay(t.TempDir())}
+	if rec := goiCauHinh(t, s, "PUT", `{
+	  "provider": "google", "model": "gemini-2.5-pro",
+	  "provider_config": {"name": "google", "type": "openai", "api_key": "sk-test"}
+	}`); rec.Code != http.StatusOK {
+		t.Fatalf("dựng nền: %s", rec.Body.String())
+	}
+
+	rec := goiCauHinh(t, s, "PUT", `{"roles": {"kien-truc-su": {"provider":"google","model":"gemini-2.5-pro"}}}`)
+	if rec.Code == http.StatusOK {
+		t.Fatal("vai lạ phải bị từ chối, không được ghi thành công")
+	}
+
+	doc := giaiCauHinh(t, goiCauHinh(t, s, "GET", ""))
+	if doc["model"] != "gemini-2.5-pro" {
+		t.Errorf("cấu hình phải được hoàn nguyên nguyên vẹn, model = %v", doc["model"])
+	}
+}

@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 
 import { trangThaiCua } from '@/lib/nghiemThu';
-import { CHU, GIAI_THICH, kyTheoTone } from '@/lib/nhan';
+import { CHU, GIAI_THICH, TRANG_THAI_KET_NOI, kyTheoTone } from '@/lib/nhan';
 
 import { ThanhTren } from './ThanhTren';
 import { sach } from './mau.test-helper';
@@ -22,6 +22,7 @@ function ve(p: Partial<Parameters<typeof ThanhTren>[0]> = {}) {
       workshop={{ root: '/w', books: [b] }}
       dangXem={b}
       ketNoi="song"
+      theoTacPham
       dauChot={0}
       onChon={() => {}}
       onChonKhu={() => {}}
@@ -80,6 +81,7 @@ test('KHÔNG chờ thì không có huy hiệu — cả ba ca không-chờ', () =
       workshop={{ root: '/w', books: [sach()] }}
       dangXem={sach()}
       ketNoi="song"
+      theoTacPham
       dauChot={0}
       onChon={() => {}}
       onChonKhu={() => {}}
@@ -97,6 +99,7 @@ test('KHÔNG chờ thì không có huy hiệu — cả ba ca không-chờ', () =
         workshop={{ root: '/w', books: [sach()] }}
         dangXem={sach()}
         ketNoi="song"
+        theoTacPham
         dauChot={0}
       onChon={() => {}}
         onChonKhu={() => {}}
@@ -154,4 +157,53 @@ test('dấu về 0 thì lớp được DỌN — cùng thời lượng với hai
   // Xem lý do đầy đủ (và phép đo trên app thật) ở `dauDongThanh` trong app/page.tsx.
   const { container } = ve({ dauChot: 0 });
   expect(container.querySelectorAll('.dongThanh')).toHaveLength(0);
+});
+
+/* ── chip kết nối ────────────────────────────────────────────────────────
+ *
+ * Người dùng hỏi thẳng: *"đã nối là gì ấy nhỉ"*. Nhãn cũ không nêu TÂN NGỮ, và một nhãn mà
+ * người dùng phải hỏi là một nhãn đã hỏng — chú giải có sẵn nhưng nó chỉ tồn tại khi có
+ * chuột và khi người ta nghĩ tới việc rê lên đó.
+ */
+
+test('chip kết nối nói NỐI CÁI GÌ, không chỉ nói trạng thái', () => {
+  const { container } = ve();
+  const chip = container.querySelector('.kbd.live');
+  expect(chip?.querySelector('.nhan')?.textContent).toBe(TRANG_THAI_KET_NOI.song.nhan);
+  expect(TRANG_THAI_KET_NOI.song.nhan).toContain('engine');
+  // Và nhãn phải nói HỆ QUẢ, không chỉ nói có một socket đang mở: điều người vận hành dùng
+  // được là "số trên màn có tự cập nhật không".
+  expect(TRANG_THAI_KET_NOI.song.nhan).toContain('trực tiếp');
+});
+
+test('hai bản nhãn cùng ở trong DOM, và chúng KHÔNG lặp chữ', () => {
+  // Bản ngắn ẩn bằng CSS chứ không bằng cách thôi render — chép cơ chế của huy hiệu nghiệm
+  // thu, để không có điểm ngắt nào sống trong JS.
+  //
+  // Bài này canh một lỗi ĐÃ XẢY RA THẬT ở bản dựng đầu: thêm `.nhanNgan` vào DOM mà quên
+  // khối `display: none` trong CSS, nên chip đọc thành "engine · đã nối đã nối" trên màn
+  // rộng. jsdom không áp stylesheet nên không đo được cái ẩn; thứ đo được — và là thứ đủ để
+  // chặn lỗi đó tái diễn — là hai bản phải KHÁC nhau và bản ngắn phải thật sự ngắn hơn.
+  const { container } = ve();
+  const chip = container.querySelector('.kbd.live');
+  const dai = chip?.querySelector('.nhan')?.textContent ?? '';
+  const ngan = chip?.querySelector('.nhanNgan')?.textContent ?? '';
+  expect(dai).not.toBe('');
+  expect(ngan).not.toBe('');
+  expect(ngan).not.toBe(dai);
+  expect(ngan.length).toBeLessThan(dai.length);
+  // `aria-label` giữ bản ĐẦY ĐỦ ở mọi bề rộng: phần mất khi hẹp là hình, không phải nghĩa.
+  expect(chip?.getAttribute('aria-label')).toBe(dai);
+});
+
+test('bốn trạng thái kết nối, bốn câu khác nhau', () => {
+  // "chưa mở dòng" (xưởng rỗng) KHÔNG được gộp với "đang nối": một xưởng không có tác phẩm
+  // nào thì không có dòng nào để mà nối, và "đang nối" ở đó là câu không bao giờ thành thật.
+  const chu = new Set<string>();
+  for (const tt of ['song', 'dang-mo', 'mat', 'khong'] as const) {
+    const { container, unmount } = ve({ ketNoi: tt });
+    chu.add(container.querySelector('.kbd.live .nhan')?.textContent ?? '');
+    unmount();
+  }
+  expect(chu.size).toBe(4);
 });

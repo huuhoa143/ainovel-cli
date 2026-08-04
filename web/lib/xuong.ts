@@ -60,27 +60,36 @@ export function tongXuong(sach: Book[]): TongXuong {
  *     một luật đáp thắng URL là URL nói dối.
  *   - **có `?tp=`** → buồng lái. Người quay lại một cuốn cụ thể đã nói ra họ muốn gì; bắt họ
  *     đi qua một bảng nữa là thêm một nhịp cho mọi lần mở trang.
- *   - **không `?tp=`** → Xưởng nếu có ≥ 2 cuốn, buồng lái nếu đúng 1. Một bảng một dòng không
- *     quyết định gì, nên nó chỉ là một màn hình phải bấm qua.
+ *   - **không `?tp=`** → màn QUẢN LÝ, bất kể xưởng có mấy cuốn.
  *
- * Xưởng RỖNG không xử ở đây: `page.tsx` đã dẫn thẳng vào Tác phẩm mới trước mọi nhánh khác, và
- * lý do được ghi ở đó. Nhánh cuối vẫn trả khu mặc định cho `soSach === 0` chứ không trả
- * `'xuong'` — nếu một ngày số 0 tới được đây thì mở một bảng rỗng là câu trả lời tệ nhất.
+ * # Điều khoản đã đổi ở nhánh cuối, và điều khoản cũ có lý của nó
+ *
+ * Bản trước: Xưởng nếu có ≥ 2 cuốn, buồng lái nếu đúng 1 — vì "một bảng một dòng không quyết
+ * định gì, nên nó chỉ là một màn hình phải bấm qua". Lập luận đó đúng khi Xưởng là một BẢNG
+ * nằm trong studio. Giờ Quản lý là một MÀN: nó mang dải việc cần bạn, tổng của cả xưởng, và
+ * hai đường tạo tác phẩm. Với một cuốn duy nhất nó vẫn trả lời hai câu mà buồng lái của chính
+ * cuốn đó không trả lời — "cuốn này đã tiêu bao nhiêu so với cả xưởng" và "tôi tạo cuốn thứ
+ * hai ở đâu".
+ *
+ * Nên `soSach` không còn là tham số. Bỏ hẳn chứ không để lại một tham số không dùng: một tham
+ * số thừa ở một hàm luật là một lời mời khôi phục luật cũ.
+ *
+ * Xưởng RỖNG vẫn không xử ở đây: `page.tsx` đã dẫn thẳng vào Tác phẩm mới trước mọi nhánh
+ * khác, và lý do được ghi ở đó.
  *
  * `khuTuUrl` là `Khu | undefined`, và `undefined` mang nghĩa "URL IM" — không phải "URL ghi
- * khu mặc định". Người gọi phải đọc tham số THÔ để phân biệt hai ca đó: `khuTuUrl()` trong
- * `useStudio.ts` trả `KHU_MAC_DINH` khi không có `?khu=`, và `ghiUrl` cố ý bỏ `khu` khỏi URL
- * khi nó bằng `KHU_MAC_DINH`, nên truyền thẳng hàm đó vào đây sẽ làm cả luật này chết lặng:
- * mọi lần mở trang rơi vào nhánh đầu và không ai thấy màn Xưởng.
+ * khu mặc định". Người gọi phải đọc tham số THÔ để phân biệt hai ca đó: `ghiUrl` cố ý bỏ
+ * `khu` khỏi URL khi nó bằng `KHU_MAC_DINH`, nên truyền vào một hàm trả sẵn `KHU_MAC_DINH`
+ * cho ca URL im sẽ làm cả luật này chết lặng: mọi lần mở trang rơi vào nhánh đầu và không ai
+ * thấy màn Quản lý.
  */
 export function khuDap(v: {
   tpTuUrl: string | undefined;
   khuTuUrl: Khu | undefined;
-  soSach: number;
 }): Khu {
   if (v.khuTuUrl) return v.khuTuUrl;
   if (v.tpTuUrl) return KHU_MAC_DINH;
-  return v.soSach >= 2 ? 'xuong' : KHU_MAC_DINH;
+  return 'xuong';
 }
 
 /**

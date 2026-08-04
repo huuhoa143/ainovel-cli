@@ -45,6 +45,12 @@
 
   --r: 5px;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  /* ── MÁNG LỀ của canvas ────────────────────────────────────────────────
+     Mọi khối cấp một trong `.canvas` bắt đầu chữ ở ĐÚNG một tọa độ. Trước bản này giá trị
+     18px nằm rải trong `.head` và `.sect`, còn các khối khác tự chọn lấy — ĐO ĐƯỢC trên
+     màn Quản lý: chữ bắt đầu ở 18 · 32 · 16 · 10 · 14, năm gốc lề trên một màn hình.
+     Người dùng nói nguyên văn: "text bị sát lề quá". Một hằng thì chỉ có một chỗ để sai. */
+  --mang: 18px;
   --z-sticky: 10;
   --z-pop: 30;
   --z-tip: 40;
@@ -189,16 +195,31 @@ button {
   min-width: 0;
 }
 
+/* Ổ KHOÁ = dấu hiệu + chữ. Dấu hiệu dùng chung hình học với favicon (lib/dauHieu.ts).
+   `align-items: center` chứ không `baseline`: dấu hiệu là một hình, nó không có đường chân
+   chữ, và canh theo baseline sẽ treo nó lệch lên trên. */
 .logo {
-  font: 600 13px/1 var(--ui);
-  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 7px;
   padding-right: 4px;
   white-space: nowrap;
+}
+.logo .ten {
+  font: 600 13px/1 var(--ui);
+  letter-spacing: -0.01em;
 }
 .logo em {
   font-style: normal;
   color: var(--ink-3);
   font-weight: 400;
+}
+/* `flex: none` để dấu hiệu KHÔNG bị nén khi thanh trên hết chỗ. Flex nén chứ không tràn, và
+   một dấu hiệu bị nén ngang thành hình méo còn tệ hơn một dấu hiệu bị ẩn — cùng bài học của
+   phép đo 5px ở bộ chọn tác phẩm. */
+.dauhieu {
+  display: block;
+  flex: none;
 }
 
 .picker {
@@ -347,12 +368,14 @@ button {
   .nutMoi {
     padding: 0 8px;
   }
-  /* Tên sản phẩm nhường chỗ cho tên tác phẩm.
+  /* CHỮ nhường chỗ cho tên tác phẩm; DẤU HIỆU ở lại.
      ĐO ĐƯỢC ở 390px: thêm nút `+` đẩy bộ chọn từ 150px xuống 111px, và "Ba đêm đèn tắt"
-     bị cắt thành "Ba đ…" — tức mất DỮ LIỆU để giữ một nhãn trang trí. Ứng dụng đang mở
-     rồi thì không ai còn hỏi nó là ứng dụng gì; thẻ trình duyệt cũng đã ghi tên đó.
-     `.logo` chiếm 88px cộng 12px gap, đúng phần bộ chọn vừa mất. */
-  .logo {
+     bị cắt thành "Ba đ…" — tức mất DỮ LIỆU để giữ một nhãn trang trí. Phần chữ chiếm 88px,
+     và bỏ nó là bỏ đúng phần đắt mà không mang tin: ứng dụng đang mở rồi thì không ai còn
+     hỏi nó là ứng dụng gì.
+     Dấu hiệu thì khác: nó chỉ tốn 20px, và nó là thứ duy nhất còn nói đây là sản phẩm nào.
+     Bản trước ẩn cả ổ khoá nên ở khổ hẹp thanh trên không mang gì của thương hiệu. */
+  .logo .ten {
     display: none;
   }
 }
@@ -514,8 +537,24 @@ button {
   grid-area: rail;
   background: var(--panel);
   border-right: 1px solid var(--line);
-  padding: 4px 8px 10px;
+  padding: 4px 8px 6px;
   overflow-y: auto;
+  /* Thanh cuộn MẢNH, cùng lối với dải ngang của chính rail và với transport.
+     Đây không phải chuyện thẩm mỹ mà là một lỗi đo được: bộ chuyển màn làm rail cao thêm,
+     và ở khung 722px nội dung tràn đúng 2px. Hai pixel đó bật một thanh cuộn 16px, thanh
+     cuộn ăn mất bề rộng, và nhãn dài nhất — "Nhật ký phán quyết" — bị cắt thành "Nhật ký
+     phán q…". Tức hai pixel dọc làm mất chữ theo chiều NGANG.
+     Đệm đáy 6px thay vì 10px để ở khung thường gặp nó không tràn ngay từ đầu; thanh cuộn
+     mảnh lo phần còn lại cho những khung thấp hơn. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.rail::-webkit-scrollbar {
+  width: 4px;
+}
+.rail::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 2px;
 }
 .rail .grp {
   font: 500 10.5px/1 var(--ui);
@@ -695,7 +734,7 @@ button {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  padding: 15px 18px 11px;
+  padding: 15px var(--mang) 11px;
   border-bottom: 1px solid var(--line-2);
   flex-wrap: wrap;
 }
@@ -760,7 +799,7 @@ button {
 }
 
 .sect {
-  padding: 16px 18px;
+  padding: 16px var(--mang);
   border-bottom: 1px solid var(--line-2);
   min-width: 0;
 }
@@ -1296,19 +1335,33 @@ button {
   border-collapse: collapse;
   font-size: 12.5px;
 }
+/* `padding-top: 11px`, không phải 0.
+   Bản trước để 0 và hàng tiêu đề DÍNH vào bất cứ thứ gì nằm trên nó. Đo được ở màn Quản lý:
+   khoảng cách từ mép dưới dải tổng tới chữ tiêu đề cột bằng ĐÚNG 0 — hai dải dày đặc chồng
+   lên nhau không có một pixel nào ngăn. Người dùng gọi đó là "ríu rít", và đó là mô tả chính
+   xác: không có band nào của riêng ai.
+   Trên xuống nhiều hơn dưới lên (11 so với 8) theo đúng luật "khoảng trên tiêu đề rộng hơn
+   khoảng dưới nó": tiêu đề cột thuộc về BẢNG bên dưới, không thuộc về dải bên trên. */
 .bang thead th {
   text-align: left;
   font: 500 11px/1.4 var(--ui);
   color: var(--ink-3);
-  padding: 0 10px 8px;
+  padding: 11px 10px 8px;
   border-bottom: 1px solid var(--line-2);
   white-space: nowrap;
 }
 .bang thead th.num {
   text-align: right;
 }
+/* 9px dọc, không 7px — và lý do là một phép so sánh, không phải khẩu vị.
+   Mắt gom theo KHOẢNG CÁCH: cái gì gần nhau hơn thì thuộc về nhau. Ở bản trước, hai dòng
+   TRONG một ô (tên + mã, tổng + đơn giá) cách nhau 15–19px trong khi hai HÀNG chỉ cách nhau
+   14px. Tức các dòng của hai hàng khác nhau trông gắn bó hơn hai dòng của cùng một hàng —
+   quan hệ bị đảo ngược, và bảng đọc ra thành một đám chữ không có hàng.
+   9px đưa khoảng giữa hai hàng lên 19px, và các cặp xếp chồng được thắt lại còn ~15px ở khối
+   dưới. Xa hơn ở ngoài, gần hơn ở trong: đó là điều kiện để một hàng đọc ra là một hàng. */
 .bang tbody td {
-  padding: 7px 10px;
+  padding: 9px 10px;
   border-bottom: 1px solid var(--line-2);
   vertical-align: baseline;
 }
@@ -2901,7 +2954,7 @@ div:has(> .qcrow) {
   font: 500 11px/1.4 var(--ui);
   color: var(--ink-3);
   margin: 0 0 8px;
-  padding: 0 6px;
+  padding: 0 calc(var(--mang) - 12px);
 }
 .dsChuong ul {
   list-style: none;
@@ -3664,12 +3717,17 @@ div:has(> .qcrow) {
 }
 
 /* ── cột phải: tóm tắt nhân vật ── */
+/* `gap: 14px` GIỮA các nhân vật, trong khi mỗi mục tự có `gap: 6px` bên trong.
+   Bản trước để 5px, tức khoảng cách giữa HAI nhân vật (5px) nhỏ hơn khoảng cách giữa tên và
+   mô tả của CÙNG một nhân vật (đo được 7px). Mắt gom theo khoảng cách, nên nó gom mô tả của
+   người này với tên của người kế tiếp — danh sách đọc ra thành một khối chữ liền.
+   Cùng lớp lỗi với bảng (xem `.bang tbody td`): xa hơn ở ngoài, gần hơn ở trong. */
 .nvtom {
   list-style: none;
   margin: 0 0 4px;
   padding: 0;
   display: grid;
-  gap: 5px;
+  gap: 14px;
 }
 .nvtom li {
   display: flex;
@@ -4314,9 +4372,14 @@ div:has(> .qcrow) {
   gap: 8px;
   margin: 0 0 11px;
   padding: 8px 10px;
-  background: var(--panel);
-  border: 1px solid var(--line-2);
-  border-left: 2px solid var(--amber);
+  /* Nền nhuốm amber + viền amber nhạt ĐỀU BỐN CẠNH, KHÔNG phải dải cạnh trái.
+     DESIGN.md › "Trạng thái bằng nền và màu chữ, không bằng dải cạnh" cấm thẳng dải cạnh
+     màu, và khối này mang một `border-left: 2px solid var(--amber)` — tức chính cái bị cấm,
+     lọt vào từ trước và nhân bản sang mọi bề mặt dùng lại lớp này.
+     Nền 8% giữ nguyên sức nặng tín hiệu mà không dựng một dải cạnh; ký hiệu ■ và chữ amber
+     bên trong vẫn là hai kênh còn lại, nên trạng thái không bao giờ chỉ dựa vào màu. */
+  background: color-mix(in oklch, var(--amber) 8%, var(--panel));
+  border: 1px solid color-mix(in oklch, var(--amber) 30%, var(--line-2));
   border-radius: var(--r);
   font-size: 12.5px;
   /* 1.72 là sàn của DESIGN.md:84, và ở đây nó không thương lượng được: `reason`
@@ -5335,7 +5398,9 @@ div:has(> .qcrow) {
   align-items: stretch;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
-  padding: 0 4px;
+  /* 6px, không 4px: ô đầu tự mang `padding-left: 12px`, nên 6+12 đưa chữ về đúng máng 18px.
+     Máng là tọa độ của CHỮ, không của hộp — đó là thứ mắt căn theo. */
+  padding: 0 6px;
 }
 .xtong .o {
   display: flex;
@@ -5381,28 +5446,37 @@ div:has(> .qcrow) {
    `Hành động`. Tức nút `Mở` — đường DUY NHẤT vào một cuốn từ bề mặt này — nằm sau một thanh
    cuộn mà không có gì trên màn hình nói rằng nó tồn tại. Tỉ lệ thì cột chỉ chật đi, không
    biến mất; và dải chật đó chỉ rộng khoảng 200px trước khi bảng thành thẻ dọc. */
+/* CHÍN cột từ bản ba màn — cột `Cần bạn` là cột mới. Tổng bảy tỉ lệ dưới đây là 79%, để cột
+   tên (không khai) nhận 21%: tên tác phẩm là chỗ DUY NHẤT phân biệt hai cuốn trùng tên, và
+   trên xưởng thật cả ba cuốn đều tên "Trấn Yêu Ký" nên nó cần đủ chỗ cho cả tên và mã. */
 .bangxuong thead th:nth-child(2) {
-  width: 9%;
+  width: 8%;
 }
 .bangxuong thead th:nth-child(3) {
   width: 10%;
 }
 .bangxuong thead th:nth-child(4) {
-  width: 9%;
+  width: 7%;
 }
 .bangxuong thead th:nth-child(5) {
   width: 9%;
 }
-/* 11%, rộng hơn các cột số khác: đơn vị "chương/giờ" là MỘT token không ngắt được, và ĐO ĐƯỢC
-   ở 880px nó cần 57px trong khi 9% chỉ cho 50px — tràn 3px sang cột `Sửa lần cuối`. */
+/* 10%, rộng hơn các cột số khác: đơn vị "chương/giờ" là MỘT token không ngắt được, và ĐO ĐƯỢC
+   ở 880px nó cần 57px trong khi 9% chỉ cho 50px — tràn 3px sang cột bên cạnh. */
 .bangxuong thead th:nth-child(6) {
-  width: 11%;
+  width: 10%;
 }
+/* Cột `Cần bạn`: 12%, và chữ trong nó là bản NGẮN ("mốc tạm dừng") chứ không bản đầy đủ ("có
+   một mốc tạm dừng đã ký"). Câu đầy đủ thuộc dải việc-cần-bạn ở đầu màn, nơi nó có cả hàng
+   để nằm; trong một ô 12% nó ngắt bốn dòng và đẩy cao cả hàng bảng. */
 .bangxuong thead th:nth-child(7) {
-  width: 11%;
+  width: 12%;
 }
 .bangxuong thead th:nth-child(8) {
-  width: 17%;
+  width: 10%;
+}
+.bangxuong thead th:nth-child(9) {
+  width: 13%;
 }
 
 /* Dải chật giữa điểm ngắt 860px và khoảng 1100px: rail vẫn ăn 194px, mà bảng đã phải gánh
@@ -6186,4 +6260,576 @@ button[aria-busy="true"]::after {
   .rail.truot::after {
     transition: none;
   }
+}
+
+/* ══ BỘ CHUYỂN MÀN — tầng điều hướng trên khu ═════════════════════════════
+   Xem `Rail.tsx › MucMan` và `lib/man.ts` cho vì sao có tầng này.
+
+   Ba hàng này phải đọc ra là MỘT TẦNG KHÁC với mục khu ngay dưới, và sự khác nhau đó không
+   được dựa vào việc người dùng nhớ ba biểu tượng. Nên nó dựa vào ba thứ hình học:
+     · nền `--panel-2` cho cả khối, tách nó khỏi nền `--panel` của rail
+     · chữ lớn hơn mục khu (13px so với 12.5px) và đậm hơn (500 so với 400)
+     · một DÒNG PHẠM VI dưới tên — thứ mục khu không bao giờ có
+
+   Dòng phạm vi là phần mang tin, không phải trang trí: cái bị đọc nhầm ở bản trước chính là
+   phạm vi ("cấu hình này của cuốn nào?"), nên nó nằm trên bề mặt chứ không trong `title`. */
+.manrail {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 2px;
+  margin: 4px 0 8px;
+}
+.mucman {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "ten dau"
+    "pham dau";
+  gap: 0 6px;
+  width: 100%;
+  padding: 6px 8px 7px;
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ink-2);
+  transition:
+    background 0.14s var(--ease),
+    color 0.14s var(--ease);
+}
+.mucman:hover {
+  background: var(--raised);
+  color: var(--ink);
+}
+/* Màn đang mở: nền `--raised` + chữ vàng, cùng ngữ pháp mà `[aria-current]` của mục khu đang
+   dùng. Dùng lại đúng bộ tín hiệu đó là có chủ ý — hai tầng, một cách nói "bạn đang ở đây". */
+.mucman[aria-current="page"] {
+  background: var(--raised);
+  color: var(--gold);
+}
+.mucman .tenMan {
+  grid-area: ten;
+  font: 500 13px/1.35 var(--ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Dòng phạm vi. `--ink-3` là SÀN cứng (4.9:1) và nó ở đúng sàn — không hạ thêm cho "thanh
+   thoát", đúng điều khoản của DESIGN.md.
+   `min-width: 0` cho phép co VÀ `max-width: 100%` để buộc: một tên cuốn dài hơn 194px sẽ
+   tràn ra ngoài rail và đè lên canvas nếu chỉ có một trong hai — đúng phép đo đã ghi ở
+   DESIGN.md cho bộ chọn tác phẩm ở thanh trên. */
+.mucman .phamMan {
+  grid-area: pham;
+  min-width: 0;
+  max-width: 100%;
+  font: 400 11px/1.5 var(--ui);
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Dấu việc tồn của MÀN — amber, và nó chiếm cả hai hàng để không đẩy hai dòng chữ lệch nhau. */
+.mucman .dauton {
+  grid-area: dau;
+  align-self: center;
+  font-size: 9px;
+  color: var(--amber);
+}
+
+/* Dưới 860px rail thành dải NGANG, nên bộ chuyển màn cũng phải thành hàng ngang — nếu không
+   nó là ba hàng dọc cao ~100px ăn hết đầu màn hình trước khi thấy canvas.
+   Dòng phạm vi bị ẩn ở khổ này: ba tên màn cạnh nhau trong một dải ngang đã tự nói ra tầng
+   của chúng (chúng đứng riêng, trước vạch ngăn), và giữ dòng phạm vi ở đây làm mỗi ô cao
+   gấp đôi mục khu bên cạnh. */
+@media (max-width: 860px) {
+  .manrail {
+    flex-direction: row;
+    gap: 2px;
+    margin: 0 0 4px;
+    overflow-x: auto;
+  }
+  .mucman {
+    grid-template-areas: "ten dau";
+    width: auto;
+    flex: none;
+    padding: 5px 10px;
+  }
+  .mucman .phamMan {
+    display: none;
+  }
+}
+
+/* Khung KHÔNG có transport: hàng đó bị bỏ hẳn khỏi lưới, không phải để trống 30px.
+   Xem chú thích ở `page.tsx` — một dải trống ở đáy là một vùng giao diện không nói gì, cùng
+   lý do mà `khung.rong` đã bỏ cột inspector thay vì để nó trống. */
+.khung.khongTrans {
+  grid-template-rows: 44px 1fr;
+  grid-template-areas:
+    "bar bar"
+    "rail canvas";
+}
+@media (max-width: 860px) {
+  .khung.khongTrans,
+  .khung.rong.khongTrans {
+    grid-template-rows: 44px auto 1fr;
+    grid-template-columns: 1fr;
+    grid-template-areas: "bar" "rail" "canvas";
+  }
+}
+
+/* ══ GỐC XƯỞNG trên thanh trên ════════════════════════════════════════════
+   Thay chỗ của bộ chọn tác phẩm ở hai màn cấp xưởng. Nó là một NHÃN, không phải nút: không
+   có gì để chọn ở đây, và một thứ trông bấm được mà không bấm được là lời hứa hụt.
+   Đường dẫn dùng chữ mono vì nó là ĐỊNH DANH đối chiếu được — đúng luật của DESIGN.md cho ô
+   nhập khóa, địa chỉ và tên model. */
+.bar .gocxuong {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  max-width: 46%;
+  padding: 4px 9px;
+  background: var(--panel-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+}
+.bar .gocxuong .ky {
+  flex: none;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.bar .gocxuong .duong {
+  min-width: 0;
+  font: 400 11.5px var(--mono);
+  color: var(--ink-2);
+  overflow: hidden;
+  /* Cắt từ ĐẦU, không từ cuối: phần phân biệt hai thư mục output nằm ở đuôi đường dẫn
+     (`/tmp/a/output` so với `/tmp/b/output`), nên `ellipsis` thường sẽ cắt đúng phần mang
+     tin và để lại một tiền tố giống nhau ở mọi xưởng. */
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: left;
+  white-space: nowrap;
+}
+@media (max-width: 700px) {
+  .bar .gocxuong {
+    display: none;
+  }
+}
+
+/* ══ DẢI VIỆC CẦN BẠN — đầu màn Quản lý ═══════════════════════════════════
+   Xem `Xuong.tsx › DaiCanBan`. Ba trạng thái, ba tông, và không trạng thái nào chỉ dựa vào
+   MÀU: mỗi cái mang cả một ký hiệu và một câu chữ. */
+.daicanban {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  font: 400 13px/1.6 var(--ui);
+}
+.daicanban .day {
+  flex: 1 1 auto;
+}
+.daicanban .ky {
+  flex: none;
+  font-size: 11px;
+}
+.daicanban .cau {
+  color: var(--ink);
+}
+.daicanban .phu {
+  color: var(--ink-3);
+}
+/* Máy đang chạy: tông vàng, ký hiệu ĐẬP. Đây là chuyển động duy nhất mang thông tin trên bề
+   mặt này, và nó phân biệt "đang chạy" với "đã dừng ở trạng thái này" — điều mà ảnh tĩnh
+   không nói được. Nhịp và nhánh reduced-motion dùng chung lớp `.dap` đã có. */
+.daicanban.dangchay {
+  background: color-mix(in oklch, var(--gold) 9%, var(--bg));
+}
+.daicanban.dangchay .ky {
+  color: var(--gold);
+}
+/* Có việc đã ký: tông amber. Nhiều cuốn thì nhiều hàng, nên khối này xếp DỌC. */
+.daicanban.cocho {
+  display: block;
+  background: color-mix(in oklch, var(--amber) 8%, var(--bg));
+  padding: 6px 14px 8px;
+}
+/* GRID, không phải flex-wrap. Bản đầu dùng `flex: 1 1 100%` trên `.ly` để đẩy lý do xuống
+   dòng riêng, và nó KHÔNG chạy: `max-width: 74ch` kẹp kích thước giả định của phần tử xuống
+   dưới 100%, nên nó vẫn vừa chỗ trống còn lại và ở nguyên trên dòng đầu. ĐO ĐƯỢC: `.ly` nằm
+   ở x=709 với bề rộng 584px, tức đứng lọt giữa hàng thay vì mở một dòng mới.
+   Grid thì việc xuống dòng là một khai báo, không phải một hệ quả của phép đo bề rộng. */
+.daicanban.cocho .hangcanban {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  grid-template-areas:
+    "ky ten cau nut"
+    ".  ly  ly  ly";
+  align-items: baseline;
+  gap: 3px 8px;
+  padding: 3px 0;
+}
+.daicanban.cocho .hangcanban .ky {
+  grid-area: ky;
+}
+.daicanban.cocho .hangcanban .ten {
+  grid-area: ten;
+}
+.daicanban.cocho .hangcanban .cau {
+  grid-area: cau;
+}
+.daicanban.cocho .hangcanban .nutPhu {
+  grid-area: nut;
+  justify-self: end;
+}
+/* `.day` không còn việc gì trong lưới — cột `1fr` của `.cau` đã đẩy nút sang phải. */
+.daicanban.cocho .hangcanban .day {
+  display: none;
+}
+.daicanban.cocho .ky {
+  color: var(--amber);
+}
+.daicanban.cocho .ten {
+  font-weight: 500;
+  color: var(--ink);
+}
+.daicanban.cocho .cau {
+  color: var(--ink-2);
+}
+/* Lý do là chữ của chính người vận hành viết lúc ký mốc tạm dừng. Khổ đọc 74ch và
+   `line-height` 1.72 vì nó là câu tiếng Việt đầy đủ, không phải một nhãn. */
+.daicanban.cocho .ly {
+  grid-area: ly;
+  max-width: 74ch;
+  font: 400 12.5px/1.72 var(--ui);
+  color: var(--ink-3);
+}
+/* Không có việc: KHÔNG tô nền. Một dải được tô ở trạng thái bình thường sẽ dạy mắt bỏ qua
+   màu ở dải này, và lúc đó hai trạng thái trên mất tín hiệu. */
+.daicanban.rong .ky {
+  color: var(--ink-3);
+}
+
+/* ══ Ô "CẦN BẠN" trong bảng ═══════════════════════════════════════════════ */
+.bangxuong td.canban .dau {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--amber);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.bangxuong td.canban .dau .ky {
+  font-size: 9px;
+}
+.bangxuong td.canban .trong {
+  color: var(--ink-3);
+}
+
+/* Nút `Chi tiết`: nút CHÍNH của mỗi hàng, nên nó nổi hơn `.nutPhu` bên cạnh — nhưng bằng
+   VIỀN, không bằng nền vàng. Nền vàng ở chín hàng cạnh nhau biến một bảng để quét mắt thành
+   một bảng chín nút mời bấm, và nó cũng sẽ tranh tông với dải việc-cần-bạn ngay trên. */
+.nutChiTiet {
+  padding: 3px 9px;
+  background: var(--panel-2);
+  border: 1px solid color-mix(in oklch, var(--gold) 42%, var(--line));
+  border-radius: var(--r);
+  color: var(--ink);
+  font: 400 12px var(--ui);
+  cursor: pointer;
+  transition:
+    background 0.14s var(--ease),
+    border-color 0.14s var(--ease);
+}
+.nutChiTiet:hover {
+  background: var(--raised);
+  border-color: var(--gold);
+}
+
+/* Mẫu số của ô tiền ở dải tổng — xem `Xuong.tsx › OTong`.
+   Nó KHÔNG dùng `--ink-3` như các nhãn đơn vị khác mà dùng amber: đây không phải một đơn vị
+   mà một lời báo rằng con số bên cạnh chưa phủ hết xưởng. */
+.xtong .o .mauSo {
+  font: 400 11px/1.5 var(--ui);
+  color: var(--amber);
+}
+
+/* ══ BỔ THEO VAI / THEO MODEL — màn Chi phí toàn xưởng ════════════════════
+   Xem `ChiPhiXuong.tsx`. Thanh tỉ lệ với vai TỐN NHẤT, không với tổng: chia theo tổng thì
+   bốn vai đều thành những vạch ngắn cạnh nhau và mất đúng phép so sánh cần thấy. */
+.boDai {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-width: 720px;
+}
+.hangBo {
+  display: grid;
+  grid-template-columns: 132px minmax(80px, 1fr) 78px 78px;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+/* 132px, không 96px như phản xạ: nhãn vai tiếng Việt ("Kiến trúc", "Chấp bút", "Biên tập")
+   dài hơn nhãn Anh 20–30% — cùng con số mà DESIGN.md đã chốt cho cột nhãn biểu mẫu. */
+.hangBo .boTen {
+  font: 400 12.5px/1.72 var(--ui);
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hangBo .boTen.m {
+  font: 400 12px var(--mono);
+}
+.hangBo .boThanh {
+  height: 8px;
+  background: var(--panel-2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.hangBo .boThanh .day {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+}
+.hangBo .boTien {
+  font: 500 12px var(--mono);
+  color: var(--ink);
+  text-align: right;
+}
+/* Tiền cache của từng vai: teal, vì nó là tiền ĐÃ TIẾT KIỆM chứ không phải tiền đã tiêu —
+   hai nghĩa ngược nhau thì không được cùng màu. Ô rỗng khi bằng 0 (xem chú thích ở JSX). */
+.hangBo .boCache {
+  font: 400 12px var(--mono);
+  color: var(--teal);
+  text-align: right;
+}
+@media (max-width: 700px) {
+  .hangBo {
+    grid-template-columns: 1fr auto auto;
+    grid-template-areas:
+      "ten tien cache"
+      "thanh thanh thanh";
+    gap: 4px 8px;
+  }
+  .hangBo .boTen {
+    grid-area: ten;
+  }
+  .hangBo .boThanh {
+    grid-area: thanh;
+  }
+  .hangBo .boTien {
+    grid-area: tien;
+  }
+  .hangBo .boCache {
+    grid-area: cache;
+  }
+}
+
+/* Hai nút của một kênh vai chung (Lưu + Gỡ) nằm cùng hàng. `.kenh .nutChinh` đã có bộ dáng
+   riêng nên khối này chỉ lo phần xếp chỗ. */
+.kenh .kenhNut {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* ══ DẢI TẠO MỚI — cuối màn Quản lý ═══════════════════════════════════════
+   Xem `Xuong.tsx › DaiTaoMoi`: nó nhận 345px cuối màn mà bảng ba dòng để trống.
+   HAI HÀNG nút-cạnh-câu, không phải hai thẻ: lưới thẻ giống nhau lặp lại là mẫu bị PRODUCT.md
+   cấm thẳng, và hai hàng giữ đúng ngữ pháp mà dải kênh vai và các danh sách khóa-giá trị khác
+   của studio đang dùng. */
+.taomoi {
+  margin-top: auto;
+  padding: 14px 14px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+.taomoi h2 {
+  font: 600 14.5px/1 var(--ui);
+  margin: 0 0 10px;
+  color: var(--ink);
+}
+.taomoi .hang {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 10px;
+  padding: 4px 0;
+}
+/* 148px, không 110px như phản xạ: "Tác phẩm mới" và "Cùng dựng" là nhãn tiếng Việt, và cột
+   nhãn phải rộng hơn phản xạ 20–30% (DESIGN.md, ràng buộc tiếng Việt số 2). Nút nào cũng
+   chiếm hết cột để hai nút thẳng mép nhau — hai nút lệch mép đọc thành hai cấp khác nhau. */
+.taomoi .hang > button {
+  width: 100%;
+}
+.taomoi .hang .mo {
+  font: 400 12.5px/1.72 var(--ui);
+  color: var(--ink-3);
+  max-width: 74ch;
+}
+@media (max-width: 560px) {
+  /* Dưới 560px thì gập xuống một cột — ô/nút bị bóp là lỗi tệ hơn nhãn xuống dòng, đúng
+     điều khoản đã ghi cho biểu mẫu tiếng Việt. */
+  .taomoi .hang {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
+
+/* Màn Quản lý là một CỘT dọc: dải tạo mới phải bị đẩy xuống đáy khi bảng ngắn, và bảng phải
+   co lại (không phải dải) khi bảng dài. `min-height: 0` là điều kiện để `.bangwrap` cuộn
+   được bên trong flex thay vì đẩy cả cột dài ra. */
+.canvas.khuxuong {
+  display: flex;
+  flex-direction: column;
+}
+.canvas.khuxuong .bangwrap {
+  min-height: 0;
+}
+
+/* Bộ chuyển màn ở dải ngang: GHIM TRÁI, không cuộn đi cùng các mục khu.
+   ĐO ĐƯỢC ở 390px: rail là một dải cuộn ngang, và effect `scrollIntoView` kéo khu đang mở
+   vào tầm nhìn — việc đó đẩy cả ba hàng màn ra ngoài mép TRÁI. Màn hình chỉ còn ba mục khu
+   và không dấu hiệu nào nói rằng có ba màn. Đó đúng là câu người dùng đã hỏi một lần rồi:
+   "các màn khác đâu rồi ta".
+   `sticky` giữ chúng đứng yên trong khi các mục khu trượt qua bên dưới; nền đặc và viền phải
+   là thứ làm ranh giới đó đọc được lúc có mục đang trượt phía sau. */
+@media (max-width: 860px) {
+  .rail .manrail {
+    position: sticky;
+    left: 0;
+    z-index: var(--z-sticky);
+    flex: none;
+    border-right: 1px solid var(--line);
+  }
+}
+
+/* Dưới 860px màn Quản lý thôi làm CỘT có đáy ghim: cả canvas cuộn như một trang.
+   ĐO ĐƯỢC ở 390px: với `display: flex` + `margin-top: auto`, dải tạo mới bị ghim ở đáy khung
+   và danh sách thẻ bị bóp vào một vùng cuộn trong chỉ ~370px — tức ở khổ hẹp nhất, thứ chính
+   của màn (danh sách tác phẩm) nhận ít chỗ nhất. Ở khổ rộng thì ghim đáy là đúng (bảng ba
+   dòng để trống 345px); ở khổ hẹp thì không còn khoảng trống nào để mà lấp. */
+@media (max-width: 860px) {
+  .canvas.khuxuong {
+    display: block;
+  }
+  .taomoi {
+    margin-top: 0;
+  }
+}
+
+
+/* ══ MÁNG LỀ — mọi khối cấp một của canvas bắt đầu chữ ở cùng một tọa độ ═══
+   Xem `--mang`. Khối này gom những chỗ TỪNG tự chọn lấy lề riêng; đo trên màn Quản lý
+   trước bản này, chữ bắt đầu ở 18 · 32 · 16 · 10 · 14 — năm gốc lề trên một màn hình, và
+   mắt đọc ra ngay cả khi không đo được.
+
+   Quy tắc: máng là tọa độ của CHỮ, không của hộp. Khối nào tự mang padding trong (ô bảng,
+   ô dải tổng) thì máng của nó là phần bù, không phải 18px lặp lại. */
+
+/* ── bảng: ô đầu và ô cuối mở rộng ra tới máng ──
+   `.bangwrap` là vùng CUỘN NGANG, nên không thể đặt lề ở đó: lề sẽ cuộn đi mất cùng nội
+   dung và cột đầu lại dính mép ngay khi người dùng kéo ngang một pixel. Lề phải nằm trên
+   chính ô đầu/ô cuối. `10px` là padding sẵn có của ô, nên phần bù là `--mang` trừ đi nó. */
+.bang thead th:first-child,
+.bang tbody td:first-child {
+  padding-left: var(--mang);
+}
+.bang thead th:last-child,
+.bang tbody td:last-child {
+  padding-right: var(--mang);
+}
+
+/* ── đoạn văn và khối cảnh báo đứng THẲNG trong canvas ──
+   Trong `.sect` chúng đã nhận lề của section. Ngoài `.sect` — ca của Cùng dựng và Tác phẩm
+   mới — chúng trước đây dính sát mép rail ở tọa độ 0, tức lệch 18px so với chính cái tiêu
+   đề ngay trên chúng.
+
+   Dùng MARGIN chứ không padding: `max-width: 74ch` của `.steerhint` là khổ đọc, và với
+   `box-sizing: border-box` thì padding ăn vào khổ đó — khổ đọc phải là chữ, không phải chữ
+   cộng lề. Lề trên 16px cho khớp `padding-top` của `.sect`: hai loại khối kế tiếp nhau mà
+   cách đầu trang hai khoảng khác nhau thì nhịp dọc gãy ngay dòng đầu. */
+.canvas > .steerhint {
+  margin: 16px var(--mang) 0;
+}
+.canvas > .vphacap {
+  margin-left: var(--mang);
+  margin-right: var(--mang);
+}
+.canvas > .cdvan {
+  margin-left: var(--mang);
+  margin-right: var(--mang);
+}
+
+/* ── hai dải của màn Quản lý ──
+   Chúng ra đời ở bản ba màn và tự chọn 14px, tức lệch 4px so với tiêu đề ngay trên. Bốn
+   pixel không ai gọi tên được, nhưng mắt đọc ra là "khối này không thẳng hàng". */
+.daicanban {
+  padding-left: var(--mang);
+  padding-right: var(--mang);
+}
+.daicanban.cocho {
+  padding-left: var(--mang);
+  padding-right: var(--mang);
+}
+.taomoi {
+  padding-left: var(--mang);
+  padding-right: var(--mang);
+}
+
+
+/* ── chip kết nối: hai bản nhãn, CSS chọn bản nào hiện ──
+   Chép nguyên cơ chế của huy hiệu nghiệm thu và dùng CHUNG điểm ngắt 700px với nó, `.nutMoi`
+   và `.slate` — không mở một điểm ngắt thứ tư cho thanh trên.
+
+   Khối `display: none` cho bản ngắn phải đứng TRƯỚC khối `@media`: cùng độ đặc hiệu thì thứ
+   tự trong tệp quyết định. Quên nó thì CẢ HAI bản cùng hiện và chip đọc thành "engine · đã
+   nối đã nối" — đã xảy ra thật ngay ở bản dựng đầu của thay đổi này. */
+.kbd.live .nhanNgan {
+  display: none;
+}
+@media (max-width: 700px) {
+  .kbd.live .nhan {
+    display: none;
+  }
+  .kbd.live .nhanNgan {
+    display: inline;
+  }
+}
+
+
+/* ══ CẶP XẾP CHỒNG TRONG Ô BẢNG — thắt lại để đọc ra là MỘT đơn vị ═════════
+   Xem `.bang tbody td` cho phép so sánh đầy đủ. Mỗi ô dưới đây chứa hai dòng nói về CÙNG một
+   thứ (tên và mã của một cuốn; tổng tiền và đơn giá của một cuốn), nên chúng phải gần nhau
+   hơn khoảng cách tới hàng kế tiếp. Không thắt thì con số đơn giá của hàng trên trông như
+   thuộc về hàng dưới. */
+.bangxuong td.ten .nb,
+.bangxuong td.ten .ma,
+.bangxuong td.ten > em {
+  line-height: 1.35;
+}
+.bangxuong td.tien .tong,
+.bangxuong td.tien .donGia {
+  line-height: 1.35;
+}
+/* Mốc thời gian được phép xuống dòng (ô hẹp hơn chuỗi đầy đủ), nên nó cũng là một cặp xếp
+   chồng — 1.6 làm hai nửa của cùng một mốc rời nhau hơn hai hàng rời nhau. */
+.bangxuong td.sua {
+  line-height: 1.4;
+}
+/* Nhãn "Cần bạn" ngắt hai dòng ở cột 12%; cùng luật. */
+.bangxuong td.canban .dau {
+  line-height: 1.4;
 }
