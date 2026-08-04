@@ -78,8 +78,15 @@ test('chế độ tự chạy cũng suy từ snapshot — vế ngược', () => 
   // là một thanh transport nói "Nghiệm thu từng chương" trên một engine đang chạy liên tục.
   ve({ advance: { ...AUTO } });
 
-  expect(screen.getByRole('button', { name: CHU.cheDoTuChay })).toBeDefined();
-  expect(screen.queryByRole('button', { name: CHU.cheDoNghiemThu })).toBeNull();
+  // Hợp đồng MỚI: cả hai lựa chọn luôn hiện, cái đang bật mang `aria-pressed` và không bấm
+  // được. Bản trước chỉ vẽ MỘT nút mang nhãn là trạng thái hiện tại — xem chú thích trong
+  // DieuKhien.tsx về vì sao kiểu nút đó không đọc ra được là "đang bật" hay "bấm để bật".
+  const tuChay = screen.getByRole('button', { name: CHU.cheDoTuChay });
+  const nghiemThu = screen.getByRole('button', { name: CHU.cheDoNghiemThu });
+  expect(tuChay.getAttribute('aria-pressed')).toBe('true');
+  expect(nghiemThu.getAttribute('aria-pressed')).toBe('false');
+  // Cái đang bật không bấm được: bấm lại chế độ đang chạy là một lời gọi API không làm gì.
+  expect((tuChay as HTMLButtonElement).disabled).toBe(true);
   expect(LAY_CAI_DAT).not.toHaveBeenCalled();
 });
 
@@ -126,22 +133,25 @@ test('`advance === null` KHÔNG làm mất nút Chạy — bề mặt vẫn đi�
 
 /* ── đổi chế độ ────────────────────────────────────────────────────────── */
 
-test('bấm nhãn chế độ gửi chế độ NGƯỢC LẠI, rồi nạp lại snapshot', async () => {
+test('bấm một lựa chọn gửi ĐÚNG chế độ đó, rồi nạp lại snapshot', async () => {
   // Không tự đoán trạng thái mới: `SetAdvanceMode` chạm engine THẬT (`vongdoi.go:46`) và
   // `snapshot.advance.mode` đọc từ cùng `p.eng.Snapshot()` đó, nên đường về đúng là nạp lại
   // snapshot. Tự `datCheDo(r.mode)` là dựng lại một bản thứ hai của cùng sự thật.
   ve({ advance: { ...REVIEW } });
 
-  fireEvent.click(screen.getByRole('button', { name: CHU.cheDoNghiemThu }));
+  // Đang ở `review`, bấm `Tự chạy` phải gửi ĐÚNG 'auto'. Hợp đồng cũ là "gửi chế độ ngược
+  // lại của cái đang bật" — đúng kết quả nhưng sai cách nghĩ, và nó chỉ đúng khi có hai chế
+  // độ. Giờ mỗi nút mang chế độ của chính nó.
+  fireEvent.click(screen.getByRole('button', { name: CHU.cheDoTuChay }));
 
   expect(DOI_CHE_DO).toHaveBeenCalledWith('tran-yeu-ky', 'auto');
   await waitFor(() => expect(ON_DOI).toHaveBeenCalled());
 });
 
-test('bấm nhãn chế độ ở chế độ tự chạy thì bật nghiệm thu', async () => {
+test('đang tự chạy, bấm Nghiệm thu thì bật nghiệm thu', async () => {
   ve({ advance: { ...AUTO } });
 
-  fireEvent.click(screen.getByRole('button', { name: CHU.cheDoTuChay }));
+  fireEvent.click(screen.getByRole('button', { name: CHU.cheDoNghiemThu }));
 
   expect(DOI_CHE_DO).toHaveBeenCalledWith('tran-yeu-ky', 'review');
   await waitFor(() => expect(ON_DOI).toHaveBeenCalled());

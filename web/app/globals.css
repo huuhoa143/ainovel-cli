@@ -6962,3 +6962,45 @@ button[aria-busy="true"]::after {
   opacity: 0.45;
   cursor: default;
 }
+
+/* Công tắc chế độ đi tiếp: hai lựa chọn hiện CÙNG LÚC, cái đang bật nhìn thấy được.
+   Thay một nút đổi chữ — kiểu nút mà nhãn là trạng thái còn bấm ra trạng thái khác, nên
+   không đọc ra được là "đang bật" hay "bấm để bật". */
+.dkChon {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+}
+
+.dkChonDe {
+  color: var(--ink-3);
+  font: 400 11px var(--ui);
+  white-space: nowrap;
+}
+
+.dkChonNut {
+  padding: 3px 9px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  color: var(--ink-3);
+  font: 400 12px var(--ui);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dkChonNut:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+/* Cái đang bật KHÔNG bấm được (`disabled`), nên nó không được mờ đi như nút tắt — nó là
+   nút nổi bật nhất trong nhóm. Ghi đè luật `:disabled { opacity }` chung. */
+.dkChonNut.dkBat {
+  background: var(--panel-2);
+  border-color: color-mix(in oklch, var(--gold) 42%, var(--line));
+  color: var(--ink);
+  opacity: 1;
+  cursor: default;
+}
