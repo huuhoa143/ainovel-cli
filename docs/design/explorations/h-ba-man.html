@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>h · ba màn — bốn cách chuyển</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../web/app/globals.css">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   h · BA MÀN — BỐN CÁCH CHUYỂN
+
+   Ba màn đã chốt. Bộ chuyển thì tôi đoán trượt hai lần (tab đỉnh, cột biểu
+   tượng trái), nên tờ này không đoán lần thứ ba: nó dựng BỐN cơ chế khác nhau
+   về BẢN CHẤT, mỗi cái là một app mini bấm được, cùng chạy trên một bộ nội
+   dung. Chọn bằng mắt, không phải bằng lời tả.
+
+   Mọi con số là số THẬT, lấy từ /api/workshop và cost của từng cuốn, lúc
+   2026-08-02 — kể cả phần bổ theo vai, kể cả $19,65 cache tiết kiệm được.
+
+   (Đừng viết đường dẫn có dấu sao trong chú thích CSS: chuỗi `*` rồi `/` ĐÓNG
+   comment sớm. Bản đầu của tờ này viết `/api/books/` + sao + `/cost` và nuốt luôn
+   khối `:root` khai font ngay dưới — cả tờ rơi về Times mà không có gì báo.)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --ui: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+/* ── VỎ ỨNG DỤNG ≠ TRANG TÀI LIỆU ─────────────────────────────────────────
+   `globals.css` đặt `body { overflow: hidden }` cho khung ứng dụng cố định.
+   Tờ này là trang đọc dài, nên phải khai lại — bản trước quên và người duyệt
+   không cuộn được, chỉ thấy màn hình đầu tiên. */
+html, body { height: auto; min-height: 100%; overflow: visible; }
+
+body {
+  background: var(--bg); color: var(--ink);
+  font: 400 14px/1.55 var(--ui); margin: 0; padding: 0 0 120px; display: block;
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+
+.dauto { padding: 54px 0 32px; border-bottom: 1px solid var(--line); margin-bottom: 38px; }
+.dauto h1 { font: 600 27px/1.25 var(--ui); margin: 0 0 12px; letter-spacing: -0.015em; }
+.dauto h1 em { font-style: normal; color: var(--ink-3); font-weight: 400; }
+.dauto p { margin: 0 0 10px; color: var(--ink-2); max-width: 76ch; }
+.dauto .ngay { font: 400 11.5px var(--mono); color: var(--ink-3); }
+
+section { margin: 0 0 56px; scroll-margin-top: 20px; }
+section > h2 { font: 600 18px/1.3 var(--ui); margin: 0 0 6px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+section > h2 .so { font: 500 11px var(--mono); color: var(--tren-mau); background: var(--gold); border-radius: 3px; padding: 2px 7px; }
+section > .dan { color: var(--ink-2); margin: 0 0 20px; max-width: 78ch; }
+section > .dan strong { color: var(--ink); font-weight: 500; }
+.kod { font: 400 12.5px var(--mono); background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 3px; padding: 1px 5px; color: var(--ink); }
+.ghichu { border-left: 1px solid var(--line); padding: 2px 0 2px 14px; margin: 14px 0 0; color: var(--ink-3); font-size: 12.5px; max-width: 78ch; }
+.ghichu b { color: var(--ink-2); font-weight: 500; }
+
+/* ── thẻ cơ chế ──────────────────────────────────────────────────────────── */
+.cc { margin: 0 0 30px; }
+.cchead { display: flex; align-items: baseline; gap: 12px; margin: 0 0 4px; flex-wrap: wrap; }
+.cchead .ma {
+  font: 600 12px var(--mono); color: var(--tren-mau); background: var(--ink-2);
+  border-radius: 3px; padding: 2px 8px;
+}
+.cchead h3 { font: 600 15px var(--ui); margin: 0; }
+.cchead .tag { font: 400 11.5px var(--mono); color: var(--ink-3); }
+.ccmo { color: var(--ink-2); font-size: 13px; margin: 0 0 12px; max-width: 80ch; }
+
+/* ── khung app mini ──────────────────────────────────────────────────────── */
+.app { border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--bg); }
+.bar {
+  display: flex; align-items: center; gap: 10px; padding: 7px 11px;
+  background: var(--panel); border-bottom: 1px solid var(--line); font-size: 12.5px; flex-wrap: wrap;
+}
+.logo { font: 600 13px var(--ui); color: var(--ink); background: none; border: 0; padding: 0; cursor: default; }
+.logo em { font-style: normal; color: var(--ink-3); font-weight: 400; }
+.logo.bam { cursor: pointer; }
+.logo.bam:hover { color: var(--gold); }
+.day { flex: 1; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; font: 400 11px var(--mono);
+  color: var(--ink-2); background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 999px; padding: 3px 10px;
+}
+.chip .d { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
+
+/* bộ chọn kiểu thanh trên */
+.pick {
+  display: inline-flex; align-items: center; gap: 7px; font: 400 12px var(--ui);
+  background: var(--raised); border: 1px solid var(--line); border-radius: 4px;
+  padding: 4px 9px; color: var(--ink); cursor: pointer;
+}
+.pick:hover { border-color: var(--gold); }
+.pick .g { color: var(--ink-3); }
+.pick .chev { color: var(--ink-3); font-size: 9px; }
+.pick .ma { font: 400 11px var(--mono); color: var(--ink-3); }
+
+/* menu bung ra */
+.mwrap { position: relative; }
+.menu {
+  position: absolute; top: calc(100% + 5px); left: 0; z-index: 30; min-width: 250px;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 5px; box-shadow: 0 8px 24px oklch(0 0 0 / 0.45);
+}
+.menu button {
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+  background: none; border: 0; color: var(--ink-2); font: 400 13px var(--ui);
+  padding: 7px 9px; border-radius: 3px; cursor: pointer;
+}
+.menu button:hover { background: var(--raised); color: var(--ink); }
+.menu button[aria-current="true"] { color: var(--gold); }
+.menu button .g { width: 15px; text-align: center; color: var(--ink-3); }
+.menu button .mo { font: 400 11px var(--ui); color: var(--ink-3); display: block; }
+.menu .vach { height: 1px; background: var(--line); margin: 4px 0; }
+.menu .nhanm {
+  font: 500 10px var(--ui); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-3); padding: 7px 9px 3px;
+}
+
+.than { display: grid; min-height: 340px; }
+.than.corail { grid-template-columns: 208px 1fr; }
+
+/* rail */
+.rail2 { background: var(--panel); border-right: 1px solid var(--line); padding: 7px 0; overflow-y: auto; }
+.nhomr {
+  font: 500 10px var(--ui); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-3); padding: 11px 13px 4px;
+}
+.muc {
+  display: flex; align-items: center; gap: 9px; width: 100%; background: none; border: 0;
+  color: var(--ink-2); font: 400 13px var(--ui); padding: 5px 13px; cursor: pointer; text-align: left;
+}
+.muc:hover { background: var(--panel-2); color: var(--ink); }
+.muc[aria-current="page"] { background: var(--raised); color: var(--ink); }
+.muc .g { width: 14px; text-align: center; color: var(--ink-3); flex: none; }
+.muc .nh { flex: 1; }
+.muc .n { font: 400 11.5px var(--mono); color: var(--ink-3); }
+.muc .n.warn { color: var(--amber); }
+
+/* hàng MÀN trong rail (cơ chế C) */
+.manrow {
+  display: flex; align-items: center; gap: 9px; width: 100%; background: none;
+  border: 0; border-left: 2px solid transparent; color: var(--ink-2);
+  font: 500 13px var(--ui); padding: 8px 13px; cursor: pointer; text-align: left;
+}
+.manrow:hover { background: var(--panel-2); color: var(--ink); }
+.manrow[aria-current="true"] { border-left-color: var(--gold); color: var(--ink); background: var(--panel-2); }
+.manrow .g { width: 14px; text-align: center; color: var(--ink-3); }
+.manrow .n { font: 400 11px var(--mono); color: var(--ink-3); }
+.railvach { height: 1px; background: var(--line); margin: 6px 0; }
+
+/* canvas */
+.cv { padding: 15px 18px; overflow-y: auto; }
+.cv h1 { font: 600 16px/1.3 var(--ui); margin: 0 0 3px; }
+.cv .sub { font: 400 11.5px var(--mono); color: var(--ink-3); margin: 0 0 14px; }
+.cv .khoi { margin: 18px 0 0; }
+.cv .khoi > h4 {
+  font: 500 10px var(--ui); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-3); margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line-2);
+}
+.cv p.tr { color: var(--ink-3); font-size: 12.5px; margin: 0; }
+.cv .veve { color: var(--ink-3); font-size: 12.5px; }
+
+/* bảng sách */
+table.t { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.t th {
+  text-align: left; font: 500 10px var(--ui); letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--ink-3); padding: 0 9px 7px 0; border-bottom: 1px solid var(--line);
+}
+table.t th.p, table.t td.p { text-align: right; }
+table.t td { padding: 7px 9px 7px 0; border-bottom: 1px solid var(--line-2); color: var(--ink-2); }
+table.t tr.h { cursor: pointer; }
+table.t tr.h:hover td { background: var(--panel); }
+table.t .ten { color: var(--ink); font-weight: 500; }
+table.t .m { font: 400 12px var(--mono); color: var(--ink); }
+.st { display: inline-flex; align-items: center; gap: 6px; font: 400 11px var(--mono); }
+.st .d { width: 6px; height: 6px; border-radius: 50%; }
+.st.nghi .d { background: var(--ink-3); }
+.st.xong .d { background: var(--teal); }
+.td2 { display: flex; align-items: center; gap: 7px; }
+.td2 .b { width: 60px; height: 4px; border-radius: 2px; background: var(--panel-2); overflow: hidden; }
+.td2 .b i { display: block; height: 100%; background: var(--teal); }
+.td2 .s { font: 400 11px var(--mono); color: var(--ink-3); }
+.tongd { display: flex; gap: 18px; flex-wrap: wrap; margin: 11px 0 0; font: 400 11.5px var(--mono); color: var(--ink-3); }
+.tongd b { color: var(--ink); font-weight: 500; }
+
+/* vận hành */
+dl.cf { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; font-size: 12.5px; margin: 0; }
+dl.cf dt { color: var(--ink-3); }
+dl.cf dd { margin: 0; font: 400 12px var(--mono); color: var(--ink); }
+.vai { display: grid; gap: 6px; }
+.vaihang { display: grid; grid-template-columns: 78px 1fr 62px; align-items: center; gap: 10px; font-size: 12.5px; }
+.vaihang .vt { color: var(--ink-2); }
+.vaihang .th { height: 6px; border-radius: 3px; background: var(--panel-2); overflow: hidden; }
+.vaihang .th i { display: block; height: 100%; background: var(--gold); }
+.vaihang .gt { text-align: right; font: 400 12px var(--mono); color: var(--ink); }
+.tietkiem {
+  margin: 12px 0 0; padding: 9px 12px; border: 1px solid var(--line);
+  border-radius: var(--r); background: var(--panel); font-size: 12.5px; color: var(--ink-2);
+}
+.tietkiem b { color: var(--teal); font-weight: 500; font-family: var(--mono); }
+
+/* nút về / launcher */
+.ve {
+  display: inline-flex; align-items: center; gap: 7px; background: none; border: 0;
+  color: var(--ink-2); font: 500 12.5px var(--ui); padding: 0; cursor: pointer; margin: 0 0 10px;
+}
+.ve:hover { color: var(--gold); }
+.the2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.the {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 11px 13px; cursor: pointer; text-align: left; color: var(--ink);
+}
+.the:hover { border-color: var(--gold); }
+.the .t { font: 500 12.5px var(--ui); display: block; margin-bottom: 2px; }
+.the .m2 { font-size: 11.5px; color: var(--ink-3); }
+.gear {
+  background: var(--raised); border: 1px solid var(--line); border-radius: 4px;
+  color: var(--ink-2); font: 400 13px var(--ui); padding: 4px 9px; cursor: pointer;
+}
+.gear:hover { border-color: var(--gold); color: var(--gold); }
+
+/* bảng so sánh */
+table.ss { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.ss th {
+  text-align: left; font: 500 10.5px var(--ui); letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--ink-3); padding: 0 12px 9px 0; border-bottom: 1px solid var(--line);
+}
+table.ss td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--line-2); color: var(--ink-2); vertical-align: top; }
+table.ss td.ma2 { font: 600 12px var(--mono); color: var(--ink); }
+table.ss .tot { color: var(--teal); }
+table.ss .xau { color: var(--amber); }
+
+.mucluc { position: sticky; top: 0; z-index: 40; background: color-mix(in oklch, var(--bg) 92%, transparent); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); margin-bottom: 30px; }
+.mucluc ul { max-width: 1180px; margin: 0 auto; padding: 10px 28px; list-style: none; display: flex; gap: 20px; font: 400 12px var(--mono); }
+.mucluc a { color: var(--ink-3); text-decoration: none; }
+.mucluc a:hover { color: var(--gold); }
+
+@media (max-width: 900px) {
+  .wrap { padding: 0 16px; }
+  .mucluc ul { padding: 10px 16px; gap: 13px; overflow-x: auto; }
+  .dauto h1 { font-size: 22px; }
+  .than.corail { grid-template-columns: 1fr; }
+  .rail2 { border-right: 0; border-bottom: 1px solid var(--line); }
+  .the2 { grid-template-columns: 1fr; }
+  table.ss, table.t { display: block; overflow-x: auto; white-space: nowrap; }
+  table.ss td, table.ss th, table.t td, table.t th { white-space: normal; min-width: 108px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="mucluc">
+  <ul>
+    <li><a href="#noidung">ba màn</a></li>
+    <li><a href="#cach">bốn cách chuyển</a></li>
+    <li><a href="#sosanh">so sánh</a></li>
+    <li><a href="#mo">chỗ còn mở</a></li>
+  </ul>
+</nav>
+
+<div class="wrap">
+
+<header class="dauto">
+  <h1>h · ba màn <em>— bốn cách chuyển</em></h1>
+  <p>Ba màn đã chốt theo đúng ba dòng của bạn. Bộ chuyển thì tôi đoán trượt hai lần, nên tờ
+     này <strong>không đoán lần thứ ba</strong>: nó dựng bốn cơ chế khác nhau về bản chất,
+     mỗi cái là một app mini bấm được, cùng chạy trên một bộ nội dung. Chọn bằng mắt.</p>
+  <p class="ngay">số THẬT từ /api/workshop và cost của từng cuốn · 2026-08-02</p>
+</header>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="noidung">
+  <h2><span class="so">BA MÀN</span> Cái gì nằm ở đâu</h2>
+  <table class="ss">
+    <thead><tr><th style="width:16%">Màn</th><th style="width:16%">Phạm vi</th><th>Chứa</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="ma2">▦ Quản lý</td>
+        <td>cả xưởng</td>
+        <td>Danh sách tác phẩm · tổng xưởng · Tác phẩm mới · Cùng dựng</td>
+      </tr>
+      <tr>
+        <td class="ma2">⚙ Vận hành</td>
+        <td>cả xưởng</td>
+        <td>Cấu hình máy (khóa API, model theo vai) · chi phí toàn xưởng · phân bổ theo vai
+            <br><span style="color:var(--ink-3)">+ một dải "theo từng cuốn" cho ba thứ không cộng được — xem mục cuối</span></td>
+      </tr>
+      <tr>
+        <td class="ma2">▤ Studio</td>
+        <td>một tác phẩm</td>
+        <td>Bản thảo · Dòng sản xuất · Kiểm định · Hàng chờ viết lại · Nhập&amp;Xuất<br>
+            Dàn ý · Nhân vật · Luật thế giới · Phục bút · Văn phong</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="cach">
+  <h2><span class="so">BỐN CÁCH</span> Bấm thử từng cái</h2>
+  <p class="dan">Bốn khung dưới đây là bốn app mini <strong>độc lập</strong> — bấm trong khung
+     nào chỉ đổi khung đó. Nội dung ba màn giống hệt nhau ở cả bốn, nên thứ duy nhất bạn đang
+     so sánh là <em>cách đi lại</em>.</p>
+
+  <div class="cc" id="ccA">
+    <div class="cchead">
+      <span class="ma">A</span>
+      <h3>Bộ chọn màn nằm trong thanh trên, cạnh bộ chọn tác phẩm</h3>
+      <span class="tag">luôn thấy · 2 cú bấm</span>
+    </div>
+    <p class="ccmo">Thanh trên đã có một bộ chọn (cuốn nào). Thêm một bộ nữa bên trái nó: màn
+       nào. Hai câu hỏi cùng loại thì cùng một dạng điều khiển, đứng cạnh nhau. Không thêm
+       khung mới, không lấy thêm pixel nào của canvas.</p>
+    <div class="app" data-cc="A"></div>
+  </div>
+
+  <div class="cc" id="ccB">
+    <div class="cchead">
+      <span class="ma">B</span>
+      <h3>Quản lý là NHÀ; hai màn kia là chỗ ghé rồi quay về</h3>
+      <span class="tag">không có bộ chuyển · 1 cú bấm</span>
+    </div>
+    <p class="ccmo">Không có điều khiển chuyển màn nào cả. Quản lý là chỗ mở ra; bấm một cuốn
+       thì vào Studio, bấm bánh răng thì vào Vận hành, và mỗi màn có một đường về. Ít điều
+       khiển nhất — điều hướng nằm trong nội dung chứ không trong khung.</p>
+    <div class="app" data-cc="B"></div>
+  </div>
+
+  <div class="cc" id="ccC">
+    <div class="cchead">
+      <span class="ma">C</span>
+      <h3>Rail trái mang CẢ BA màn ở đỉnh, màn đang mở bung khu của nó ra dưới</h3>
+      <span class="tag">luôn thấy · 1 cú bấm</span>
+    </div>
+    <p class="ccmo">Rail không bị thay, nó được <em>nâng cấp</em>: ba hàng màn ở trên, rồi tới
+       các khu của màn đang mở. Một cột duy nhất giữ cả hai cấp, nên không có khung nào mới
+       và không phải học chỗ nào mới.</p>
+    <div class="app" data-cc="C"></div>
+  </div>
+
+  <div class="cc" id="ccD">
+    <div class="cchead">
+      <span class="ma">D</span>
+      <h3>Bung ra từ tên sản phẩm — một ngăn kéo mang cả ba màn và các cuốn gần đây</h3>
+      <span class="tag">phải mở mới thấy · 2 cú bấm</span>
+    </div>
+    <p class="ccmo">Bấm <span class="kod">ainovel studio</span> ở góc trái để mở một ngăn kéo:
+       ba màn ở trên, các cuốn gần đây ở dưới. Khung sạch nhất — không có điều khiển nào chiếm
+       chỗ thường trực — nhưng phải học rằng cái logo bấm được.</p>
+    <div class="app" data-cc="D"></div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="sosanh">
+  <h2><span class="so">SO</span> Bốn cái đánh đổi cái gì</h2>
+  <table class="ss">
+    <thead>
+      <tr><th style="width:6%"></th><th style="width:18%">Chỗ đặt</th><th style="width:14%">Thấy cả ba?</th><th style="width:16%">Đổi màn</th><th>Trả giá bằng</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="ma2">A</td><td>thanh trên</td><td class="tot">có</td><td>bấm mở, bấm chọn</td>
+        <td>Thanh trên đã có bộ chọn cuốn, huy hiệu nghiệm thu, nút tạo mới, slate và chip kết nối. ĐO ĐƯỢC ở 390px nó chỉ còn <span class="xau">12px dư</span> — thêm một bộ chọn nữa thì phải rút gọn thứ khác.</td>
+      </tr>
+      <tr>
+        <td class="ma2">B</td><td>không có</td><td class="xau">không</td><td>một cú bấm</td>
+        <td>Đi từ Studio sang Vận hành phải qua Quản lý — <span class="xau">hai chặng</span>. Với người mở studio để ngó chi phí rồi quay lại viết, đó là bốn cú bấm mỗi vòng.</td>
+      </tr>
+      <tr>
+        <td class="ma2">C</td><td>đỉnh rail trái</td><td class="tot">có</td><td>một cú bấm</td>
+        <td>Rail cao thêm ~110px. Dưới 860px rail thành dải NGANG cuộn được, và ba hàng màn trong một dải ngang thì lẫn với các khu — <span class="xau">phải thiết kế riêng cho khổ hẹp</span>.</td>
+      </tr>
+      <tr>
+        <td class="ma2">D</td><td>trong logo</td><td class="xau">không</td><td>bấm mở, bấm chọn</td>
+        <td>Không tốn pixel nào, nhưng <span class="xau">một cái logo bấm được là thứ phải học</span> — không có dấu hiệu nào nói nó là cửa. Người dùng đã nói một lần rằng họ không tìm thấy màn khác.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="ghichu"><b>Tôi nghiêng về C</b>, và lý do là một câu bạn đã nói: <em>"các màn khác
+     đâu rồi ta"</em>. Cái làm bạn hỏi câu đó là điều hướng bị GIẤU (ba nhóm rail thu sẵn). A
+     và C đều luôn thấy cả ba; nhưng A phải chen vào một thanh trên đã hết chỗ, còn C dùng
+     đúng cột mà bạn vốn đã nhìn để điều hướng. B và D đều giấu bớt một phần, tức đi ngược
+     chính điều vừa sửa.</p>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="mo">
+  <h2><span class="so">MỞ</span> Một chỗ tôi tự quyết, và hai chỗ chờ bạn</h2>
+
+  <p class="dan"><strong>Ba khu không cộng được, tôi để ở Vận hành dưới một bộ chọn cuốn.</strong>
+     Bạn chốt Vận hành là "cả xưởng" và Studio là 10 khu sáng tác — nhưng
+     <span class="kod">Tổ sản xuất</span> (vai của lượt chạy hiện tại),
+     <span class="kod">Nhật ký phán quyết</span> (phán quyết của một cuốn) và
+     <span class="kod">Cài đặt phiên chạy</span> (<span class="kod">meta/run.json</span> của một
+     cuốn) không có phiên bản "cả xưởng" — cộng chúng lại không ra nghĩa gì. Chúng cũng không
+     thuộc 10 khu sáng tác. Nên tôi đặt chúng thành một dải cuối màn Vận hành, có bộ chọn cuốn
+     riêng và ghi rõ "theo từng cuốn". Nói ra để bạn bác nếu thấy sai chỗ.</p>
+
+  <p class="dan"><strong>Chi phí toàn xưởng cần một route mới ở Go.</strong>
+     <span class="kod">/cost</span> là per-book; không có <span class="kod">/workshop/cost</span>.
+     Cộng ở web nghĩa là N lượt gọi mỗi lần mở màn, và hai người xem cùng lúc sẽ thấy hai con
+     số khác nhau vì bốn lượt gọi không cùng một thời điểm. Đề xuất thêm một route cộng ở
+     server. Con số trong preview này chính là kết quả tôi cộng tay từ bốn lượt gọi thật.</p>
+
+  <p class="dan"><strong>Chờ bạn:</strong> chọn A / B / C / D (hoặc tả cái thứ năm), và cho biết
+     dải "theo từng cuốn" ở trên có đúng chỗ không.</p>
+</section>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   Một bộ dữ liệu, một bộ hàm vẽ nội dung, bốn vỏ khác nhau.
+
+   Cố ý dựng như vậy: nếu mỗi cơ chế có nội dung riêng thì người duyệt sẽ so
+   nhầm — thấy cái này "đẹp hơn" vì nó tình cờ hiện số liệu gọn hơn, chứ không
+   phải vì cách đi lại của nó tốt hơn. Ở đây thứ duy nhất khác nhau là vỏ.
+
+   Số liệu là số THẬT, cộng tay từ bốn lượt /cost lúc 2026-08-02.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const SACH = [
+  { id: 'viet-truyen-dang-trung-sinh', ten: 'Con Rối Trong Hộp Kính', xong: 9, tong: 111, tien: 7.0543, tt: 'nghi' },
+  { id: 'novel',                       ten: 'Dấu Nước Dưới Cầu Đá',  xong: 8, tong: 68,  tien: 7.9063, tt: 'nghi' },
+  { id: 'mac-the-bien-di-vo',          ten: 'Vô Song Dị Chủng',      xong: 4, tong: 113, tien: 4.4785, tt: 'nghi' },
+  { id: 'ben-cu-khong-den',            ten: 'Ba đêm đèn tắt',        xong: 3, tong: 3,   tien: 1.6687, tt: 'xong' },
+];
+const TONG_TIEN = 21.1079;
+const TIET_KIEM = 19.6531;
+const THEO_VAI = [
+  ['writer', 16.9353], ['architect', 3.2972], ['editor', 0.7945], ['arbiter', 0.0809],
+];
+
+const KHU_STUDIO = [
+  { ten: 'Truyện của bạn', muc: [
+    ['✎','Bản thảo','9'], ['▤','Dòng sản xuất',''], ['◆','Kiểm định','10'],
+    ['■','Hàng chờ viết lại','0'], ['⇄','Nhập & Xuất',''] ]},
+  { ten: 'Thế giới truyện', muc: [
+    ['☰','Dàn ý phân tầng','2'], ['●','Nhân vật','8'], ['⬢','Luật thế giới','12'],
+    ['◇','Phục bút','13!'], ['✒','Văn phong',''] ]},
+];
+
+const MAN = [
+  ['quanly', '▦', 'Quản lý', 'tác phẩm và xưởng'],
+  ['vanhanh', '⚙', 'Vận hành', 'cấu hình và chi phí'],
+  ['studio', '▤', 'Studio', 'sản xuất một cuốn'],
+];
+
+const tien = (n) => '$' + n.toFixed(2).replace('.', ',');
+const el = (t, lop, chu) => {
+  const e = document.createElement(t);
+  if (lop) e.className = lop;
+  if (chu !== undefined) e.textContent = chu;
+  return e;
+};
+
+/* ── nội dung ba màn ─────────────────────────────────────────────────────── */
+
+function veQuanLy(cv, st, coVe) {
+  if (coVe) cv.append(nutVe(st, 'quanly'));
+  cv.append(el('h1', null, 'Quản lý'));
+  cv.append(el('p', 'sub', '/tmp/e2e-that/output · 4 tác phẩm'));
+
+  const tb = el('table', 't');
+  const th = el('thead'); const tr = el('tr');
+  for (const [t, l] of [['Tác phẩm',''],['Trạng thái',''],['Tiến độ',''],['Chi phí','p']]) tr.append(el('th', l, t));
+  th.append(tr); tb.append(th);
+  const bd = el('tbody');
+  for (const s of SACH) {
+    const r = el('tr', 'h');
+    r.addEventListener('click', () => { st.tp = s; datMan(st, 'studio'); });
+    const c1 = el('td'); c1.append(el('span', 'ten', s.ten)); r.append(c1);
+    const c2 = el('td'); const sp = el('span', 'st ' + s.tt);
+    sp.append(el('span','d')); sp.append(document.createTextNode(s.tt === 'xong' ? 'đã xong' : 'đang nghỉ'));
+    c2.append(sp); r.append(c2);
+    const c3 = el('td'); const d = el('div','td2'); const b = el('div','b'); const i = el('i');
+    i.style.width = Math.round(s.xong / s.tong * 100) + '%'; b.append(i); d.append(b);
+    d.append(el('span','s', s.xong + '/' + s.tong)); c3.append(d); r.append(c3);
+    const c4 = el('td','p'); c4.append(el('span','m', tien(s.tien))); r.append(c4);
+    bd.append(r);
+  }
+  tb.append(bd); cv.append(tb);
+
+  const tg = el('div','tongd');
+  for (const [n, v] of [['chương đã chốt','24/295'],['số từ','75.963'],['tổng chi phí', tien(TONG_TIEN)]]) {
+    const s = el('span'); s.append(document.createTextNode(n + ' ')); s.append(el('b', null, v)); tg.append(s);
+  }
+  cv.append(tg);
+
+  const k = el('div','khoi'); k.append(el('h4', null, 'Bắt đầu một cuốn mới'));
+  const t2 = el('div','the2');
+  for (const [a, b] of [['+ Tác phẩm mới','Khai tiền đề, số chương, model.'],
+                        ['⁂ Cùng dựng','Bàn với máy để ra tiền đề trước.']]) {
+    const btn = el('button','the'); btn.type='button';
+    btn.append(el('span','t', a)); btn.append(el('span','m2', b)); t2.append(btn);
+  }
+  k.append(t2); cv.append(k);
+}
+
+function veVanHanh(cv, st, coVe) {
+  if (coVe) cv.append(nutVe(st, 'quanly'));
+  cv.append(el('h1', null, 'Vận hành'));
+  cv.append(el('p', 'sub', 'cả xưởng · 4 tác phẩm'));
+
+  const k1 = el('div','khoi'); k1.append(el('h4', null, 'Cấu hình máy — áp cho mọi tác phẩm'));
+  const dl = el('dl','cf');
+  for (const [a,b] of [['Nhà cung cấp','cx'],['Khóa API','sk-42••••••••802'],
+                       ['Model mặc định','openai/gpt-5.5'],['Architect · Writer · Editor','openai/gpt-5.5']]) {
+    dl.append(el('dt',null,a)); dl.append(el('dd',null,b));
+  }
+  k1.append(dl); cv.append(k1);
+
+  const k2 = el('div','khoi'); k2.append(el('h4', null, 'Chi phí toàn xưởng · ' + tien(TONG_TIEN)));
+  const v = el('div','vai');
+  for (const [ten, gt] of THEO_VAI) {
+    const h = el('div','vaihang');
+    h.append(el('span','vt', ten));
+    const th2 = el('div','th'); const i = el('i');
+    i.style.width = (gt / THEO_VAI[0][1] * 100) + '%'; th2.append(i); h.append(th2);
+    h.append(el('span','gt', tien(gt)));
+    v.append(h);
+  }
+  k2.append(v);
+  const tk = el('div','tietkiem');
+  tk.append(document.createTextNode('Bộ nhớ đệm prompt đã tiết kiệm '));
+  tk.append(el('b', null, tien(TIET_KIEM)));
+  tk.append(document.createTextNode(' — gần bằng đúng số đã tiêu.'));
+  k2.append(tk);
+  cv.append(k2);
+
+  /* Dải "theo từng cuốn" — ba khu không cộng được. Xem mục MỞ. */
+  const k3 = el('div','khoi'); k3.append(el('h4', null, 'Theo từng cuốn — không cộng được'));
+  const pk = el('button','pick'); pk.type='button';
+  pk.append(el('span','g','▦')); pk.append(document.createTextNode(st.tp.ten)); pk.append(el('span','chev','▾'));
+  k3.append(pk);
+  const ds = el('p','veve');
+  ds.textContent = 'Tổ sản xuất · Nhật ký phán quyết · Cài đặt phiên chạy';
+  ds.style.marginTop = '10px';
+  k3.append(ds);
+  cv.append(k3);
+}
+
+function veStudio(cv, st, coVe) {
+  if (coVe) cv.append(nutVe(st, 'quanly'));
+  cv.append(el('h1', null, st.khu));
+  cv.append(el('p', 'sub', `${st.tp.ten} · ${st.tp.xong}/${st.tp.tong} chương`));
+  const k = el('div','khoi');
+  k.append(el('h4', null, 'Bề mặt của khu này'));
+  k.append(el('p','tr','Nội dung giữ nguyên như hôm nay — tờ này chỉ bàn về ĐIỀU HƯỚNG.'));
+  cv.append(k);
+}
+
+function nutVe(st, ve) {
+  const b = el('button','ve','← Quản lý');
+  b.type = 'button';
+  b.addEventListener('click', () => datMan(st, ve));
+  return b;
+}
+
+function railStudio(st) {
+  const r = el('nav','rail2');
+  for (const nh of KHU_STUDIO) {
+    r.append(el('div','nhomr', nh.ten));
+    for (const [g, ten, dem] of nh.muc) r.append(mucNut(st, g, ten, dem));
+  }
+  return r;
+}
+
+function mucNut(st, g, ten, dem) {
+  const b = el('button','muc'); b.type='button';
+  if (ten === st.khu) b.setAttribute('aria-current','page');
+  b.append(el('span','g',g)); b.append(el('span','nh',ten));
+  if (dem) {
+    const w = dem.endsWith('!');
+    b.append(el('span', w ? 'n warn' : 'n', w ? dem.slice(0,-1) : dem));
+  }
+  b.addEventListener('click', () => { st.khu = ten; ve(st); });
+  return b;
+}
+
+/* ── bốn vỏ ──────────────────────────────────────────────────────────────── */
+
+function ve(st) {
+  const g = st.goc;
+  g.replaceChildren();
+
+  const bar = el('div','bar');
+  const logo = el('button', st.cc === 'D' ? 'logo bam' : 'logo');
+  logo.type = 'button';
+  logo.append(document.createTextNode('ainovel '));
+  logo.append(el('em', null, 'studio'));
+  if (st.cc === 'D') {
+    logo.addEventListener('click', (e) => { e.stopPropagation(); st.moMenu = !st.moMenu; ve(st); });
+  }
+
+  if (st.cc === 'D') {
+    const w = el('div','mwrap'); w.append(logo);
+    if (st.moMenu) w.append(menuD(st));
+    bar.append(w);
+  } else {
+    bar.append(logo);
+  }
+
+  /* A — bộ chọn màn cạnh bộ chọn cuốn */
+  if (st.cc === 'A') {
+    const m = MAN.find((x) => x[0] === st.man);
+    const w = el('div','mwrap');
+    const p = el('button','pick'); p.type='button';
+    p.append(el('span','g', m[1]));
+    p.append(document.createTextNode(m[2]));
+    p.append(el('span','chev','▾'));
+    p.addEventListener('click', (e) => { e.stopPropagation(); st.moMenu = !st.moMenu; ve(st); });
+    w.append(p);
+    if (st.moMenu) w.append(menuMan(st));
+    bar.append(w);
+  }
+
+  /* bộ chọn CUỐN — chỉ có nghĩa ở Studio */
+  if (st.man === 'studio') {
+    const p = el('button','pick'); p.type='button';
+    p.append(document.createTextNode(st.tp.ten));
+    p.append(el('span','ma', st.tp.xong + '/' + st.tp.tong));
+    p.append(el('span','chev','▾'));
+    p.addEventListener('click', () => {
+      const i = SACH.indexOf(st.tp);
+      st.tp = SACH[(i + 1) % SACH.length];
+      ve(st);
+    });
+    bar.append(p);
+  }
+
+  bar.append(el('span','day'));
+
+  /* B — bánh răng đi Vận hành */
+  if (st.cc === 'B' && st.man !== 'vanhanh') {
+    const gr = el('button','gear','⚙');
+    gr.type = 'button';
+    gr.title = 'Vận hành';
+    gr.addEventListener('click', () => datMan(st, 'vanhanh'));
+    bar.append(gr);
+  }
+
+  const ch = el('span','chip'); ch.append(el('span','d')); ch.append(document.createTextNode('đã nối'));
+  bar.append(ch);
+  g.append(bar);
+
+  /* thân */
+  const than = el('div','than');
+  const coRail = st.cc === 'C' || st.man === 'studio';
+  if (coRail) than.classList.add('corail');
+
+  if (st.cc === 'C') {
+    const r = el('nav','rail2');
+    for (const [ma, ky, ten] of MAN) {
+      const b = el('button','manrow'); b.type='button';
+      if (ma === st.man) b.setAttribute('aria-current','true');
+      b.append(el('span','g',ky)); b.append(el('span','nh',ten));
+      if (ma === 'quanly') b.append(el('span','n','4'));
+      b.addEventListener('click', () => datMan(st, ma));
+      r.append(b);
+    }
+    r.append(el('div','railvach'));
+    if (st.man === 'studio') {
+      for (const nh of KHU_STUDIO) {
+        r.append(el('div','nhomr', nh.ten));
+        for (const [gg, ten, dem] of nh.muc) r.append(mucNut(st, gg, ten, dem));
+      }
+    } else {
+      const p = el('div','nhomr', st.man === 'quanly' ? 'Xưởng' : 'Cả xưởng');
+      r.append(p);
+    }
+    than.append(r);
+  } else if (st.man === 'studio') {
+    than.append(railStudio(st));
+  }
+
+  const cv = el('main','cv');
+  const coVe = st.cc === 'B' && st.man !== 'quanly';
+  if (st.man === 'quanly') veQuanLy(cv, st, false);
+  else if (st.man === 'vanhanh') veVanHanh(cv, st, coVe);
+  else veStudio(cv, st, coVe);
+  than.append(cv);
+  g.append(than);
+}
+
+function menuMan(st) {
+  const m = el('div','menu');
+  for (const [ma, ky, ten, mo] of MAN) {
+    const b = el('button'); b.type='button';
+    if (ma === st.man) b.setAttribute('aria-current','true');
+    b.append(el('span','g',ky));
+    const w = el('span');
+    w.append(document.createTextNode(ten));
+    w.append(el('span','mo', mo));
+    b.append(w);
+    b.addEventListener('click', () => { st.moMenu = false; datMan(st, ma); });
+    m.append(b);
+  }
+  return m;
+}
+
+function menuD(st) {
+  const m = menuMan(st);
+  m.append(el('div','vach'));
+  m.append(el('div','nhanm','Cuốn gần đây'));
+  for (const s of SACH.slice(0, 3)) {
+    const b = el('button'); b.type='button';
+    b.append(el('span','g','·'));
+    const w = el('span');
+    w.append(document.createTextNode(s.ten));
+    w.append(el('span','mo', s.xong + '/' + s.tong + ' chương'));
+    b.append(w);
+    b.addEventListener('click', () => { st.moMenu = false; st.tp = s; datMan(st, 'studio'); });
+    m.append(b);
+  }
+  return m;
+}
+
+function datMan(st, man) {
+  st.man = man;
+  st.moMenu = false;
+  ve(st);
+}
+
+/* khởi tạo bốn app mini */
+const CAC = [];
+for (const cc of ['A','B','C','D']) {
+  const goc = document.querySelector(`[data-cc="${cc}"]`);
+  const st = { cc, goc, man: 'quanly', khu: 'Dòng sản xuất', tp: SACH[0], moMenu: false };
+  CAC.push(st);
+  ve(st);
+}
+/* bấm ra ngoài thì đóng mọi menu — không có nó thì hai menu mở cùng lúc và
+   người duyệt tưởng đó là hành vi của thiết kế. */
+document.addEventListener('click', () => {
+  let doi = false;
+  for (const st of CAC) if (st.moMenu) { st.moMenu = false; doi = true; ve(st); }
+  return doi;
+});
+</script>
+</body>
+</html>

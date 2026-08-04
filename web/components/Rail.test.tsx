@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 
 import type { Khu } from '@/lib/khu';
+import { manCuaKhu } from '@/lib/man';
 import { CHU } from '@/lib/nhan';
 
 import { Rail } from './Rail';
@@ -28,16 +29,21 @@ Element.prototype.scrollIntoView = function () {
 
 function ve(khu: Khu = 'dong-san-xuat', dauChot = 0) {
   const chon = vi.fn();
+  const doiMan = vi.fn();
   const r = render(
     <Rail
       snapshot={snap({})}
       hoSo={undefined}
       khu={khu}
+      man={manCuaKhu(khu)}
       onChonKhu={chon}
+      onChonMan={doiMan}
+      canBan={false}
+      tenCuonNgan="Trấn Yêu Ký"
       dauChot={dauChot}
     />,
   );
-  return { ...r, chon };
+  return { ...r, chon, doiMan };
 }
 
 /* ── họ 10 · đồng thanh ──────────────────────────────────────────────────
@@ -82,24 +88,56 @@ test('đồng thanh THẮNG nhấp-số-đổi: một phần tử không mang ha
   expect(chip?.className).not.toContain('vuaDoi');
 });
 
-test('rail có mục Xưởng, và bấm vào nó đi tới khu `xuong`', () => {
-  const { chon } = ve();
-  fireEvent.click(screen.getByRole('button', { name: new RegExp(CHU.xuong) }));
-  expect(chon).toHaveBeenCalledWith('xuong');
+/* ── bộ chuyển màn ───────────────────────────────────────────────────────
+ *
+ * Ba bài dưới đây thay cho hai bài cũ về "nhóm chung". Nhóm đó không còn: bốn khu mức máy
+ * của nó đã lên thành hai MÀN riêng, nên đường vào chúng cũng đổi chỗ. Điều đáng canh thì
+ * không đổi — vẫn là "có đường tới đó không, và người dùng có thấy đường ấy không".
+ */
+
+test('cả BA màn luôn hiện, kể cả khi đang đứng trong xưởng sản xuất', () => {
+  // Đây là bài quan trọng nhất của tệp. Câu người dùng đã hỏi nguyên văn là "các màn khác
+  // đâu rồi ta", và nguyên nhân là điều hướng cấp một bị giấu sau một cú bấm mở nhóm. Ba
+  // hàng màn KHÔNG được nằm sau bất cứ lớp thu gọn nào.
+  ve('dong-san-xuat');
+  for (const ten of [CHU.manQuanLy, CHU.manCaiDatChung, CHU.manXuongSanXuat]) {
+    expect(screen.getByRole('button', { name: new RegExp(ten) })).toBeTruthy();
+  }
 });
 
-test('Xưởng đứng ĐẦU nhóm chung, trên Tác phẩm mới — thứ tự đó là thứ tự câu hỏi', () => {
-  // "Tôi đang có gì" đi trước "thêm một cái nữa". Bài này canh thứ tự chứ không chỉ canh sự
-  // có mặt: một mục Xưởng nằm cuối nhóm vẫn thỏa bài trên, trong khi người vào nhóm để đếm
-  // lại xưởng phải quét qua ba mục khác trước.
-  const { container } = ve();
-  const nhom = container.querySelector('#nhom-chung');
-  expect(nhom).not.toBeNull();
+test('bấm một màn thì đi tới khu ĐẦU của màn đó, không phải một khu tuỳ ý', () => {
+  const { doiMan } = ve('dong-san-xuat');
+  fireEvent.click(screen.getByRole('button', { name: new RegExp(CHU.manQuanLy) }));
+  expect(doiMan).toHaveBeenCalledWith('quan-ly');
+});
 
-  const nhan = [...nhom!.querySelectorAll('.mucdi .nhan')].map((e) => e.textContent);
-  expect(nhan[0]).toBe(CHU.xuong);
-  expect(nhan).toContain(CHU.taoTacPham);
-  expect(nhan.indexOf(CHU.xuong)).toBeLessThan(nhan.indexOf(CHU.taoTacPham));
+test('rail chỉ vẽ khu của MÀN đang mở — không trộn hai cấp vào một cột', () => {
+  // Cả điểm của tầng màn: đứng trong xưởng sản xuất thì không thấy khu của màn Quản lý, và
+  // ngược lại. Trộn lại là quay về đúng cái rail mười tám mục đã bị gọi là "quá ngợp".
+  const sx = ve('dong-san-xuat');
+  const nhanSX = [...sx.container.querySelectorAll('.mucdi .nhan')].map((e) => e.textContent);
+  expect(nhanSX).toContain(CHU.banThao);
+  expect(nhanSX).not.toContain(CHU.xuong);
+  expect(nhanSX).not.toContain(CHU.cauHinh);
+  sx.unmount();
+
+  const ql = ve('xuong');
+  const nhanQL = [...ql.container.querySelectorAll('.mucdi .nhan')].map((e) => e.textContent);
+  expect(nhanQL).toContain(CHU.xuong);
+  expect(nhanQL).toContain(CHU.taoTacPham);
+  expect(nhanQL).not.toContain(CHU.banThao);
+  // Xưởng đứng ĐẦU, trên Tác phẩm mới: thứ tự này là thứ tự câu hỏi — "tôi đang có gì" đi
+  // trước "thêm một cái nữa".
+  expect(nhanQL.indexOf(CHU.xuong)).toBeLessThan(nhanQL.indexOf(CHU.taoTacPham));
+});
+
+test('mục Xưởng của màn Quản lý đi tới khu `xuong`', () => {
+  const { chon, container } = ve('xuong');
+  const muc = [...container.querySelectorAll('.mucdi')].find(
+    (e) => e.querySelector('.nhan')?.textContent === CHU.xuong,
+  );
+  fireEvent.click(muc!);
+  expect(chon).toHaveBeenCalledWith('xuong');
 });
 
 test('đang ở khu Xưởng thì mục đó sáng lên — người dùng biết mình đang đứng đâu', () => {

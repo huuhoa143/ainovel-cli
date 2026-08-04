@@ -29,6 +29,7 @@ import type {
   StreamEvent,
   StyleDoc,
   TinhTrangNguon,
+  TongXuongDoc,
   TrangThaiSong,
   VaiModelDoc,
   Workshop,
@@ -597,12 +598,31 @@ export interface SuaCauHinh {
     models?: { name: string; context_window?: number }[];
   };
   remove_provider?: string;
+  /**
+   * Model mặc định theo vai, áp cho MỌI lượt chạy sau.
+   *
+   * Gửi map là THAY CẢ MAP, không trộn từng khóa: một vai vắng mặt nghĩa là "thừa hưởng
+   * mặc định", nên trộn thì thêm được mà không bao giờ gỡ được. Map rỗng = gỡ hết ghi đè.
+   * Vắng trường này = không nói gì về vai. Xem `thanCauHinh.Roles` phía Go.
+   */
+  roles?: Record<string, { provider: string; model: string }>;
 }
 
 export function luuCauHinh(
   sua: SuaCauHinh,
 ): Promise<{ saved: boolean; path: string; reopen_to_apply: string[] }> {
   return ghi('/api/config', 'PUT', sua);
+}
+
+/**
+ * Tổng của cả xưởng — GET /api/workshop/cost.
+ *
+ * KHÔNG có nhánh mock: `web/fixtures/` không tồn tại trong cây này (`npm run dev:mock` đã
+ * hỏng từ trước bản này vì đúng lý do đó), nên một nhánh mock ở đây là mã chết trông như
+ * mã sống. Ai dựng lại bộ fixture thì thêm nhánh cùng lúc.
+ */
+export function layTongXuong(): Promise<TongXuongDoc> {
+  return doc<TongXuongDoc>('/api/workshop/cost');
 }
 
 /* ── model theo vai ────────────────────────────────────────────────────── */

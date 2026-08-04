@@ -10,13 +10,29 @@
  * một bề mặt chưa có là một lời hứa hụt, và một bề mặt trống trơn còn tệ hơn —
  * đó là nói dối.
  *
- * Ba khu cuối (Văn phong, Chi phí, Cài đặt) có bề mặt ở tầng web nhưng phụ thuộc
+ * Ba khu (Văn phong, Chi phí, Phiên chạy) có bề mặt ở tầng web nhưng phụ thuộc
  * ba endpoint chỉ có ở bản engine đã dựng chúng. Nằm trong `Khu` là điều kiện
  * CẦN, không phải điều kiện đủ: rail còn hỏi thăm endpoint (`Profile.vanPhong`
  * và hai anh em của nó) rồi mới quyết định vẽ nút hay vẽ nhãn "chưa dựng". Hai
  * lớp này khác nhau — cái trên nói "web đã dựng bề mặt", cái dưới nói "engine
  * đang chạy có nguồn cho nó".
+ *
+ * # Hai lần đổi tên mã khu ở bản ba màn, và vì sao chúng đáng giá
+ *
+ * `cai-dat` → `phien-chay`. Mã khu đi vào thanh địa chỉ, nên nó là chữ NGƯỜI DÙNG ĐỌC —
+ * đó là cả lý do nó ở dạng slug tiếng Việt. Bề mặt ấy là BẢN GHI của một cuốn ("cuốn này
+ * đã khởi động với cấu hình gì", chỉ đọc, từ `meta/run.json`), trong khi thứ người ta đi
+ * tìm khi gõ "cài đặt" là cấu hình máy sửa được. Bằng chứng là chính bề mặt đó đã phải in
+ * ra một câu chỉ đường sang chỗ khác: "Muốn đổi mặc định cho mọi lượt sau thì sửa ở Cấu
+ * hình máy". Một bề mặt phải chỉ đường khỏi chính nó là một bề mặt mang sai tên.
+ *
+ * Thêm `kenh-vai-chung` và `chi-phi-xuong`. Hai khu MỚI, không phải đổi tên: model theo
+ * vai trước đây chỉ sửa được qua một engine ĐANG MỞ (bề mặt KenhVai nằm trong Phiên chạy),
+ * nên "mặc định cho mọi tác phẩm" không có chỗ nào đặt được; còn chi phí toàn xưởng trước
+ * đây không có nguồn (`/cost` là per-book) — giờ có `GET /api/workshop/cost`.
  */
+
+import { manCuaKhu } from './man';
 
 export type Khu =
   | 'xuong'
@@ -31,8 +47,10 @@ export type Khu =
   | 'van-phong'
   | 'to-san-xuat'
   | 'chi-phi'
-  | 'cai-dat'
+  | 'phien-chay'
   | 'cau-hinh'
+  | 'kenh-vai-chung'
+  | 'chi-phi-xuong'
   | 'tac-pham-moi'
   | 'cung-dung'
   | 'nhap-xuat';
@@ -50,13 +68,23 @@ export const KHU: readonly Khu[] = [
   'van-phong',
   'to-san-xuat',
   'chi-phi',
-  'cai-dat',
+  'phien-chay',
   'cau-hinh',
+  'kenh-vai-chung',
+  'chi-phi-xuong',
   'tac-pham-moi',
   'cung-dung',
   'nhap-xuat',
 ] as const;
 
+/**
+ * Khu mặc định TRONG màn xưởng sản xuất.
+ *
+ * Không còn là khu mở đầu của cả ứng dụng — màn mở đầu là Quản lý, xem `manDap` trong
+ * man.ts. Nó vẫn giữ đúng vai cũ ở một chỗ quan trọng: khu rơi về khi `?khu=` vắng hoặc
+ * không đọc được, nên một khu mới thêm mà quên viết `case` trong `page.tsx` rơi vào buồng
+ * lái chứ không rơi vào màn hình trắng.
+ */
 export const KHU_MAC_DINH: Khu = 'dong-san-xuat';
 
 export function laKhu(v: string | null | undefined): v is Khu {
@@ -64,35 +92,23 @@ export function laKhu(v: string | null | undefined): v is Khu {
 }
 
 /**
- * `cau-hinh` và `xuong` là khu mức MÁY, không mức tác phẩm.
+ * Khu mức MÁY: bề mặt của nó không đọc `tacPham`, và nội dung không đổi khi người dùng
+ * chuyển tác phẩm.
  *
- * Nó nằm trong `Khu` để dùng chung một mô hình điều hướng (rail + `?khu=`), nhưng bề mặt
- * của nó không đọc `tacPham` và nội dung không đổi khi người dùng chuyển tác phẩm. Rail
- * đặt nó trong nhóm riêng tên "Chung cho mọi tác phẩm" để sự khác cấp đó nhìn thấy được —
- * nếu nó nằm lẫn trong nhóm "Chi phí & vận hành" thì người vận hành sẽ đọc nó là cấu hình
- * của cuốn đang mở, đúng kiểu nhầm mà bề mặt Cài đặt đã phải tách ra để tránh.
+ * # Hàm này giờ CHỈ là một lối gọi tắt — bảng thật nằm ở lib/man.ts
  *
- * Tên nhóm dài ra chính vì việc đó: một chữ "Máy" (tên cũ) không ngăn được cái nhầm đó,
- * nó chỉ đặt tên cho một bộ phận của hệ thống.
+ * Trước bản ba màn, đây là chỗ duy nhất khai ranh giới cấp-máy/cấp-tác-phẩm, và ranh giới
+ * ấy chỉ được THỂ HIỆN ra bằng một cái tên nhóm trong rail. Cái tên thua: đứng ở Cấu hình
+ * máy thì thanh trên, rail và transport đều vẫn nói về một cuốn (xem chú thích đầu man.ts
+ * cho phép đo).
  *
- * `xuong` vào đây vì cùng lý do, chỉ theo chiều ngược: bảng của nó liệt kê MỌI cuốn, nên nội
- * dung không đổi khi người dùng chuyển tác phẩm. Đọc nó thành "xưởng của cuốn đang mở" là
- * đúng cái nhầm mà nhóm này tồn tại để chặn.
- *
- * # Hàm này hôm nay KHÔNG có người gọi
- *
- * Đã đo (`grep laKhuMucMay lib components app`): chỉ còn một lời viện dẫn trong chú thích ở
- * `nhan.ts:618`. Nó vẫn là hợp đồng được khai và được canh bằng bài kiểm — giữ nguyên theo
- * đúng cách cụm D đã xử `DangLam`: "không tới được" là tính chất của người gọi hôm nay, không
- * phải của thứ được gọi. Ai bỏ nó thì bỏ cả nhóm rail đang bám vào cùng ranh giới đó.
+ * Giờ ranh giới là một tầng thật (`Man`), nên hàm này phải HỎI bảng đó chứ không giữ bản
+ * sao thứ hai. Hai bảng cùng mô tả một phép chia thì có ngày lệch — thêm một khu vào
+ * `MAN_CUA_KHU` mà quên cập nhật danh sách ở đây là một lỗi im lặng, và nó sẽ hiện ra dưới
+ * dạng một bề mặt toàn cục mọc thêm một bộ chọn tác phẩm.
  */
 export function laKhuMucMay(khu: Khu): boolean {
-  return (
-    khu === 'xuong' ||
-    khu === 'cau-hinh' ||
-    khu === 'tac-pham-moi' ||
-    khu === 'cung-dung'
-  );
+  return manCuaKhu(khu) !== 'xuong-san-xuat';
 }
 
 /**

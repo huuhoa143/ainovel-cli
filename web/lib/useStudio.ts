@@ -23,6 +23,7 @@ import {
 } from './api';
 import { nhanSuKienUi } from './dongSuKien';
 import { KHU_MAC_DINH, laKhu, type Khu } from './khu';
+import { KHU_DAU_MAN, manCuaKhu, type Man } from './man';
 import type { Profile, Snapshot, StreamEvent, Workshop } from './types';
 import { BO_DEM_RONG, moLuot, nhanVach, themChu, type BoDemVan } from './vanSong';
 import { cachMoTacPham, khuDap } from './xuong';
@@ -104,6 +105,14 @@ export interface Studio {
   hoSo: Profile | undefined;
   chuongChon: number | undefined;
   khu: Khu;
+  /**
+   * Màn đang mở — SUY từ `khu`, không phải một state thứ hai.
+   *
+   * Hai state cho một vị trí thì có ngày lệch, và lúc lệch thì rail sáng một màn còn canvas
+   * vẽ màn khác. `khu` là thứ duy nhất nằm trên URL, nên nó là bản gốc; màn là một phép đọc
+   * của nó.
+   */
+  man: Man;
   song: CongDoanSong | undefined;
   suKien: StreamEvent[];
   /** Chữ model đang sinh ra. Đường riêng, không đi qua `suKien` — xem lib/dongSuKien.ts. */
@@ -114,6 +123,13 @@ export interface Studio {
   chonTacPham: (id: string) => void;
   chonChuong: (n: number) => void;
   chonKhu: (k: Khu) => void;
+  /**
+   * Đổi màn — tức đi tới khu ĐẦU của màn đó.
+   *
+   * Không phải một hành động riêng ở tầng dưới: đổi màn là đổi khu, và cho nó một đường ghi
+   * state riêng sẽ dựng đúng cái state thứ hai mà `man` tồn tại để tránh.
+   */
+  chonMan: (m: Man) => void;
   /** Mở tác phẩm vừa tạo: đổi tác phẩm + về bề mặt mặc định, một lần ghi URL. */
   moTacPhamVuaTao: (id: string) => void;
   /**
@@ -246,8 +262,11 @@ export function useStudio(): Studio {
          * Chỉ chạy theo `lanTai`, tức lúc mở trang và lúc người dùng bấm tải lại. Đặt nó vào
          * một effect chạy theo `workshop` thì mỗi lần làm mới danh sách sẽ ném người dùng về
          * Xưởng ngay giữa lúc họ đang xem bề mặt khác.
+         *
+         * `soSach` không còn được truyền: từ bản ba màn, luật đáp không phụ thuộc số cuốn —
+         * xem điều khoản đã đổi ở `khuDap`.
          */
-        setKhu(khuDap({ tpTuUrl: muon, khuTuUrl: khuTuUrl(), soSach: ws.books.length }));
+        setKhu(khuDap({ tpTuUrl: muon, khuTuUrl: khuTuUrl() }));
         if (!chon) {
           setDangTai(false);
           // Không có tác phẩm thì không có dòng sự kiện nào được mở.
@@ -480,6 +499,13 @@ export function useStudio(): Studio {
     if (id) ghiUrl(id, chuongRef.current, k);
   }, []);
 
+  const chonMan = useCallback(
+    (m: Man) => {
+      chonKhu(KHU_DAU_MAN[m]);
+    },
+    [chonKhu],
+  );
+
   /**
    * Mở một tác phẩm VỪA TẠO: đổi tác phẩm và đổi khu trong MỘT hành động.
    *
@@ -581,6 +607,7 @@ export function useStudio(): Studio {
       hoSo,
       chuongChon: chuongChon ?? snapshot?.selected?.chapter,
       khu,
+      man: manCuaKhu(khu),
       song,
       suKien,
       vanSong,
@@ -590,6 +617,7 @@ export function useStudio(): Studio {
       chonTacPham,
       chonChuong,
       chonKhu,
+      chonMan,
       moTacPhamVuaTao,
       moTacPhamTai,
       docChuong,
@@ -611,6 +639,7 @@ export function useStudio(): Studio {
       chonTacPham,
       chonChuong,
       chonKhu,
+      chonMan,
       moTacPhamVuaTao,
       moTacPhamTai,
       docChuong,

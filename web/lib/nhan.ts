@@ -19,6 +19,7 @@
  */
 
 import type { MucXem } from './phamVi';
+import type { TinhTrangKetNoi } from './useStudio';
 import type {
   Activity,
   BlockState,
@@ -134,6 +135,64 @@ export const TRANG_THAI_MAY: Record<Activity, NhanTrangThai> = {
  * ở `.dkNut.dkDung` trong globals.css — đỏ trong hệ này nghĩa là LỖI, mà dừng có chủ ý
  * không phải lỗi.
  */
+/**
+ * Bảng chip KẾT NỐI — bốn ca, mỗi ca đủ ba chuỗi.
+ *
+ * # Vì sao là một bảng chứ không tám khoá rời
+ *
+ * Chip cần ba chuỗi cho mỗi ca (nhãn rộng · nhãn hẹp · chú giải). Khai rời thì thêm một ca
+ * mới mà quên một chuỗi là một lỗi im lặng; `Record<TinhTrangKetNoi, …>` bắt TypeScript đỏ
+ * ngay. Chép mẫu của `TRANG_THAI_MAY` ở trên, cùng lý do.
+ *
+ * # Vì sao nhãn là "trực tiếp", không phải "đã nối"
+ *
+ * Người dùng hỏi thẳng: *"đã nối là gì ấy nhỉ"*. "Đã nối" nói một sự thật KỸ THUẬT — có một
+ * socket đang mở — mà người vận hành không dùng được vào việc gì. Điều họ cần biết là hệ quả
+ * của nó: **những con số trên màn có tự cập nhật không, hay là ảnh chụp lúc tải trang.**
+ *
+ * "trực tiếp" là chữ của chính sản phẩm — buồng lái đã ghi "Dòng sự kiện · trực tiếp từ
+ * engine" từ trước. Dùng lại nó thì chip và buồng lái nói cùng một thứ tiếng thay vì hai.
+ *
+ * Ca `mat` là ca đáng giá nhất và cũng là ca dễ nói nhẹ nhất: dòng đứt nghĩa là mọi con số
+ * đang hiện ĐÃ DỪNG cập nhật và có thể đã cũ. Chú giải nói thẳng điều đó, vì một người tin
+ * vào một con số cũ sẽ ra quyết định sai — đúng loại lỗi mà cả hợp đồng `/studio` giữ.
+ *
+ * Cả bốn chú giải đều nhắc: chip này KHÔNG nói engine đang chạy hay đang nghỉ. Hai câu đó
+ * hay bị gộp, và câu kia nằm ở transport.
+ */
+export const TRANG_THAI_KET_NOI: Record<
+  TinhTrangKetNoi,
+  { nhan: string; nhanNgan: string; giaiThich: string }
+> = {
+  song: {
+    nhan: 'engine · trực tiếp',
+    nhanNgan: 'trực tiếp',
+    giaiThich:
+      'Dòng sự kiện từ engine đang thông: các con số trên màn tự cập nhật khi engine chạy. ' +
+      'Nó KHÔNG nói engine đang chạy hay đang nghỉ — câu đó ở thanh dưới cùng.',
+  },
+  'dang-mo': {
+    nhan: 'engine · đang nối',
+    nhanNgan: 'đang nối',
+    giaiThich:
+      'Đang mở dòng sự kiện tới engine. Cho tới khi nối xong, số trên màn là số của lúc tải trang.',
+  },
+  mat: {
+    nhan: 'engine · mất dòng',
+    nhanNgan: 'mất dòng',
+    giaiThich:
+      'Dòng sự kiện đã đứt: số trên màn ĐÃ DỪNG cập nhật và có thể đã cũ. Studio tự thử nối ' +
+      'lại. Đây là lỗi đường truyền, không phải kết luận rằng engine đã dừng.',
+  },
+  khong: {
+    nhan: 'engine · chưa mở dòng',
+    nhanNgan: 'chưa mở',
+    giaiThich:
+      'Chưa mở dòng nào vì chưa có tác phẩm nào để theo dõi. Khác với "đang nối": ở đây không ' +
+      'có gì đang được nối cả.',
+  },
+};
+
 export const TRANG_THAI_MAY_RUNTIME: Record<Runtime, NhanTrangThai> = {
   running: { nhan: 'đang chạy', ky: '▶', mau: 'gold' },
   pausing: { nhan: 'đang dừng…', ky: '‖', mau: 'amber' },
@@ -597,11 +656,6 @@ export const CHU = {
    * Và cả bốn nói về TRÌNH DUYỆT (kênh SSE có nối được không), không về engine. Nên không
    * câu nào được mượn chữ của trạng thái máy — xem `TRANG_THAI_MAY_RUNTIME`. Phạm vi ấy đi
    * vào chú giải, vì bản thân chữ "đã nối" không tự nói ra nối cái gì. */
-  ketNoiSong: 'đã nối',
-  ketNoiDangMo: 'đang nối',
-  ketNoiMat: 'mất kết nối',
-  /** Xưởng rỗng: không có tác phẩm nên không mở dòng nào. Khác hẳn "đang nối". */
-  ketNoiChua: 'chưa mở dòng',
 
   // rail
   xuong: 'Xưởng',
@@ -617,10 +671,41 @@ export const CHU = {
   toSanXuat: 'Tổ sản xuất',
   chiPhi: 'Chi phí',
   nhatKyPhanQuyet: 'Nhật ký phán quyết',
-  caiDat: 'Cài đặt',
+
+  /* ── ba MÀN ────────────────────────────────────────────────────────────────
+   *
+   * Ba tên này là chữ của chính người dùng, gần như nguyên văn: "lúc đầu vào là trang quản
+   * lý", "bấm vào chi tiết mới tới xưởng sản xuất", "cài đặt chung cho mọi sản xuất". Dùng
+   * đúng chữ họ đã dùng để gọi thứ họ đang tìm là cách rẻ nhất để họ tìm thấy nó.
+   *
+   * "Cài đặt chung" mang chữ "chung" chứ không chỉ "Cài đặt", và đó là phần mang nghĩa: cả
+   * lỗi mà màn này tồn tại để xoá là người vận hành đọc một bề mặt toàn cục thành "cấu hình
+   * của cuốn đang mở".
+   */
+  manQuanLy: 'Quản lý',
+  manCaiDatChung: 'Cài đặt chung',
+  manXuongSanXuat: 'Xưởng sản xuất',
+  manQuanLyPhu: 'cả xưởng',
+  manCaiDatChungPhu: 'mọi tác phẩm',
+  manXuongSanXuatPhu: 'một tác phẩm',
+  /** Chú giải của bộ chuyển màn — nói PHẠM VI, thứ không đọc được từ tên màn. */
+  doiMan: (ten: string, pham: string) => `Sang màn ${ten} — ${pham}`,
+
+  /* Bản ghi phiên chạy của MỘT cuốn — tên cũ là "Cài đặt", và tên cũ sai.
+     Xem chú thích đổi tên ở đầu lib/khu.ts: bề mặt này chỉ đọc, nói về quá khứ của một
+     cuốn, và đã phải tự in ra một câu chỉ đường sang Cấu hình máy. */
+  phienChayKhu: 'Phiên chạy',
 
   /* cấu hình máy — mức MÁY, không phải mức tác phẩm */
-  cauHinh: 'Cấu hình máy',
+  cauHinh: 'Nhà cung cấp & khóa',
+  kenhVaiChung: 'Model theo vai',
+  /* "Gỡ" chứ không "Xóa": không có gì bị mất, vai chỉ quay về thừa hưởng mặc định. */
+  goDatRieng: 'Gỡ, dùng mặc định',
+  chiPhiXuong: 'Chi phí toàn xưởng',
+  cacheTietKiem: 'bộ đệm tiết kiệm',
+  cuonDaDo: 'cuốn đã đo được',
+  boTheoVai: 'Bổ theo vai',
+  boTheoModel: 'Bổ theo model',
   nhaCungCapVaKhoa: 'Nhà cung cấp và khóa',
   macDinh: 'Mặc định',
   kieuVanMacDinh: 'Kiểu văn mặc định',
@@ -708,7 +793,6 @@ export const CHU = {
   nhomTruyen: 'Truyện của bạn',
   nhomTheGioi: 'Thế giới truyện',
   nhomVanHanh: 'Chi phí & vận hành',
-  nhomChung: 'Chung cho mọi tác phẩm',
   moNhom: (ten: string) => `Mở nhóm ${ten}`,
   dongNhom: (ten: string) => `Thu nhóm ${ten}`,
 
@@ -1166,9 +1250,49 @@ export const CHU = {
   colNhip: 'Nhịp',
   colSuaLanCuoi: 'Sửa lần cuối',
   colHanhDong: 'Hành động',
+  /** Cột mới của màn Quản lý: dấu việc tồn đã ký trên đĩa, xem `WorkshopCostBook`. */
+  colCanBan: 'Cần bạn',
 
-  moTacPham: 'Mở',
   docTacPham: 'Đọc',
+  /* Chữ của chính người dùng: "bấm vào chi tiết mới tới xưởng sản xuất". Nhãn cũ là "Mở",
+     và "Mở" mơ hồ đúng chỗ đắt nhất — studio còn có `Mở máy`, một nút KHỞI ĐỘNG ENGINE.
+     Hai nút cùng chữ "Mở" mà một cái điều hướng còn một cái dựng engine là chỗ để bấm nhầm. */
+  chiTiet: 'Chi tiết',
+  batDauCuonMoi: 'Bắt đầu một cuốn mới',
+
+  /* ── dải việc cần bạn, đầu màn Quản lý ───────────────────────────────────
+   *
+   * Dải này KHÔNG mang dữ liệu mới — mọi thứ trong nó đã có ở bảng ngay dưới. Nó mang THỨ
+   * TỰ ƯU TIÊN, đúng luật đã ghi cho dải việc-tiếp-theo ở buồng lái (DESIGN.md › Components).
+   *
+   * Và nó chỉ nói được điều nó CHỨNG MINH được. `/api/workshop` mang `activity` và
+   * `engine_open`; `/api/workshop/cost` mang ý định đã ký trong `meta/run.json`. Không tờ
+   * nào nói được "engine đang đứng ở cửa nghiệm thu" cho một cuốn đã đóng máy — câu đó chỉ
+   * tồn tại trong `/studio` của cuốn đang mở. Nên hai loại tin ở đây mang HAI câu khác nhau,
+   * và không câu nào được mượn giọng của câu kia.
+   */
+  canBanTieuDe: 'Cần bạn',
+  mayDangChay: (ten: string) => `Máy đang chạy ${ten}`,
+  mayDangRoi: 'Máy đang rỗi',
+  engineConMoO: (ten: string) => `engine còn mở ở ${ten}`,
+  /** Ý định trên ĐĨA. Cố tình không nói "đang chờ bạn" — xem chú thích ngay trên. */
+  daKyTamDung: 'có một mốc tạm dừng đã ký',
+  /* Bản NGẮN cho ô bảng 12%: câu đầy đủ ngắt bốn dòng ở đó và đẩy cao cả hàng. */
+  daKyTamDungNgan: 'mốc tạm dừng',
+  daKyCanThiep: 'có một ý kiến can thiệp chưa xử lý',
+  daKyCanThiepNgan: 'ý kiến chờ xử lý',
+  cheDoNghiemThuBat: 'đang ở chế độ nghiệm thu từng chương',
+  khongCoViecTon: 'Không có việc nào đang chờ bạn',
+  vaoXuong: (ten: string) => `Vào xưởng · ${ten}`,
+
+  /* ── dải tổng: nói ra MẪU SỐ của con số tiền ────────────────────────────
+   *
+   * `$7,37` trên một xưởng ba cuốn nói hai điều rất khác nhau tuỳ vào việc nó cộng từ ba
+   * cuốn hay từ một. Đo trên xưởng thật: `counted: 1`, hai cuốn còn lại chưa có
+   * `meta/usage.json`. Không nói ra thì người vận hành đọc nó thành "cả xưởng tốn có thế".
+   */
+  doDuocO: (dem: number, tong: number) => `đo được ở ${dem}/${tong} cuốn`,
+  chuaDoDuocCuonNao: 'chưa cuốn nào có số liệu',
 
   // trạng thái chung
   khongCo: '—',
@@ -1222,6 +1346,52 @@ export const GIAI_THICH = {
   xuongRailGiaiThich:
     'Mọi tác phẩm trong xưởng, kèm tổng chi phí đã tiêu. Đây là bề mặt mức MÁY — nội dung ' +
     'của nó không đổi theo cuốn đang mở.',
+
+  /* ── ba màn ─────────────────────────────────────────────────────────────── */
+  thanhTrenGocXuong:
+    'Thư mục gốc của xưởng. Màn này nói về MỌI tác phẩm dưới nó, nên thanh trên không có ' +
+    'bộ chọn cuốn — không có cuốn nào đang được mở ở đây.',
+  /**
+   * Vì sao màn Quản lý KHÔNG có nút chạy, và vì sao câu này ngắn hơn hẳn bản cũ.
+   *
+   * Bản cũ in hai đoạn văn dài ngay dưới bảng — đo được ở 1512×900: bảng cao 182px, hai
+   * đoạn biện giải cao 110px, tức lời giải thích chiếm hơn nửa chiều cao của thứ nó giải
+   * thích. Một màn quản lý mà phần biện giải nặng ngang phần dữ liệu là một màn đang xin
+   * lỗi vì chính nó.
+   *
+   * Lý do vẫn phải nói ra, nên nó về `title` của chỗ người dùng sẽ hỏi (nút Chi tiết) thay
+   * vì nằm giữa màn hình.
+   */
+  quanLyKhongCoNutChay:
+    'Chạy và dừng chỉ có trong xưởng sản xuất của từng cuốn — một đường tiêu tiền duy nhất.',
+  quanLyMotEngineMotLuc:
+    'Engine chỉ mở được MỘT cuốn mỗi lần. Đây là danh sách để chọn cuốn nào chạy tiếp, ' +
+    'không phải bảng điều phối chạy song song.',
+  canBanTuDia:
+    'Đọc từ meta/run.json của từng cuốn — đây là ý định đã ký trên đĩa, không phải lời ' +
+    'engine khẳng định nó đang đứng chờ. Chỉ cuốn đang mở engine mới nói được câu đó.',
+  tongTienMauSo:
+    'Tổng chỉ cộng những cuốn đã có meta/usage.json. Cuốn chưa chạy lần nào không có số ' +
+    'liệu để cộng, nên nó không nằm trong con số này.',
+
+  /* ── cài đặt chung ──────────────────────────────────────────────────────── */
+  cauHinhCuonDangMo: (ten: string) =>
+    `${ten} đang mở engine — engine giữ cấu hình từ lúc nó được mở, nên thay đổi ở đây chỉ ` +
+    'ăn vào lượt sau. Đóng rồi mở lại cuốn đó để áp ngay.',
+  kenhVaiChungGiaiThich:
+    'Model mặc định cho từng vai, áp cho mọi lượt chạy sau. Khác với Model theo vai trong ' +
+    'Phiên chạy: chỗ đó đổi model của một engine ĐANG MỞ và chỉ sống hết lượt đó.',
+  kenhVaiChungThuaHuong:
+    'Vai không đặt riêng thì thừa hưởng model mặc định ở trên. Gỡ một vai là cho nó ' +
+    'thừa hưởng lại.',
+  chiPhiXuongChuaCoGi:
+    'Chưa cuốn nào có meta/usage.json, nên chưa có gì để cộng. Đây là trạng thái bình ' +
+    'thường của một xưởng chưa chạy lượt nào.',
+  chiPhiXuongGiaiThich:
+    'Cộng từ meta/usage.json của mọi tác phẩm. Phần bổ theo vai cộng lại đúng bằng con số ' +
+    'tổng — cùng một phép cộng, không phải hai.',
+  chiPhiXuongThieuUsage: (soLuot: number) =>
+    `${soLuot} lượt mô hình không trả số liệu dùng, nên mọi con số trên đây đều thiếu một phần.`,
 
   /* cấu hình máy */
   cauHinhLaMucMay:
@@ -1372,7 +1542,7 @@ export const GIAI_THICH = {
   dangThuDon:
     'Lệnh dừng đã nhận. Engine đang kết thúc lượt hiện tại và ghi checkpoint — bấm thêm không làm nó nhanh hơn.',
   chipKetNoi:
-    'Kênh sự kiện trực tiếp từ engine tới trình duyệt này. Nó nói đường truyền có thông không — KHÔNG nói engine đang chạy hay đang nghỉ; câu đó ở thanh dưới cùng.',
+    'Kênh sự kiện trực tiếp từ engine tới trình duyệt này: nó cho biết những con số trên màn là số SỐNG hay là ảnh chụp lúc mở trang. Nó KHÔNG nói engine đang chạy hay đang nghỉ; câu đó ở thanh dưới cùng.',
   cheDoReviewLaGi:
     'Chế độ nghiệm thu: engine dừng trước MỖI chương mới và chờ bạn cho đi tiếp từng chương một. Dùng khi muốn đọc soát trước khi nó viết thêm.',
   /* ── cửa nghiệm thu ────────────────────────────────────────────────────────
@@ -1631,7 +1801,7 @@ export const GIAI_THICH = {
     'Quy tắc lối kể, giọng từng nhân vật và danh sách cấm mà Editor chưng ra ở ranh giới cung.',
   railChiPhi:
     'Chi phí theo tác tử và theo model. Tổng và giá thành mỗi chương ở thanh dưới.',
-  railCaiDat: 'Cấu hình phiên chạy, chỉ đọc.',
+  railPhienChay: 'Cuốn này đã khởi động với cấu hình gì. Bản ghi, chỉ đọc.',
 
   /**
    * Ba mục còn lại chưa dựng vì THIẾU NGUỒN, không vì chưa kịp làm — và lý do
@@ -1872,7 +2042,7 @@ export const GIAI_THICH = {
     'Bề mặt đã dựng, nhưng bản engine đang chạy không có endpoint /style (trả 404). Dữ liệu vẫn nằm trong store ở meta/style_rules.json và meta/user_rules.json — cần bản engine mới hơn để đọc ra.',
   thieuEndpointChiPhi:
     'Bề mặt đã dựng, nhưng bản engine đang chạy không có endpoint /cost (trả 404). Phân tích theo tác tử và theo model vẫn nằm trong meta/usage.json; tổng và giá thành mỗi chương thì thanh dưới vẫn đọc được.',
-  thieuEndpointCaiDat:
+  thieuEndpointPhienChay:
     'Bề mặt đã dựng, nhưng bản engine đang chạy không có endpoint /settings (trả 404). Cấu hình phiên vẫn nằm trong meta/run.json — cần bản engine mới hơn để đọc ra.',
 
   /**

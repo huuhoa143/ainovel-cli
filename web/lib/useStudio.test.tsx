@@ -122,10 +122,16 @@ test('có `?tp=` mà URL không ghi khu thì đáp vào buồng lái, không ph�
   expect(r.result.current.khu).toBe('dong-san-xuat');
 });
 
-test('xưởng đúng MỘT cuốn thì đáp vào buồng lái, không phải bảng một dòng', async () => {
+test('URL im thì đáp vào màn Quản lý — kể cả xưởng đúng MỘT cuốn', async () => {
+  // Điều khoản đã đổi ở bản ba màn; xem lý do đầy đủ ở `khuDap` (lib/xuong.ts).
+  // Bài này vẫn đáng giữ dù `lib/xuong.test.ts` đã đo chính hàm luật: nó đo SỢI DÂY —
+  // `useStudio` có thật sự truyền tham số THÔ vào luật đáp không. Truyền `khuTuUrl()` đã suy
+  // sẵn vào đó làm luật chết lặng mà không bài kiểm nào của hàm luật đỏ.
   const r = await mo('/', xuong(1));
   await waitFor(() => expect(r.result.current.tacPham).toBe('b1'));
-  expect(r.result.current.khu).toBe('dong-san-xuat');
+  expect(r.result.current.khu).toBe('xuong');
+  // Và màn phải đi theo khu: hai giá trị này là một sự thật nhìn từ hai chỗ.
+  expect(r.result.current.man).toBe('quan-ly');
 });
 
 test('đổi khu sau khi đã đáp thì luật đáp KHÔNG kéo về nữa, kể cả khi tải lại dữ liệu', async () => {

@@ -12,6 +12,52 @@ Sàn sản xuất tối, mật độ cao, lấy quy ước của bàn dựng phi
 
 Chiến lược màu: **restrained** — bề mặt là trung tính đã nhuộm, một màu tín hiệu duy nhất chiếm dưới 10% diện tích.
 
+## Dấu hiệu
+
+Logo và favicon là **một** dấu hiệu: ba lane của trục sản xuất Tập → Cung → Chương, độ rộng
+giảm dần, mỗi lane một trạng thái của bảng ngữ nghĩa.
+
+| Lane | Màu | Nghĩa |
+|---|---|---|
+| trên · rộng nhất | `--teal` | đã nghiệm thu |
+| giữa | `--gold` | đang chạy — **màu tín hiệu duy nhất**, nằm giữa nên bắt mắt nhất |
+| dưới · ngắn nhất | `--ink-3` | chưa tới |
+
+**Vì sao là ba lane, không phải một chữ cái.** Hình đặc trưng nhất của sản phẩm đã có sẵn
+trên buồng lái, và nó cũng đúng là ẩn dụ mà tài liệu này chốt (bàn dựng phim / DAW). Một chữ
+"a" cách điệu thì thương hiệu nào cũng dùng được; ba lane thì chỉ sản phẩm này dùng được.
+
+**Độ rộng phải GIẢM DẦN.** Ba dải bằng nhau đọc thành nút hamburger; bậc thang thì không.
+
+**Ổ khoá thu gọn theo bề rộng, không biến mất.** Dưới 700px phần CHỮ ẩn (nó tốn 88px và
+không mang tin — ứng dụng đang mở rồi thì không ai hỏi nó là ứng dụng gì), còn DẤU HIỆU ở
+lại: nó chỉ tốn 20px và là thứ duy nhất còn nói đây là sản phẩm nào. Dấu hiệu mang
+`flex: none` — flex nén chứ không tràn, và một dấu hiệu bị nén ngang thành hình méo còn tệ
+hơn một dấu hiệu bị ẩn.
+
+### Hai bản, một hình — và cái bẫy giữa chúng
+
+Chúng không dùng chung mã được: logo là SVG nội tuyến (đọc được biến CSS), favicon là tệp
+tĩnh mà trình duyệt tải như một ảnh riêng nên buộc phải viết hex. Nên hình học và màu nằm ở
+`web/lib/dauHieu.ts`, và `web/lib/dauHieu.test.ts` **đọc `app/icon.svg` trên đĩa** rồi đối
+chiếu từng con số.
+
+Bài kiểm đó không thừa: trước bản này hai bên đã lệch thật. `icon.svg` ghi
+`#221d17 / #4f9d8b / #e0a53a` kèm chú thích khẳng định đó là token đã chuyển sang sRGB, trong
+khi token thật cho `#0e0c09 / #71c1ad / #eab656` — sai cả ba màu, và không có gì đối chiếu
+nên không ai thấy.
+
+Hai luật cứng cho tệp favicon, cả hai đều là lỗi đã xảy ra:
+
+- **Khai `width`/`height`, không chỉ `viewBox`.** Thiếu kích thước nội tại thì SVG không có
+  cỡ để rasterise, và `new Image()` bắn `onerror`.
+- **KHÔNG viết hai dấu gạch nối liền nhau trong khối chú thích.** XML cấm chuỗi đó bên trong
+  comment và SVG được phân tích như XML nghiêm ngặt. Một lần lỡ viết tên biến CSS đầy đủ đã
+  làm cả tệp thành XML sai định dạng — trình duyệt không báo gì, nó chỉ im lặng không vẽ.
+
+Màu hex lấy từ chính trình duyệt (tô token lên canvas 1×1 rồi đọc pixel), không tự chuyển
+OKLCH bằng tay.
+
 ## Color
 
 OKLCH toàn bộ. Tỉ số tương phản ghi kèm là so với `--bg`.
@@ -87,6 +133,31 @@ Ba luật này sinh ra từ lỗi thật đã gặp khi dựng bản thử, khô
 
 Ngoài ra: `text-wrap: balance` cho tiêu đề, `text-wrap: pretty` cho văn xuôi dài.
 
+## Ba màn
+
+Điều hướng có HAI tầng, không một. Tầng trên là **màn**; tầng dưới là **khu**.
+
+| Màn | Phạm vi | Chứa |
+|---|---|---|
+| **Quản lý** | cả xưởng | danh sách tác phẩm · dải việc cần bạn · tổng xưởng · tạo tác phẩm · cùng dựng |
+| **Cài đặt chung** | mọi tác phẩm | nhà cung cấp & khóa · model theo vai (mặc định) · chi phí toàn xưởng |
+| **Xưởng sản xuất** | một tác phẩm | 13 khu sáng tác và vận hành của cuốn đang mở |
+
+**Màn mở đầu là Quản lý**, bất kể xưởng có mấy cuốn. `?tp=` trên URL vẫn thắng và mở thẳng
+xưởng sản xuất của cuốn đó; `?khu=` thắng cả hai. Điều khoản cũ ("một cuốn thì vào buồng lái,
+vì một bảng một dòng không quyết định gì") đúng khi Xưởng là một BẢNG; giờ Quản lý là một MÀN
+mang dải việc-cần-bạn, tổng xưởng và hai đường tạo tác phẩm, nên nó trả lời được cả cho xưởng
+một cuốn.
+
+**Vì sao phải là một tầng thật, không phải một tên nhóm.** Ranh giới cấp-máy/cấp-tác-phẩm đã
+tồn tại trong mã từ lâu (`laKhuMucMay`) nhưng chỉ được thể hiện bằng nhãn nhóm rail "Chung cho
+mọi tác phẩm". Cái tên thua, và phép đo nói rõ vì sao: đứng ở bề mặt Cấu hình máy — thứ sửa
+`~/.ainovel/config.json` cho MỌI cuốn — thanh trên vẫn là bộ chọn của một cuốn, rail vẫn liệt
+kê 14 khu của cuốn đó, và transport dưới đáy vẫn mời `▶ Chạy` cho cuốn đó. Ba trong bốn vùng
+của khung nói về cuốn A trong khi canvas nói về cả máy. Một nhãn nhóm không thắng nổi ba vùng.
+
+Nên **đổi màn là đổi cả khung**, không chỉ đổi canvas.
+
 ## Layout
 
 Khung ứng dụng cố định, không phải trang cuộn:
@@ -101,18 +172,86 @@ grid-template-areas:   "bar    bar     bar"
 
 | Vùng | Vai trò |
 |---|---|
-| `bar` | chọn tác phẩm + **nút tạo tác phẩm** + tình trạng cả xưởng (hàm ý nhiều đầu việc) |
-| `rail` | khu vực sản xuất, có số đếm việc tồn; bốn nhóm, ba nhóm dưới **thu gọn được** |
-| `canvas` | dải việc tiếp theo → trục sản xuất dạng lane → bảng chương → nhật ký phán quyết → ô can thiệp |
+| `bar` | **màn theo tác phẩm:** chọn tác phẩm · **hai màn kia:** gốc xưởng. Cộng nút tạo tác phẩm + tình trạng cả xưởng |
+| `rail` | **ba màn ở đỉnh** (luôn hiện, không thu được), rồi các khu của màn đang mở, có số đếm việc tồn |
+| `canvas` | bề mặt của khu đang mở |
 | `insp` | chi tiết đơn vị đang chọn, có tab: Khế ước / Kiểm định / Bản thảo |
-| `trans` | trạng thái máy, năng suất, giá thành — **luôn hiện, không cuộn mất** |
+| `trans` | trạng thái máy, năng suất, giá thành — **chỉ ở màn xưởng sản xuất** |
 
 Điểm ngắt: `1240px` bỏ inspector, `860px` rail **thôi làm cột và thành dải ngang cuộn được** —
 không bỏ. Điều khoản cũ ("860px bỏ rail") đúng khi rail là danh sách trang trí của một bề mặt
-duy nhất; giờ nó là đường điều hướng duy nhất giữa mười sáu khu, nên bỏ nó là khóa người dùng
-trong khu đang mở. Ở dải ngang thì nhãn nhóm và phép thu nhóm đều tắt: không còn nhóm thì
-không còn cái để thu, và một nhóm đóng ở đó sẽ ẩn mục mà không còn nút nào mở lại.
-Transport không bao giờ bị bỏ.
+duy nhất; giờ nó là đường điều hướng duy nhất giữa 13 khu của một tác phẩm, nên bỏ nó là khóa
+người dùng trong khu đang mở. Ở dải ngang thì nhãn nhóm và phép thu nhóm đều tắt: không còn
+nhóm thì không còn cái để thu, và một nhóm đóng ở đó sẽ ẩn mục mà không còn nút nào mở lại.
+
+**Bộ chuyển màn thì GHIM TRÁI ở dải ngang, không cuộn đi cùng các khu.** Đo được ở 390px:
+effect `scrollIntoView` kéo khu đang mở vào tầm nhìn, và việc đó đẩy cả ba hàng màn ra ngoài
+mép trái — màn hình chỉ còn mấy mục khu, không dấu hiệu nào nói rằng có ba màn. Đó đúng câu
+người dùng đã hỏi một lần rồi: *"các màn khác đâu rồi ta"*.
+
+### Transport KHÔNG còn "luôn hiện"
+
+Điều khoản cũ nói transport không bao giờ bị bỏ. Nó đúng khi studio chỉ có một phạm vi. Giờ
+transport nói năng suất · giá thành · thời lượng của MỘT cuốn và mang nút `▶ Chạy` — một nút
+tiêu tiền thật. Đặt nó dưới màn Quản lý (canvas liệt kê mọi cuốn) là dán một điều khiển
+cấp-tác-phẩm vào đáy một bề mặt cấp-xưởng, và mời một cú bấm không có chủ ý vào giữa một màn
+đang được quét mắt. Đây cũng chính là luật đã cấm nút chạy trong bảng Xưởng ("một đường tiêu
+tiền duy nhất") — trước đây nó bị lách qua đường transport.
+
+Hàng transport bị bỏ khỏi LƯỚI ở hai màn kia, không để trống 30px: một dải trống ở đáy là một
+vùng giao diện không nói gì, cùng lý do mà `khung.rong` đã bỏ hẳn cột inspector.
+
+### Máng lề: `--mang: 18px`
+
+Mọi khối cấp một trong `.canvas` bắt đầu CHỮ ở đúng một tọa độ. Máng là tọa độ của **chữ**,
+không của hộp: khối nào tự mang đệm trong (ô bảng 10px, ô dải tổng 12px) thì máng của nó là
+phần bù, không phải 18px lặp lại.
+
+Điều khoản này sinh ra từ một lỗi đo được, không phải sở thích. Trên màn Quản lý, chữ bắt đầu
+ở **18 · 32 · 16 · 10 · 14** — năm gốc lề trên một màn hình. Người dùng nói nguyên văn: *"text
+bị sát lề quá, không những trái mà lề trên"*. Nguyên nhân là 18px từng nằm rải trong `.head`
+và `.sect`, còn mọi khối khác tự chọn lấy. Một hằng thì chỉ có một chỗ để sai.
+
+Hai hệ quả bắt buộc:
+
+- **Bảng đặt lề ở Ô ĐẦU/Ô CUỐI, không ở `.bangwrap`.** `.bangwrap` là vùng cuộn ngang, nên lề
+  đặt ở đó sẽ cuộn đi mất cùng nội dung và cột đầu lại dính mép ngay khi kéo ngang một pixel.
+- **Đoạn văn đứng thẳng trong canvas dùng MARGIN, không padding.** `max-width: 74ch` là khổ
+  đọc, và với `box-sizing: border-box` thì padding ăn vào khổ đó — khổ đọc phải là chữ, không
+  phải chữ cộng lề.
+
+Khối có viền (`.vphacap`) căn bằng MÉP VIỀN, không bằng chữ bên trong: một hộp có viền thẳng
+hàng với cột chữ là hộp đặt viền ở máng.
+
+### Gần nhau = một nhóm: khoảng NGOÀI phải lớn hơn khoảng TRONG
+
+Mắt gom theo khoảng cách. Nên với mọi danh sách mà một mục chứa nhiều dòng, khoảng cách
+**giữa hai mục** phải lớn hơn khoảng cách **giữa các dòng trong một mục**. Đảo lại thì các
+dòng của hai mục khác nhau trông gắn bó hơn hai dòng của cùng một mục, và danh sách đọc ra
+thành một khối chữ không có hàng. Người dùng gọi hiện tượng đó là *"ríu rít"*.
+
+Hai chỗ đã vi phạm, cả hai đo được:
+
+| Chỗ | Khoảng NGOÀI (cũ → mới) | Khoảng TRONG |
+|---|---|---|
+| Hàng bảng (tên + mã, tổng + đơn giá) | 14px → **19px** | 14–17px |
+| Danh sách nhân vật ở inspector | 5px → **14px** | 7px |
+
+Kèm hai luật con:
+
+- **Hàng tiêu đề bảng phải có band riêng.** `padding-top` từng là `0`, nên chữ tiêu đề cột
+  dính vào bất cứ dải nào nằm trên — đo được ở màn Quản lý: khoảng cách bằng đúng **0**. Giờ
+  là `11px` trên / `8px` dưới: tiêu đề cột thuộc về bảng bên dưới, không thuộc dải bên trên.
+- **Cặp xếp chồng trong một ô thì THẮT LẠI** (`line-height: 1.35`), để cặp đó đọc ra là một
+  đơn vị thay vì hai dòng rời.
+
+### Thanh cuộn không được ăn bề rộng của rail
+
+Rail cao thêm vì bộ chuyển màn, và ở khung 722px nội dung tràn đúng **2px**. Hai pixel đó bật
+một thanh cuộn 16px, thanh cuộn ăn mất bề rộng, và nhãn dài nhất — "Nhật ký phán quyết" — bị
+cắt thành "Nhật ký phán q…". Hai pixel DỌC làm mất chữ theo chiều NGANG.
+
+Nên rail dùng thanh cuộn mảnh (4px), cùng lối với dải ngang của chính nó và với transport.
 
 Bán kính: `--r: 5px` thống nhất. Không có bán kính lớn — công cụ chuyên nghiệp không bo tròn mềm.
 
@@ -121,11 +260,14 @@ Lớp z có tên: `--z-sticky: 10`, `--z-pop: 30`, `--z-tip: 40`. Không dùng s
 ## Components
 
 - **Dải việc tiếp theo** — hàng đầu của bề mặt mặc định: một đốm trạng thái, một câu nói máy đang làm gì *kèm số thật của cuốn đang mở*, một câu chỉ đường, và nhiều nhất hai nút. Nó không mang dữ liệu mới — mọi thứ trong đó đã có ở đâu đó trên trang; nó mang **thứ tự ưu tiên**. Hai luật cứng: (a) nút ở đây chỉ ĐIỀU HƯỚNG, việc chạy engine để nguyên ở transport, vì hai nút cùng gọi một API tiêu tiền thì trạng thái khóa của chúng không thấy nhau; (b) nút mời đọc chỉ trỏ tới chương CHẮC CHẮN có bản thảo (`done`/`rewrite`), và nó chọn chương rồi mới đổi khu — mở bề mặt đọc mà chưa chọn chương là mở một khổ đọc trống.
-- **Nhóm rail thu gọn được** — nhãn nhóm là nút, thu bằng `display: none` chứ không bằng cách thôi render. Ba hệ quả bắt buộc: khu đang mở luôn kéo nhóm chứa nó mở ra (đọc `[aria-current]` từ DOM, không từ một bảng khu→nhóm sẽ lệch), nhóm đóng mà bên trong có việc tồn thì mang dấu amber ra ngoài, và dải ngang dưới 860px bật lại toàn bộ mục bằng một `@media`.
+- **Bộ chuyển màn** — ba hàng ở đỉnh rail, KHÔNG mang ký hiệu (khác hẳn mục khu ngay dưới: chúng là một tầng khác, nên sự khác nhau phải đọc được từ hình dạng chứ không từ việc nhớ thêm ba biểu tượng). Cái chúng mang thay vào đó là **dòng phạm vi** — "cả xưởng" / "mọi tác phẩm" / tên cuốn đang mở — tức đúng điều đang bị đọc nhầm. Hàng "Quản lý" mang dấu amber khi có cuốn nào đó còn việc đã ký, vì người đang đứng trong xưởng sản xuất không thấy bảng Quản lý.
+- **Nhóm rail thu gọn được** — nhãn nhóm là nút, thu bằng `display: none` chứ không bằng cách thôi render. Ba hệ quả bắt buộc: khu đang mở luôn kéo nhóm chứa nó mở ra (đọc `[aria-current]` từ DOM, không từ một bảng khu→nhóm sẽ lệch), nhóm đóng mà bên trong có việc tồn thì mang dấu amber ra ngoài, và dải ngang dưới 860px bật lại toàn bộ mục bằng một `@media`. **Mặc định giờ là MỞ**: rail chỉ còn phục vụ một màn, nên 14 mục trong ba nhóm vừa một cột 900px và không còn lý do nào để giấu. Phép thu vẫn còn — nó là của người dùng, không phải của thiết kế.
+- **Dải việc cần bạn** (đầu màn Quản lý) — mang THỨ TỰ ƯU TIÊN, không mang dữ liệu mới. Ba trạng thái là ba loại sự thật khác nhau và không được gộp: `activity === 'running'` là engine đang chạy (đo được từ `/workshop`); "đã ký" là ý định trên ĐĨA đọc từ `meta/run.json`; và không-có-gì thì nói thẳng ra. Câu "engine đang đứng ở cửa" chỉ tồn tại trong `/studio` của cuốn ĐANG MỞ engine — và vì `soToiDa: 1`, nhiều nhất một cuốn trong cả xưởng nói được câu đó.
 - **Trục sản xuất (lane)** — Tập / Cung / Chương là ba lane cùng một trục ngang, độ rộng khối tỉ lệ với phạm vi thật. Lane chương: một vạch một chương. Khối "chờ mở" dùng vân sọc chéo để phân biệt *chưa quy hoạch* với *đã quy hoạch nhưng chưa chạy* — hai trạng thái khác nhau về bản chất trong mô hình cuốn-vòng-cung hai tầng.
 - **Bảng chương** — số liệu canh phải và dùng mono; trạng thái công đoạn dùng `đốm + chữ`; hàng được chọn đánh dấu bằng `inset box-shadow 1px`, **không** dùng viền màu dày bên trái.
 - **Inspector có tab** — Khế ước (yêu cầu chương) / Kiểm định (7 chiều) / Bản thảo. Kiểm định là hàng mảnh có kết luận kèm dẫn chứng, không phải thẻ điểm.
 - **Nhật ký phán quyết** — mỗi dòng: giờ, loại phán quyết, lý do dựa trên sự thật, nút xem lại. Đây là hiện thân của nguyên tắc "máy tất định phải nhìn thấy được".
+- **Chip kết nối** — nhãn phải nói **hệ quả**, không nói sự thật kỹ thuật. "Đã nối" nói rằng có một socket đang mở, thứ người vận hành không dùng được vào việc gì; điều họ cần biết là *số trên màn có tự cập nhật không, hay là ảnh chụp lúc tải trang*. Nên nhãn là `engine · trực tiếp` — "trực tiếp" là chữ buồng lái đã dùng sẵn ("Dòng sự kiện · trực tiếp từ engine"), nên chip và buồng lái nói cùng một thứ tiếng. Bốn ca có bốn chú giải RIÊNG, và ca `mat` nói thẳng điều đắt nhất: số đang hiện đã DỪNG cập nhật và có thể đã cũ. Bản ngắn dưới 700px bỏ tiền tố; hai bản cùng trong DOM, CSS chọn, `aria-label` giữ bản đầy đủ. Chip này KHÔNG nói engine đang chạy hay nghỉ — câu đó ở transport.
 - **Transport** — các ô phân cách bằng viền 1px, số liệu mono. Thước ngữ cảnh có **vạch đỏ ở mốc 85%** để thấy ngưỡng nén sắp tới, không chỉ hiện một con số.
 
 ## Motion
@@ -182,6 +324,24 @@ Dải cạnh màu bị cấm (xem danh sách CẤM). Nên:
 - dưới 560px thì gập xuống một cột — ô nhập bị bóp là lỗi tệ hơn nhãn xuống dòng
 - `line-height` **1.72** cho nhãn, **1.78** cho ô nhập nhiều dòng: dấu tiếng Việt xếp hai tầng
 - ô nhập chữ mono cho thứ **đối chiếu được** (khóa, địa chỉ, tên model) — chúng là định danh, và mono làm sai một ký tự nhìn ra được
+
+### Một con số tổng phải mang MẪU SỐ của nó
+
+Đo trên xưởng thật: tổng chi phí `$7,37` với `counted: 1` trên ba cuốn — hai cuốn kia chưa có
+`meta/usage.json` nên không có gì để cộng. Một con số tiền không kèm mẫu số sẽ được đọc thành
+"cả xưởng tốn có thế", và người vận hành lập ngân sách theo nó. Nên ô tiền mang thêm một dòng
+`đo được ở 1/3 cuốn`, và dòng đó tông **amber** chứ không `--ink-3`: nó không phải một đơn vị,
+nó là một lời báo rằng con số bên cạnh chưa phủ hết.
+
+Cùng luật cho `missing_assistant_usage`: số lượt mô hình không trả usage nói về ĐỘ TIN CẬY của
+mọi con số phía trên, nên nó đứng ngay dưới chúng chứ không ở cuối trang.
+
+### Thanh tỉ lệ phải có mẫu số của CHÍNH dải nó
+
+Hai dải bổ (theo vai / theo model) cộng lại bằng nhau nhưng ĐỈNH thì không. Dùng chung một mốc
+làm thanh của `gemini-2.5-pro` tính ra **176%** — và nó không lộ ra như lỗi vì `overflow: hidden`
+cắt phần thừa: thanh trông đầy 100% và đọc ra là "cao nhất", đúng lúc nó thực ra gần gấp đôi cái
+được lấy làm mốc. Một thanh nói dối mà không có vạch nào cho thấy nó đang nói dối.
 
 ### Chữ trên `--gold` phải tối
 

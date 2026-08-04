@@ -4,8 +4,10 @@ import { useState } from 'react';
 
 import { BuongLai } from '@/components/BuongLai';
 import { CaiDat } from '@/components/CaiDat';
+import { ChiPhiXuong } from '@/components/ChiPhiXuong';
 import { CauHinhXuong } from '@/components/CauHinhXuong';
 import { CungDung } from '@/components/CungDung';
+import { KenhVaiChung } from '@/components/KenhVaiChung';
 import { DieuKhien } from '@/components/DieuKhien';
 import { HoiChan } from '@/components/HoiChan';
 import { NhapXuat } from '@/components/NhapXuat';
@@ -28,6 +30,8 @@ import { Xuong } from '@/components/Xuong';
 import { DangTai, KhongTaiDuoc, XuongTrong } from '@/components/XuongTrong';
 import { useVuaChot } from '@/lib/chotChuong';
 import { dungInspector, type Khu as KhuMa } from '@/lib/khu';
+import { manTheoTacPham } from '@/lib/man';
+import { coViecCanBan, useTongXuong, type TaiTongXuong } from '@/lib/tongXuong';
 import { trangThaiCua } from '@/lib/nghiemThu';
 import { mayDangChay } from '@/lib/song';
 import { useMay } from '@/lib/useMay';
@@ -102,10 +106,34 @@ export default function Trang() {
   // panel không nói gì.
   const coInsp = !!s.snapshot && !xuongTrong && dungInspector(s.khu);
 
+  /**
+   * Màn này có nói về một cuốn không — điều kiện chung của thanh trên và transport.
+   *
+   * Một hàm, ba chỗ đọc. Viết `s.man === 'xuong-san-xuat'` ở từng chỗ là ba bản của một luật,
+   * và lúc chúng lệch thì transport hiện trên một canvas nói về cả xưởng — đúng lỗi mà cả
+   * bản này tồn tại để sửa.
+   */
+  const theoTacPham = manTheoTacPham(s.man);
+
+  /**
+   * Tổng cả xưởng: nguồn của dải việc-cần-bạn và của màn Cài đặt chung.
+   *
+   * Nạp ở tầng `Trang` chứ không trong từng bề mặt vì hai người đọc nó ở hai màn khác nhau,
+   * và cái thứ hai là RAIL — dấu việc tồn trên hàng "Quản lý" phải đúng kể cả khi người dùng
+   * đang đứng trong xưởng sản xuất và bảng Quản lý không được vẽ. Gọi trong `Xuong.tsx` thì
+   * dấu đó chỉ sống khi bảng đang mở, tức đúng lúc không ai cần nó.
+   */
+  const tong = useTongXuong(s.workshop?.books.length ?? 0);
+  const canBan = tong.du ? coViecCanBan(tong.du) : false;
+
   // Thanh trên và transport luôn hiện, kể cả khi canvas chưa có gì: chúng là
   // câu trả lời cho "dây chuyền còn sống không", câu hỏi đầu tiên khi mở studio.
   return (
-    <div className={`khung${coInsp ? '' : ' rong'}`}>
+    /* `khongTrans` bỏ hẳn HÀNG transport khỏi lưới, không chỉ bỏ nội dung của nó: hàng đó là
+       `minmax(30px, auto)`, nên không có lớp này thì hai màn kia mang một dải trống 30px ở
+       đáy — một vùng giao diện không nói gì, đúng thứ mà `khung.rong` đã tồn tại để tránh ở
+       cột inspector. */
+    <div className={`khung${coInsp ? '' : ' rong'}${theoTacPham ? '' : ' khongTrans'}`}>
       <ThanhTren
         workshop={s.workshop}
         dangXem={sachDangXem}
@@ -118,6 +146,7 @@ export default function Trang() {
         // cùng một hình (không huy hiệu) nhưng khác nguồn — "chưa tải xong" và "engine
         // đóng" — và gộp chúng ở đây là dạy người sau rằng chúng là một.
         cuaNghiemThu={s.snapshot ? trangThaiCua(s.snapshot.advance, s.snapshot.runtime) : undefined}
+        theoTacPham={theoTacPham}
         onChon={s.chonTacPham}
         onChonKhu={s.chonKhu}
         // Đường vào "Tác phẩm mới" đặt ở thanh trên, cạnh bộ chọn tác phẩm.
@@ -166,7 +195,11 @@ export default function Trang() {
             snapshot={s.snapshot}
             hoSo={s.hoSo}
             khu={s.khu}
+            man={s.man}
             onChonKhu={s.chonKhu}
+            onChonMan={s.chonMan}
+            canBan={canBan}
+            tenCuonNgan={sachDangXem?.name || sachDangXem?.id}
             dauChot={dauDongThanh}
           />
           <Khu
@@ -177,6 +210,7 @@ export default function Trang() {
             // chỉ được chọn từ chính `workshop`. Ba nhánh `!s.snapshot` ở trên đã đỡ ca chưa
             // tải, và xưởng rỗng thật thì `xuongTrong` đã bắt trước cả ba.
             sach={s.workshop?.books ?? []}
+            tong={tong}
             tacPham={s.tacPham}
             // Hai prop dưới đây chỉ có một người đọc: dải quyết định của cửa nghiệm thu, ở hai
             // bề mặt. `may.choGhi` chứ không phải `snapshot.capabilities.steer` — hai giá trị
@@ -219,6 +253,16 @@ export default function Trang() {
           không được ẩn sau một lựa chọn điều hướng. */}
       <HoiChan tacPham={s.tacPham} choGhi={may.choGhi} />
 
+      {/* Transport CHỈ ở màn xưởng sản xuất.
+          Nó nói năng suất · giá thành · thời lượng của MỘT cuốn, và nó mang nút `▶ Chạy` —
+          một nút tiêu tiền thật. Đặt nó dưới màn Quản lý (canvas liệt kê mọi cuốn) hay dưới
+          Cài đặt chung (canvas sửa cấu hình toàn máy) là dán một điều khiển cấp-tác-phẩm vào
+          đáy một bề mặt cấp-xưởng. Đo được ở bản trước: đứng ở bảng ba cuốn, đáy màn hình
+          vẫn mời `▶ Chạy` cho `tran-yeu-ky` — một cuốn người dùng không chọn và không nhìn.
+
+          Đây cũng chính là luật đã cấm nút chạy trong bảng Xưởng ("một đường tiêu tiền duy
+          nhất"), chỉ là trước đây nó bị lách qua đường transport. */}
+      {theoTacPham ? (
       <Transport
         transport={s.snapshot?.transport}
         song={s.song}
@@ -242,6 +286,7 @@ export default function Trang() {
           onDoi={s.taiLai}
         />
       </Transport>
+      ) : null}
     </div>
   );
 }
@@ -260,6 +305,7 @@ export function Khu({
   khu,
   snapshot,
   sach,
+  tong,
   tacPham,
   choGhi,
   chuongChon,
@@ -283,6 +329,11 @@ export function Khu({
   snapshot: Snapshot;
   /** Mọi cuốn trong xưởng — chỉ khu `xuong` đọc, vì chỉ nó là bề mặt của CẢ xưởng. */
   sach: Book[];
+  /**
+   * Tờ tổng của cả xưởng. Ba bề mặt đọc nó (Xưởng, Chi phí toàn xưởng, và rail qua `canBan`),
+   * nên nó được nạp MỘT lần ở `Trang` rồi truyền xuống — xem chú thích ở chỗ gọi.
+   */
+  tong: TaiTongXuong;
   tacPham: string | undefined;
   /**
    * Máy có ghi được không — CHỈ dải quyết định của cửa nghiệm thu đọc, ở hai bề mặt.
@@ -319,7 +370,11 @@ export function Khu({
     // đổi theo cuốn đang mở (`laKhuMucMay('xuong')`). Truyền vào sẽ mời người sau dùng nó rồi
     // biến một bảng liệt kê mọi cuốn thành nửa-theo-tác-phẩm.
     case 'xuong':
-      return <Xuong sach={sach} onMoTacPham={onMoTacPham} />;
+      return <Xuong sach={sach} tong={tong} onChonKhu={onChonKhu} onMoTacPham={onMoTacPham} />;
+    case 'kenh-vai-chung':
+      return <KenhVaiChung onDoiCauHinh={onDoiCauHinh} />;
+    case 'chi-phi-xuong':
+      return <ChiPhiXuong tong={tong} />;
     case 'ban-thao':
       return (
         <DocTruyen
@@ -362,7 +417,7 @@ export function Khu({
     // để đặt cạnh cửa sổ của nó (tổng chia số chương đã nghiệm thu).
     case 'chi-phi':
       return <ChiPhi tacPham={tacPham} snapshot={snapshot} />;
-    case 'cai-dat':
+    case 'phien-chay':
       return <CaiDat tacPham={tacPham} />;
     // Khu mức MÁY: cố ý KHÔNG nhận `tacPham`. Truyền vào sẽ mời người sau dùng nó rồi
     // biến một bề mặt toàn cục thành nửa-theo-tác-phẩm.

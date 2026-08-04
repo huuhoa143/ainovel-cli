@@ -744,6 +744,8 @@ export interface CauHinhDoc {
    */
   styles: string[];
   role_names: string[];
+  /** Ghi đè model theo vai đang có hiệu lực. `PUT /api/config` ghi được nó từ bản ba màn. */
+  roles?: Record<string, { provider: string; model: string }> | null;
   providers: NhaCungCap[];
   presets: MauNhaCungCap[];
   /** Cuốn đang mở engine — đổi cấu hình KHÔNG ăn vào chúng cho tới lần mở lại. */
@@ -828,4 +830,48 @@ export interface DongNhatKy {
 export interface KetQuaLuongTep {
   log: DongNhatKy[];
   failed: boolean;
+}
+
+/* ── tổng cả xưởng — GET /api/workshop/cost ─────────────────────────────── */
+
+/**
+ * Phần của một cuốn trong tờ tổng.
+ *
+ * Cố ý KHÔNG lặp lại các trường mà `Book` đã mang (tiến độ, số từ, nhịp, engine mở): hai
+ * bản sao của một con số thì có ngày lệch, và giao diện đã có cả hai tờ trong tay. Ghép
+ * theo `id`, không theo chỉ số — hai tờ hôm nay cùng thứ tự (cả hai đi qua `scanWorkshop`,
+ * và có bài kiểm Go canh điều đó) nhưng ghép theo vị trí là buộc một bất biến của server
+ * vào một vòng lặp ở web.
+ */
+export interface TongXuongSach {
+  id: string;
+  /** ready | empty | no_file | stale_schema — bốn ca của bề mặt Chi phí. */
+  cost_state: string;
+  cost_usd: number;
+  saved_usd: number;
+  /**
+   * Ý ĐỊNH ĐÃ KÝ trong `meta/run.json`, KHÔNG phải "engine đang đứng ở cửa".
+   *
+   * Rỗng = chưa có `meta/run.json`, tức cuốn chưa chạy engine lần nào. Khác hẳn `'auto'`,
+   * vốn là một chế độ đã chọn. Câu "engine đang đứng chờ bạn" chỉ tồn tại trong
+   * `/studio` của cuốn ĐANG MỞ engine — và vì engine chỉ mở được một cuốn mỗi lần, nhiều
+   * nhất một cuốn trong cả xưởng nói được câu đó.
+   */
+  advance_mode: string;
+  advance_hold: boolean;
+  advance_hold_reason?: string;
+  pending_steer: boolean;
+}
+
+export interface TongXuongDoc {
+  books: TongXuongSach[];
+  overall: UsageTotals;
+  /** null không xảy ra ở route này (server luôn dựng map), nhưng để rỗng vẫn phải vẽ được. */
+  per_agent: Record<string, UsageTotals>;
+  per_model: Record<string, UsageTotals>;
+  /** Số cuốn ĐÃ cộng vào `overall`. Đây là MẪU SỐ của con số tiền, và nó phải hiện ra. */
+  counted: number;
+  /** Id các cuốn không có số liệu để cộng. */
+  no_data: string[];
+  missing_assistant_usage: number;
 }

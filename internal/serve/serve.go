@@ -168,6 +168,9 @@ type server struct {
 func (s *server) routes() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/workshop", s.handleWorkshop)
+	// Tờ tổng của cả xưởng, tách khỏi `/api/workshop` vì hai route có hai nhịp đọc khác
+	// nhau — xem chú thích đầu workshop_cost.go.
+	mux.HandleFunc("GET /api/workshop/cost", s.handleWorkshopCost)
 	mux.HandleFunc("GET /api/books/{book}/studio", s.handleStudio)
 	mux.HandleFunc("GET /api/books/{book}/chapters/{n}", s.handleChapter)
 	mux.HandleFunc("GET /api/books/{book}/outline", s.handleOutline)

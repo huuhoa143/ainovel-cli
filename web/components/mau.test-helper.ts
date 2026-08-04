@@ -1,4 +1,5 @@
-import type { Book, Snapshot } from '@/lib/types';
+import type { Book, Snapshot, TongXuongDoc, TongXuongSach } from '@/lib/types';
+import type { TaiTongXuong } from '@/lib/tongXuong';
 
 /**
  * Một cuốn trong xưởng, mặc định là cuốn CHƯA CHẠY LẦN NÀO.
@@ -74,6 +75,55 @@ export function snap(p: Partial<Snapshot>): Snapshot {
     chapters: [],
     transport: { state: 'running', cost_usd: 0 },
     queue_seq: 0,
+    ...p,
+  };
+}
+
+/**
+ * Tờ tổng của cả xưởng — mặc định là ca CHƯA ĐO ĐƯỢC GÌ.
+ *
+ * Mặc định `du: undefined` chứ không phải một tờ rỗng, và đó là cùng lối với `snap()` ngay
+ * trên: `undefined` là ca thật (route vắng mặt ở một binary engine cũ, hoặc lượt gọi còn
+ * đang bay), và mọi bề mặt đọc tờ này phải vẽ được ca đó. Bài kiểm nào cần số liệu phải NÓI
+ * RA bằng cách truyền `du`, nên không bài nào lỡ đo ca dễ mà tưởng mình đo ca khó.
+ */
+export function tongGia(du?: Partial<TongXuongDoc>): TaiTongXuong {
+  if (!du) return { du: undefined, loi: undefined, dangTai: false };
+  return {
+    du: {
+      books: [],
+      overall: {
+        input: 0,
+        output: 0,
+        cache_read: 0,
+        cache_write: 0,
+        cost_usd: 0,
+        saved_usd: 0,
+        cache_capable: false,
+        cache_breaks: 0,
+      },
+      per_agent: {},
+      per_model: {},
+      counted: 0,
+      no_data: [],
+      missing_assistant_usage: 0,
+      ...du,
+    },
+    loi: undefined,
+    dangTai: false,
+  };
+}
+
+/** Một hàng trong tờ tổng, mặc định KHÔNG có việc gì đang chờ. */
+export function tongSach(p: Partial<TongXuongSach> = {}): TongXuongSach {
+  return {
+    id: 'b',
+    cost_state: 'ready',
+    cost_usd: 0,
+    saved_usd: 0,
+    advance_mode: '',
+    advance_hold: false,
+    pending_steer: false,
     ...p,
   };
 }

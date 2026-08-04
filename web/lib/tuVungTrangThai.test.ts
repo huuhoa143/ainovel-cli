@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 
-import { CHU, GIAI_THICH, TRANG_THAI_KHOI, TRANG_THAI_MAY_RUNTIME } from './nhan';
+import { CHU, TRANG_THAI_KET_NOI, GIAI_THICH, TRANG_THAI_KHOI, TRANG_THAI_MAY_RUNTIME } from './nhan';
 
 /**
  * Năm sự thật khác nhau KHÔNG được dùng chung một bộ từ.
@@ -63,16 +63,33 @@ test('chip kết nối nói về TRÌNH DUYỆT, và cả bốn trạng thái c�
   // trạng thái, cái đầu là một DANH TỪ — và nó đúng là trạng thái khoẻ, tức trạng thái người
   // dùng thấy 99% thời gian. Người dùng nói nguyên văn: "có chữ Dòng sự kiện ở trên không
   // biết như thế nào". Ở trạng thái tốt nhất, chip là chỗ duy nhất không nói trạng thái gì.
-  const bon = [CHU.ketNoiSong, CHU.ketNoiMat, CHU.ketNoiChua, CHU.ketNoiDangMo];
-  for (const c of bon) {
-    expect(c.length, c).toBeGreaterThan(0);
-    // Không chỗ nào trong bốn được mượn chữ của trạng thái MÁY: chip nói trình duyệt có nối
-    // được kênh không, hoàn toàn không nói engine đang làm gì.
-    expect(c, c).not.toContain('đang chạy');
-    expect(c, c).not.toContain('đang nghỉ');
+  // Lặp trên chính BẢNG, không trên một danh sách chép tay: thêm một ca mà quên thêm vào
+  // đây thì bài kiểm cũ vẫn xanh. `Record` bắt TypeScript đỏ nếu thiếu ca, còn vòng lặp này
+  // bắt nội dung của ca mới phải theo cùng luật.
+  const ca = Object.values(TRANG_THAI_KET_NOI);
+  expect(ca).toHaveLength(4);
+
+  for (const { nhan, nhanNgan, giaiThich } of ca) {
+    expect(nhan.length, nhan).toBeGreaterThan(0);
+    expect(nhanNgan.length, nhanNgan).toBeGreaterThan(0);
+    expect(giaiThich.length, nhan).toBeGreaterThan(0);
+
+    // Không ca nào được mượn chữ của trạng thái MÁY: chip nói đường truyền có thông không,
+    // hoàn toàn không nói engine đang làm gì.
+    expect(nhan, nhan).not.toContain('đang chạy');
+    expect(nhan, nhan).not.toContain('đang nghỉ');
+
+    // Nhãn phải nêu TÂN NGỮ. "đã nối" trần là bản cũ, và người dùng đã phải hỏi "đã nối là
+    // gì ấy nhỉ" — một nhãn phải hỏi mới hiểu là một nhãn đã hỏng.
+    expect(nhan, nhan).toContain('engine');
+
+    // Bản ngắn thật sự NGẮN hơn, nếu không thì điểm ngắt 700px không cứu được gì.
+    expect(nhanNgan.length, nhanNgan).toBeLessThan(nhan.length);
   }
+
   // Bốn câu phải PHÂN BIỆT được với nhau, nếu không thì gộp trạng thái là chuyện sớm muộn.
-  expect(new Set(bon).size).toBe(4);
+  expect(new Set(ca.map((c) => c.nhan)).size).toBe(4);
+  expect(new Set(ca.map((c) => c.giaiThich)).size).toBe(4);
 });
 
 test('CHỈ thanh dưới được khai trạng thái máy — không nhãn nào khác mượn câu ấy', () => {

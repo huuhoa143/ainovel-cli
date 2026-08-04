@@ -34,6 +34,23 @@
   --ui: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
 }
+/* ── VỎ ỨNG DỤNG ≠ TRANG TÀI LIỆU ─────────────────────────────────────────
+   `globals.css` đặt `html, body { height: 100% }` và `body { overflow: hidden }`,
+   kèm chú thích "khung ứng dụng cố định, không phải trang cuộn". Đúng cho app —
+   rail, canvas và transport tự cuộn bên trong một khung không đổi.
+
+   Nhưng tờ này là một TRANG ĐỌC dài hơn ba nghìn pixel, nên nó thừa hưởng đúng
+   cái làm nó KHÔNG CUỘN ĐƯỢC. ĐO ĐƯỢC: body cao 900px, nội dung 3.248px, con
+   lăn chuột không ăn — người duyệt chỉ thấy được màn hình đầu tiên.
+
+   Khai lại ở ĐÂY chứ không sửa `globals.css`: app cần `overflow: hidden`, và
+   một preview không được đổi luật của thứ nó đang mô tả. */
+html,
+body {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+}
 
 body {
   background: var(--bg);

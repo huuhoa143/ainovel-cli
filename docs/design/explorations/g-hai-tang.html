@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>g · hai tầng — xưởng và tác phẩm</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../web/app/globals.css">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   g · HAI TẦNG — XƯỞNG VÀ TÁC PHẨM
+
+   Bản đề xuất để duyệt. Hôm nay mười tám khu nằm PHẲNG trong một rail, và cấp
+   máy lẫn cấp tác phẩm chỉ khác nhau bằng tên nhóm. Đề xuất: tách làm hai tầng
+   thật, mỗi tầng một URL.
+
+   Dữ liệu trong tờ này là dữ liệu THẬT, lấy từ `GET /api/workshop` của xưởng
+   đang chạy lúc 2026-08-02 — không phải số bịa cho đẹp bảng. Bốn cuốn, một cuốn
+   đang mở engine, một cuốn đã xong.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --ui: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+/* ── VỎ ỨNG DỤNG ≠ TRANG TÀI LIỆU ─────────────────────────────────────────
+   `globals.css` đặt `html, body { height: 100% }` và `body { overflow: hidden }`,
+   kèm chú thích "khung ứng dụng cố định, không phải trang cuộn". Đúng cho app —
+   rail, canvas và transport tự cuộn bên trong một khung không đổi.
+
+   Nhưng tờ này là một TRANG ĐỌC dài hơn ba nghìn pixel, nên nó thừa hưởng đúng
+   cái làm nó KHÔNG CUỘN ĐƯỢC. ĐO ĐƯỢC: body cao 900px, nội dung 3.248px, con
+   lăn chuột không ăn — người duyệt chỉ thấy được màn hình đầu tiên.
+
+   Khai lại ở ĐÂY chứ không sửa `globals.css`: app cần `overflow: hidden`, và
+   một preview không được đổi luật của thứ nó đang mô tả. */
+html,
+body {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 14px/1.55 var(--ui);
+  margin: 0;
+  padding: 0 0 120px;
+  display: block;
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+
+/* ── đầu tờ + mục ────────────────────────────────────────────────────────── */
+.dauto { padding: 56px 0 34px; border-bottom: 1px solid var(--line); margin-bottom: 40px; }
+.dauto h1 { font: 600 27px/1.25 var(--ui); margin: 0 0 12px; letter-spacing: -0.015em; }
+.dauto h1 em { font-style: normal; color: var(--ink-3); font-weight: 400; }
+.dauto p { margin: 0 0 10px; color: var(--ink-2); max-width: 76ch; }
+.dauto .ngay { font: 400 11.5px var(--mono); color: var(--ink-3); }
+
+section { margin: 0 0 60px; scroll-margin-top: 20px; }
+section > h2 {
+  font: 600 18px/1.3 var(--ui); margin: 0 0 6px;
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+}
+section > h2 .so {
+  font: 500 11px var(--mono); color: var(--tren-mau); background: var(--gold);
+  border-radius: 3px; padding: 2px 7px; letter-spacing: 0.04em;
+}
+section > .dan { color: var(--ink-2); margin: 0 0 20px; max-width: 78ch; }
+section > .dan strong { color: var(--ink); font-weight: 500; }
+.kod {
+  font: 400 12.5px var(--mono); background: var(--panel-2);
+  border: 1px solid var(--line-2); border-radius: 3px; padding: 1px 5px; color: var(--ink);
+}
+.ghichu {
+  border-left: 1px solid var(--line); padding: 2px 0 2px 14px; margin: 16px 0 0;
+  color: var(--ink-3); font-size: 12.5px; max-width: 78ch;
+}
+.ghichu b { color: var(--ink-2); font-weight: 500; }
+
+/* ── bản đồ hai tầng ─────────────────────────────────────────────────────── */
+.bando { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 0 0 8px; }
+.tangbox {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 16px 18px;
+}
+.tangbox h3 {
+  font: 500 10.5px var(--ui); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-3); margin: 0 0 4px;
+}
+.tangbox .url { font: 400 11.5px var(--mono); color: var(--gold); margin: 0 0 14px; }
+.tangbox ul { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.tangbox li { padding: 3px 0; color: var(--ink-2); display: flex; gap: 8px; }
+.tangbox li .g { color: var(--ink-3); width: 14px; flex: none; text-align: center; }
+.tangbox .nhomten {
+  font: 500 10.5px var(--ui); letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--ink-3); margin: 12px 0 4px; padding-top: 10px; border-top: 1px solid var(--line-2);
+}
+.tangbox .nhomten:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+.chuyen {
+  text-align: center; font: 400 12px var(--mono); color: var(--ink-3); padding: 6px 0 0;
+}
+
+/* ═══ MÔ PHỎNG ỨNG DỤNG ═══════════════════════════════════════════════════ */
+.mp {
+  border: 1px solid var(--line); border-radius: var(--r); overflow: hidden;
+  background: var(--bg); margin: 0 0 8px;
+}
+.mpbar {
+  display: flex; align-items: center; gap: 12px; padding: 8px 12px;
+  background: var(--panel); border-bottom: 1px solid var(--line); font-size: 12.5px;
+}
+.mpbar .logo { font: 600 13px var(--ui); }
+.mpbar .logo em { font-style: normal; color: var(--ink-3); font-weight: 400; }
+.mpbar .day { flex: 1; }
+.mpchip {
+  display: inline-flex; align-items: center; gap: 6px; font: 400 11px var(--mono);
+  color: var(--ink-2); background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 999px; padding: 3px 10px;
+}
+.mpchip .d { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
+.mpthan { display: grid; min-height: 430px; }
+.mpthan.cotang2 { grid-template-columns: 216px 1fr; }
+
+/* rail cấp tác phẩm */
+.mprail {
+  background: var(--panel); border-right: 1px solid var(--line);
+  padding: 8px 0; overflow-y: auto; font-size: 13px;
+}
+.mplen {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  background: none; border: 0; color: var(--ink-2); font: 500 12.5px var(--ui);
+  padding: 7px 14px; cursor: pointer; text-align: left;
+  border-bottom: 1px solid var(--line-2); margin-bottom: 6px;
+}
+.mplen:hover { color: var(--gold); }
+.mpnhom {
+  font: 500 10px var(--ui); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-3); padding: 12px 14px 5px;
+}
+.mpmuc {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  background: none; border: 0; color: var(--ink-2);
+  font: 400 13px var(--ui); padding: 5px 14px; cursor: pointer; text-align: left;
+}
+.mpmuc:hover { background: var(--panel-2); color: var(--ink); }
+.mpmuc[aria-current="page"] { background: var(--raised); color: var(--ink); }
+.mpmuc .g { width: 14px; text-align: center; color: var(--ink-3); flex: none; }
+.mpmuc .nh { flex: 1; }
+.mpmuc .n { font: 400 11.5px var(--mono); color: var(--ink-3); }
+.mpmuc .n.warn { color: var(--amber); }
+
+/* canvas */
+.mpcanvas { padding: 18px 20px; overflow-y: auto; }
+.mpcanvas h1 { font: 600 17px/1.3 var(--ui); margin: 0 0 3px; }
+.mpcanvas .sub { font: 400 12px var(--mono); color: var(--ink-3); }
+
+/* ── dải điều phối ───────────────────────────────────────────────────────── */
+.dieuphoi {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 11px 14px; margin: 16px 0 20px;
+  font-size: 13px;
+}
+.dieuphoi .ky { font-size: 11px; color: var(--ink-3); }
+.dieuphoi .ky.gold { color: var(--gold); }
+.dieuphoi b { font-weight: 500; }
+.dieuphoi .day { flex: 1; }
+.dieuphoi .di {
+  font: 500 11.5px var(--ui); background: var(--raised); border: 1px solid var(--line);
+  border-radius: 3px; color: var(--ink); padding: 5px 11px; cursor: pointer;
+}
+
+/* ── bảng tác phẩm ───────────────────────────────────────────────────────── */
+table.xu { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.xu th {
+  text-align: left; font: 500 10.5px var(--ui); letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--ink-3);
+  padding: 0 10px 8px 0; border-bottom: 1px solid var(--line);
+}
+table.xu th.p, table.xu td.p { text-align: right; }
+table.xu td {
+  padding: 9px 10px 9px 0; border-bottom: 1px solid var(--line-2);
+  color: var(--ink-2); vertical-align: middle;
+}
+table.xu tr.hang { cursor: pointer; }
+table.xu tr.hang:hover td { background: var(--panel); }
+table.xu td .ten { color: var(--ink); font-weight: 500; }
+table.xu td .ma { font: 400 11px var(--mono); color: var(--ink-3); display: block; }
+table.xu td.p .m { font: 400 12.5px var(--mono); color: var(--ink); }
+.st { display: inline-flex; align-items: center; gap: 6px; font: 400 11.5px var(--mono); }
+.st .d { width: 7px; height: 7px; border-radius: 50%; }
+.st.chay .d { background: var(--gold); }
+.st.nghi .d { background: var(--ink-3); }
+.st.xong .d { background: var(--teal); }
+.tiendo { display: flex; align-items: center; gap: 8px; }
+.tiendo .thanh {
+  width: 74px; height: 4px; border-radius: 2px; background: var(--panel-2); overflow: hidden;
+}
+.tiendo .thanh i { display: block; height: 100%; background: var(--teal); }
+.tiendo .so { font: 400 11.5px var(--mono); color: var(--ink-3); }
+.mo {
+  font: 500 11px var(--ui); background: transparent; border: 1px solid var(--line);
+  border-radius: 3px; color: var(--ink-2); padding: 4px 9px; cursor: pointer;
+}
+tr.hang:hover .mo { border-color: var(--gold); color: var(--gold); }
+.tong {
+  display: flex; gap: 22px; flex-wrap: wrap; margin: 14px 0 0;
+  font: 400 12px var(--mono); color: var(--ink-3);
+}
+.tong b { color: var(--ink); font-weight: 500; }
+
+/* ── khối mục của trang quản lý ──────────────────────────────────────────── */
+.khoi { margin: 26px 0 0; }
+.khoi > h2 {
+  font: 500 10.5px var(--ui); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-3); margin: 0 0 10px; padding-bottom: 7px; border-bottom: 1px solid var(--line-2);
+}
+.the2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+/* `color` khai TƯỜNG MINH: `<button>` không kế thừa màu chữ, nó rơi về `buttontext` của
+   trình duyệt. Hai span bên trong đang tự đặt màu nên mắt không thấy gì sai, nhưng phép đo
+   tương phản bắt được thẻ bọc ở 1,12:1 — và ngày ai đó thêm một dòng chữ trần vào thẻ này,
+   dòng đó sẽ vô hình. */
+.the {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 13px 15px; cursor: pointer; text-align: left; color: var(--ink);
+}
+.the:hover { border-color: var(--gold); }
+.the .t { font: 500 13px var(--ui); color: var(--ink); display: block; margin-bottom: 3px; }
+.the .m { font-size: 12px; color: var(--ink-3); }
+.cauhinh { display: grid; grid-template-columns: max-content 1fr; gap: 7px 20px; font-size: 13px; }
+.cauhinh dt { color: var(--ink-3); }
+.cauhinh dd { margin: 0; font: 400 12.5px var(--mono); color: var(--ink); }
+
+/* ── bảng điều khiển preview ─────────────────────────────────────────────── */
+.dieu {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 12px 15px; margin: 0 0 16px; display: flex; gap: 20px; flex-wrap: wrap; align-items: center;
+}
+.dieu .tend {
+  font: 500 10.5px var(--ui); letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3);
+}
+.dieu button {
+  font: 400 11.5px var(--mono); background: var(--panel-2); border: 1px solid var(--line);
+  color: var(--ink-2); border-radius: 4px; padding: 4px 10px; cursor: pointer;
+}
+.dieu button[aria-pressed="true"] {
+  background: var(--gold); border-color: var(--gold); color: var(--tren-mau); font-weight: 500;
+}
+
+/* ── bảng so sánh ────────────────────────────────────────────────────────── */
+table.ss { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.ss th {
+  text-align: left; font: 500 10.5px var(--ui); letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--ink-3); padding: 0 12px 9px 0; border-bottom: 1px solid var(--line);
+}
+table.ss td {
+  padding: 9px 12px 9px 0; border-bottom: 1px solid var(--line-2);
+  color: var(--ink-2); vertical-align: top;
+}
+table.ss .cu { color: var(--red); font: 400 12.5px var(--mono); }
+table.ss .moi { color: var(--teal); font: 400 12.5px var(--mono); }
+
+.mucluc {
+  position: sticky; top: 0; z-index: 20;
+  background: color-mix(in oklch, var(--bg) 92%, transparent);
+  backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); margin-bottom: 32px;
+}
+.mucluc ul {
+  max-width: 1180px; margin: 0 auto; padding: 10px 28px; list-style: none;
+  display: flex; gap: 22px; font: 400 12px var(--mono);
+}
+.mucluc a { color: var(--ink-3); text-decoration: none; }
+.mucluc a:hover { color: var(--gold); }
+
+@media (max-width: 900px) {
+  .wrap { padding: 0 16px; }
+  .mucluc ul { padding: 10px 16px; gap: 14px; overflow-x: auto; }
+  .dauto h1 { font-size: 22px; }
+  .bando, .the2 { grid-template-columns: 1fr; }
+  .mpthan.cotang2 { grid-template-columns: 1fr; }
+  .mprail { border-right: 0; border-bottom: 1px solid var(--line); }
+  table.ss, table.xu { display: block; overflow-x: auto; white-space: nowrap; }
+  table.ss td, table.ss th, table.xu td, table.xu th { white-space: normal; min-width: 110px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="mucluc">
+  <ul>
+    <li><a href="#bando">bản đồ hai tầng</a></li>
+    <li><a href="#thu">thử điều hướng</a></li>
+    <li><a href="#doi">đổi những gì</a></li>
+    <li><a href="#khong">cố ý không làm</a></li>
+  </ul>
+</nav>
+
+<div class="wrap">
+
+<header class="dauto">
+  <h1>g · hai tầng <em>— xưởng và tác phẩm</em></h1>
+  <p>Hôm nay mười tám khu nằm <strong>phẳng</strong> trong một rail, và cấp máy lẫn cấp tác
+     phẩm chỉ khác nhau bằng tên nhóm. Đề xuất: tách làm hai tầng thật, mỗi tầng một URL —
+     <span class="kod">?khu=xuong</span> cho cả xưởng, <span class="kod">?tp=…&amp;khu=…</span>
+     cho một tác phẩm.</p>
+  <p class="ngay">dữ liệu THẬT từ GET /api/workshop · 4 tác phẩm · 2026-08-02</p>
+  <p class="ghichu" style="margin-top:18px"><b>Đếm cho chính xác, vì hai con số dễ lẫn.</b>
+     Rail hôm nay có <b>18 mục</b> nhưng chỉ <b>17 khu</b> — "Nhật ký phán quyết" là một NEO
+     vào trong Dòng sản xuất, không phải bề mặt riêng. Sau khi tách: tầng 2 giữ <b>14 mục ·
+     13 khu</b>, tầng 1 lấy <b>4 khu</b> mức máy (Xưởng · Cùng dựng · Tác phẩm mới · Cấu hình
+     máy). Bản hỏi ý lúc nãy tôi ghi nhầm "13 mục" — đúng là 14 mục, và danh sách liệt kê ở
+     đó đã đủ cả 14.</p>
+</header>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="bando">
+  <h2><span class="so">BẢN ĐỒ</span> Mười tám khu đi đâu</h2>
+  <p class="dan">Ranh giới không phải do tôi vẽ ra — nó đã có sẵn trong mã và đang được ghi
+     bằng một cái tên nhóm. <span class="kod">laKhuMucMay()</span> trong
+     <span class="kod">lib/khu.ts</span> khai đúng bốn khu không đọc
+     <span class="kod">tacPham</span>, và chú thích của nó nói thẳng lý do: nội dung của
+     chúng không đổi khi người dùng chuyển tác phẩm. Đề xuất này chỉ làm cho ranh giới ấy
+     <strong>thấy được</strong> thay vì phải đọc mã mới biết.</p>
+
+  <div class="bando">
+    <div class="tangbox">
+      <h3>Tầng 1 · Xưởng</h3>
+      <p class="url">?khu=xuong &nbsp;— không cần ?tp=</p>
+      <div class="nhomten">Trục chính</div>
+      <ul>
+        <li><span class="g">▦</span> Danh sách tác phẩm + tổng cả xưởng</li>
+        <li><span class="g">◉</span> Dải điều phối — cuốn nào đang chạy</li>
+      </ul>
+      <div class="nhomten">Tạo</div>
+      <ul>
+        <li><span class="g">+</span> Tác phẩm mới</li>
+        <li><span class="g">⁂</span> Cùng dựng</li>
+      </ul>
+      <div class="nhomten">Máy</div>
+      <ul>
+        <li><span class="g">⌸</span> Cấu hình máy — khóa API, model theo vai</li>
+      </ul>
+    </div>
+
+    <div class="tangbox">
+      <h3>Tầng 2 · Một tác phẩm</h3>
+      <p class="url">?tp=con-roi…&amp;khu=dong-san-xuat</p>
+      <div class="nhomten">Truyện của bạn</div>
+      <ul>
+        <li><span class="g">✎</span> Bản thảo</li>
+        <li><span class="g">▤</span> Dòng sản xuất</li>
+        <li><span class="g">◆</span> Kiểm định</li>
+        <li><span class="g">■</span> Hàng chờ viết lại</li>
+        <li><span class="g">⇄</span> Nhập &amp; Xuất</li>
+      </ul>
+      <div class="nhomten">Thế giới truyện</div>
+      <ul>
+        <li><span class="g">☰</span> Dàn ý phân tầng</li>
+        <li><span class="g">●</span> Nhân vật</li>
+        <li><span class="g">⬢</span> Luật thế giới</li>
+        <li><span class="g">◇</span> Phục bút</li>
+        <li><span class="g">✒</span> Văn phong</li>
+      </ul>
+      <div class="nhomten">Chi phí &amp; vận hành</div>
+      <ul>
+        <li><span class="g">⌗</span> Nhật ký phán quyết</li>
+        <li><span class="g">$</span> Chi phí</li>
+        <li><span class="g">☗</span> Tổ sản xuất</li>
+        <li><span class="g">⚙</span> Cài đặt</li>
+      </ul>
+    </div>
+  </div>
+  <p class="chuyen">↑ lên bằng <span class="kod">← Xưởng</span> &nbsp;·&nbsp; xuống bằng một dòng trong bảng, hoặc bộ chọn ở thanh trên</p>
+
+  <p class="ghichu"><b>Cùng dựng nằm ở tầng 1, và nó là mục DUY NHẤT hơi lấn ranh.</b>
+     Component hiện có hai chế độ: <span class="kod">mo-sach</span> (dựng một cuốn mới) và
+     <span class="kod">giai-doan</span> (bàn về chặng tiếp của cuốn đang mở), suy từ việc có
+     tác phẩm đang xem hay không. Chế độ đầu thuộc tầng 1; chế độ sau thuộc tầng 2. Đề xuất
+     giữ nguyên cơ chế suy đó — ở tầng 1 nó tự là "mở sách", ở tầng 2 nó tự là "giai đoạn" —
+     nên không cần khai hai khu cho một component.</p>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="thu">
+  <h2><span class="so">THỬ</span> Đi qua đi lại giữa hai tầng</h2>
+  <p class="dan">Bấm một dòng trong bảng để xuống tầng 2; bấm <span class="kod">← Xưởng</span>
+     để lên lại. Số liệu là số thật của xưởng đang chạy.</p>
+
+  <div class="dieu">
+    <span class="tend">Đang ở</span>
+    <button type="button" data-tang="1" aria-pressed="true">Tầng 1 · Xưởng</button>
+    <button type="button" data-tang="2" aria-pressed="false">Tầng 2 · Tác phẩm</button>
+  </div>
+
+  <div class="mp">
+    <div class="mpbar">
+      <span class="logo">ainovel <em>studio</em></span>
+      <span id="bcuc"></span>
+      <span class="day"></span>
+      <span class="mpchip"><span class="d"></span>đã nối</span>
+    </div>
+    <div class="mpthan" id="than"></div>
+  </div>
+
+  <p class="ghichu"><b>Thanh trên đổi vai theo tầng.</b> Ở tầng 2 nó vẫn là bộ chọn tác phẩm
+     như hôm nay — đổi cuốn không cần lên tầng 1. Ở tầng 1 nó chỉ còn tên xưởng: không có
+     cuốn nào đang mở thì một bộ chọn cuốn là một điều khiển không nói về gì cả.</p>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="doi">
+  <h2><span class="so">ĐỔI</span> Cái gì đổi, cái gì giữ</h2>
+
+  <table class="ss">
+    <thead>
+      <tr><th style="width:22%">Chỗ</th><th style="width:32%">Hôm nay</th><th>Đề xuất</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Rail</td>
+        <td><span class="cu">18 mục · 4 nhóm</span>, ba nhóm dưới thu sẵn</td>
+        <td><span class="moi">14 mục · 3 nhóm</span>, mở hết. Đủ thưa để không còn "quá ngợp", và hết chuyện "các màn khác đâu rồi"</td>
+      </tr>
+      <tr>
+        <td>Xưởng</td>
+        <td>một mục thứ mười lăm trong rail</td>
+        <td><span class="moi">một TẦNG</span> — trang có trục riêng, mang cả tạo mới và cấu hình máy</td>
+      </tr>
+      <tr>
+        <td>Cấu hình máy</td>
+        <td>nằm trong rail của một tác phẩm, dù nó sửa <span class="kod">~/.ainovel/config.json</span></td>
+        <td><span class="moi">về tầng 1</span> — hết chỗ để đọc nhầm thành "cấu hình của cuốn này"</td>
+      </tr>
+      <tr>
+        <td>URL</td>
+        <td><span class="kod">?tp=X&amp;khu=cau-hinh</span> — <span class="cu">tp thừa</span>, khu đó không đọc nó</td>
+        <td><span class="moi">?khu=xuong</span> ở tầng 1; <span class="kod">?tp=X&amp;khu=Y</span> ở tầng 2</td>
+      </tr>
+      <tr>
+        <td>Màn mở đầu</td>
+        <td>tác phẩm đang mở</td>
+        <td>giữ nguyên — <span class="moi">có ?tp= thì vào thẳng</span>. Người quay lại sau 6 giờ không bị thêm một bước</td>
+      </tr>
+      <tr>
+        <td>Thanh transport</td>
+        <td>luôn hiện</td>
+        <td>giữ nguyên ở tầng 2. Ở tầng 1 <span class="moi">ẩn</span> — không có cuốn nào đang mở thì không có dây chuyền nào để nói</td>
+      </tr>
+      <tr>
+        <td>Inspector</td>
+        <td>chỉ ở Dòng sản xuất</td>
+        <td>giữ nguyên</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="ghichu"><b>Điều khoản trong DESIGN.md phải sửa theo.</b> Dòng 112 ghi rail
+     "là đường điều hướng duy nhất giữa mười sáu khu, nên bỏ nó là khóa người dùng trong khu
+     đang mở". Câu đó vẫn đúng nguyên văn — chỉ là "mười sáu khu" thành "mười ba khu của một
+     tác phẩm", và tầng 1 có đường đi riêng không qua rail. Ghi ra ở đây để bản thi hành sửa
+     tài liệu cùng lúc, thay vì để nó lệch rồi ai đó tin vào câu cũ.</p>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section id="khong">
+  <h2><span class="so">RANH</span> Chỗ cố ý không làm, và một ràng buộc về SỰ THẬT</h2>
+
+  <p class="dan"><strong>Dải điều phối chỉ nói được điều nó chứng minh được.</strong>
+     <span class="kod">/api/workshop</span> mang <span class="kod">activity</span> và
+     <span class="kod">engine_open</span> cho từng cuốn — đủ để nói cuốn nào đang chạy và
+     cuốn nào có engine mở. Nó <em>không</em> mang trạng thái cửa nghiệm thu; câu đó nằm
+     trong <span class="kod">/studio</span> của từng cuốn.</p>
+  <p class="dan">Nên dải điều phối <strong>không</strong> hiện "3 cuốn chờ bạn nghiệm thu" —
+     muốn có câu đó phải gọi bốn lượt snapshot mỗi lần mở trang, và một con số bịa ở đây tệ
+     hơn không có con số nào: người vận hành sẽ tin nó rồi bỏ qua một hàng chờ thật. Với
+     cuốn ĐANG MỞ engine thì hỏi thêm một lượt <span class="kod">/studio</span> — một lượt,
+     có biên, và nó là cuốn duy nhất có cửa để mà chờ.</p>
+
+  <p class="dan" style="margin-top:20px">Ba thứ khác cố ý để nguyên:</p>
+  <table class="ss">
+    <thead><tr><th style="width:26%">Không làm</th><th>Vì sao</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Chạy / dừng ở tầng 1</td>
+        <td>Một đường tiêu tiền duy nhất. Hai nút cùng gọi <span class="kod">POST /run</span> thì trạng thái khóa-lúc-đang-gửi của chúng không thấy nhau — bấm cả hai là trả tiền hai lần. Và tầng 1 là bề mặt người ta QUÉT MẮT, không phải chỗ quyết định chạy gì.</td>
+      </tr>
+      <tr>
+        <td>Xóa / đổi tên tác phẩm</td>
+        <td>Xóa một cuốn là xóa hàng giờ chạy và hàng chục đô. Việc đó để ở hệ tệp, nơi thấy rõ mình đang phá cái gì. (Quyết định 8 của spec, giữ nguyên.)</td>
+      </tr>
+      <tr>
+        <td>Chạy nhiều cuốn song song</td>
+        <td>Engine hôm nay chỉ cho MỘT cuốn sống mỗi lần. Dải điều phối vì thế nói "máy đang chạy cuốn X" chứ không dựng một hàng đợi — vẽ một hàng đợi cho một cơ chế chưa có là hứa một thứ bấm vào không chạy.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   Dữ liệu THẬT, chép từ `GET /api/workshop` lúc 2026-08-02. Không phải số bịa:
+   một bảng preview đầy số tròn đẹp sẽ giấu mất đúng những ca mà bảng thật phải
+   chịu — cuốn 3/3 đã xong, cuốn 9/111 mới đi được 8%, và một cuốn tên dài.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const SACH = [
+  { id: 'viet-truyen-dang-trung-sinh', ten: 'Con Rối Trong Hộp Kính', xong: 9, tong: 111, tu: 32177, tien: 7.05, tt: 'nghi', mo: true },
+  { id: 'mac-the-bien-di-vo', ten: 'Vô Song Dị Chủng', xong: 4, tong: 113, tu: 13444, tien: 4.48, tt: 'nghi', mo: false },
+  { id: 'ben-cu-khong-den', ten: 'Ba đêm đèn tắt', xong: 3, tong: 3, tu: 5305, tien: 1.67, tt: 'xong', mo: false },
+  { id: 'novel', ten: 'Dấu Nước Dưới Cầu Đá', xong: 8, tong: 68, tu: 25037, tien: 7.91, tt: 'nghi', mo: false },
+];
+
+const NHOM_TP = [
+  { ten: 'Truyện của bạn', muc: [
+    ['✎', 'Bản thảo', '9'], ['▤', 'Dòng sản xuất', ''], ['◆', 'Kiểm định', '10'],
+    ['■', 'Hàng chờ viết lại', '0'], ['⇄', 'Nhập & Xuất', ''],
+  ]},
+  { ten: 'Thế giới truyện', muc: [
+    ['☰', 'Dàn ý phân tầng', '2'], ['●', 'Nhân vật', '8'], ['⬢', 'Luật thế giới', '12'],
+    ['◇', 'Phục bút', '13!'], ['✒', 'Văn phong', ''],
+  ]},
+  { ten: 'Chi phí & vận hành', muc: [
+    ['⌗', 'Nhật ký phán quyết', '1'], ['$', 'Chi phí', ''],
+    ['☗', 'Tổ sản xuất', ''], ['⚙', 'Cài đặt', ''],
+  ]},
+];
+
+const TT_CHU = { chay: 'đang chạy', nghi: 'đang nghỉ', xong: 'đã xong' };
+
+const el = (t, lop, chu) => {
+  const e = document.createElement(t);
+  if (lop) e.className = lop;
+  if (chu !== undefined) e.textContent = chu;
+  return e;
+};
+
+let tang = 1;
+let tpDangMo = SACH[0];
+let khuDangMo = 'Dòng sản xuất';
+
+function veTang1() {
+  const than = document.getElementById('than');
+  than.className = 'mpthan';
+  than.replaceChildren();
+
+  const c = el('main', 'mpcanvas');
+  c.append(el('h1', null, 'Xưởng'));
+  c.append(el('p', 'sub', '/tmp/e2e-that/output'));
+
+  /* Dải điều phối — nói ĐÚNG điều /workshop chứng minh được. Xem mục RANH. */
+  const dp = el('div', 'dieuphoi');
+  const dangChay = SACH.find((s) => s.tt === 'chay');
+  const dangMo = SACH.find((s) => s.mo);
+  dp.append(el('span', dangChay ? 'ky gold' : 'ky', dangChay ? '▶' : '○'));
+  if (dangChay) {
+    dp.append(el('span', null, 'Máy đang chạy'));
+    dp.append(el('b', null, dangChay.ten));
+  } else {
+    dp.append(el('span', null, 'Máy đang rỗi'));
+    if (dangMo) {
+      dp.append(el('span', null, '· engine còn mở ở'));
+      dp.append(el('b', null, dangMo.ten));
+    }
+  }
+  dp.append(el('span', 'day'));
+  if (dangMo) {
+    const b = el('button', 'di', 'Vào ' + dangMo.ten);
+    b.type = 'button';
+    b.addEventListener('click', () => { tpDangMo = dangMo; datTang(2); });
+    dp.append(b);
+  }
+  c.append(dp);
+
+  /* Bảng tác phẩm */
+  const bang = el('table', 'xu');
+  const thead = el('thead');
+  const tr0 = el('tr');
+  for (const [t, lop] of [['Tác phẩm', ''], ['Trạng thái', ''], ['Tiến độ', ''], ['Số từ', 'p'], ['Chi phí', 'p'], ['', 'p']]) {
+    const th = el('th', lop, t);
+    tr0.append(th);
+  }
+  thead.append(tr0);
+  bang.append(thead);
+
+  const tbody = el('tbody');
+  for (const s of SACH) {
+    const tr = el('tr', 'hang');
+    tr.addEventListener('click', () => { tpDangMo = s; datTang(2); });
+
+    const tdTen = el('td');
+    tdTen.append(el('span', 'ten', s.ten));
+    tdTen.append(el('span', 'ma', s.id));
+    tr.append(tdTen);
+
+    const tdTt = el('td');
+    const st = el('span', 'st ' + s.tt);
+    st.append(el('span', 'd'));
+    st.append(document.createTextNode(TT_CHU[s.tt]));
+    tdTt.append(st);
+    tr.append(tdTt);
+
+    const tdTd = el('td');
+    const td = el('div', 'tiendo');
+    const thanh = el('div', 'thanh');
+    const i = el('i');
+    i.style.width = Math.round((s.xong / s.tong) * 100) + '%';
+    thanh.append(i);
+    td.append(thanh);
+    td.append(el('span', 'so', s.xong + '/' + s.tong));
+    tdTd.append(td);
+    tr.append(tdTd);
+
+    const tdTu = el('td', 'p');
+    tdTu.append(el('span', 'm', s.tu.toLocaleString('vi-VN')));
+    tr.append(tdTu);
+
+    const tdTien = el('td', 'p');
+    tdTien.append(el('span', 'm', '$' + s.tien.toFixed(2).replace('.', ',')));
+    tr.append(tdTien);
+
+    const tdMo = el('td', 'p');
+    const nut = el('button', 'mo', 'Mở →');
+    nut.type = 'button';
+    tdMo.append(nut);
+    tr.append(tdMo);
+
+    tbody.append(tr);
+  }
+  bang.append(tbody);
+  c.append(bang);
+
+  const t = { xong: 0, tong: 0, tu: 0, tien: 0 };
+  for (const s of SACH) { t.xong += s.xong; t.tong += s.tong; t.tu += s.tu; t.tien += s.tien; }
+  const tongEl = el('div', 'tong');
+  for (const [nhan, gt] of [
+    ['tác phẩm', String(SACH.length)],
+    ['chương đã chốt', t.xong + '/' + t.tong],
+    ['số từ', t.tu.toLocaleString('vi-VN')],
+    ['tổng chi phí', '$' + t.tien.toFixed(2).replace('.', ',')],
+  ]) {
+    const s = el('span');
+    s.append(document.createTextNode(nhan + ' '));
+    s.append(el('b', null, gt));
+    tongEl.append(s);
+  }
+  c.append(tongEl);
+
+  /* Khối tạo */
+  const k1 = el('div', 'khoi');
+  k1.append(el('h2', null, 'Bắt đầu một cuốn mới'));
+  const the2 = el('div', 'the2');
+  for (const [t1, m1] of [
+    ['+ Tác phẩm mới', 'Khai tiền đề, số chương, model — rồi máy dựng nền và bắt đầu viết.'],
+    ['⁂ Cùng dựng', 'Bàn với máy để ra tiền đề trước, rồi mới chốt thành một tác phẩm.'],
+  ]) {
+    const b = el('button', 'the');
+    b.type = 'button';
+    b.append(el('span', 't', t1));
+    b.append(el('span', 'm', m1));
+    the2.append(b);
+  }
+  k1.append(the2);
+  c.append(k1);
+
+  /* Khối cấu hình máy */
+  const k2 = el('div', 'khoi');
+  k2.append(el('h2', null, 'Cấu hình máy — áp cho mọi tác phẩm'));
+  const dl = el('dl', 'cauhinh');
+  for (const [k, v] of [
+    ['Nhà cung cấp', 'cx'],
+    ['Khóa API', 'sk-42••••••••••••802'],
+    ['Model mặc định', 'cx/gpt-5.5'],
+    ['Architect', 'cx/gpt-5.5'],
+    ['Writer', 'cx/gpt-5.5'],
+    ['Editor', 'cx/gpt-5.5'],
+  ]) {
+    dl.append(el('dt', null, k));
+    dl.append(el('dd', null, v));
+  }
+  k2.append(dl);
+  c.append(k2);
+
+  than.append(c);
+  document.getElementById('bcuc').replaceChildren(el('span', 'mpchip', '▦ Xưởng · 4 tác phẩm'));
+}
+
+function veTang2() {
+  const than = document.getElementById('than');
+  than.className = 'mpthan cotang2';
+  than.replaceChildren();
+
+  const rail = el('nav', 'mprail');
+  const len = el('button', 'mplen', '← Xưởng');
+  len.type = 'button';
+  len.addEventListener('click', () => datTang(1));
+  rail.append(len);
+
+  for (const nh of NHOM_TP) {
+    rail.append(el('div', 'mpnhom', nh.ten));
+    for (const [g, ten, dem] of nh.muc) {
+      const b = el('button', 'mpmuc');
+      b.type = 'button';
+      if (ten === khuDangMo) b.setAttribute('aria-current', 'page');
+      b.append(el('span', 'g', g));
+      b.append(el('span', 'nh', ten));
+      if (dem) {
+        const canhBao = dem.endsWith('!');
+        b.append(el('span', canhBao ? 'n warn' : 'n', canhBao ? dem.slice(0, -1) : dem));
+      }
+      b.addEventListener('click', () => { khuDangMo = ten; veTang2(); });
+      rail.append(b);
+    }
+  }
+  than.append(rail);
+
+  const c = el('main', 'mpcanvas');
+  c.append(el('h1', null, khuDangMo));
+  c.append(el('p', 'sub', `${tpDangMo.ten} · ${tpDangMo.xong}/${tpDangMo.tong} chương · ${tpDangMo.tu.toLocaleString('vi-VN')} từ`));
+  const cho = el('div', 'khoi');
+  cho.append(el('h2', null, 'Bề mặt của khu này'));
+  cho.append(el('p', 'm', 'Nội dung giữ nguyên như hôm nay — tờ này chỉ đề xuất đổi ĐIỀU HƯỚNG, không đổi bề mặt nào.'));
+  c.append(cho);
+  than.append(c);
+
+  const boc = el('span', 'mpchip');
+  boc.textContent = `${tpDangMo.ten} · ${tpDangMo.xong}/${tpDangMo.tong} ▾`;
+  document.getElementById('bcuc').replaceChildren(boc);
+}
+
+function datTang(n) {
+  tang = n;
+  document.querySelectorAll('[data-tang]').forEach((b) => {
+    b.setAttribute('aria-pressed', String(Number(b.dataset.tang) === n));
+  });
+  if (n === 1) veTang1(); else veTang2();
+}
+
+document.querySelectorAll('[data-tang]').forEach((b) => {
+  b.addEventListener('click', () => datTang(Number(b.dataset.tang)));
+});
+
+datTang(1);
+</script>
+</body>
+</html>

@@ -1,13 +1,34 @@
 # ainovel-cli
 
+[English](README.en.md) · **Tiếng Việt**
+
 Engine viết tiểu thuyết dài bằng AI, toàn tự động. Engine tất định chạy trọn một cuốn sách, model chỉ được gọi đúng những chỗ cần phán đoán: Engine định tuyến theo sự thật để điều phối ba tác tử sáng tác tự chủ Architect / Writer / Editor, và đánh thức Arbiter khi cần phán quyết ngữ nghĩa. Từ một câu yêu cầu tới một cuốn tiểu thuyết hoàn chỉnh, không cần người can thiệp.
 
 > Đây là **bản fork tiếng Việt** của [voocel/ainovel-cli](https://github.com/voocel/ainovel-cli). Giao diện, prompt và tài liệu đã việt hóa nên AI sinh truyện tiếng Việt; xem [Ghi công](#ghi-công) ở cuối.
 
 <p align="center">
-  <img src="scripts/sample.gif" alt="ainovel-cli demo" width="800">
-  <img src="scripts/novel.png" alt="ainovel-cli bg" width="800">
+  <img src="docs/assets/studio.gif" alt="Web studio: Quản lý → Dòng sản xuất → Bản thảo → Chi phí → Model theo vai" width="820">
 </p>
+
+<p align="center">
+  <sub>Web studio, dữ liệu thật từ một lượt chạy: <b>Quản lý</b> cả xưởng → <b>Dòng sản xuất</b> của một
+  cuốn → <b>Bản thảo</b> → <b>Chi phí toàn xưởng</b> → <b>Model theo vai</b>.</sub>
+</p>
+
+<table>
+<tr>
+<td width="50%" valign="top">
+  <img src="docs/assets/ban-thao.png" alt="Đọc bản thảo, kèm bản duyệt của Editor">
+  <sub><b>Đọc bản thảo.</b> Chương đã nghiệm thu, đặt cạnh khế ước chương và bản duyệt bảy chiều
+  của Editor — mỗi chiều buộc phải dẫn nguyên văn làm chứng.</sub>
+</td>
+<td width="50%" valign="top">
+  <img src="docs/assets/chi-phi-xuong.png" alt="Chi phí toàn xưởng, bổ theo vai và theo model">
+  <sub><b>Chi phí toàn xưởng.</b> Bổ theo vai và theo model. Khi có lượt model không trả số liệu
+  dùng, studio nói thẳng là con số đang thiếu thay vì lặng lẽ cộng sai.</sub>
+</td>
+</tr>
+</table>
 
 ## Đặc điểm
 
@@ -21,8 +42,8 @@ Engine viết tiểu thuyết dài bằng AI, toàn tự động. Engine tất �
 - **Người dùng can thiệp thời gian thực** — trong lúc viết có thể tiêm ý kiến sửa vào ô nhập bất cứ lúc nào (không cần tạm dừng); hệ thống tự lượng định phạm vi ảnh hưởng và viết lại những chương bị ảnh hưởng
 - **Nghiệm thu từng chương tùy chọn** — mặc định vẫn toàn tự động; khi cần kiểm soát tinh, dùng `/review on` để mỗi lần `/next` chỉ mở đúng một chương mới, viết lại và khôi phục sau sập máy không tiêu lẫn giấy phép
 - **Một cửa vào TUI thống nhất** — giao diện tương tác theo dõi tiến độ trực tiếp, cũng có thể mang theo một câu yêu cầu để khởi động luôn
-- **Web studio đọc store** — `ainovel-cli serve --web <thư mục>` mở một bề mặt vận hành chỉ-đọc: trục sản xuất tập/cung/chương, bảng chương, nhật ký phán quyết của Arbiter, dòng sự kiện realtime qua SSE
-- **Tiếng Việt là mặc định** — giao diện, prompt, tài liệu tham chiếu và văn phong đều đã việt hóa nên AI sinh truyện tiếng Việt; đặt `AINOVEL_LANG=zh` để quay về bản gốc upstream
+- **Web studio ba màn** — `ainovel-cli serve --web <thư mục>` mở một bề mặt vận hành đầy đủ: Quản lý (cả xưởng) · Cài đặt chung (mọi tác phẩm) · Xưởng sản xuất (một tác phẩm). Trục sản xuất tập/cung/chương, bảng chương, nhật ký phán quyết của Arbiter, dòng sự kiện realtime qua SSE
+- **Tiếng Việt là mặc định** — giao diện, prompt, tài liệu tham chiếu và văn phong đều đã việt hóa nên AI sinh truyện tiếng Việt; đặt `AINOVEL_LANG=zh` để quay về chuỗi gốc của upstream. **Chưa có tiếng Anh**, và web studio chưa qua tầng i18n nào — hiện trạng đầy đủ ở [docs/i18n.md](docs/i18n.md)
 - **Hỗ trợ nhiều LLM** — OpenRouter / Anthropic / Gemini / OpenAI v.v., chuyển đổi tùy ý
 
 ## Kiến trúc
@@ -215,6 +236,24 @@ ainovel-cli update
 ainovel-cli
 ```
 
+> ### ⚠️ Lệnh cài ở trên lấy bản UPSTREAM, không phải bản fork này
+>
+> `install.sh` chốt cứng `REPO="voocel/ainovel-cli"` và `go install
+> github.com/voocel/ainovel-cli/...` phân giải theo `go.mod` — cũng là upstream. Cả hai đều
+> cài **bản gốc**, tức bản KHÔNG có việt hóa và KHÔNG có web studio.
+>
+> Muốn chạy bản fork này thì dựng từ nguồn:
+>
+> ```bash
+> git clone https://github.com/huuhoa143/ainovel-cli && cd ainovel-cli
+> go build -o ainovel-cli ./cmd/ainovel-cli
+> cd web && npm ci && npm run build && cd ..   # nếu cần web studio
+> ./ainovel-cli serve --web web/out
+> ```
+>
+> Đây là việc còn tồn đã biết, không phải sơ suất của tài liệu: sửa nó là đổi đường dẫn
+> module hoặc phát hành release riêng cho fork — một quyết định chưa chốt.
+
 > Windows hoặc cài tay: vào [Releases](https://github.com/voocel/ainovel-cli/releases/latest) tải gói đúng nền tảng.
 
 ### Docker
@@ -271,6 +310,40 @@ Studio cho xem: trục sản xuất tập/cung/chương theo tỉ lệ thật, b
 
 Studio **làm được cả vòng đời**: tạo tác phẩm, chạy, can thiệp, nghiệm thu từng chương, đặt khóa API, đổi model theo vai, nhập truyện ngoài, xuất bản — không cần mở terminal lần nào.
 
+#### Ba màn
+
+Điều hướng có hai tầng: **màn** ở trên, **khu** ở dưới. Cả ba màn luôn hiện ở đỉnh rail trái.
+
+| Màn | Phạm vi | Chứa |
+|---|---|---|
+| **Quản lý** | cả xưởng | danh sách tác phẩm · dải việc cần bạn · tổng xưởng · tác phẩm mới · cùng dựng |
+| **Cài đặt chung** | mọi tác phẩm | nhà cung cấp & khóa · model mặc định theo vai · chi phí toàn xưởng |
+| **Xưởng sản xuất** | một tác phẩm | 13 khu sáng tác và vận hành của cuốn đang mở |
+
+Màn mở đầu là **Quản lý**. `?tp=<tác-phẩm>` trên URL mở thẳng xưởng sản xuất của cuốn đó;
+`?khu=<khu>` thắng cả hai.
+
+<p align="center">
+  <img src="docs/assets/quan-ly.png" alt="Màn Quản lý: danh sách tác phẩm, dải việc cần bạn, tổng xưởng" width="820">
+</p>
+
+<p align="center">
+  <sub>Màn <b>Quản lý</b>. Dải trên cùng chỉ hiện khi có việc thật đang chờ người — ở đây là một
+  mốc tạm dừng đã ký kèm nguyên văn lý do, và một ý kiến can thiệp chưa xử lý.</sub>
+</p>
+
+**Đổi màn là đổi cả khung, không chỉ đổi canvas.** Bộ chọn tác phẩm chỉ có ở màn sản xuất; hai
+màn kia hiện gốc xưởng. Thanh transport — nơi có nút `▶ Chạy` tiêu tiền thật — cũng chỉ có ở
+màn sản xuất, vì một điều khiển cấp-tác-phẩm không có việc gì ở đáy một bề mặt liệt kê mọi
+tác phẩm.
+
+#### Một engine mỗi lần
+
+`boMay.soToiDa == 1` — engine chỉ mở **đúng một** cuốn mỗi lần, cuốn thứ hai nhận
+`errQuaNhieuMay`. Nên "sản xuất hàng loạt" ở đây nghĩa là **quản lý** nhiều cuốn kèm một hàng
+ưu tiên rõ ràng, **không** phải chạy song song. Màn Quản lý cố ý không vẽ bảng điều phối chạy
+song song: vẽ một hàng đợi cho một cơ chế chưa có là hứa một thứ bấm vào không chạy.
+
 Engine chạy **trong cùng process** với studio. Bản trước của tài liệu này giải thích vì sao studio chỉ đọc ("engine là process riêng và nó sở hữu quyền ghi; hai process cùng sửa `meta/run_meta.json` sẽ làm mất ý kiến can thiệp"), và lý lẽ đó đúng với tiền đề của nó. Tiền đề đã đổi: không còn hai process, studio LÀ người ghi duy nhất. Mọi lệnh ghi đi qua `*host.Host` nên chúng dùng đúng những giao dịch mà engine dùng cho chính nó.
 
 Hai hàng rào đi kèm:
@@ -283,6 +356,7 @@ Khóa API đi **một chiều**: đặt được qua giao diện, nhưng API kh�
 ### Quản lý nhiều tiểu thuyết
 
 Mỗi cuốn tiểu thuyết gắn với thư mục khởi động, sản phẩm nằm ở `{cwd}/output/novel/`. Khởi động ở thư mục khác = một cuốn khác, `cd` về lại rồi khởi động = tự khôi phục từ checkpoint gần nhất. Cấu hình `~/.ainovel/config.json` dùng chung toàn cục, không cần copy.
+
 
 ### Tệp cấu hình
 
@@ -729,6 +803,29 @@ Nhờ vậy chỉ thị không bị chuỗi lời gọi nuốt mất, cũng khô
 - **[litellm](https://github.com/voocel/litellm)** — lớp thích ứng giao diện LLM thống nhất
 - **[Bubble Tea](https://github.com/charmbracelet/bubbletea)** — framework TUI cho terminal
 
+## Đóng góp
+
+Đây là một bản fork, và điều đó quyết định nên gửi đóng góp đi đâu:
+
+- **Engine, kiến trúc, hành vi tác tử** — những thứ này thuộc về upstream. Xin gửi thẳng tới
+  [voocel/ainovel-cli](https://github.com/voocel/ainovel-cli) để cả cộng đồng cùng hưởng, chứ
+  không riêng bản fork này.
+- **Việt hóa, web studio, tài liệu của fork** — những thứ này ở đây.
+
+Hai quy ước nên biết trước khi mở PR:
+
+- **Giữ diff rebase nhỏ.** Lớp i18n dùng chuỗi nguồn làm msgid chính là để fork bám được một
+  upstream đi nhanh. Xin đừng "dọn cho sạch" thành khóa tường minh — lý do đầy đủ ở
+  [docs/i18n.md](docs/i18n.md).
+- **Chú thích mang LÝ DO.** Mã trong repo này ghi *vì sao*, thường kèm luôn phép đo đã dẫn tới
+  quyết định. Viết theo nếp đó là quy ước của nhà.
+
+```bash
+go test ./internal/...     # Go
+cd web && npx vitest run   # web
+cd web && npm run build    # xuất tĩnh
+```
+
 ## Ghi công
 
 Đây là **bản fork** của [voocel/ainovel-cli](https://github.com/voocel/ainovel-cli) — toàn bộ engine, kiến trúc và thiết kế gốc thuộc về dự án upstream. Bản fork này không phải dự án gốc.
@@ -737,7 +834,7 @@ Phần fork thêm vào so với upstream:
 
 - **Lớp i18n** (`internal/i18n/`) — tiếng Việt là mặc định, `AINOVEL_LANG=zh` quay về chuỗi gốc của upstream
 - **Việt hóa prompt / tài liệu tham chiếu / văn phong** trong `assets/`, nên AI sinh truyện tiếng Việt thay vì tiếng Trung
-- **Web studio** (`internal/serve/` + `web/`) — HTTP API chỉ-đọc trên store cùng một giao diện vận hành, xem [Web studio](#web-studio)
+- **Web studio** (`internal/serve/` + `web/`) — HTTP API trên store cùng một bề mặt vận hành ba màn, làm được trọn vòng đời (tạo · chạy · can thiệp · nghiệm thu · cấu hình · xuất bản), xem [Web studio](#web-studio)
 
 Bản dịch ban đầu tham khảo [kentjuno/ainovel-cli](https://github.com/kentjuno/ainovel-cli) tại commit `68eb92d` — cảm ơn công sức việt hóa của họ.
 

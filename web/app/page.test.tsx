@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 
-import { snap } from '@/components/mau.test-helper';
+import { snap, tongGia } from '@/components/mau.test-helper';
 import type { Khu as KhuMa } from '@/lib/khu';
 import { CHU } from '@/lib/nhan';
 import type { Studio } from '@/lib/useStudio';
@@ -36,6 +36,7 @@ const STUDIO_GIA: Studio = {
   hoSo: undefined,
   chuongChon: undefined,
   khu: 'dong-san-xuat',
+  man: 'xuong-san-xuat',
   song: undefined,
   suKien: [],
   vanSong: themChu(BO_DEM_RONG, 'nàng quay đầu lại'),
@@ -43,6 +44,7 @@ const STUDIO_GIA: Studio = {
   dangTai: false,
   loi: undefined,
   chonTacPham: () => {},
+  chonMan: () => {},
   chonChuong: () => {},
   chonKhu: CHON_KHU,
   moTacPhamVuaTao: () => {},
@@ -86,6 +88,7 @@ function ve(
       khu={khu}
       snapshot={snap({ agents: [], idle_agents: [] })}
       sach={[snap({}).book]}
+      tong={tongGia()}
       tacPham="b"
       choGhi
       vuaChot={new Set<number>()}
