@@ -1,4 +1,19 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+#
+# CHẠY TAY, không có pipeline nào gọi tệp này.
+#
+# `.github/workflows/` đã bị xóa hết (CI, docker, release) theo yêu cầu: fork này không phát
+# hành gì và không đáng tiêu phút GitHub Actions. Actions cũng đã tắt ở cấp repo, nên kể cả
+# khi đồng bộ upstream kéo workflow về thì cũng không có gì chạy.
+#
+# Tệp này GIỮ LẠI vì nó không tốn gì và vẫn dùng được tại chỗ — đây là cách dựng gói có đủ
+# nhị phân lẫn giao diện web đã build cho cả bốn nền tảng:
+#
+#	goreleaser release --snapshot --clean --skip=publish
+#
+# Cần `goreleaser` và `node` trên máy (xem `before.hooks` bên dưới). Kết quả nằm ở `dist/`.
+#
+# `.github/scripts/gen-changelog.sh` cũng thành công cụ chạy tay theo cùng lý do đó.
 version: 2
 
 before:
