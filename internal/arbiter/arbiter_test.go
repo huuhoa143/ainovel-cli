@@ -14,6 +14,7 @@ import (
 	"github.com/voocel/agentcore/llm"
 	"github.com/voocel/ainovel-cli/internal/domain"
 	"github.com/voocel/ainovel-cli/internal/llmcontract"
+	"github.com/voocel/ainovel-cli/internal/llmretry"
 	storepkg "github.com/voocel/ainovel-cli/internal/store"
 )
 
@@ -153,7 +154,8 @@ func TestDecide_InvalidOutputContinuesUntilContextCanceled(t *testing.T) {
 }
 
 func TestDecide_RetryableModelErrorReportsSharedProgress(t *testing.T) {
-	m := &failingThenValidModel{failures: 8}
+	// 3 次失败在重试上限（默认 5）以内，仍应自愈成功。
+	m := &failingThenValidModel{failures: 3}
 	var progress []agentcore.ProgressPayload
 	ctx := agentcore.WithToolProgress(context.Background(), func(p agentcore.ProgressPayload) {
 		progress = append(progress, p)
@@ -162,11 +164,35 @@ func TestDecide_RetryableModelErrorReportsSharedProgress(t *testing.T) {
 	if _, err := DecidePlanStart(ctx, m, "sys", "需求", ""); err != nil {
 		t.Fatalf("decide: %v", err)
 	}
-	if got := atomic.LoadInt64(&m.calls); got != 9 {
-		t.Fatalf("model calls = %d, want 9", got)
+	if got := atomic.LoadInt64(&m.calls); got != 4 {
+		t.Fatalf("model calls = %d, want 4", got)
 	}
-	if len(progress) != 8 || progress[7].Kind != agentcore.ProgressRetry || progress[7].Agent != "arbiter" || progress[7].Attempt != 8 || progress[7].MaxRetries != 0 {
+	// MaxRetries 从 0 改为 5：它是界面上「重试 (第 N/M 次)」的分母。旧断言锁定的
+	// MaxRetries == 0 正是缺陷本身——没有分母的计数在界面上读作「会一直重试下去」。
+	if len(progress) != 3 || progress[2].Kind != agentcore.ProgressRetry || progress[2].Agent != "arbiter" || progress[2].Attempt != 3 || progress[2].MaxRetries != 5 {
 		t.Fatalf("progress = %+v", progress)
+	}
+}
+
+// 连续失败超过上限时必须放弃并返回错误，engine 才能据此暂停等待人工介入
+// （见 internal/host/engine.go 的 pauseWithNotify）。旧实现在此无限重试：实测
+// 已到第 20 次仍在每分钟敲一次，占着唯一的 engine 名额超过 24 小时。
+func TestDecide_RetryableModelErrorGivesUp(t *testing.T) {
+	m := &failingThenValidModel{failures: 100}
+
+	_, err := DecidePlanStart(context.Background(), m, "sys", "需求", "")
+
+	var bo *llmretry.LoiBoCuoc
+	if !errors.As(err, &bo) {
+		t.Fatalf("err = %v (%T)，want *llmretry.LoiBoCuoc", err, err)
+	}
+	// 1 次首调 + 5 次重试 = 6；第 6 次重试前被判定放弃。
+	if got := atomic.LoadInt64(&m.calls); got != 6 {
+		t.Fatalf("model calls = %d, want 6", got)
+	}
+	// 原始错误必须还在链上：engine 靠 errors.Is 对 agentcore 哨兵分类后才选暂停建议。
+	if !errors.Is(err, error(retryableTestError{retryable: true})) {
+		t.Fatalf("原始错误在 %v 中丢失", err)
 	}
 }
 

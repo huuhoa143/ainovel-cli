@@ -1819,5 +1819,14 @@
  "：归一化失败，已按原文作为风格偏好处理（未提炼机械规则）": ": chuẩn hóa thất bại, đã xử lý nguyên văn như sở thích văn phong (không rút ra luật kiểm máy được)",
  "；使用 /model 切换": "; dùng /model để đổi",
  "；当前仍暂停，输入继续指令后恢复运行": "; hiện vẫn tạm dừng, nhập lệnh tiếp tục để chạy lại",
- "；请运行 /import 查看并修复": "; hãy chạy /import để xem và sửa"
+ "；请运行 /import 查看并修复": "; hãy chạy /import để xem và sửa",
+ "提供方要求等待 %s 后才能再次调用": "nhà cung cấp báo phải chờ %s mới gọi lại được",
+ "已重试 %d 次仍是同一错误": "đã thử lại %d lần mà lỗi không đổi",
+ "累计等待 %s 仍未调用成功": "đã chờ tổng cộng %s mà vẫn chưa gọi được",
+ "重试 %d 次后停止 (%s): %v": "thôi thử lại sau %d lần (%s): %v",
+ "时长未知": "không rõ bao lâu",
+ "%d 秒": "%d giây",
+ "%d 分钟": "%d phút",
+ "%.1f 小时": "%.1f giờ",
+ "停止调用模型 (%s): %v": "dừng gọi model (%s): %v"
 }
