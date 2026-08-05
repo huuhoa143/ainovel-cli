@@ -141,19 +141,81 @@ test('dải ở buồng lái được cho biết máy đang chạy hay nghỉ', 
   expect(nhanNutGui(false)).toContain(CHU.danhThucLuotMoi);
 });
 
-/* ── bốn hàng của cột giữa (Task 13) ──────────────────────────────────── */
+/* ── ba hàng của cột giữa, và bàn chia ô ở hàng giữa ──────────────────── */
 
-test('cột giữa có đủ BỐN hàng, theo đúng thứ tự trục · văn sống · sự kiện · can thiệp', () => {
-  // Hỏi thứ tự chứ không chỉ hỏi sự có mặt: bốn hàng này được xếp theo tỉ lệ ĐO ĐƯỢC (chữ
-  // máy đổi 146/254 khung, dòng sự kiện đổi 5 lần trong cùng 17,9 giây), và một `2fr` đặt
-  // nhầm vào hàng dòng sự kiện cho ra đúng bốn khối ấy ở đúng chỗ ấy trên DOM — nên phép đo
-  // duy nhất bài kiểm chạm được là THỨ TỰ. Phần tỉ lệ chỉ mắt người kiểm được (Task 14).
+test('cột giữa có đủ BA hàng, theo đúng thứ tự trục · bàn · can thiệp', () => {
+  // Hỏi thứ tự chứ không chỉ hỏi sự có mặt: trục phải TRÊN bàn (nó nói về cả cuốn, và một
+  // dải nói phạm vi đứng dưới các ô nói chi tiết là đảo cấp bậc), và ô can thiệp phải DƯỚI
+  // cùng — nó là dòng nhập của TUI, ghim đáy, không cuộn đi mất.
   const { container } = ve(true);
   const giua = container.querySelector('.blgiua');
   expect(giua).not.toBeNull();
 
+  // Thanh chia của trục nằm GIỮA trục và bàn, không phải cuối danh sách: thứ tự DOM là thứ
+  // tự Tab, nên một thanh chia đứng sai chỗ là bàn phím đi tới nó ở một chỗ mà mắt không
+  // thấy ranh giới nào.
   const hang = [...giua!.children].map((e) => e.className.split(' ')[0]);
-  expect(hang).toEqual(['bltruc', 'vansong', 'blcuon', 'blcanthiep']);
+  expect(hang).toEqual(['bltruc', 'blkeo', 'blsan', 'blcanthiep']);
+});
+
+test('ba ranh giới kéo được, mỗi cái một thanh chia có nhãn riêng', () => {
+  // Ba `separator` cùng một chỗ mà chung nhãn thì trình đọc màn hình đọc ra ba lần cùng một
+  // câu, và người dùng bàn phím không biết mình đang đứng ở ranh giới nào.
+  const { container } = ve(true);
+  const nhan = [...container.querySelectorAll('[role="separator"]')].map((e) => ({
+    nhan: e.getAttribute('aria-label'),
+    huong: e.getAttribute('aria-orientation'),
+    bamPhimDuoc: (e as HTMLElement).tabIndex === 0,
+  }));
+
+  expect(nhan).toEqual([
+    { nhan: CHU.keoTruc, huong: 'horizontal', bamPhimDuoc: true },
+    { nhan: CHU.keoCot, huong: 'vertical', bamPhimDuoc: true },
+    { nhan: CHU.keoHang, huong: 'horizontal', bamPhimDuoc: true },
+  ]);
+});
+
+test('bàn có đủ BỐN ô, và thứ tự DOM là thứ tự ĐỌC', () => {
+  // Lưới đặt bốn ô bằng `grid-area`, nên thứ tự DOM và thứ tự nhìn thấy có thể tách rời —
+  // đúng lớp lỗi mà `PRODUCT.md` cấm ("bàn phím là hạng nhất"): một bàn đẹp mắt với thứ tự
+  // Tab nhảy cóc là một bàn không dùng được bằng bàn phím.
+  //
+  // Thứ tự này cũng là thứ tự mà bố cục một-cột dưới 700px canvas dùng nguyên xi, nên nó
+  // phải đúng ở CẢ HAI chỗ bằng một khai báo duy nhất.
+  const { container } = ve(true);
+  const o = [...container.querySelectorAll('.blsan > .blo')].map(
+    (e) => e.className.split(' ')[1],
+  );
+  expect(o).toEqual(['blo-song', 'blo-sukien', 'blo-chuong', 'blo-nhatky']);
+});
+
+test('mỗi ô của bàn có đầu ô RIÊNG, để biết mình đang đọc ô nào lúc đã cuộn', () => {
+  // Bốn ô cùng cuộn độc lập. Một ô mất đầu ô là một cột số không tên ngay khi người dùng
+  // cuộn qua dòng đầu — và ở ô bảng chương thì đó là năm cột số cùng lúc.
+  const { container } = ve(true);
+  for (const ma of ['blo-song', 'blo-sukien', 'blo-chuong', 'blo-nhatky']) {
+    const o = container.querySelector(`.${ma}`)!;
+    expect(o.querySelector('h2'), ma).not.toBeNull();
+  }
+});
+
+test('đầu ô mang MẪU SỐ của thứ đang cuộn bên dưới', () => {
+  // Ô cao vài trăm pixel chứa vài nghìn pixel nội dung. Không nói ra "còn bao nhiêu nữa" thì
+  // thanh cuộn là dấu hiệu duy nhất — mà nó rộng 6px (`scrollbar-width: thin`). Cùng luật
+  // với dải tổng của màn Quản lý: một con số không kèm mẫu số bị đọc thành toàn bộ.
+  ve(true, {
+    chapters: [
+      { chapter: 1, stage: 'done', words: 2100 },
+      { chapter: 2, stage: 'done', words: 1900 },
+    ],
+    decisions: [
+      { id: 'd1', at: '2026-08-01T10:00:00Z', kind: 'gate', decider: 'arbiter', reason: 'ok' },
+    ],
+  });
+
+  expect(screen.getByText(CHU.soChuongTrongBang(2))).toBeDefined();
+  expect(screen.getByText(CHU.soPhanQuyet(1))).toBeDefined();
+  expect(screen.getByText(CHU.soDongSuKien(0))).toBeDefined();
 });
 
 test('khu văn sống vẽ chữ của bộ đệm THẬT, không phải một bộ đệm rỗng dựng tại chỗ', () => {
@@ -193,29 +255,51 @@ test('ô can thiệp nói ra hệ quả đúng với trạng thái máy', () => 
   expect(screen.getByRole('button', { name: CHU.danhThucLuotMoi })).toBeDefined();
 });
 
-/* ── phần cuộn tiếp: bảng chương + nhật ký (Task 13) ──────────────────── */
+/* ── bảng chương + nhật ký: mỗi thứ một Ô, không nối đuôi nhau ────────── */
 
-test('bảng chương và nhật ký phán quyết cuộn tiếp trong cột giữa, DƯỚI dòng sự kiện', () => {
-  const { container } = ve(true, {
-    chapters: [{ chapter: 1, stage: 'done', words: 2100 }],
-    decisions: [
-      {
-        id: 'd1',
-        at: '2026-08-01T10:00:00Z',
-        kind: 'gate',
-        decider: 'arbiter',
-        reason: 'đủ điều kiện',
-      },
-    ],
-  });
+test('bảng chương và nhật ký ở HAI ô riêng, không nằm sau dòng sự kiện trong một khu cuộn', () => {
+  // Đây là phép đo của chính lỗi mà bàn chia ô sinh ra để sửa. Bản trước xếp ba mục nối đuôi
+  // trong MỘT khu cuộn cao 125px: dòng sự kiện cao 98px, bảng chương bắt đầu ở offset 98 và
+  // cao 1.951px nên hiện đúng 0 hàng, nhật ký bắt đầu ở offset 2.049 nên không bao giờ tới.
+  //
+  // jsdom không bố cục nên nó không đo được 125px kia. Cái nó đo được — và đủ để chặn việc
+  // dựng lại cấu trúc cũ — là mỗi mục có VÙNG CUỘN CỦA RIÊNG NÓ.
+  const { container } = ve(
+    true,
+    {
+      chapters: [{ chapter: 1, stage: 'done', words: 2100 }],
+      decisions: [
+        {
+          id: 'd1',
+          at: '2026-08-01T10:00:00Z',
+          kind: 'gate',
+          decider: 'arbiter',
+          reason: 'đủ điều kiện',
+        },
+      ],
+    },
+    BO_DEM_RONG,
+    {
+      suKien: [
+        { seq: 1, time: '2026-08-01T10:00:00Z', kind: 'tool', category: 'TOOL', summary: 'x' },
+      ],
+    },
+  );
 
-  const cuon = container.querySelector('.blcuon');
-  expect(cuon).not.toBeNull();
-  // Ba khối nằm TRONG cùng một khu cuộn, theo thứ tự: sự kiện trước, hai khối tra cứu sau.
-  // Đặt chúng ngoài khu cuộn là để chúng không bao giờ tới được — cột giữa cao có hạn.
-  expect(cuon!.querySelector('#dong-su-kien')).not.toBeNull();
-  expect(cuon!.querySelector('.bangwrap')).not.toBeNull();
-  expect(cuon!.querySelector('#nhat-ky-phan-quyet')).not.toBeNull();
+  expect(container.querySelector('.blcuon')).toBeNull();
+  expect(container.querySelector('.blo-sukien > .blothan .dong')).not.toBeNull();
+  expect(container.querySelector('.blo-chuong > .blothan .bangwrap')).not.toBeNull();
+  expect(container.querySelector('.blo-nhatky > .blothan .log')).not.toBeNull();
+});
+
+test('hai neo cuộn `#dong-su-kien` và `#nhat-ky-phan-quyet` còn nguyên', () => {
+  // `DangLam` trong `ViecTiepTheo.tsx` cuộn tới `#dong-su-kien` bằng id. Bàn chia ô chuyển
+  // hai mục này từ `<section class="sect">` sang `<section class="blo">`, và một lần đổi
+  // markup làm rơi mất `id` sẽ để nút "xem dòng sự kiện" bấm mà không đi đâu — không lỗi
+  // nào nổ ra, chỉ một nút im lặng.
+  const { container } = ve(true);
+  expect(container.querySelector('#dong-su-kien')).not.toBeNull();
+  expect(container.querySelector('#nhat-ky-phan-quyet')).not.toBeNull();
 });
 
 /* ── phần đi theo từ `Canvas` (Task 13) ───────────────────────────────── */

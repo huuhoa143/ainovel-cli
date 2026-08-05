@@ -882,6 +882,25 @@ export const CHU = {
   chuong: 'Chương',
   canThiep: 'Can thiệp',
 
+  /* ── số đếm ở đầu bốn ô của bàn buồng lái ──────────────────────────────────
+   *
+   * Mỗi ô của bàn cao vài trăm pixel và chứa nhiều hơn thế, nên đầu ô phải mang MẪU SỐ của
+   * thứ đang cuộn bên dưới — cùng luật đã ghi cho dải tổng của màn Quản lý ("một con số
+   * không kèm mẫu số sẽ được đọc thành cả xưởng tốn có thế").
+   *
+   * Mang ĐƠN VỊ chứ không chỉ con số: bốn ô đứng cạnh nhau, và bốn số trần ở bốn góc đọc
+   * thành một bảng điểm. "49 chương" và "3 phán quyết" thì không lẫn được.
+   */
+  soDongSuKien: (n: number) => `${n} dòng`,
+  soChuongTrongBang: (n: number) => `${n} chương`,
+  soPhanQuyet: (n: number) => `${n} phán quyết`,
+
+  /* Hai thanh chia kéo được của bàn. Nhãn nói CÁI NÓ CHIA, không nói "kéo để đổi cỡ": trình
+     đọc màn hình đã đọc ra vai trò `separator` rồi, nên nhắc lại động từ là nói hai lần. */
+  keoCot: 'Chia cột trái và cột phải',
+  keoHang: 'Chia hàng trên và hàng dưới',
+  keoTruc: 'Chia trục sản xuất và bàn',
+
   /* ── khu văn sống của buồng lái ────────────────────────────────────────────
    *
    * Tiêu đề khu ĐỔI theo trạng thái máy, nhưng tên VÙNG thì không — và hai thứ đó là hai
@@ -1707,6 +1726,10 @@ export const GIAI_THICH = {
     'Đã đọc từ store và nhận về rỗng — chương này chưa có nội dung nào được ghi.',
   chuaCoPhanQuyet: 'Chưa có phán quyết nào được ghi.',
   chuaCoChuong: 'Chưa có chương nào có dấu vết sản xuất.',
+  /* Chú giải của hai thanh chia. Nói cả ĐƯỜNG VỀ, không chỉ nói cách kéo: một bộ chia không
+     có đường về là một bề mặt tự khoá, và đường về ấy không đoán ra được từ hình dạng. */
+  keoBanHuongDan: 'Kéo để đổi cỡ · mũi tên để chỉnh từng bước (giữ Shift để nhanh) · nhấp đúp để về mặc định',
+
   duLieuLech: 'Dữ liệu store lệch',
 
   /* ── cửa sổ của lane chương ─────────────────────────────────────────── */

@@ -230,7 +230,12 @@ export default function Trang() {
             onXongTaoSach={xongTaoSach}
             onChotCungDung={chotCungDung}
             onDoiCauHinh={may.hoiLai}
-            onDoi={s.taiLai}
+            // `lamMoi`, KHÔNG `taiLai`. Cả hai đọc lại snapshot, và đó là chỗ dễ nhầm nhất
+            // trong sợi dây này: `taiLai` bơm `lanTai` nên nó cũng đóng/mở lại dòng sự kiện,
+            // xóa danh sách sự kiện và xóa trắng bộ đệm văn sống. Ở đây người dùng vừa bấm
+            // `Cho đi tiếp` hoặc `Trả chương về viết lại` — hai lệnh mà bằng chứng để quyết
+            // định chính là đoạn chữ đang nằm trong bộ đệm đó.
+            onDoi={s.lamMoi}
             nhapSan={nhapTuCungDung}
             suKien={s.suKien}
             song={s.song}
@@ -284,7 +289,10 @@ export default function Trang() {
           tacPham={s.tacPham}
           choGhi={may.choGhi}
           dangChay={s.snapshot ? mayDangChay(s.snapshot) : false}
-          onDoi={s.taiLai}
+          // Cùng luật với dải quyết định ở trên, và ở đây cái giá còn lộ hơn: `Dừng` là nút
+          // người ta bấm SAU KHI đọc chữ đang chảy và thấy máy đi sai hướng. Nối `taiLai` vào
+          // đây là để cú bấm ấy vứt luôn bằng chứng vừa đọc.
+          onDoi={s.lamMoi}
         />
       </Transport>
       ) : null}

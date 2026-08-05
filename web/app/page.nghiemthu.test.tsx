@@ -29,6 +29,7 @@ import Trang from './page';
  * cái nó nhận. Chỗ `Trang` rót giá trị thật vào nằm ngoài tất cả.
  */
 const CHO_DI_TIEP = vi.fn();
+const LAM_MOI = vi.fn();
 const TAI_LAI = vi.fn();
 
 vi.mock('@/lib/api', async (goc) => ({
@@ -64,6 +65,7 @@ const STUDIO_GIA: Studio = {
   moTacPhamVuaTao: () => {},
   moTacPhamTai: () => {},
   docChuong: () => {},
+  lamMoi: LAM_MOI,
   taiLai: TAI_LAI,
 };
 
@@ -95,10 +97,11 @@ const nutTiepCuaDai = (c: HTMLElement) =>
 beforeEach(() => {
   MAY.choGhi = true;
   CHO_DI_TIEP.mockReset().mockResolvedValue({ permit_chapter: 9, running: true });
+  LAM_MOI.mockReset();
   TAI_LAI.mockReset();
 });
 
-test('`Trang` nối `taiLai` THẬT của studio vào dải — bấm Cho đi tiếp thì snapshot được nạp lại', async () => {
+test('`Trang` nối `lamMoi` THẬT của studio vào dải — bấm Cho đi tiếp thì snapshot được nạp lại', async () => {
   // ĐO ĐƯỢC hệ quả nếu đứt: lệnh đi tới engine và thành công, nhưng snapshot không bao giờ về,
   // nên dải amber ở lại trên màn hình cho một cái cửa đã mở. Người vận hành bấm tiếp lần thứ
   // hai — và lần đó cấp phép thêm một chương nữa, tức tiền đôi vì một sợi dây thiếu.
@@ -109,10 +112,26 @@ test('`Trang` nối `taiLai` THẬT của studio vào dải — bấm Cho đi ti
   fireEvent.click(nutTiepCuaDai(container));
 
   expect(CHO_DI_TIEP).toHaveBeenCalledWith('tran-yeu-ky');
-  await waitFor(() => expect(TAI_LAI).toHaveBeenCalled());
+  await waitFor(() => expect(LAM_MOI).toHaveBeenCalled());
 });
 
-test('sợi dây `taiLai` cũng liền ở bề mặt KIỂM ĐỊNH, không riêng buồng lái', async () => {
+test('dải quyết định KHÔNG được nối `taiLai` — nó xóa trắng khu chữ đang chảy', () => {
+  // Hai hàm cùng nạp lại snapshot, nên nối nhầm cái nào cũng làm bài trên xanh. Cái phân biệt
+  // chúng nằm ở HƯ HẠI PHỤ, và nó chỉ đo được bằng một bài riêng: `taiLai` bơm `lanTai`, tức
+  // chạy lại cả effect §2 của `useStudio` — mà effect đó `setSuKien([])`, `setSong(undefined)`,
+  // `setVanSong(BO_DEM_RONG)` và đặt `seqRef.current = 0`.
+  //
+  // Nghĩa là: bấm `Cho đi tiếp` hay `Trả chương về viết lại` sẽ vứt đúng đoạn chữ vừa đọc để
+  // quyết định, và dòng sự kiện mở lại từ ĐẦU hàng đợi thay vì từ chỗ đang đứng. Không có gì
+  // đỏ, chỉ có một màn hình vừa trắng ra sau một cú bấm nút.
+  const { container } = render(<Trang />);
+
+  fireEvent.click(nutTiepCuaDai(container));
+
+  expect(TAI_LAI).not.toHaveBeenCalled();
+});
+
+test('sợi dây `lamMoi` cũng liền ở bề mặt KIỂM ĐỊNH, không riêng buồng lái', async () => {
   // Hai bề mặt, hai chỗ nối, và bài trên chỉ đi qua một chỗ: `KiemDinh` truyền `onDoi` xuống
   // dải bằng một lời gọi RIÊNG, nên thay nó bằng một hàm rỗng vẫn để bài trên xanh.
   //
@@ -127,7 +146,8 @@ test('sợi dây `taiLai` cũng liền ở bề mặt KIỂM ĐỊNH, không ri�
     // `await` TRONG `try`, không `return` một lời hứa: `finally` chạy ngay lúc `return` được
     // định giá, nên bản `return` khôi phục `khu` trước khi `waitFor` xong — và bài kiểm khi đó
     // chờ một lời hứa trên một cây đã bị đổi dưới chân nó.
-    await waitFor(() => expect(TAI_LAI).toHaveBeenCalled());
+    await waitFor(() => expect(LAM_MOI).toHaveBeenCalled());
+    expect(TAI_LAI).not.toHaveBeenCalled();
   } finally {
     STUDIO_GIA.khu = truoc;
   }

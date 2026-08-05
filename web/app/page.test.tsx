@@ -50,6 +50,7 @@ const STUDIO_GIA: Studio = {
   moTacPhamVuaTao: () => {},
   moTacPhamTai: MO_TAI,
   docChuong: () => {},
+  lamMoi: () => {},
   taiLai: () => {},
 };
 

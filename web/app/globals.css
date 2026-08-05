@@ -1745,8 +1745,15 @@ td.who {
 .canvas.buonglai {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  overflow: hidden;
   min-height: 0;
+  /* Khung buồng lái ĐỨNG YÊN — điều khoản gốc của bề mặt này, giữ nguyên. Van
+     cho ca thiếu chỗ nằm một tầng dưới, ở `.blgiua`; lý do chọn chỗ đó ghi tại
+     đúng nó. Ở đây `hidden` vì `.bltren` không được phép đẩy cả bề mặt thành
+     một trang cuộn: nó là ba dải tin, không phải nội dung để đọc dài. */
+  overflow: hidden;
+  /* Gốc truy vấn bề rộng của bàn chia ô — lý do đầy đủ ở chú thích của `.blgiua`. */
+  container-type: inline-size;
+  container-name: canvas;
 }
 .buonglai .bltren {
   min-width: 0;
@@ -1763,46 +1770,116 @@ td.who {
 .buonglai .head {
   padding: 12px 18px 9px;
 }
+/* Cảnh báo là khối DUY NHẤT của `.bltren` không có trần trên số dòng: server trả
+   `warnings` dài bao nhiêu thì nó cao bấy nhiêu. Ba cảnh báo là 110px, hai mươi
+   cảnh báo là hơn 700px — tức cả cột giữa biến mất vì một tệp bản thảo thiếu.
+   Trần 96px là bốn dòng; quá thì khối tự cuộn. Số đếm nằm ngay trong tiêu đề
+   ("Dữ liệu store lệch · 2") nên phần bị cuộn khuất vẫn được nói ra bằng số, và
+   đó là điều kiện để trần này không thành một phép giấu im lặng. */
 .buonglai .canhbao {
   padding: 8px 18px 9px;
+  max-height: 96px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
 }
 
-/* Cột giữa, bốn hàng — và tỉ lệ 2:1 giữa hàng 2 và hàng 3 là phép ĐO, không phải
-   cảm giác.
-   ĐO ĐƯỢC trên `scripts/sample.gif` (255 khung × 70ms = 17,9 giây, so từng khung
-   với khung trước): khu chữ máy đổi **146/254 khung** (57,5%), dòng sự kiện đổi
-   **5 lần rời nhau** trong cùng 17,9 giây và dồn hết vào 3 giây đầu rồi im 15
-   giây. Chia đôi hai khu đó là chia theo cảm giác; 2:1 là chia theo số lần chúng
-   thật sự có gì mới để nói.
-   `minmax(0, …)` chứ không `2fr`/`1fr` trần: một hàng `fr` không co xuống dưới
-   min-content, nên một dòng JSON dài trong khu chữ sẽ đẩy cả cột giữa cao hơn
-   khung và hàng ô can thiệp bị đẩy khỏi màn hình. */
+/* Cột giữa, BA hàng: trục · bàn chia ô · ô can thiệp.
+   Bản trước có bốn hàng và chia hàng 2 với hàng 3 theo tỉ lệ 2:1. Phép đo biện
+   minh cho tỉ lệ ấy vẫn đúng (`scripts/sample.gif`, 255 khung × 70ms: khu chữ
+   máy đổi 146/254 khung, dòng sự kiện đổi 5 lần rời nhau rồi im 15 giây) — nó
+   chỉ hết việc, vì hai khu đó thôi chồng lên nhau. Xem chú thích đầu
+   `BuongLai.tsx` cho phép đo đã kết tội bố cục bốn hàng.
+   `container-type: inline-size` trên `.canvas.buonglai` chứ không trên đây, và
+   chỗ đặt là điều kiện đúng-sai: bàn cần biết bề rộng CANVAS, mà bề rộng đó phụ
+   thuộc cột inspector có hiện hay không. Ở cửa sổ 1512 có inspector thì canvas
+   là 1026px; bỏ inspector ở cùng cửa sổ đó thì canvas là 1318px. Một
+   `@media (min-width: …)` không phân biệt được hai ca ấy — nó nằm cùng chỗ với
+   `display: grid` của `.canvas.buonglai` ở trên.
+
+   FLEX chứ không GRID, và đây là một lần thử-rồi-sửa chứ không phải khẩu vị.
+   Ba hàng này KHÔNG bình đẳng khi thiếu chỗ: trục sản xuất tự cuộn được trong ô
+   của nó nên nó xuống cấp êm, còn bàn thì không — bốn ô mất chiều cao là bốn
+   cái đầu ô rỗng. Lưới không diễn đạt được thứ tự nhường đó: với
+   `auto 1fr auto`, hàng `auto` luôn lấy đủ chiều cao nội dung trước và `1fr`
+   chỉ nhận phần THỪA, nên trục luôn thắng bàn.
+
+   ĐO ĐƯỢC ở ca xấu nhất (1512×900, cuốn đang chờ nghiệm thu VÀ đang chạy VÀ có
+   cảnh báo lệch): `.bltren` cao 370px trong canvas 704px, trục 150, ô can thiệp
+   98 — bàn còn 86px cho bốn ô, tức mỗi ô 43px và thân ô 24px. Bốn cái đầu ô.
+
+   Với flex thì thứ tự nhường viết ra được: trục `flex-shrink: 1` co trước tới
+   sàn của nó, bàn mang sàn riêng và ô can thiệp `flex: none` (một ô nhập bị co
+   là một ô nhập không gõ được). */
 .blgiua {
-  display: grid;
-  grid-template-rows: auto minmax(0, 2fr) minmax(0, 1fr) auto;
-  min-height: 0;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
-  overflow: hidden;
+  min-height: 0;
+  overflow-x: hidden;
+  /* VAN CUỐI, và nó nằm ở ĐÂY chứ không ở `.canvas.buonglai` — đã thử cả hai
+     chỗ kia và cả hai đều sai theo hai kiểu khác nhau:
+
+       · `.blgiua { overflow: hidden }` + van ở canvas — khối này nhận đúng
+         chiều cao hàng lưới rồi tự CẮT phần thừa, nên canvas không bao giờ thấy
+         có gì tràn và van không mở. ĐO ĐƯỢC ở 1280×860 với cuốn có cả ba dải:
+         ba sàn cộng lại 350px trong một hàng 334px, và 16px đáy của ô can thiệp
+         bị xén trong im lặng.
+       · `.blgiua { min-height: min-content }` — đòi được chiều cao thật, nhưng
+         `min-content` của một flex cột tính theo chiều cao NỘI DUNG của trục
+         (150px), không theo sàn của nó (76px). Nên tổng thành 424px, không còn
+         thiếu hụt nào để trục phải co, và van mở ra trước khi phép nhường kịp
+         chạy — đúng cái bẫy đã gặp một lần ở `grid-template-rows` của canvas.
+
+     Đặt van ngay trên khối chia chiều cao thì cả hai vế cùng đúng: flex tính
+     thiếu hụt thật nên trục co trước tới sàn 76px, và phần dư sau khi mọi sàn
+     đã chạm thì cuộn được thay vì bị xén. Không có hai bộ cuộn nào ăn chung một
+     con lăn ở trạng thái thường — ở đó ba sàn vừa khung và khối này không cuộn. */
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
 }
 
 /* ── hàng 1: dải trục ── */
-/* `max-height` là hàng rào, không phải hình: hàng này là `auto`, và một cuốn
-   phân tầng có ba lane cộng chú giải cao gần 150px — tức nó lấy mất của khu chữ
-   đúng phần mà phép đo 2:1 vừa chia cho khu chữ. Quá thì trục tự cuộn trong ô
-   của nó thay vì bóp hai hàng dưới. */
+/* `max-height` là hàng rào, không phải hình: hàng này là `auto`, và một cuốn sáu
+   tập sẽ đẩy nó cao tuỳ ý — mỗi pixel ấy lấy thẳng từ bàn ngay dưới. Quá thì
+   trục tự cuộn trong ô của nó thay vì bóp bàn.
+   Trần là 176px chứ không 120px như bản trước, và 120px là một con số SAI đo
+   được: nội dung thật của một cuốn phân tầng là 169px, nên trần cũ cắt 49px và
+   ba lane phải cuộn trong một khe — tức chính thứ trục vẽ ra, hình dạng cả
+   cuốn, bị cắt làm đôi. Bàn chia ô trả được 49px đó vì hàng giữa không còn phải
+   nuôi bốn vùng chồng nhau. */
 .bltruc {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   align-items: start;
+  align-content: start;
   column-gap: 12px;
   padding: 8px 18px 9px;
   border-bottom: 1px solid var(--line-2);
   min-width: 0;
-  max-height: 120px;
   overflow-y: auto;
+  /* CO TRƯỚC khi cả cột giữa thiếu chỗ — xem chú thích của `.blgiua`. Sàn 76px
+     là một lane rưỡi: đủ để còn thấy mình đang ở tập nào và còn cuộn tới hai
+     lane kia, chứ không phải một khe rỗng.
+     Cùng con số với `SAN_TRUC_PX` trong `lib/keoBan.ts`; `keoBan.test.ts` đọc
+     tệp này trên đĩa và bắt hai bên lệch nhau. */
+  flex: 0 1 auto;
+  min-height: 76px;
+}
+/* Chiều cao NGƯỜI DÙNG đã kéo cho trục. Vắng mặt thì rơi về `auto`/176px, tức
+   đúng hành vi trước khi có thanh chia — chưa-kéo và vừa-đặt-lại đi qua một
+   đường.
+   Đặt CẢ HAI: `flex-basis` là chiều cao mong muốn, `max-height` là thứ cho phép
+   nó vượt qua trần mặc định 176px. Thiếu vế thứ hai thì kéo xuống dưới 176px
+   không có tác dụng gì và thanh chia trông như hỏng. */
+.bltruc {
+  flex-basis: var(--bl-truc, auto);
+  max-height: var(--bl-truc, 176px);
 }
 /* Tiêu đề đứng CẠNH trục, không trên nó: một hàng riêng cho ba chữ tốn 22px, và
-   22px ở đây là 22px lấy từ khu chữ. */
+   22px ở đây là 22px lấy từ bàn. */
 .bltruc > h2 {
   grid-row: 1;
   font: 500 11px/1.5 var(--ui);
@@ -1815,21 +1892,42 @@ td.who {
   grid-column: 2;
   min-width: 0;
 }
-.bltruc .lanes {
+/* Lane TRẢI cả hai hàng, để chú giải xếp BÊN TRONG chiều cao lane đã chiếm.
+   Không có dòng này thì `.keys` ở dưới chỉ chuyển sang cột trái mà vẫn mở một
+   hàng thứ hai cho cả lưới — ĐO ĐƯỢC lúc thử: `.bltruc` cao 198px, tức TỆ HƠN
+   169px ban đầu. */
+.bltruc > .lanes {
+  grid-row: 1 / span 2;
   row-gap: 4px;
 }
+/* Chú giải màu xuống CỘT NHÃN, không chiếm một hàng riêng.
+   ĐO ĐƯỢC: cột trái chỉ chứa chữ "Trục sản xuất" cao 22px trong một khối cao
+   169px — 147px bỏ trống — trong khi `.keys` chiếm trọn một hàng thứ hai ở cột
+   phải và tốn 24px kể cả khe. 24px đó là 24px lấy thẳng từ bốn ô của bàn.
+   Và chỗ mới ĐÚNG hơn chỗ cũ, không chỉ rẻ hơn: chú giải giải thích màu của ba
+   lane, nên nó thuộc về cùng cột với tên của ba lane đó. */
+.bltruc > .keys {
+  grid-column: 1;
+  grid-row: 2;
+  flex-direction: column;
+  align-items: start;
+  align-self: start;
+  gap: 4px;
+  margin-top: 10px;
+}
 
-/* ── hàng 2: khu văn sống ── */
-/* `position: relative` để nút "về cuối" nổi TRONG khu chứ không thành một hàng
-   thứ ba của lưới — một nút chiếm hàng riêng sẽ làm khu chữ co lại đúng lúc nó
-   xuất hiện, tức màn hình nhảy ngay khi người dùng vừa cuộn lên. */
+/* ── khu văn sống — nội dung của ô trên-trái ──
+   `display: contents` chứ không phải một lưới riêng: `.blo-song` ĐÃ là lưới
+   "đầu ô + thân ô" giống ba ô kia, và `.vansong` mang sẵn đúng hai khối ấy
+   (`.vshead` và `.vsthan`). Cho nó biến mất khỏi cây bố cục là để hai khối đó
+   làm thẳng hai hàng của ô, thay vì dựng thêm một tầng lưới lồng trong lưới —
+   tầng thừa ấy sẽ phải tự truyền `min-height: 0` xuống một lần nữa, và đó đúng
+   là chỗ mà chú thích của `.vsthan` dưới đây nói rằng chỉ mắt người mới kiểm
+   được.
+   Nút "về cuối" `position: absolute` neo vào `.blo-song` (`position: relative`),
+   nên nó vẫn nổi TRONG ô chứ không thành một hàng của lưới. */
 .vansong {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  position: relative;
-  min-height: 0;
-  min-width: 0;
-  border-bottom: 1px solid var(--line-2);
+  display: contents;
 }
 .vansong .vshead {
   display: flex;
@@ -1945,32 +2043,398 @@ td.who {
   border-color: color-mix(in oklch, var(--gold) 45%, var(--line));
 }
 
-/* ── hàng 3: khu cuộn (dòng sự kiện → bảng chương → nhật ký) ── */
-/* `padding-bottom` thay cho khối `<div style={{height:8}}/>` mà `Canvas` từng
-   đặt ở cuối mình. Lý do gốc vẫn còn nguyên giá trị — "để hàng cuối bảng không
-   dính vào" thứ ngay dưới nó — chỉ khác cái ở dưới: trước là thanh transport,
-   giờ là ô can thiệp ghim đáy. Khoảng cách này là CSS chứ không còn là một thẻ
-   rỗng trong cây DOM. */
-.blcuon {
+/* ══ hàng 2: BÀN CHIA Ô ═══════════════════════════════════════════════
+   Bốn ô, hai trục, và cả hai trục đều mang nghĩa — sơ đồ và phép đo đầy đủ ở
+   chú thích đầu `BuongLai.tsx`.
+
+     ngang = HÌNH DẠNG nội dung        dọc = THỜI GIAN
+     ┌──────────────────────┬────────────────────┐
+     │ Máy đang nói         │ Dòng sự kiện       │  đang xảy ra
+     ├──────────────────────┼────────────────────┤
+     │ Chương               │ Nhật ký phán quyết │  đã ghi vào store
+     └──────────────────────┴────────────────────┘
+       văn xuôi + bảng        dòng có mốc giờ
+
+   Cột phải dùng `clamp` chứ không `fr`, và đó là phép chống một ca ĐO ĐƯỢC ở
+   bản dựng thử ba cột: dưới ~300px thì mỗi `summary` của dòng sự kiện xuống ba
+   dòng ("check_consiste / ncy(chương / 49)"), tức cột hẹp đi thì khối chữ CAO
+   LÊN và ô hiển thị được ÍT tin hơn. Hẹp không đổi lấy gọn; nó đổi lấy tệ hơn.
+   `clamp(320px, 43%, 460px)` giữ cột phải trong khoảng đọc được ở mọi bề rộng,
+   cột trái ăn phần còn lại: canvas 1026px → 585/441; canvas 794px (cửa sổ 1280
+   còn cột ngữ cảnh) → 453/341, vẫn hai cột thật.
+
+   Hai hàng CHIA ĐỀU. Phép đo cũ (`scripts/sample.gif`) biện minh cho tỉ lệ 2:1
+   khi khu chữ và dòng sự kiện CHỒNG lên nhau trên một trục — lúc đó mỗi pixel
+   cho khu này là một pixel lấy của khu kia. Giờ chúng nằm cạnh nhau, nên hàng
+   dưới cạnh tranh với văn sống chứ không với dòng sự kiện, và phép đo đổi phía:
+   dòng sự kiện có TRẦN (`GIU_SU_KIEN = 40`) còn bảng chương thì không — 49
+   chương là 1.725px và cuốn đo được sẽ có 94. Vùng không có trần là vùng cần
+   sàn, nên chia đều chứ không nghiêng về hàng trên. Ở 326px, `1fr` cho ô bảng
+   152px: đủ hàng tiêu đề cột cộng ba hàng chương ở 34px/hàng. Đó là SÀN, không
+   phải mục tiêu.
+   ══════════════════════════════════════════════════════════════════════ */
+/* `var(--bl-phai)` / `var(--bl-tren)` là cỡ NGƯỜI DÙNG đã kéo; giá trị dự phòng
+   của `var()` chính là bố cục mặc định đã mô tả ở trên. Nên bàn chưa-kéo và bàn
+   vừa-đặt-lại đi qua đúng một đường — không có nhánh CSS nào riêng cho ca "đã
+   kéo", và người sau đọc một chỗ là biết cả hai. */
+.blsan {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--bl-phai, clamp(320px, 43%, 460px));
+  grid-template-rows: minmax(0, var(--bl-tren, 1fr)) minmax(0, 1fr);
+  min-width: 0;
+  overflow: hidden;
+  /* `flex-basis: 0` để bàn LỚN LÊN từ không, chứ không đòi bằng nội dung của
+     nó — nội dung ở đây là gần 2.000px bảng, và một cơ sở co giãn bằng chừng ấy
+     làm mọi phép chia sau đó thành phép chia cho vô cực.
+     `min-height` là SÀN: 176px cho mỗi hàng 88px, tức mỗi ô còn đầu ô 27px cộng
+     ba dòng chữ. Dưới ngưỡng đó thì bốn ô thôi là bốn ô và thành bốn cái nhãn.
+     Sàn này cộng sàn của trục (76) và chiều cao ô can thiệp (98) là 350px — vừa
+     trong 359px còn lại ở ca xấu nhất đã đo. Khi cả ba sàn vẫn không vừa (một
+     cuốn có dải quyết định, dải trạng thái cây vai sâu VÀ nhiều cảnh báo cùng
+     lúc trên một màn hình thấp) thì `.canvas.buonglai` cuộn — xem chú thích
+     `overflow-y` của nó. */
+  flex: 1 1 0;
+  min-height: 176px;
+}
+.blo-song {
+  grid-area: 1 / 1;
+}
+.blo-sukien {
+  grid-area: 1 / 2;
+}
+.blo-chuong {
+  grid-area: 2 / 1;
+}
+.blo-nhatky {
+  grid-area: 2 / 2;
+}
+/* Bốn ô phân cách bằng ĐÚNG một đường kẻ 1px, không nền riêng, không bo góc,
+   không đổ bóng. Bốn tấm thẻ ở đây là lưới card mà PRODUCT.md cấm thẳng, và nó
+   cũng sai với ẩn dụ đã chốt: bàn dựng phim chia vùng bằng đường kẻ. */
+.blo-song,
+.blo-chuong {
+  border-right: 1px solid var(--line-2);
+}
+.blo-song,
+.blo-sukien {
+  border-bottom: 1px solid var(--line-2);
+}
+
+/* ── MỘT Ô CỦA BÀN ──
+   Cùng một khuôn cho cả bốn: đầu ô cố định, thân ô tự cuộn. Đây đúng là khuôn
+   mà `.vansong` đã có; bước này mở rộng nó ra ba ô còn lại thay vì dựng một
+   khuôn thứ hai.
+   `grid-template-rows: auto minmax(0, 1fr)` cộng `min-height: 0` là CHỖ CHỊU
+   LỰC — thiếu một trong hai thì thân ô cao bằng nội dung,
+   `scrollHeight === clientHeight`, và ô không bao giờ cuộn. Đúng cái bẫy mà
+   chú thích của `.vsthan` dưới đây đã ghi lại, giờ nhân lên bốn lần.
+   `position: relative` cho nút "về cuối" của ô văn sống neo vào ô chứ không vào
+   khung nhìn. */
+.blo {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Đầu ô: cùng hệ chữ với `.vshead` và `.sect > h2`. Nền ĐẶC chứ không trong
+   suốt — thân ô cuộn ngay dưới nó, và một đầu ô trong suốt cho hai lớp chữ
+   chồng nhau ở mép trên.
+
+   Nền `--panel` chứ không `--bg`, và đây là phép sửa cho một câu của người
+   dùng: *"giờ cảm giác nó cứ nối liền rối rối thế nào ấy"*. Bốn ô phân cách
+   bằng vạch 1px trên một mặt phẳng cùng màu thì đọc ra là MỘT mặt bị kẻ ô, chứ
+   không phải bốn tấm. Một dải nền nhạt hơn ở đầu mỗi ô đóng nắp cho ô đó, và
+   đó đúng là cơ chế làm thanh transport dễ đọc — thanh ấy tách khỏi canvas
+   bằng nền `--panel`, không bằng đường kẻ. Cùng ngữ pháp, cùng token, không
+   thêm màu nào vào bảng. */
+.blodau,
+.blsan .vshead {
+  background: var(--panel);
+}
+.blodau {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px var(--mang) 6px;
+  border-bottom: 1px solid var(--line-2);
+  min-width: 0;
+}
+.blodau h2 {
+  margin: 0;
+  font: 500 11.5px/1.4 var(--ui);
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.blodau h2 .phu {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+/* Số đếm ghim mép phải: nó là MẪU SỐ của thứ đang cuộn bên dưới. Một ô cao
+   174px chứa 1.725px nội dung mà không nói ra "còn bao nhiêu nữa" thì thanh
+   cuộn là dấu hiệu duy nhất — và ở `scrollbar-width: thin` thì dấu hiệu đó
+   rộng 6px. `flex: none` để nó không bị nén khi tiêu đề dài. */
+.blodau .dem {
+  margin-left: auto;
+  flex: none;
+  font: 400 11px/1 var(--mono);
+  color: var(--ink-3);
+}
+
+.blothan {
   overflow-y: auto;
   min-height: 0;
   min-width: 0;
-  padding-bottom: 8px;
+  padding: 10px var(--mang) 14px;
   scrollbar-width: thin;
   scrollbar-color: var(--line) transparent;
 }
-.blcuon::-webkit-scrollbar {
+.blothan::-webkit-scrollbar {
   width: 6px;
 }
-.blcuon::-webkit-scrollbar-thumb {
+.blothan::-webkit-scrollbar-thumb {
   background: var(--line);
   border-radius: 3px;
 }
-.blcuon .sect {
-  padding: 13px 18px;
+
+/* ══ HAI THANH CHIA KÉO ĐƯỢC ══════════════════════════════════════════
+   Vùng bắt chuột 9px, dấu nhìn thấy 1px. Hai con số khác nhau là chủ ý: đường
+   kẻ 1px là thứ ĐÚNG cho mắt (bàn dựng phim chia vùng bằng nét mảnh), còn 1px
+   là thứ SAI cho tay — không ai trỏ trúng một vạch một pixel. Nên vùng bắt
+   trải rộng ra hai bên mà không vẽ gì thêm.
+
+   Không chiếm chỗ trong lưới: cả hai đều `justify-self`/`align-self` về mép của
+   ô rồi lùi lại bằng margin âm, nên chúng NẰM ĐÈ lên ranh giới thay vì đẩy nó.
+   Một track riêng cho thanh chia sẽ làm mọi phép đo tỉ lệ ở trên lệch đi đúng
+   bề rộng track đó. */
+.blkeo {
+  z-index: var(--z-sticky);
+  background: transparent;
+  /* Không có `touch-action: none` thì trên bảng vẽ và màn cảm ứng, cử chỉ kéo
+     bị trình duyệt nuốt thành cuộn trang trước khi `pointermove` kịp tới. */
+  touch-action: none;
+}
+.blkeo-doc {
+  grid-row: 1 / 3;
+  grid-column: 2;
+  justify-self: start;
+  width: 9px;
+  margin-left: -5px;
+  cursor: col-resize;
+}
+.blkeo-ngang {
+  grid-column: 1 / 3;
+  grid-row: 2;
+  align-self: start;
+  height: 9px;
+  margin-top: -5px;
+  cursor: row-resize;
+}
+/* Thanh thứ ba KHÔNG ở trong bàn: nó là con của `.blgiua`, một flex CỘT, nên nó
+   không có ô lưới nào để bám. Nó là một flex item cao 9px với margin âm hai đầu
+   — tổng chiều cao nó thêm vào bằng 0, tức nó đè lên ranh giới thay vì đẩy nó.
+   `flex: none` vì mọi khối trong `.blgiua` đều đang tranh nhau chiều cao; một
+   thanh chia co giãn được sẽ tham gia vào phép chia mà nó chỉ đi đánh dấu. */
+.blkeo-truc {
+  flex: none;
+  height: 9px;
+  margin: -5px 0 -4px;
+  cursor: row-resize;
+}
+/* Thanh dọc nằm TRÊN thanh ngang ở điểm giao. Không có luật này thì 9×9 pixel ở
+   giữa bàn thuộc về thanh nào là do thứ tự DOM quyết định — tức một chỗ mà tay
+   người dùng bắt được trục này hay trục kia tuỳ may rủi. */
+.blkeo-doc {
+  z-index: calc(var(--z-sticky) + 1);
 }
 
-/* ── hàng 4: ô can thiệp, ghim đáy ── */
+/* Dấu chỉ hiện khi được CHỈ VÀO. Một cặp vạch vàng thường trực giữa bàn là hai
+   đường kẻ tranh chỗ với chính nội dung mà bàn tồn tại để hiện — và chúng sẽ
+   thành thứ đầu tiên mắt bắt vào ở một bề mặt được quét mắt. */
+.blkeo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--gold);
+  opacity: 0;
+  transition: opacity 0.12s var(--ease);
+}
+.blkeo {
+  position: relative;
+}
+.blkeo-doc::after {
+  left: 4px;
+  right: 4px;
+}
+.blkeo-ngang::after,
+.blkeo-truc::after {
+  top: 4px;
+  bottom: 4px;
+}
+.blkeo:hover::after {
+  opacity: 0.55;
+}
+/* `:focus-visible` chứ không `:focus` — thanh chia nhận con trỏ lúc bấm chuột,
+   và một vệt vàng nháy lên ở mỗi lần bấm là nhiễu. Bàn phím thì phải thấy rõ:
+   `PRODUCT.md` xếp `:focus-visible` là bắt buộc cho mọi điều khiển. */
+.blkeo:focus-visible {
+  outline: none;
+}
+.blkeo:focus-visible::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blkeo::after {
+    transition: none;
+  }
+}
+
+/* Trong lúc kéo, khoá con trỏ và tắt bôi chữ cho CẢ trang.
+   Con trỏ được nghe trên `window` chứ không trên thanh chia, nên nó đi qua bảng
+   chương và khu văn sống giữa chừng — không có hai luật này thì con trỏ đổi
+   hình ở mỗi vùng nó lướt qua, và cú kéo bôi đen mọi dòng chữ nó quét ngang. */
+body.dangKeoDoc,
+body.dangKeoNgang {
+  user-select: none;
+}
+body.dangKeoDoc,
+body.dangKeoDoc * {
+  cursor: col-resize !important;
+}
+body.dangKeoNgang,
+body.dangKeoNgang * {
+  cursor: row-resize !important;
+}
+/* Dấu của thanh ĐANG kéo ở nguyên đó dù con trỏ đã rời khỏi dải 9px.
+   Đánh dấu trên chính phần tử, KHÔNG theo lớp trên `body`: hai thanh ngang (bàn
+   và trục) dùng chung một con trỏ `row-resize` nên chúng dùng chung lớp
+   `dangKeoNgang`, và một luật bám lớp đó sẽ bật sáng cả thanh không được kéo. */
+.blkeo[data-dang-keo]::after {
+  opacity: 1;
+}
+
+/* ══ VIỀN CHẠY — ô nào đang có tin ═══════════════════════════════════
+   Một vệt vàng chạy vòng quanh ô ĐANG nhận dữ liệu, rồi tắt.
+
+   # Vì sao nó được phép tồn tại
+
+   `DESIGN.md` cho đúng MỘT chuyển động mang thông tin (nhịp đập của đốm trạng
+   thái) và cấm mọi hiệu ứng trang trí. Cái này là chuyển động thứ hai, nên nó
+   phải trả lời được câu "ảnh tĩnh nói được điều này không". Không: bàn có bốn
+   ô cuộn độc lập, và một ảnh chụp không phân biệt được ô vừa nhận chữ với ô đã
+   đứng im từ mười phút trước. Trước bàn chia ô thì câu hỏi này không tồn tại —
+   chỉ có một khu chảy, và nó chiếm cả cột giữa.
+
+   Nó cũng KHÔNG nói lại điều thanh transport đã nói: transport nói "engine còn
+   sống không", viền nói "chỗ nào trên bàn vừa động". Bốn ô, bốn nguồn khác
+   nhau — xem chú thích cạnh `useVuaCoTin` trong `BuongLai.tsx`.
+
+   # Kỹ thuật, và cái bẫy của nó
+
+   `conic-gradient` quay quanh một góc `--goc`, rồi `mask-composite: exclude`
+   khoét ruột đi để chỉ còn lại một viền 1px. Góc phải khai bằng `@property` —
+   biến CSS thường KHÔNG nội suy được nên `animation` trên nó nhảy nấc từ 0 sang
+   360 mà không có khung hình nào ở giữa.
+
+   Trình duyệt không có `@property` thì khối này im lặng không chạy, và đó là
+   suy biến ĐÚNG: ô vẫn đọc được, chỉ mất một dấu phụ.
+
+   `inset: 0` nằm trong hộp đệm nên vệt chạy SÁT TRONG mép ô, không đè lên vạch
+   phân cách chung của bàn — hai đường 1px chồng nhau ở cùng một toạ độ là một
+   đường dày 2px nhấp nháy. */
+@property --goc {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.blo.dangSong::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-sticky);
+  /* Không bắt chuột: ô nào cũng cuộn được, và một lớp phủ nuốt cú lăn là một ô
+     chết đúng lúc nó đang báo mình sống. */
+  pointer-events: none;
+  padding: 1px;
+  border-radius: 1px;
+  background: conic-gradient(
+    from var(--goc),
+    transparent 0deg,
+    transparent 288deg,
+    color-mix(in oklch, var(--gold) 55%, transparent) 330deg,
+    var(--gold) 356deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: vienChay 1.2s linear infinite;
+}
+
+@keyframes vienChay {
+  to {
+    --goc: 360deg;
+  }
+}
+
+/* Nhánh thay thế BẮT BUỘC — `PRODUCT.md` xếp `prefers-reduced-motion` là luật
+   cứng, và "tắt animation" một mình sẽ để lại một viền vàng đứng im ở một góc
+   ngẫu nhiên của ô, tức một dấu nhiễu thay vì một dấu ít động hơn.
+   Nên ở đây tin được nói lại bằng một ĐỐM tĩnh ở đầu ô — cùng ký hiệu, cùng
+   màu, cùng nghĩa với đốm trạng thái mà cả studio đã dùng. */
+@media (prefers-reduced-motion: reduce) {
+  .blo.dangSong::after {
+    display: none;
+  }
+  .blo.dangSong > .blodau::before,
+  .blo.dangSong .vshead::before {
+    content: "";
+    flex: none;
+    align-self: center;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+  }
+}
+
+/* Ô bảng chương: thân ô bỏ đệm ngang để `.bangwrap` chạm sát hai mép — bảng tự
+   mang máng ở Ô ĐẦU và Ô CUỐI, theo đúng điều khoản "lề đặt ở ô, không ở
+   `.bangwrap`" (đặt ở `.bangwrap` thì lề cuộn đi mất cùng nội dung). */
+.blo-chuong .blothan {
+  padding: 0 0 10px;
+}
+/* Hàng tiêu đề cột GHIM. Ô này cao ~152px và chứa gần 1.700px bảng, nên cuộn
+   tới hàng thứ mười mà mất tiêu đề cột là mất luôn nghĩa của năm con số trên
+   hàng đó. Nền đặc vì hàng bảng trượt ngay dưới nó. */
+.blo-chuong thead th {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: var(--bg);
+}
+/* Hai câu chú dưới bảng đi theo bảng vào trong vùng cuộn — chúng nói về PHÉP
+   LỌC và về cột chi phí vắng mặt, tức chỉ có nghĩa cạnh bảng. Chúng phải tự
+   mang máng vì thân ô đã bỏ đệm ngang cho bảng. */
+.blo-chuong .phamvihint,
+.blo-chuong .steerhint {
+  padding-left: var(--mang);
+  padding-right: var(--mang);
+}
+
+/* ── hàng 3: ô can thiệp, ghim đáy ── */
 /* Ghim chứ không cuộn: can thiệp là việc người vận hành làm GIỮA lúc đang đọc
    chữ chảy, nên bắt họ cuộn đi tìm ô nhập là bắt họ rời mắt khỏi đúng thứ họ
    đang can thiệp vào. Đây là dòng nhập của TUI, đặt đúng chỗ TUI đặt nó. */
@@ -1986,6 +2450,10 @@ td.who {
   background: var(--panel);
   border-top: 1px solid var(--line);
   min-width: 0;
+  /* KHÔNG co, kể cả lúc cả cột giữa thiếu chỗ: một ô nhập bị bóp là một ô nhập
+     không gõ được, và câu giải thích ngay dưới nó là chỗ DUY NHẤT nói vì sao ô
+     bị vô hiệu ở ca studio chỉ đọc. */
+  flex: none;
 }
 .blcanthiep > h2 {
   flex: none;
@@ -2022,6 +2490,17 @@ td.who {
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
+}
+/* `[hidden]` KHÔNG tự thắng ở đây, và đó là một cái bẫy đã cắn dự án này một
+   lần rồi (`.entry .replay[hidden]` của nhật ký phán quyết mang cùng dòng này).
+   Luật của trình duyệt là `[hidden] { display: none }` với độ đặc hiệu của một
+   thuộc tính, còn luật ngay trên đặt `display: -webkit-box` với độ đặc hiệu của
+   hai lớp — nên thuộc tính `hidden` trên thẻ vẫn đúng với cây trợ năng nhưng ô
+   vẫn chiếm chỗ.
+   ĐO ĐƯỢC lúc thiếu dòng này: ô can thiệp 79px thay vì 55px — tức 24px trong 43
+   px định thu về vẫn nằm nguyên trên màn hình. */
+.blcanthiep .steerhint[hidden] {
+  display: none;
 }
 .blcanthiep .loiDoc {
   flex: 1 0 100%;
@@ -2202,14 +2681,14 @@ td.who {
    1. DẢI XẾP HAI HÀNG. Ba ô cạnh nhau ở 390px cho ô cây vai khoảng 90px, tức tên
       vai và tên công cụ xuống dòng ở mỗi từ. Cây vai lấy cả một hàng, hai ô còn
       lại chia hàng thứ hai.
-   2. BUỒNG LÁI THÔI LÀ KHUNG CỐ ĐỊNH, thành một cột cuộn. Lưới bốn hàng chỉ có
-      nghĩa khi còn đủ chiều cao để chia: ở 390×844, sau thanh trên (44), dải rail
-      ngang (38), transport đã xuống dòng (~76) và `.bltren` cao gần 200px vì mọi
-      thứ đều xuống dòng, phần còn lại cho bốn hàng là khoảng 480px — chia 2:1 ra
-      một khu chữ 280px và một khu sự kiện 140px, và mọi hàng đều thành khe hẹp.
-      Cột cuộn với khu chữ cao cố định đọc được; lưới ép thì không.
+   2. BUỒNG LÁI THÔI LÀ KHUNG CỐ ĐỊNH, thành một cột cuộn. Một lưới chia chiều
+      cao chỉ có nghĩa khi còn đủ chiều cao để chia: ở 390×844, sau thanh trên
+      (44), dải rail ngang (38), transport đã xuống dòng (~76) và `.bltren` cao
+      gần 200px vì mọi thứ đều xuống dòng, phần còn lại là khoảng 480px — chia
+      cho bốn ô của bàn thì mỗi ô còn 120px, tức mỗi ô chỉ còn cái đầu ô của nó.
+      Cột cuộn với mỗi khu cao cố định đọc được; lưới ép thì không.
       Ô can thiệp vẫn KHÔNG cuộn đi mất — `sticky` giữ nó ở đáy khung nhìn, tức
-      giữ đúng tính chất mà hàng thứ tư của lưới có ở màn hình rộng. */
+      giữ đúng tính chất mà hàng cuối của lưới có ở màn hình rộng. */
 @media (max-width: 860px) {
   .daitrangthai {
     flex-wrap: wrap;
@@ -2252,18 +2731,38 @@ td.who {
     margin: 0 0 5px;
     padding-top: 0;
   }
-  /* Khu chữ cần một chiều cao CÓ HẠN để `overflow-y: auto` có nghĩa — không có
-     nó thì `.vsthan` cao bằng nội dung, `scrollHeight === clientHeight`, và tự
-     cuộn lẫn nút "về cuối" đều thành vô nghĩa. `vh` chứ không `px`: đây là phần
-     của MÀN HÌNH dành cho chữ đang chảy, không phải một con số tuyệt đối. */
+  /* Bàn thôi là bàn: bốn ô thành bốn khối nối đuôi trong một cột cuộn. Thứ tự
+     DOM đã là thứ tự đọc nên không có gì phải sắp lại, và thứ tự Tab đi theo. */
+  .blsan {
+    display: block;
+  }
+  /* Cùng lý do với nhánh container 700px: bàn thôi là lưới nên không còn ranh
+     giới nào để kéo, và một `separator` vô hình vẫn nằm trong thứ tự Tab. */
+  .blkeo {
+    display: none;
+  }
+  .blo {
+    display: block;
+    border-right: 0;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .blo-nhatky {
+    border-bottom: 0;
+  }
+  /* Mỗi thân ô cần một chiều cao CÓ HẠN để `overflow-y: auto` có nghĩa — không
+     có nó thì thân ô cao bằng nội dung, `scrollHeight === clientHeight`, và ô
+     không cuộn; ở ô văn sống thì tự-cuộn lẫn nút "về cuối" cùng thành vô nghĩa.
+     `vh` chứ không `px`: đây là phần của MÀN HÌNH dành cho mỗi khu, không phải
+     một con số tuyệt đối. Ô văn sống được phần lớn hơn — nó là thứ duy nhất
+     chạy liên tục, và ở một cột cuộn thì nó không lấy của ai cả. */
+  .blothan {
+    max-height: 38vh;
+  }
   .vansong {
     display: block;
   }
   .vsthan {
     max-height: 44vh;
-  }
-  .blcuon {
-    overflow: visible;
   }
   /* Ô can thiệp THÔI ghim ở màn hình hẹp, và đó là một thử-rồi-bỏ chứ không phải
      một chỗ quên.
@@ -2277,6 +2776,57 @@ td.who {
      Nên ở đây nó đi theo dòng chảy như mọi khối khác. */
 }
 
+/* ── canvas hẹp: bàn gập về một cột ──
+   Truy vấn CONTAINER, không truy vấn cửa sổ, và đó là điều kiện đúng-sai: bề
+   rộng cột giữa phụ thuộc cột inspector có hiện hay không, nên cùng một bề rộng
+   cửa sổ cho hai bề rộng canvas khác nhau (1512 có inspector → canvas 1026;
+   1512 không inspector → canvas 1318).
+
+   Ngưỡng 700px, và con số đó là một lần thử-rồi-sửa. Bản đầu để 880px, và nó
+   cắt mất đúng cỡ máy phổ biến nhất: cửa sổ 1280 còn cột ngữ cảnh cho canvas
+   794px, tức rơi về một cột xếp dọc — bốn ô chia 470px thành bốn khe 117px và
+   mỗi ô chỉ còn cái đầu ô. ĐO ĐƯỢC ở ca đó: Chương 2%, Máy đang nói 1%. Hai cột
+   hẹp đọc được hơn bốn khe, nên ngưỡng hạ xuống tới chỗ hai cột thật sự không
+   còn chia được nữa.
+
+   Bốn ô vẫn giữ chiều cao chia được (không phải một cột cuộn như dưới 860px):
+   khung buồng lái ở đây vẫn cố định, chỉ có bàn thôi hai cột. */
+@container canvas (max-width: 700px) {
+  /* `grid-template-*` khai LẠI ở đây, tức bỏ qua cả hai biến cỡ đã kéo — chủ ý:
+     cỡ người dùng kéo cho một bàn HAI CỘT không có nghĩa nào trên một cột xếp
+     dọc bốn hàng. Biến vẫn nằm nguyên trên phần tử, nên nới cửa sổ ra là bàn
+     trở lại đúng cỡ đã kéo mà không phải kéo lại. */
+  .blsan {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  }
+  /* Không còn ranh giới nào để kéo. Ẩn hẳn chứ không chỉ giấu mắt: một
+     `separator` vô hình vẫn nằm trong thứ tự Tab và trình đọc màn hình vẫn đọc
+     ra nó, tức một điều khiển không làm gì mà vẫn phải bấm qua. */
+  .blkeo {
+    display: none;
+  }
+  .blo-song {
+    grid-area: 1 / 1;
+  }
+  .blo-sukien {
+    grid-area: 2 / 1;
+  }
+  .blo-chuong {
+    grid-area: 3 / 1;
+  }
+  .blo-nhatky {
+    grid-area: 4 / 1;
+  }
+  .blo {
+    border-right: 0;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .blo-nhatky {
+    border-bottom: 0;
+  }
+}
+
 /* Màn hình rất hẹp: khoảng đệm ngang về cùng 12px với phần còn lại của canvas. */
 @media (max-width: 700px) {
   .bltruc,
@@ -2286,13 +2836,15 @@ td.who {
     padding-right: 12px;
   }
   .vansong .vshead,
-  .vsthan {
+  .vsthan,
+  .blodau,
+  .blothan {
     padding-left: 12px;
     padding-right: 12px;
   }
-  .blcuon .sect {
-    padding-left: 12px;
-    padding-right: 12px;
+  .blo-chuong .blothan {
+    padding-left: 0;
+    padding-right: 0;
   }
   .vecuoi {
     right: 14px;
@@ -2634,7 +3186,23 @@ div:has(> .qcrow) {
   font: 400 11.5px var(--ui);
   color: var(--ink-2);
 }
-/* Dải số liệu: vùng DUY NHẤT được phép cắt. */
+/* Dải số liệu: vùng DUY NHẤT được phép cắt.
+   Nó cũng là GỐC TRUY VẤN của cả thang thu gọn bên dưới, và chỗ đặt ấy là một
+   sửa lỗi chứ không phải một cách viết khác.
+
+   Thang cũ hỏi BỀ RỘNG CỬA SỔ (`@media (max-width: 1240px)`), trong khi thứ
+   quyết định có cắt hay không là bề rộng của chính dải này — tức cửa sổ TRỪ ĐI
+   cụm nút bên phải. Mà cụm nút không có bề rộng cố định: nó là 330px với ba nút,
+   và 538px khi engine mở thêm công tắc `Chế độ đi tiếp · Tự chạy · Nghiệm thu
+   từng chương`. Nên cùng một cửa sổ cho hai bề rộng dải khác nhau, và thang cũ
+   không thấy được sự khác biệt đó.
+
+   ĐO ĐƯỢC ở 1512×900, engine đang mở: dải rộng 974px nhưng cần 1.294px — cắt
+   320px, tức ba ô cuối (`giá thành`, `tổng`, `đã chạy`) nằm ngoài tầm nhìn. Cả
+   ba mức thu gọn đều KHÔNG chạy, vì 1512 > 1240. Đúng ba con số mà PRODUCT.md
+   xếp hạng nhất ("số liệu là giá thành, không phải điểm thưởng") biến mất ở
+   đúng cỡ màn hình phổ biến nhất, và thang thu gọn dựng ra để tránh chuyện đó
+   thì đứng nhìn. */
 .trans .dai {
   display: flex;
   align-items: stretch;
@@ -2643,6 +3211,8 @@ div:has(> .qcrow) {
   overflow-y: hidden;
   scrollbar-width: none;
   padding-left: 4px;
+  container-type: inline-size;
+  container-name: transdai;
   /* Mép mờ 26px: nói ra rằng còn số liệu bên phải. Cắt lặng lẽ thì người vận hành
      tưởng con số không tồn tại, chứ không tưởng nó bị khuất. */
   -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
@@ -2659,14 +3229,12 @@ div:has(> .qcrow) {
   background: var(--panel);
   border-right: 1px solid var(--line);
 }
-@media (max-width: 1240px) {
-  .trans .cell {
-    padding: 0 9px;
-  }
-  /* ĐO ĐƯỢC ở 1240px: transport cần 1333px, tràn 93px, và ô cuối "đã chạy
-     6:12:04" bị cắt ngay ở mép phải. Ô ngữ cảnh là ô béo nhất (264px) và 110px
-     trong đó là cặp token phụ — bỏ nó đi thu lại nhiều hơn phần tràn, nên mọi
-     con số vận hành đều đọc được mà không phải cuộn ngang. Tỉ lệ % vẫn còn. */
+/* Bậc 1 — bỏ cặp token phụ của ô ngữ cảnh.
+   Ô ngữ cảnh là ô béo nhất và 110px trong đó là cặp `52.400/128.000` — một số
+   liệu PHỤ, vì tỉ lệ phần trăm mới là thứ trả lời "sắp nén chưa". Câu đầy đủ
+   vẫn nằm trong chú giải của ô. Ngưỡng 1.300px là bề rộng dải mà nội dung đầy
+   đủ (1.294px) vừa đúng vặn. */
+@container transdai (max-width: 1300px) {
   .trans .token {
     display: none;
   }
@@ -2700,11 +3268,6 @@ div:has(> .qcrow) {
   max-width: 300px;
   min-width: 0;
 }
-@media (max-width: 1240px) {
-  .trans .cell.buoc {
-    max-width: 216px;
-  }
-}
 .trans .cell.buoc .m {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2726,16 +3289,62 @@ div:has(> .qcrow) {
   max-width: 300px;
   min-width: 0;
 }
-@media (max-width: 1240px) {
-  .trans .cell.to {
-    max-width: 216px;
-  }
-}
 .trans .cell.to .model {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+}
+
+/* Bậc 2 của thang thu gọn — thắt đệm ô và chặn hai ô chữ tự do.
+   Ngưỡng 1.320px, đo SAU bậc 1: bỏ cặp token rồi thì nội dung rộng nhất còn
+   1.319px, nên bất kỳ dải nào hẹp hơn thế đều đang cắt một con số. Bậc này thu
+   thêm 116px (đệm 8 ô × 4px, cộng ô công đoạn và ô tổ 300 → 216), tức dải từ
+   1.203px trở lên đọc đủ tám ô mà không phải cuộn ngang.
+   Dưới 1.203px thì mép mờ và phép cuộn ngang tiếp quản — bậc thứ ba sẽ phải bỏ
+   NỘI DUNG chứ không chỉ bỏ khoảng trắng, và bỏ nội dung ở một thanh số liệu là
+   việc cần một quyết định riêng, không phải một dòng CSS.
+
+   # Vì sao khối này nằm ở ĐÂY chứ không cạnh bậc 1
+
+   Truy vấn container KHÔNG cộng thêm độ đặc hiệu, nên `@container … { .trans
+   .cell { padding: 0 9px } }` và `.trans .cell { padding: 0 11px }` đặc hiệu
+   BẰNG NHAU và cái đứng sau thắng. Bậc 2 phải đứng sau mọi luật nền mà nó ghi
+   đè.
+   Đây là một lỗi ĐÃ CÓ SẴN, không phải lỗi mới: bản `@media (max-width: 1240px)`
+   trước đó cũng đặt `padding: 0 9px` phía TRÊN luật nền `padding: 0 11px`, nên
+   vế thu đệm của nó chưa bao giờ chạy — kể cả ở 1024px. Chỉ vế `max-width` của
+   hai ô chữ là chạy, vì nó tình cờ được viết sau luật nền của chúng. */
+@container transdai (max-width: 1320px) {
+  .trans .cell {
+    padding: 0 9px;
+  }
+  /* Ngân sách an toàn đo ở 1240px là 230px cho ô công đoạn; 216px là mức chặn
+     đủ cho ca thường đi qua nguyên vẹn. Ở dải rộng thì có chỗ, và chặn 216px ở
+     đó lại cắt cả tên bước ngắn ("commit_ch…", "soát nhất…") — mất đúng phần
+     mang tin mà không cần thiết. */
+  .trans .cell.buoc,
+  .trans .cell.to {
+    max-width: 216px;
+  }
+}
+
+/* Bậc 3 của chính dải số — thắt tiếp đệm và hai ô chữ tự do.
+   Đi CÙNG bậc 3 của cụm nút ở cuối tệp; một mình bên nào cũng không đóng nổi
+   198px, và đó là lý do chúng là một cặp chứ không phải hai phép rời.
+   Cộng lại: cụm nút nhả 135px (nhãn nhóm 72 + khe 6, nhãn nút 161 → 104), dải
+   nhả 88px (đệm 8 ô × 4px, ô công đoạn 216 → 160). Tổng 223px cho một khoản
+   thiếu 198px, tức còn 25px dư — không kéo căng tới sát mép.
+   Ô `công đoạn` đã bị kẹp ellipsis từ bậc 2 và câu đầy đủ đã nằm trong `title`,
+   nên 160px không bỏ thêm tin nào; nó chỉ cắt sớm hơn. */
+@container transdai (max-width: 1200px) {
+  .trans .cell {
+    padding: 0 7px;
+  }
+  .trans .cell.buoc,
+  .trans .cell.to {
+    max-width: 160px;
+  }
 }
 /* `margin-left: auto` gom nhóm số liệu về mép phải — nhưng nó CHỈ an toàn khi thanh
    chắc chắn vừa MỘT hàng. Sau khi xuống dòng, auto margin ăn hết chỗ trống còn lại
@@ -2743,15 +3352,18 @@ div:has(> .qcrow) {
    đọc ra như thể có ô bị thiếu. ĐO ĐƯỢC: hở 48px ở 390px, và 186px ở 1024px với
    số liệu thật (hàng 1 kết bằng `ngữ cảnh`, rồi hở, rồi `năng suất`).
 
-   Nên mặc định là 0, và chỉ bật lại từ 1360px — trên ngưỡng đó nội dung rộng nhất
-   đo được (1253px khi ẩn cặp token, ~1303px khi hiện) vẫn vừa một hàng, nên không
-   có hàng thứ hai nào để tạo hở. Dưới 1360px nhóm số liệu chảy liền sau `ngữ cảnh`
-   thay vì dạt phải: đổi lấy việc KHÔNG BAO GIỜ cắt mất con số, đúng thứ tự ưu tiên
-   mà DESIGN.md:108 đặt ra. */
+   Nên mặc định là 0, và chỉ bật lại khi DẢI (không phải cửa sổ) đủ rộng để chứa
+   nội dung rộng nhất đo được — 1.310px, tức 1.294px cộng khe an toàn. Trên
+   ngưỡng đó không có hàng thứ hai nào để tạo hở.
+   Hỏi dải chứ không hỏi cửa sổ vì cùng lý do đã ghi ở `.trans .dai`: cụm nút bên
+   phải rộng 330px hay 538px tuỳ trạng thái engine, nên một ngưỡng theo cửa sổ
+   bật `margin-left: auto` đúng lúc dải KHÔNG còn chỗ — và auto margin lúc đó đẩy
+   bốn ô cuối ra ngoài mép cắt. Đó chính là cơ chế đã giấu `giá thành · tổng ·
+   đã chạy` ở 1512px. */
 .trans .cell.push {
   margin-left: 0;
 }
-@media (min-width: 1360px) {
+@container transdai (min-width: 1310px) {
   .trans .cell.push {
     margin-left: auto;
   }
@@ -7003,4 +7615,104 @@ button[aria-busy="true"]::after {
   color: var(--ink);
   opacity: 1;
   cursor: default;
+}
+
+/* ══ BẬC 3 — CỤM NÚT NHƯỜNG CHỖ CHO SỐ LIỆU ═══════════════════════════
+   ĐO ĐƯỢC ở 1512×900 lúc engine mở: dải số có 974px nhưng cần 1.172px, tức
+   thiếu 198px và hai ô `tổng` · `đã chạy` nằm ngoài tầm nhìn. Cả hai bậc thu gọn
+   trước đó đã chạy hết — không còn khoảng trắng nào trong dải để lấy.
+
+   Nguồn của 198px ấy nằm ở phía KIA của thanh: `.dieukhien` rộng 538px, trong đó
+   công tắc chế độ chiếm 319px (nhãn nhóm 72 · `Tự chạy` 66 · `Nghiệm thu từng
+   chương` 161). Riêng công tắc đã lớn hơn phần thiếu.
+
+   # Vì sao cụm nút nhường, chứ không phải hai hàng hay bớt một ô
+
+   Ba đường kia đều đã đo và đều đắt hơn:
+
+     · DẢI XUỐNG HAI HÀNG — thanh cao thêm 28px. Tưởng là 28px đó lấy từ trục
+       (nó có `flex-shrink`), nhưng ĐO RA thì không: `.blsan` là item DUY NHẤT có
+       `flex-grow`, nên nó hấp thụ mọi thay đổi chiều cao và `flex-shrink` của
+       trục chỉ vào việc khi có thiếu hụt thật. Đo được: bàn 497 → 469, trục
+       137 → 137. Tức 28px trả bằng đúng chiều cao bốn ô mà cụm trước vừa giành.
+     · BỚT MỘT Ô SỐ — `đã chạy` là ô yếu nhất, nhưng nó là mẫu số của cả `năng
+       suất` lẫn `tổng`, và "đã chạy 22 giờ" là câu trả lời trực tiếp cho tiêu
+       chí của PRODUCT.md ("mở studio sau 6 giờ đi vắng và biết trong 5 giây").
+     · RÚT `Nghiệm thu từng chương` THÀNH `Nghiệm thu` — mất đúng phần mang tin,
+       vì "từng chương" là thứ phân biệt nó với `Tự chạy`.
+
+   Trong khi hai phép dưới đây không bỏ tin nào:
+
+     · nhãn nhóm ẩn khỏi MẮT nhưng còn nguyên cho trình đọc màn hình —
+       `role="group" aria-label` của cụm vẫn mang "Chế độ đi tiếp";
+     · nhãn nút bị kẹp bằng ellipsis, nên tên đầy đủ vẫn là TÊN TRỢ NĂNG của nút
+       (accessible name lấy từ nội dung văn bản, mà nội dung không bị cắt).
+
+   # Chỗ này lệch khỏi một điều khoản của DESIGN.md, ghi ra để không ai tưởng là quên
+
+   DESIGN.md nói nhãn nhóm tồn tại vì *"'tự chạy' và 'nghiệm thu' đứng trơ thì
+   không tự nói chúng loại trừ nhau"*. Điều khoản đó GIỮ NGUYÊN ở nơi có chỗ —
+   trên 1.700px nhãn vẫn hiện. Dưới ngưỡng, nó bị đổi lấy ba con số vận hành, và
+   phần "loại trừ nhau" chuyển sang hình dạng: hai nút sát nhau, một tô nền vàng
+   `aria-pressed=true`, một viền trơ — đúng khuôn segmented control.
+
+   # Vì sao truy vấn `.trans` chứ không `.dai`
+
+   Đây là thứ duy nhất trong thang không hỏi được bề rộng dải số: nó SỬA bề rộng
+   cụm nút, mà bề rộng dải số lại bằng cửa sổ trừ cụm nút. Hỏi `.dai` là hỏi một
+   con số phụ thuộc chính câu trả lời. Nên nó hỏi cả thanh — tức ngân sách thật.
+
+   1.700px = 1.172 (dải cần, chưa thu) + 538 (cụm nút chưa thu). Trên mức đó
+   không có gì phải nhường. */
+.trans {
+  container-type: inline-size;
+  container-name: trans;
+}
+
+@container trans (max-width: 1700px) {
+  .dkChonDe {
+    display: none;
+  }
+  .dkChonNut {
+    max-width: 104px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Hai nút DÍNH LIỀN thành một công tắc, và đây là vế thứ hai của phép đổi —
+     không phải trang trí.
+     ĐO ĐƯỢC lúc mới chỉ ẩn nhãn: `Tự chạy` và `Nghiệm thu t…` nằm ngay cạnh
+     `Đóng máy` và `▶ Chạy tiếp`, thành BỐN nút ngang hàng, và không có gì nói
+     hai cái đầu là một cặp loại trừ còn hai cái sau là hai hành động rời. Cảnh
+     báo của DESIGN.md đúng nguyên văn.
+     Nên phần "loại trừ nhau" mà nhãn nhóm từng nói bằng CHỮ giờ được nói bằng
+     HÌNH: viền dùng chung, hai đầu bo tròn còn giữa vuông — khuôn segmented
+     control mà không cần học thêm gì.
+     Chỉ áp dưới ngưỡng: trên 1.700px nhãn còn đó nên hình không phải gánh, và
+     giữ nguyên hình dạng cũ là giữ nguyên sức nặng thị giác cũ cho thanh. */
+  .dkChon {
+    gap: 0;
+  }
+  .dkChonDe + .dkChonNut,
+  .dkChon > .dkChonNut:first-of-type {
+    border-radius: var(--r) 0 0 var(--r);
+  }
+  .dkChon > .dkChonNut:last-of-type {
+    border-radius: 0 var(--r) var(--r) 0;
+  }
+  /* Nút TẮT cũng phải có viền ở đây, khác luật chung (`transparent` cho tới khi
+     hover): một công tắc chỉ có nửa bên bật là có viền thì nó đọc ra là một nút
+     đơn cộng một mẩu chữ, không phải hai lựa chọn. */
+  .dkChonNut:not(.dkBat) {
+    border-color: var(--line-2);
+  }
+  /* Viền dùng chung: nút sau đè 1px lên nút trước để hai đường kẻ thành một. */
+  .dkChonNut + .dkChonNut {
+    margin-left: -1px;
+  }
+  /* Nút đang bật nổi lên trên để viền vàng của nó không bị nút cạnh cắt mất. */
+  .dkChonNut.dkBat {
+    position: relative;
+    z-index: 1;
+  }
 }

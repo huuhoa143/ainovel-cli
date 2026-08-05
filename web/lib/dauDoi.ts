@@ -43,6 +43,71 @@ export function useDauDoi<T>(giaTri: T): number {
 }
 
 /**
+ * Cửa sổ GIỮ mặc định của `useVuaCoTin`, tính bằng ms.
+ *
+ * 1.400ms là một vòng viền chạy (1,2s) cộng một khoảng thừa nhỏ, nên một ô nhận đúng MỘT tin
+ * rời rạc vẫn chạy trọn một vòng thay vì tắt giữa cạnh — cùng lý lẽ mà `GIU_MS` của
+ * `chotChuong.ts` đã ghi cho họ 09. Đổi thời lượng `vienChay` trong `globals.css` thì phải
+ * đổi số này theo.
+ */
+export const GIU_TIN_MS = 1400;
+
+/**
+ * "Ô này VỪA có tin, và còn đang có" — cờ bật/tắt cho viền chạy của bàn buồng lái.
+ *
+ * # Vì sao KHÔNG dùng `useDauDoi` cho việc này
+ *
+ * `useDauDoi` trả một bộ đếm để làm `key`, tức mỗi lần đổi là React DỰNG LẠI phần tử và
+ * animation chạy lại từ đầu. Đúng cho một cú nhấp một-lần trên một con số đổi vài giây một
+ * lần. Sai hoàn toàn ở đây, và sai theo hai đường cùng lúc:
+ *
+ *   1. Khu văn sống nhận delta với nhịp trung vị **2ms** (phép đo ở `useStudio`). Một bộ đếm
+ *      bump theo từng delta là một `setState` nữa cho mỗi mẩu chữ — nhân đôi số lần render
+ *      của bề mặt đắt nhất màn hình.
+ *   2. Dựng lại phần tử ở mỗi delta làm animation khởi động lại 500 lần một giây, tức viền
+ *      đứng im ở khung hình đầu. Chuyển động chết đúng lúc nó cần nói "chỗ này đang sống".
+ *
+ * Nên cái cần ở đây là một CỬA SỔ, không phải một xung: bật khi có tin, và tự tắt sau
+ * `giuMs` kể từ tin CUỐI CÙNG. Bộ hẹn được đặt lại bằng ref nên một tràng delta chỉ tốn
+ * đúng hai lần render (bật, rồi tắt) chứ không phải hai lần cho mỗi mẩu.
+ *
+ * Hệ quả đọc được trên màn hình, và nó đúng là thứ cần nói: ô văn sống chạy viền LIÊN TỤC
+ * suốt lúc máy đang viết, còn ô dòng sự kiện chạy một vòng rồi tắt cho mỗi sự kiện rời rạc.
+ * Hai nhịp khác nhau vì hai loại dữ liệu khác nhau, không phải vì hai luật khác nhau.
+ *
+ * # `false` ở lần render đầu, và đó là ca quan trọng nhất
+ *
+ * Cùng luật với `useDauDoi`: `truoc` khởi tạo BẰNG giá trị đầu, nên mở trang không làm bốn ô
+ * cùng chạy viền một lượt. Một chuyển động mang thông tin chỉ mang được thông tin khi nó
+ * KHÔNG chạy lúc không có gì xảy ra.
+ */
+export function useVuaCoTin<T>(giaTri: T, giuMs: number = GIU_TIN_MS): boolean {
+  const truoc = useRef<T>(giaTri);
+  const henRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [song, datSong] = useState(false);
+
+  useEffect(() => {
+    if (Object.is(truoc.current, giaTri)) return;
+    truoc.current = giaTri;
+    // `datSong(true)` khi đã true là một no-op của React (bail out), nên tràng delta không
+    // đẻ thêm lần render nào. Chỉ bộ hẹn được đặt lại, và nó là ref.
+    datSong(true);
+    if (henRef.current) clearTimeout(henRef.current);
+    henRef.current = setTimeout(() => datSong(false), giuMs);
+  }, [giaTri, giuMs]);
+
+  // Dọn bộ hẹn lúc gỡ: không có nó thì một `setState` bay tới sau khi component đã đi.
+  useEffect(
+    () => () => {
+      if (henRef.current) clearTimeout(henRef.current);
+    },
+    [],
+  );
+
+  return song;
+}
+
+/**
  * Dấu "thứ này VỪA XUẤT HIỆN" — chỉ tăng khi `co` đi từ false sang true.
  *
  * Khác `useDauDoi` ở đúng chỗ làm nên thông tin: `useDauDoi` nói "giá trị đổi", còn cái này

@@ -218,3 +218,26 @@ test('nút hạng nhất luôn là nút CUỐI, ở cả bốn bộ nút', () =>
     expect(ds[ds.length - 1], ten).toBe(cuoi);
   }
 });
+
+test('công tắc chế độ mang đủ TÊN TRỢ NĂNG, vì CSS ẩn nhãn nhóm ở màn hình hẹp', () => {
+  // Bài này canh một hợp đồng giữa TSX và CSS, và nó chỉ đáng có kể từ khi hai bên chạm nhau.
+  //
+  // `globals.css` ẩn `.dkChonDe` và kẹp ellipsis nhãn nút khi thanh transport dưới 1.700px —
+  // phép đổi để ba ô tiền (`giá thành` · `tổng` · `đã chạy`) không bị cắt ở 1512px. Đổi được
+  // vì không mất tin nào: chữ "Chế độ đi tiếp" chuyển sang `aria-label` của nhóm, còn tên đầy
+  // đủ của nút vẫn là nội dung văn bản nên nó vẫn là accessible name dù mắt chỉ thấy
+  // "Nghiệm thu t…".
+  //
+  // Cái làm phép đổi đó hợp lệ nằm HOÀN TOÀN ở đây. Bỏ `aria-label` của nhóm, hay đổi nhãn
+  // nút sang `aria-label` ngắn, thì người dùng trình đọc màn hình mất hẳn thông tin mà người
+  // dùng mắt chỉ mất tạm — và không có gì trên màn hình nói ra chuyện đó.
+  const { container } = ve({ advance: { ...REVIEW } });
+
+  const nhom = container.querySelector('[role="group"].dkChon');
+  expect(nhom, 'công tắc chế độ phải là một `group` có nhãn').not.toBeNull();
+  expect(nhom!.getAttribute('aria-label')).toBe(CHU.cheDoDiTiep);
+
+  // Tên nút lấy từ NỘI DUNG, không từ `aria-label` — ellipsis của CSS không chạm vào nó.
+  const nut = [...nhom!.querySelectorAll('button')].map((b) => b.textContent?.trim());
+  expect(nut).toEqual([CHU.cheDoTuChay, CHU.cheDoNghiemThu]);
+});
