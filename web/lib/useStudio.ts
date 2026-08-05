@@ -162,6 +162,29 @@ export interface Studio {
   moTacPhamTai: (id: string, khu: Khu, chuong?: number) => void;
   /** Mở một chương để đọc: chọn chương + sang bề mặt đọc, một lần ghi URL. */
   docChuong: (n: number) => void;
+  /**
+   * Đọc lại SỰ THẬT của cuốn đang xem — snapshot, danh sách xưởng, hồ sơ — và không đụng vào
+   * gì khác.
+   *
+   * # Vì sao nó phải tồn tại RIÊNG, không dùng `taiLai`
+   *
+   * Đây là đường mà mọi nút ghi đi qua sau khi lệnh thành công (Chạy · Dừng · Mở/Đóng máy ·
+   * đổi chế độ · Cho đi tiếp · Trả chương về viết lại). Trước bản này chúng dùng `taiLai`, và
+   * `taiLai` bơm `lanTai` — tức chạy lại CẢ ba effect. Hai hư hại đo được từ mã:
+   *
+   *   1. Effect §2 xóa trắng `suKien`, `song` và `vanSong`. Nghĩa là bấm `Dừng` là vứt đúng
+   *      đoạn chữ vừa đọc để quyết định dừng. Nó cũng phá thẳng điều khoản của DESIGN.md —
+   *      "TUI xóa sạch khu chữ ở mỗi lượt vì terminal không cuộn lại được; trình duyệt giỏi
+   *      đúng chỗ đó, nên vứt phần vừa đọc là bỏ phí".
+   *   2. Effect §2 đặt `seqRef.current = 0` NGAY TRONG THÂN nó, còn effect §3 đọc
+   *      `batDauTu = seqRef.current` để mở lại stream. React chạy §2 trước §3 trong cùng một
+   *      lượt, nên stream mở lại từ mốc 0 và phát lại từ ĐẦU hàng đợi — dòng sự kiện sau một
+   *      cú bấm nút hiện các sự kiện cũ nhất thay vì chỗ đang đứng.
+   *
+   * `taiLai` vẫn còn và vẫn đúng cho hai ca của nó: thử lại sau khi không tải được, và xóa
+   * một tác phẩm (lúc đó danh sách đổi nên phải chọn lại cuốn — việc chỉ effect §1 làm được).
+   */
+  lamMoi: () => void;
   taiLai: () => void;
 }
 
@@ -364,6 +387,26 @@ export function useStudio(): Studio {
     return snap;
   }, []);
 
+  /**
+   * Đọc lại cả ba tờ của cuốn đang xem, KHÔNG đụng tới stream hay bộ đệm.
+   *
+   * Một hàm cho hai người gọi — nhịp làm mới của dòng sự kiện, và `lamMoi` mà mọi nút ghi
+   * dùng. Hai bản chép tay của cùng bộ ba này sẽ lệch ngay lần thêm tờ thứ tư, và lúc đó
+   * "sau khi bấm nút" và "trong lúc engine chạy" hiện hai lượng dữ liệu khác nhau.
+   *
+   * Nuốt lỗi có chủ ý ở cả ba: đây là đường ĐỌC LẠI, không phải đường tải lần đầu. Một lần
+   * đọc hỏng không được xóa bề mặt đang đúng, và lỗi của chính LỆNH vừa gửi đã được nút của
+   * nó hiện ra rồi.
+   */
+  const napBaTo = useCallback(
+    (id: string) => {
+      void napSnapshot(id, chuongRef.current).catch(() => undefined);
+      void napLaiXuong();
+      void napLaiHoSo(id);
+    },
+    [napSnapshot, napLaiXuong, napLaiHoSo],
+  );
+
   useEffect(() => {
     if (!tacPham) return;
     let huy = false;
@@ -431,15 +474,13 @@ export function useStudio(): Studio {
       // Gộp một nhịp rồi mới đọc lại snapshot: bảng chương, trục và transport
       // phải theo kịp mà không tải lại trang.
       if (henRef.current) clearTimeout(henRef.current);
+      // Xưởng và hồ sơ đi CÙNG nhịp với snapshot, không có nhịp riêng: bảng Xưởng hiện chương
+      // đã chốt, tiền đã tiêu và "engine đang mở" — cả ba đổi trong lúc chạy, nên một danh
+      // sách nạp một lần sẽ đứng im suốt phiên và ô "N engine đang mở" nói 0 trong khi có một
+      // engine đang viết. Cùng nhịp vì cùng một lý do phải gộp: nghiền store.
       henRef.current = setTimeout(() => {
         const id = tacPhamRef.current;
-        if (id) void napSnapshot(id, chuongRef.current).catch(() => undefined);
-        // Xưởng đi CÙNG nhịp với snapshot, không có nhịp riêng: bảng Xưởng hiện chương đã
-        // chốt, tiền đã tiêu và "engine đang mở" — cả ba đổi trong lúc chạy, nên một danh
-        // sách nạp một lần sẽ đứng im suốt phiên và ô "N engine đang mở" nói 0 trong khi có
-        // một engine đang viết. Cùng nhịp vì cùng một lý do phải gộp: nghiền store.
-        void napLaiXuong();
-        if (id) void napLaiHoSo(id);
+        if (id) napBaTo(id);
       }, NHIP_LAM_MOI_MS);
     };
 
@@ -489,7 +530,7 @@ export function useStudio(): Studio {
       nguon.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tacPham, lanTai, !!snapshot, napSnapshot, napLaiXuong, napLaiHoSo]);
+  }, [tacPham, lanTai, !!snapshot, napBaTo]);
 
   /* ── 4. làm mới nền ────────────────────────────────────────────────── */
 
@@ -657,6 +698,17 @@ export function useStudio(): Studio {
     [moTacPhamTai],
   );
 
+  /**
+   * Đường mà MỌI nút ghi đi qua sau khi lệnh thành công. Lý do đầy đủ ở khai báo `lamMoi`
+   * trong interface `Studio`; ở đây chỉ ghi lại điều làm nó khác `taiLai` bằng một câu: nó
+   * không chạm `lanTai`, nên stream không đóng lại, `seqRef` không về 0, và bộ đệm văn sống
+   * cùng danh sách sự kiện đứng nguyên.
+   */
+  const lamMoi = useCallback(() => {
+    const id = tacPhamRef.current;
+    if (id) napBaTo(id);
+  }, [napBaTo]);
+
   const taiLai = useCallback(() => setLanTai((n) => n + 1), []);
 
   return useMemo(
@@ -681,6 +733,7 @@ export function useStudio(): Studio {
       moTacPhamVuaTao,
       moTacPhamTai,
       docChuong,
+      lamMoi,
       taiLai,
     }),
     [
@@ -703,6 +756,7 @@ export function useStudio(): Studio {
       moTacPhamVuaTao,
       moTacPhamTai,
       docChuong,
+      lamMoi,
       taiLai,
     ],
   );

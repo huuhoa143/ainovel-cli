@@ -1,0 +1,392 @@
+/* ══════════════════════════════════════════════════════════════════════
+   BUỒNG LÁI — BÀN CHIA Ô
+
+   Đây là lớp phủ của bản dựng thử. Nó KHÔNG sửa gì trong `globals.css`; nó
+   chỉ đè lên đúng cái đang hỏng và để mọi thứ khác nguyên vẹn, để so sánh
+   là so cùng một bề mặt chứ không phải hai bề mặt khác nhau.
+
+   ── Vì sao phải đổi ───────────────────────────────────────────────────
+
+   Bố cục cũ xếp BỐN vùng lên MỘT trục dọc trong 574px (đo ở 1512×900,
+   cột giữa 1026×709):
+
+     trục sản xuất   120px  ·  cần 171px   → tự cuộn trong ô của nó
+     Máy đang nói    250px  ·  cần ∞
+     khu cuộn        125px  ·  cần 2.666px → đọc được 4,7%
+     can thiệp        79px  ·  cần  79px   → vừa
+
+   Khu cuộn chứa ba mục nối đuôi nhau. Trong 125px đó:
+     · Dòng sự kiện       cao  98px → thấy tiêu đề và một dòng rưỡi
+     · Chương             cao 1.951px, bắt đầu ở 647 → thấy 27px, KHÔNG dòng nào
+     · Nhật ký phán quyết cao  609px, bắt đầu ở 2.598 → không bao giờ tới
+
+   Đây không phải lỗi tỉ lệ. Chia lại bốn hàng theo cách nào cũng vẫn là bốn
+   vùng trên một trục dọc, và cột giữa là hình CHỮ NHẬT NẰM NGANG (1026×574)
+   đang bị dùng như một cột dọc. 1026px bề rộng cho MỘT cột chữ mono 12px là
+   120 ký tự một dòng — rộng hơn khổ đọc 74ch mà chính DESIGN.md đặt ra.
+
+   Nên phép sửa là đổi TOPO, không đổi số: hàng 2 và hàng 3 gộp lại thành
+   một BÀN chia ô, và bề rộng thừa được tiêu vào việc thêm một cột.
+
+   ── Hai trục của bàn, và cả hai đều mang nghĩa ────────────────────────
+
+   Trục NGANG là HÌNH DẠNG của nội dung:
+     cột trái  — văn xuôi và bảng: cần bề rộng (≈583px = 74ch mono)
+     cột phải  — dòng có mốc giờ: hẹp tự nhiên (≈442px)
+
+   Trục DỌC là THỜI GIAN:
+     hàng trên — đang xảy ra (SSE, chảy liên tục)
+     hàng dưới — đã xảy ra (đã ghi vào store, tra cứu được)
+
+     ┌────────────────────────┬──────────────────────┐
+     │ Máy đang nói           │ Dòng sự kiện         │  ← bây giờ
+     ├────────────────────────┼──────────────────────┤
+     │ Chương                 │ Nhật ký phán quyết   │  ← đã xong
+     └────────────────────────┴──────────────────────┘
+
+   Thứ tự quét mắt trùng thứ tự ba câu hỏi của PRODUCT.md: trên-trái trả lời
+   "dây chuyền còn chạy đúng không", dưới-trái trả lời "chất lượng có tuột
+   không", và cột phải là bằng chứng của cả hai.
+
+   ── Vì sao KHÔNG phải thẻ ─────────────────────────────────────────────
+
+   Bốn ô này phân cách bằng ĐÚNG một đường kẻ 1px `--line-2`, không nền
+   riêng, không bo góc, không đổ bóng. Bốn tấm thẻ ở đây là lưới card mà
+   PRODUCT.md cấm thẳng, và nó cũng sai với ẩn dụ đã chốt: bàn dựng phim
+   chia vùng bằng đường kẻ, không bằng thẻ nổi.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── cột giữa: BA hàng, không còn bốn ──
+   Hàng giữa nhận toàn bộ phần cao còn lại và tự chia tiếp. */
+.bocuc-a .blgiua,
+.bocuc-b .blgiua {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.blsan {
+  display: grid;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ── PHƯƠNG ÁN A · bàn 2×2 ──
+   Tỉ lệ cột 1,32:1 không phải cảm giác. Ở 1026px nó cho 583/442:
+   583px là 74 ký tự mono 12px — đúng khổ đọc mà DESIGN.md đặt cho văn xuôi,
+   và cũng là bề rộng bảng chương cần để cột "Tiêu đề" không phải ngắt dòng ở
+   mỗi tên chương tiếng Việt. 442px là đủ cho `10:23 · TOOL · summary` mà
+   không xuống dòng ở phần lớn sự kiện.
+
+   Hai hàng CHIA ĐỀU, và phép đo cũ không còn chống lại điều đó. Tỉ lệ 2:1 của
+   bố cục cũ đo tần suất ĐỔI (`scripts/sample.gif`: khu chữ đổi 146/254 khung,
+   dòng sự kiện đổi 5 lần trong 17,9 giây) và nó đúng khi hai khu ấy CHỒNG lên
+   nhau trên một trục — lúc đó mỗi pixel cho khu này là một pixel lấy của khu
+   kia, nên khu ít đổi hơn phải nhường.
+
+   Giờ chúng nằm CẠNH nhau, nên hàng dưới không còn cạnh tranh với dòng sự
+   kiện; nó cạnh tranh với văn sống. Và phép đo đổi phía: dòng sự kiện có TRẦN
+   (`GIU_SU_KIEN = 40`, hôm nay 10 dòng ≈ 240px) còn bảng chương thì không —
+   49 chương là 1.725px và cuốn này sẽ có 94. Vùng không có trần là vùng cần
+   sàn, nên chia đều chứ không nghiêng về hàng trên.
+
+   `1fr` bằng nhau cho ô bảng 152px: đủ hàng tiêu đề cột cộng ba hàng chương ở
+   34px/hàng. Đó là SÀN, không phải mục tiêu — dưới nó thì tiêu đề cột ăn hết
+   ô và bảng thành một cái nhãn. */
+   Cột phải dùng `clamp` chứ không `fr`, và đó là phép chống một ca đã đo được
+   ở phương án B: dưới ~300px thì mỗi `summary` của dòng sự kiện xuống ba dòng
+   ("check_consiste / ncy(chương / 49)"), tức cột hẹp đi thì khối chữ CAO LÊN
+   và ô hiển thị được ÍT tin hơn — hẹp không đổi lấy gọn, nó đổi lấy tệ hơn.
+   `clamp(320px, 43%, 460px)` giữ cột phải trong khoảng đọc được ở mọi bề
+   rộng canvas, và cột trái ăn phần còn lại. Ở canvas 1026px nó cho 585/441;
+   ở 794px (cửa sổ 1280 còn cột ngữ cảnh) cho 453/341 — vẫn hai cột thật. */
+.bocuc-a .blsan {
+  grid-template-columns: minmax(0, 1fr) clamp(320px, 43%, 460px);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+}
+.bocuc-a .blo-song {
+  grid-area: 1 / 1;
+}
+.bocuc-a .blo-sukien {
+  grid-area: 1 / 2;
+}
+.bocuc-a .blo-chuong {
+  grid-area: 2 / 1;
+}
+.bocuc-a .blo-nhatky {
+  grid-area: 2 / 2;
+}
+.bocuc-a .blo-song,
+.bocuc-a .blo-chuong {
+  border-right: 1px solid var(--line-2);
+}
+.bocuc-a .blo-song,
+.bocuc-a .blo-sukien {
+  border-bottom: 1px solid var(--line-2);
+}
+
+/* ── PHƯƠNG ÁN B · ba cột ──
+   Để so, không để chọn. Ở 1026px ba cột cho 380/265/380, và 380px là dưới
+   sàn của bảng chương: cột "Tiêu đề" còn ~120px, tức mọi tên chương tiếng
+   Việt ngắt hai dòng và bảng cao gấp đôi để nói cùng một lượng tin. 265px
+   cho dòng sự kiện thì mỗi summary xuống ba dòng. Ba cột chia đều một bề
+   rộng không đủ chia ba. */
+.bocuc-b .blsan {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1.15fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+}
+.bocuc-b .blo-song {
+  grid-area: 1 / 1 / 3 / 2;
+}
+.bocuc-b .blo-sukien {
+  grid-area: 1 / 2 / 3 / 3;
+}
+.bocuc-b .blo-chuong {
+  grid-area: 1 / 3 / 2 / 4;
+}
+.bocuc-b .blo-nhatky {
+  grid-area: 2 / 3 / 3 / 4;
+}
+.bocuc-b .blo-song,
+.bocuc-b .blo-sukien {
+  border-right: 1px solid var(--line-2);
+}
+.bocuc-b .blo-chuong {
+  border-bottom: 1px solid var(--line-2);
+}
+
+/* ══ MỘT Ô CỦA BÀN ═══════════════════════════════════════════════════
+   Cùng một khuôn cho cả bốn: đầu ô cố định, thân ô tự cuộn. Đây đúng là
+   khuôn mà `.vansong` đã có (`.vshead` + `.vsthan`); bước này chỉ mở rộng
+   nó ra ba ô còn lại thay vì dựng một khuôn thứ hai.
+
+   `grid-template-rows: auto minmax(0, 1fr)` cộng `min-height: 0` là CHỖ
+   CHỊU LỰC — thiếu một trong hai thì thân ô cao bằng nội dung,
+   `scrollHeight === clientHeight`, và ô không bao giờ cuộn. Đúng cái bẫy
+   mà chú thích của `.vsthan` trong globals.css đã ghi lại. */
+.blo {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Đầu ô: cùng hệ chữ với `.vshead` và `.sect > h2` — 11,5px/500. Nền `--bg`
+   đặc chứ không trong suốt: thân ô cuộn NGAY DƯỚI nó, và một đầu ô trong
+   suốt cho hai lớp chữ chồng nhau ở mép trên. */
+.blodau {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px var(--mang) 6px;
+  border-bottom: 1px solid var(--line-2);
+  background: var(--bg);
+  min-width: 0;
+}
+.blodau h2 {
+  margin: 0;
+  font: 500 11.5px/1.4 var(--ui);
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.blodau h2 .phu {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+/* Số đếm ghim mép phải: nó là MẪU SỐ của thứ đang cuộn bên dưới. Một ô cuộn
+   không có số đếm thì không nói được "còn bao nhiêu nữa ở dưới" — mà đó
+   đúng là câu mà một ô cao 180px chứa 1.951px nội dung phải trả lời. */
+.blodau .dem {
+  margin-left: auto;
+  flex: none;
+  font: 400 11px/1 var(--mono);
+  color: var(--ink-3);
+}
+
+.blothan {
+  overflow-y: auto;
+  min-height: 0;
+  min-width: 0;
+  padding: 10px var(--mang) 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.blothan::-webkit-scrollbar {
+  width: 6px;
+}
+.blothan::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 3px;
+}
+
+/* Ô văn sống giữ nguyên bộ đôi `.vshead`/`.vsthan` của nó — chúng đã là đầu
+   ô và thân ô, chỉ cần thôi vẽ đường kẻ dưới của riêng mình (đường kẻ giờ
+   thuộc về ô, không thuộc về khối). */
+.blo-song {
+  border-bottom-width: 1px;
+}
+.blsan .vansong {
+  display: contents;
+  border-bottom: 0;
+}
+.blsan .vshead {
+  background: var(--bg);
+}
+
+/* ── ô bảng chương ──
+   Thân ô bỏ đệm để `.bangwrap` chạm sát hai mép — bảng tự mang đệm ở ô đầu
+   và ô cuối theo đúng điều khoản "máng đặt ở Ô, không ở `.bangwrap`". */
+.blo-chuong .blothan {
+  padding: 0;
+}
+/* Hàng tiêu đề cột GHIM: ô này cao ~180px và chứa gần 2.000px bảng, nên
+   cuộn xuống hàng thứ mười mà mất tiêu đề cột là mất luôn nghĩa của năm con
+   số trên hàng đó. Nền đặc vì hàng bảng trượt ngay dưới nó. */
+.blo-chuong thead th {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: var(--bg);
+}
+/* Hai câu chú dưới bảng đi theo bảng vào trong vùng cuộn: chúng nói về
+   PHÉP LỌC và về cột chi phí vắng mặt, tức chúng chỉ có nghĩa cạnh bảng. */
+.blo-chuong .phamvihint,
+.blo-chuong .steerhint {
+  padding-left: var(--mang);
+  padding-right: var(--mang);
+}
+
+/* ── ô nhật ký phán quyết ── */
+.blo-nhatky .blothan {
+  padding-top: 4px;
+}
+
+/* ── trục sản xuất ──
+   Trần cũ 120px cắt mất 49px của một cuốn phân tầng (nội dung thật 169px),
+   nên ba lane phải cuộn trong một khe 120px — tức chính cái nó vẽ ra, hình
+   dạng cả cuốn, bị cắt làm đôi. Bàn chia ô trả lại đủ chỗ cho nó vì hàng
+   giữa không còn phải nuôi bốn vùng chồng nhau.
+   Trần vẫn còn, chỉ nâng lên: nó là hàng rào chống một cuốn sáu tập, không
+   phải một chiều cao mong muốn. */
+.bocuc-a .bltruc,
+.bocuc-b .bltruc {
+  max-height: 176px;
+}
+
+/* Chú giải màu xuống CỘT NHÃN, không chiếm một hàng riêng.
+   ĐO ĐƯỢC: `.bltruc` là lưới hai cột, cột trái chỉ chứa chữ "Trục sản xuất"
+   cao 22px trong một khối cao 169px — 147px cột trái bỏ trống. Trong khi đó
+   `.keys` chiếm trọn một hàng thứ hai ở cột phải và tốn 24px kể cả khe.
+   24px đó là 24px lấy thẳng từ bốn ô của bàn.
+
+   Và chỗ mới ĐÚNG hơn chỗ cũ, không chỉ rẻ hơn: chú giải giải thích màu của
+   ba lane, nên nó thuộc về cùng cột với cái tên của ba lane đó. */
+.bocuc-a .bltruc,
+.bocuc-b .bltruc {
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: start;
+}
+/* Lane TRẢI cả hai hàng. Không có dòng này thì chú giải chỉ chuyển sang cột
+   trái mà vẫn mở một hàng thứ hai cho cả lưới — đo được: `.bltruc` cao 198px,
+   tức TỆ HƠN 169px ban đầu. Cột nhãn phải xếp chồng BÊN TRONG chiều cao mà
+   lane đã chiếm, không bên dưới nó. */
+.bocuc-a .bltruc > .lanes,
+.bocuc-b .bltruc > .lanes {
+  grid-row: 1 / span 2;
+}
+.bocuc-a .bltruc > .keys,
+.bocuc-b .bltruc > .keys {
+  grid-column: 1;
+  grid-row: 2;
+  flex-direction: column;
+  align-items: start;
+  align-self: start;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+/* ── điểm gãy: bàn thôi là bàn khi cột giữa hẹp ──
+   Container query chứ không media query, và đó là điều kiện đúng-sai chứ
+   không phải chuyện gọn: bề rộng cột giữa phụ thuộc CỘT INSPECTOR có hiện
+   hay không, nên cùng một bề rộng cửa sổ cho hai bề rộng canvas khác nhau.
+   Ở 1512px có inspector thì canvas là 1026px; bỏ inspector ở cùng cửa sổ đó
+   thì canvas là 1318px. Một `@media (min-width: …)` không phân biệt được
+   hai ca ấy.
+
+   Ngưỡng là 700px, KHÔNG phải 880px như bản đầu. 880px cắt mất đúng cỡ máy
+   phổ biến nhất: cửa sổ 1280 còn cột ngữ cảnh cho canvas 794px, và ở ngưỡng
+   cũ nó rơi về một cột xếp dọc — bốn ô chia 470px thành bốn khe 117px, tức
+   mỗi ô chỉ còn tiêu đề. Đo được: Chương 2%, Máy đang nói 1%. Hai cột hẹp
+   đọc được hơn bốn khe.
+
+   Dưới 700px cột giữa quay về một cột xếp dọc — cùng thứ tự DOM, nên thứ tự
+   Tab không đổi. */
+.buonglai {
+  container-type: inline-size;
+  container-name: canvas;
+}
+
+@container canvas (max-width: 700px) {
+  .bocuc-a .blsan,
+  .bocuc-b .blsan {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .bocuc-a .blo-song,
+  .bocuc-b .blo-song {
+    grid-area: 1 / 1;
+  }
+  .bocuc-a .blo-sukien,
+  .bocuc-b .blo-sukien {
+    grid-area: 2 / 1;
+  }
+  .bocuc-a .blo-chuong,
+  .bocuc-b .blo-chuong {
+    grid-area: 3 / 1;
+  }
+  .bocuc-a .blo-nhatky,
+  .bocuc-b .blo-nhatky {
+    grid-area: 4 / 1;
+  }
+  .bocuc-a .blo,
+  .bocuc-b .blo {
+    border-right: 0;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .bocuc-a .blo-nhatky,
+  .bocuc-b .blo-nhatky {
+    border-bottom: 0;
+  }
+}
+
+/* Dưới 860px `globals.css` đã bỏ hẳn lưới của buồng lái và biến cả cột giữa
+   thành một cột cuộn. Bàn chia ô phải nhường hẳn ở đó — hai bộ cuộn lồng
+   nhau ăn chung một con lăn. */
+@media (max-width: 860px) {
+  .bocuc-a .blsan,
+  .bocuc-b .blsan {
+    display: block;
+  }
+  .bocuc-a .blo,
+  .bocuc-b .blo {
+    display: block;
+    border-right: 0;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .bocuc-a .blothan,
+  .bocuc-b .blothan {
+    max-height: 40vh;
+  }
+  .bocuc-a .blo-song .vsthan,
+  .bocuc-b .blo-song .vsthan {
+    max-height: 44vh;
+  }
+  .bocuc-a .bltruc,
+  .bocuc-b .bltruc {
+    max-height: none;
+  }
+}

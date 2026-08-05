@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { BangChuong, GhiChuChiPhi } from '@/components/BangChuong';
+import { KeoBan, KeoTruc } from '@/components/KeoBan';
 import { MucXem } from '@/components/MucXem';
 import { DongSuKien, NhatKy } from '@/components/NhatKy';
 import { OCanThiep } from '@/components/OCanThiep';
 import { Truc } from '@/components/Truc';
+import { useVuaCoTin } from '@/lib/dauDoi';
+import { useCoBan } from '@/lib/keoBan';
 import { so } from '@/lib/dinhdang';
 import type { Khu } from '@/lib/khu';
 import { CHU, GIAI_THICH, nhanPhamViXem, nhanPhase } from '@/lib/nhan';
@@ -48,17 +51,58 @@ import { ViecTiepTheo } from './ViecTiepTheo';
  * mặt của MỘT khu. Bề mặt đó là bề mặt lớn nhất và là bề mặt đang được dựng lại, nên nó tiếp
  * tục phình trong khi mười lăm khu kia đứng yên. Sau bước này `page.tsx` chỉ còn định tuyến.
  *
- * # Cấu trúc: hai khối, và khối dưới là lưới bốn hàng
+ * # Cấu trúc: hai khối, và khối dưới là BÀN CHIA Ô
  *
  * `.bltren` (đầu trang · dải · cảnh báo) cao theo nội dung; `.blgiua` nhận phần cao còn lại
- * và chia làm bốn hàng theo tỉ lệ ĐO ĐƯỢC — xem chú thích cạnh `grid-template-rows` của
- * `.blgiua` trong `app/globals.css`.
+ * và chia làm ba hàng: trục sản xuất · bàn · ô can thiệp.
  *
  * Bọc ba khối trên vào `.bltren` chứ không để chúng làm ba hàng của lưới: khối cảnh báo là
  * CÓ ĐIỀU KIỆN, nên với một lưới khai cứng số hàng thì cuốn có cảnh báo và cuốn không có
  * cảnh báo sẽ đọc lệch nhau một hàng — hàng `1fr` rơi vào khối cảnh báo và cột giữa bị đẩy
  * xuống một hàng ngầm định. Dải quyết định của cửa nghiệm thu là khối CÓ ĐIỀU KIỆN thứ hai
  * của `.bltren`, và nó vào được đúng nhờ luật đó.
+ *
+ * # Vì sao BÀN CHIA Ô thay cho lưới bốn hàng
+ *
+ * Bản trước xếp BỐN vùng lên MỘT trục dọc: trục · văn sống · một khu cuộn chứa ba mục nối
+ * đuôi · ô can thiệp. ĐO ĐƯỢC ở 1512×900 (canvas 1026×709, cột giữa 574px):
+ *
+ *   trục sản xuất  120px, cần 169px  → 71%, ba lane bị cắt và phải cuộn trong khe của nó
+ *   văn sống       250px, cần ∞
+ *   khu cuộn       125px, cần 2.666px → 4,7%
+ *   ô can thiệp     79px, cần  79px  → vừa
+ *
+ * Trong khe 125px ấy: dòng sự kiện cao 98px, bảng chương bắt đầu ở offset 98 và cao 1.951px
+ * nên hiện ĐÚNG 0 hàng, nhật ký phán quyết bắt đầu ở offset 2.049 nên không bao giờ tới.
+ * Người dùng nói nguyên văn: *"Dòng sự kiện và Chương đang bị ở dưới dẫn đến rất ít khi
+ * scroll xuống"*.
+ *
+ * Đây KHÔNG phải lỗi tỉ lệ, và đó là điều quan trọng nhất ở đây: chia lại bốn hàng theo cách
+ * nào cũng vẫn là bốn vùng trên một trục dọc. Cột giữa là một hình CHỮ NHẬT NẰM NGANG
+ * (1026×574) đang bị dùng như một cột dọc — và 1026px cho một cột chữ mono 12px là 120 ký tự
+ * một dòng, rộng hơn khổ đọc 74ch mà chính DESIGN.md đặt ra. Bề rộng thừa là thứ trả tiền
+ * cho chiều cao thiếu.
+ *
+ * Nên hai hàng giữa gộp lại thành một bàn 2×2, và CẢ HAI trục của bàn đều mang nghĩa:
+ *
+ *      trục ngang = HÌNH DẠNG nội dung        trục dọc = THỜI GIAN
+ *      ┌────────────────────────┬──────────────────────┐
+ *      │ Máy đang nói           │ Dòng sự kiện         │  đang xảy ra
+ *      ├────────────────────────┼──────────────────────┤
+ *      │ Chương                 │ Nhật ký phán quyết   │  đã ghi vào store
+ *      └────────────────────────┴──────────────────────┘
+ *        văn xuôi + bảng          dòng có mốc giờ
+ *        (cần bề rộng)            (hẹp tự nhiên)
+ *
+ * Thứ tự quét mắt trùng thứ tự ba câu hỏi của PRODUCT.md: trên-trái trả lời "dây chuyền còn
+ * chạy đúng không", dưới-trái trả lời "chất lượng có tuột không", cột phải là bằng chứng của
+ * cả hai. Đo lại sau khi đổi: 100% · 2% · 54% · 6% · 8% — bốn vùng đọc được cùng lúc thay vì
+ * hai vùng và hai con số không.
+ *
+ * Một phương án ba cột đã được dựng và LOẠI (`docs/design/explorations/buong-lai/`): ở 1026px
+ * nó cho ba khe 380/265/380, và cả ba đều dưới sàn — mỗi `summary` của dòng sự kiện xuống ba
+ * dòng, bảng chương mất hai cột cuối. Cột hẹp đi thì khối chữ CAO LÊN, nên hẹp không đổi lấy
+ * gọn, nó đổi lấy tệ hơn.
  *
  * # Vì sao dải quyết định đứng TRÊN dải trạng thái
  *
@@ -102,12 +146,20 @@ export function BuongLai({
   onChonKhu: (k: Khu) => void;
   onDocChuong: (n: number) => void;
   /**
-   * Gọi sau mỗi lệnh của dải quyết định để snapshot được nạp lại.
+   * Gọi sau mỗi lệnh ghi để snapshot được nạp lại. Hai người đọc: dải quyết định của cửa
+   * nghiệm thu, và ô can thiệp ở hàng cuối.
    *
-   * `OCanThiep` ở hàng 4 KHÔNG cần nó và đó không phải bất đối xứng vô cớ: can thiệp xếp một ý
-   * kiến vào hàng chờ mà không đổi trạng thái cửa nào, còn `Cho đi tiếp` mở đúng cái cửa mà dải
-   * đang vẽ. Không nạp lại thì dải amber ở lại cho một cửa đã mở, và cú bấm thứ hai cấp phép
-   * thêm một chương — tiền đôi vì một sợi dây thiếu.
+   * Với dải quyết định, hệ quả nếu thiếu là tiền: `Cho đi tiếp` mở đúng cái cửa mà dải đang
+   * vẽ, nên không nạp lại thì dải amber ở lại cho một cửa đã mở và cú bấm thứ hai cấp phép
+   * thêm một chương nữa.
+   *
+   * Với ô can thiệp, hệ quả là im lặng. Điều khoản cũ nói ô này KHÔNG cần nạp lại vì "can
+   * thiệp xếp một ý kiến vào hàng chờ mà không đổi trạng thái cửa nào" — đúng về CỬA và sai
+   * về màn hình: câu vừa gửi đi vào `snapshot.pending_steer`, tức ô "việc tồn" của dải trạng
+   * thái. Xem chú thích của `onDoi` trong `OCanThiep.tsx` cho phép đo đầy đủ.
+   *
+   * Người gọi phải rót `lamMoi` chứ không `taiLai` — `taiLai` xóa trắng `vanSong` và `suKien`,
+   * tức xóa đúng bằng chứng mà cả hai nút này được bấm để phản ứng lại.
    */
   onDoi: () => void;
   suKien: Parameters<typeof DongSuKien>[0]['suKien'];
@@ -133,6 +185,50 @@ export function BuongLai({
   vuaChot: ReadonlySet<number>;
 }) {
   const canhBao = snapshot.warnings ?? [];
+
+  /**
+   * Bốn cờ "ô này đang có tin", lái viền chạy của bàn.
+   *
+   * Mỗi ô đọc một NGUỒN KHÁC nhau, và đó là cả điểm của cụm này: một cờ chung suy từ
+   * `dangChay` sẽ cho bốn ô cùng chạy viền suốt lúc engine bật, tức bốn viền chạy nói đúng
+   * một điều mà thanh transport đã nói rồi. Cái người vận hành cần biết là ô NÀO vừa động —
+   * để mắt đi thẳng tới đó thay vì quét cả bốn.
+   *
+   * Giá trị truyền vào phải đổi ĐÚNG lúc có tin thật, không đổi theo nhịp nạp:
+   *
+   *   · văn sống  — `vanSong` là object mới ở mỗi mẩu chữ (`themChu` trả bản sao), nên
+   *                 chính nó là tín hiệu. Nhịp delta trung vị 2ms; `useVuaCoTin` gom cả
+   *                 tràng thành một cửa sổ, xem chú thích của nó.
+   *   · sự kiện   — `seq` của mục MỚI NHẤT, không phải `suKien.length`: danh sách bị kẹp ở
+   *                 `GIU_SU_KIEN = 40`, nên khi đã đầy thì độ dài đứng im mãi mãi trong
+   *                 khi sự kiện vẫn về. Một cờ đọc độ dài sẽ chết đúng lúc dây chuyền bận
+   *                 nhất.
+   *   · chương    — `vuaChot` của họ 09, tập chương VỪA chuyển sang `done`. Không đọc
+   *                 `snapshot.chapters`: mảng đó được thay nguyên cụm mỗi 1,5s dù không ô
+   *                 nào đổi, nên nó là nhịp NẠP chứ không phải tin. Dùng `vuaChot` còn cho
+   *                 ô bảng nhập vào đúng dàn đồng thanh của họ 10 — vạch trên lane, chip ở
+   *                 rail, tiến độ ở thanh trên, và giờ là viền của ô bảng, cùng một sự kiện.
+   *   · phán quyết — chữ ký hai đầu cộng độ dài. Hai đầu chứ không một, vì hợp đồng không
+   *                 hứa thứ tự: log mọc ở đầu hay ở cuối đều làm chữ ký này đổi.
+   */
+  /**
+   * Cỡ bàn do người dùng kéo, cộng phần tử bàn để hai thanh chia đo lên nó.
+   *
+   * `ref` chứ không truy vấn DOM bằng selector: buồng lái có ĐÚNG một `.blsan`, nhưng bộ kiểm
+   * dựng nhiều bản cùng lúc trong một `document`, và `querySelector` ở đó bắt phải bản của
+   * bài trước.
+   */
+  const banRef = useRef<HTMLDivElement>(null);
+  const giuaRef = useRef<HTMLDivElement>(null);
+  const { co, datCo, datLai } = useCoBan();
+
+  const dsPhanQuyet = snapshot.decisions ?? [];
+  const oSongVanSong = useVuaCoTin(vanSong);
+  const oSongSuKien = useVuaCoTin(suKien[0]?.seq ?? 0);
+  const oSongChuong = vuaChot.size > 0;
+  const oSongNhatKy = useVuaCoTin(
+    `${dsPhanQuyet.length}·${dsPhanQuyet[0]?.id ?? ''}·${dsPhanQuyet.at(-1)?.id ?? ''}`,
+  );
 
   // Mặc định "Tập" như bản mockup. `layered_outline === false` thì không có
   // tập/cung nào để lọc, và mức người dùng chọn có thể mất phạm vi khi engine
@@ -205,10 +301,20 @@ export function BuongLai({
         ) : null}
       </div>
 
-      <div className="blgiua">
-        {/* Hàng 1 — dải trục mảnh. TUI không có nó; giữ vì một cuốn 113 chương cần thấy
-            hình dạng cả cuốn trong một cái nhìn (spec §7.2). Tiêu đề đứng CẠNH trục chứ
-            không trên nó: hàng này cao ~30px, không đủ chỗ cho hai dòng. */}
+      <div
+        className="blgiua"
+        ref={giuaRef}
+        style={
+          (co.truc !== undefined ? { '--bl-truc': `${co.truc}px` } : undefined) as
+            | React.CSSProperties
+            | undefined
+        }
+      >
+        {/* Hàng 1 — dải trục mảnh, TRẢI hết bề rộng bàn. TUI không có nó; giữ vì một cuốn 113
+            chương cần thấy hình dạng cả cuốn trong một cái nhìn (spec §7.2). Trải hết bề rộng
+            chứ không vào một ô của bàn: nó là thứ DUY NHẤT ở đây nói về cả tác phẩm, và một
+            trục bị bó vào nửa bề rộng thì mất chính cái nó vẽ ra. Tiêu đề đứng CẠNH trục chứ
+            không trên nó: hàng này cao có hạn, không đủ chỗ cho hai dòng. */}
         <div className="bltruc">
           <h2>{CHU.trucSanXuat}</h2>
           <Truc
@@ -220,48 +326,101 @@ export function BuongLai({
           />
         </div>
 
-        {/* Hàng 2 — khu văn sống, hàng cao nhất của cột giữa. Nó là thứ DUY NHẤT chạy liên
-            tục (spec §2), nên nó nhận phần lớn nhất. */}
-        <VanSong boDem={vanSong} dangChay={dangChay} />
+        {/* Thanh chia thứ ba, giữa trục và bàn. Đứng ngay sau trục trong DOM vì đó đúng là
+            ranh giới nó chia — thứ tự Tab đi qua nó ở đúng chỗ mắt thấy nó. */}
+        <KeoTruc giuaRef={giuaRef} co={co} datCo={datCo} datLai={datLai} />
 
-        {/* Hàng 3 — khu cuộn: dòng sự kiện trước, hai khối tra cứu sau.
-            Bảng chương và nhật ký phán quyết ở TRONG khu cuộn này chứ không ở dưới cột
-            giữa: cột giữa cao có hạn (ô can thiệp ghim đáy), nên bất kỳ thứ gì đặt ngoài
-            khu cuộn đều không bao giờ tới được. */}
-        <div className="blcuon">
-          {/* `id` để dải việc tiếp theo cuộn tới được — xem `DangLam` trong ViecTiepTheo.tsx. */}
-          <section className="sect" id="dong-su-kien">
-            <h2>
-              Dòng sự kiện · <span className="phu">trực tiếp từ engine</span>
-            </h2>
-            <DongSuKien suKien={suKien} dangChay={dangChay} />
+        {/* Hàng 2 — BÀN CHIA Ô. Bốn ô cùng một khuôn `.blo`: đầu ô cố định, thân ô tự cuộn.
+            Xem sơ đồ và phép đo ở chú thích đầu tệp.
+
+            Thứ tự DOM là thứ tự ĐỌC, không phải thứ tự vẽ: trên-trái → trên-phải → dưới-trái
+            → dưới-phải. Lưới đặt chúng đúng chỗ bằng `grid-area`, nên thứ tự Tab và thứ tự
+            trình đọc màn hình trùng thứ tự mắt — và khi bàn gập về một cột ở canvas hẹp thì
+            không có gì phải sắp lại. */}
+        <div
+          className="blsan"
+          ref={banRef}
+          // Hai biến này là cỡ NGƯỜI DÙNG đã kéo. Vắng mặt (chưa kéo bao giờ) thì `var()`
+          // trong `globals.css` rơi về mặc định của bố cục — nên bàn chưa-kéo và bàn
+          // đã-đặt-lại đi qua đúng một đường, không có nhánh nào riêng.
+          style={
+            {
+              ...(co.cot !== undefined ? { '--bl-phai': `${co.cot}%` } : null),
+              ...(co.hang !== undefined ? { '--bl-tren': `${co.hang}fr` } : null),
+            } as React.CSSProperties
+          }
+        >
+          <KeoBan banRef={banRef} co={co} datCo={datCo} datLai={datLai} />
+          {/* Ô 1 · trên-trái — khu văn sống. `.vansong` tự mang đầu ô (`.vshead`) và thân ô
+              (`.vsthan`) từ trước, nên nó KHÔNG được bọc thêm một `.blodau` nữa; CSS cho nó
+              `display: contents` để hai khối ấy làm hai hàng của chính ô. */}
+          <div className={`blo blo-song${oSongVanSong ? ' dangSong' : ''}`}>
+            <VanSong boDem={vanSong} dangChay={dangChay} />
+          </div>
+
+          {/* Ô 2 · trên-phải — dòng sự kiện.
+              `id` để dải việc tiếp theo cuộn tới được — xem `DangLam` trong ViecTiepTheo.tsx. */}
+          <section
+            className={`blo blo-sukien${oSongSuKien ? ' dangSong' : ''}`}
+            id="dong-su-kien"
+          >
+            <div className="blodau">
+              <h2>
+                Dòng sự kiện · <span className="phu">trực tiếp từ engine</span>
+              </h2>
+              {/* Số đếm là MẪU SỐ của thứ đang cuộn bên dưới, cùng luật với dải tổng của màn
+                  Quản lý: một ô cao 174px chứa nhiều hơn thế phải nói ra còn bao nhiêu nữa.
+                  `GIU_SU_KIEN` là 40, nên con số này có trần và không bao giờ là cả lịch sử. */}
+              <span className="dem">{CHU.soDongSuKien(suKien.length)}</span>
+            </div>
+            <div className="blothan">
+              <DongSuKien suKien={suKien} dangChay={dangChay} />
+            </div>
           </section>
 
-          <section className="sect">
-            <h2>{tieuDeBang(pv)}</h2>
-            <BangChuong
-              rows={hang}
-              capabilities={snapshot.capabilities}
-              chuongChon={chuongChon}
-              onChon={onChonChuong}
-              dangChay={mayDangChay(snapshot)}
-              khiTrong={
-                snapshot.chapters.length > 0 ? GIAI_THICH.bangTrongPhamVi : undefined
-              }
-            />
-            <NgoaiPhamVi pv={pv} an={an} ton={ton} onBoLoc={() => setMucMuon('chuong')} />
-            <GhiChuChiPhi capabilities={snapshot.capabilities} />
+          {/* Ô 3 · dưới-trái — bảng chương. Ô rộng vì bảng có sáu cột và cột "Tiêu đề" mang
+              tên chương tiếng Việt; ở dưới ~450px nó ngắt hai dòng ở mọi hàng. */}
+          <section className={`blo blo-chuong${oSongChuong ? ' dangSong' : ''}`}>
+            <div className="blodau">
+              <h2>{tieuDeBang(pv)}</h2>
+              <span className="dem">{CHU.soChuongTrongBang(hang.length)}</span>
+            </div>
+            <div className="blothan">
+              <BangChuong
+                rows={hang}
+                capabilities={snapshot.capabilities}
+                chuongChon={chuongChon}
+                onChon={onChonChuong}
+                dangChay={mayDangChay(snapshot)}
+                khiTrong={
+                  snapshot.chapters.length > 0 ? GIAI_THICH.bangTrongPhamVi : undefined
+                }
+              />
+              <NgoaiPhamVi pv={pv} an={an} ton={ton} onBoLoc={() => setMucMuon('chuong')} />
+              <GhiChuChiPhi capabilities={snapshot.capabilities} />
+            </div>
           </section>
 
-          <section className="sect" id="nhat-ky-phan-quyet">
-            <h2>
-              {CHU.nhatKyPhanQuyet} · <span className="phu">Arbiter</span>
-            </h2>
-            <NhatKy decisions={snapshot.decisions} />
+          {/* Ô 4 · dưới-phải — nhật ký phán quyết. */}
+          <section
+            className={`blo blo-nhatky${oSongNhatKy ? ' dangSong' : ''}`}
+            id="nhat-ky-phan-quyet"
+          >
+            <div className="blodau">
+              <h2>
+                {CHU.nhatKyPhanQuyet} · <span className="phu">Arbiter</span>
+              </h2>
+              <span className="dem">
+                {CHU.soPhanQuyet(snapshot.decisions?.length ?? 0)}
+              </span>
+            </div>
+            <div className="blothan">
+              <NhatKy decisions={snapshot.decisions} />
+            </div>
           </section>
         </div>
 
-        {/* Hàng 4 — ô can thiệp ghim đáy, đúng chỗ dòng nhập của TUI. Nó KHÔNG cuộn đi mất:
+        {/* Hàng 3 — ô can thiệp ghim đáy, đúng chỗ dòng nhập của TUI. Nó KHÔNG cuộn đi mất:
             can thiệp là việc người vận hành làm giữa lúc đang đọc chữ chảy, và bắt họ cuộn
             đi tìm ô nhập là bắt họ rời mắt khỏi thứ họ đang can thiệp vào. */}
         <div className="blcanthiep">
@@ -272,6 +431,7 @@ export function BuongLai({
             capabilities={snapshot.capabilities}
             tacPham={tacPham}
             dangChay={dangChay}
+            onDoi={onDoi}
           />
         </div>
       </div>

@@ -67,6 +67,7 @@ vi.mock('@/lib/useStudio', () => ({
       moTacPhamVuaTao: () => {},
       moTacPhamTai: () => {},
       docChuong: () => {},
+      lamMoi: () => {},
       taiLai: () => {},
     }) as unknown as Studio,
 }));

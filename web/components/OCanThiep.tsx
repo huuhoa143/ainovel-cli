@@ -37,10 +37,25 @@ export function OCanThiep({
   capabilities,
   tacPham,
   dangChay,
+  onDoi,
 }: {
   capabilities: Capabilities;
   tacPham: string | undefined;
   dangChay?: boolean;
+  /**
+   * Nạp lại snapshot sau khi gửi. Trước bản này ô can thiệp cố ý KHÔNG có nó, và lý lẽ cũ là
+   * "can thiệp xếp một ý kiến vào hàng chờ mà không đổi trạng thái cửa nào".
+   *
+   * Vế đó đúng về CỬA và sai về màn hình: câu vừa gửi đi thẳng vào `snapshot.pending_steer`,
+   * mà trường đó là thứ dải trạng thái vẽ ở ô "việc tồn". Không nạp lại thì câu ấy chỉ hiện
+   * khi có nhịp snapshot kế tiếp — và nhịp đó do DÒNG SỰ KIỆN đẻ ra, nên ở đúng ca hay dùng ô
+   * này nhất (engine đang nghỉ, người vận hành gõ một câu rồi đánh thức lượt mới) không có
+   * nhịp nào cả. Người dùng gõ xong, thấy một câu "đã đánh thức" và không gì khác đổi.
+   *
+   * `lamMoi` chứ không `taiLai`: nạp lại bằng đường tải-lại-cả-trang sẽ xóa trắng bộ đệm văn
+   * sống ngay giữa lúc engine đang viết — xem chú thích của `lamMoi` trong `useStudio.ts`.
+   */
+  onDoi?: () => void;
 }) {
   const bat = capabilities.steer && !!tacPham;
   const [chu, datChu] = useState('');
@@ -57,6 +72,7 @@ export function OCanThiep({
       .then((r) => {
         datDaLam(r.applied);
         datChu('');
+        onDoi?.();
       })
       .catch((e: unknown) => datLoi(e instanceof LoiApi ? e.message : String(e)))
       .finally(() => datDangGui(false));
@@ -70,6 +86,11 @@ export function OCanThiep({
           placeholder={CHU.viDuCanThiep}
           aria-label={CHU.canThiep}
           aria-describedby="vi-sao-can-thiep"
+          // Câu đầy đủ vào `title` vì ở ca dùng được nó đã bị ẩn khỏi màn hình — xem chú
+          // thích của `<p id="vi-sao-can-thiep">` dưới đây. Chỉ đặt ở ca ấy: lúc câu đang
+          // hiện ra thì một `title` lặp lại nguyên văn nó là một chú giải nói lại thứ đang
+          // đọc được.
+          title={bat ? GIAI_THICH.canThiepArbiterXuLy : undefined}
           value={chu}
           onChange={(e) => datChu(e.target.value)}
           onKeyDown={(e) => {
@@ -93,7 +114,25 @@ export function OCanThiep({
         </p>
       ) : null}
 
-      <p className="steerhint" id="vi-sao-can-thiep">
+      {/* Câu giải thích CHỈ hiện khi nó nói điều cần biết lúc này.
+          ĐO ĐƯỢC: khối này cao 43px trong một ô can thiệp 98px, và ô can thiệp ăn thẳng vào
+          bốn ô của bàn ngay trên — người dùng nói nguyên văn: *"phần này chiếm quá nhiều
+          diện tích làm 4 session ở trên bé quá"*.
+
+          Hai ca, hai giá trị khác hẳn nhau:
+            · ô BỊ VÔ HIỆU — câu này là chỗ DUY NHẤT nói vì sao ô nhập không gõ được và phải
+              làm gì để mở nó. Bỏ đi là để lại một ô chết không lời giải thích, đúng thứ
+              `PRODUCT.md` cấm ("nói rõ lỗi gì và làm gì tiếp").
+            · ô ĐANG DÙNG ĐƯỢC — câu "Arbiter phân loại phạm vi ảnh hưởng rồi xếp các chương
+              bị tác động vào hàng chờ viết lại" là văn giới thiệu: đọc một lần rồi thành đồ
+              đạc, và nó đứng dưới mắt suốt phiên để tốn 43px mỗi lần vẽ.
+
+          `hidden` chứ không thôi render: `aria-describedby` của ô nhập trỏ vào đúng id này,
+          và một `describedby` trỏ vào phần tử không tồn tại là ô nhập mất mô tả với trình
+          đọc màn hình. `hidden` giữ nó trong cây trợ năng cho phép tra cứu đó mà không tốn
+          pixel nào — cùng lối mà nút `replay` của nhật ký phán quyết đã dùng.
+          Cả câu vẫn nằm trong `title` của ô nhập, nên chuột cũng tra được. */}
+      <p className="steerhint" id="vi-sao-can-thiep" hidden={bat}>
         {bat ? (
           GIAI_THICH.canThiepArbiterXuLy
         ) : (
