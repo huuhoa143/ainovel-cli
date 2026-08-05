@@ -6,6 +6,26 @@ before:
     - go mod tidy
     - go vet ./...
     - go test -count=1 ./...
+    # Giao diện web phải được DỰNG ở đây, vì `web/out` không nằm trong git
+    # (`web/.gitignore`) và nhị phân không nhúng nó — `internal/serve` đọc thư mục
+    # ấy từ đĩa bằng `http.Dir` ở từng lượt yêu cầu.
+    #
+    # Thiếu hai dòng này thì bản phát hành ship ra KHÔNG có giao diện: người dùng
+    # giải nén, chạy, và nhận đúng một dòng "chế độ: chỉ API".
+    #
+    # `sh -c 'cd web && …'` chứ không `cmd:`/`dir:`: `before.hooks` của goreleaser
+    # v2 chỉ nhận CHUỖI, dạng map hai khóa kia chỉ dùng được ở `builds.hooks`. Đã
+    # thử và nó chết ngay lúc đọc cấu hình ("cannot unmarshal !!map into string").
+    #
+    # `cd` chứ không `npm --prefix web`: `--prefix` đổi chỗ cài phụ thuộc, còn thư
+    # mục làm việc của script thì tùy phiên bản npm — một chỗ để lệch mà không cần
+    # phải có. `cd` thì không có gì để tùy.
+    #
+    # `npm ci` chứ không `npm install`: nó dựng đúng cây phụ thuộc đã khóa trong
+    # `package-lock.json`. `install` được phép nâng phiên bản, tức bản phát hành
+    # mang một cây phụ thuộc chưa ai chạy thử.
+    - sh -c 'cd web && npm ci'
+    - sh -c 'cd web && npm run build'
 
 builds:
   - id: ainovel-cli
@@ -39,6 +59,13 @@ archives:
     files:
       - README.md
       - LICENSE
+      # Giao diện đã dựng, đặt thành `web/` NGAY CẠNH nhị phân trong gói.
+      #
+      # `dst: web` chứ không giữ nguyên `web/out`: trong gói không có bản mã nguồn
+      # nào để `out` phân biệt với, nên hai tầng thư mục chỉ là dấu vết của cây
+      # repo. Người dùng giải nén rồi gõ `--web ./web`, đúng một tầng.
+      - src: web/out
+        dst: web
     name_template: >-
       {{ .ProjectName }}_{{ .Version }}_
       {{- title .Os }}_
