@@ -3328,6 +3328,24 @@ div:has(> .qcrow) {
     max-width: 216px;
   }
 }
+
+/* Bậc 3 của chính dải số — thắt tiếp đệm và hai ô chữ tự do.
+   Đi CÙNG bậc 3 của cụm nút ở cuối tệp; một mình bên nào cũng không đóng nổi
+   198px, và đó là lý do chúng là một cặp chứ không phải hai phép rời.
+   Cộng lại: cụm nút nhả 135px (nhãn nhóm 72 + khe 6, nhãn nút 161 → 104), dải
+   nhả 88px (đệm 8 ô × 4px, ô công đoạn 216 → 160). Tổng 223px cho một khoản
+   thiếu 198px, tức còn 25px dư — không kéo căng tới sát mép.
+   Ô `công đoạn` đã bị kẹp ellipsis từ bậc 2 và câu đầy đủ đã nằm trong `title`,
+   nên 160px không bỏ thêm tin nào; nó chỉ cắt sớm hơn. */
+@container transdai (max-width: 1200px) {
+  .trans .cell {
+    padding: 0 7px;
+  }
+  .trans .cell.buoc,
+  .trans .cell.to {
+    max-width: 160px;
+  }
+}
 /* `margin-left: auto` gom nhóm số liệu về mép phải — nhưng nó CHỈ an toàn khi thanh
    chắc chắn vừa MỘT hàng. Sau khi xuống dòng, auto margin ăn hết chỗ trống còn lại
    của hàng nó đang nằm và biến chỗ đó thành một khoảng hở giữa hai ô cùng hàng —
@@ -7597,4 +7615,104 @@ button[aria-busy="true"]::after {
   color: var(--ink);
   opacity: 1;
   cursor: default;
+}
+
+/* ══ BẬC 3 — CỤM NÚT NHƯỜNG CHỖ CHO SỐ LIỆU ═══════════════════════════
+   ĐO ĐƯỢC ở 1512×900 lúc engine mở: dải số có 974px nhưng cần 1.172px, tức
+   thiếu 198px và hai ô `tổng` · `đã chạy` nằm ngoài tầm nhìn. Cả hai bậc thu gọn
+   trước đó đã chạy hết — không còn khoảng trắng nào trong dải để lấy.
+
+   Nguồn của 198px ấy nằm ở phía KIA của thanh: `.dieukhien` rộng 538px, trong đó
+   công tắc chế độ chiếm 319px (nhãn nhóm 72 · `Tự chạy` 66 · `Nghiệm thu từng
+   chương` 161). Riêng công tắc đã lớn hơn phần thiếu.
+
+   # Vì sao cụm nút nhường, chứ không phải hai hàng hay bớt một ô
+
+   Ba đường kia đều đã đo và đều đắt hơn:
+
+     · DẢI XUỐNG HAI HÀNG — thanh cao thêm 28px. Tưởng là 28px đó lấy từ trục
+       (nó có `flex-shrink`), nhưng ĐO RA thì không: `.blsan` là item DUY NHẤT có
+       `flex-grow`, nên nó hấp thụ mọi thay đổi chiều cao và `flex-shrink` của
+       trục chỉ vào việc khi có thiếu hụt thật. Đo được: bàn 497 → 469, trục
+       137 → 137. Tức 28px trả bằng đúng chiều cao bốn ô mà cụm trước vừa giành.
+     · BỚT MỘT Ô SỐ — `đã chạy` là ô yếu nhất, nhưng nó là mẫu số của cả `năng
+       suất` lẫn `tổng`, và "đã chạy 22 giờ" là câu trả lời trực tiếp cho tiêu
+       chí của PRODUCT.md ("mở studio sau 6 giờ đi vắng và biết trong 5 giây").
+     · RÚT `Nghiệm thu từng chương` THÀNH `Nghiệm thu` — mất đúng phần mang tin,
+       vì "từng chương" là thứ phân biệt nó với `Tự chạy`.
+
+   Trong khi hai phép dưới đây không bỏ tin nào:
+
+     · nhãn nhóm ẩn khỏi MẮT nhưng còn nguyên cho trình đọc màn hình —
+       `role="group" aria-label` của cụm vẫn mang "Chế độ đi tiếp";
+     · nhãn nút bị kẹp bằng ellipsis, nên tên đầy đủ vẫn là TÊN TRỢ NĂNG của nút
+       (accessible name lấy từ nội dung văn bản, mà nội dung không bị cắt).
+
+   # Chỗ này lệch khỏi một điều khoản của DESIGN.md, ghi ra để không ai tưởng là quên
+
+   DESIGN.md nói nhãn nhóm tồn tại vì *"'tự chạy' và 'nghiệm thu' đứng trơ thì
+   không tự nói chúng loại trừ nhau"*. Điều khoản đó GIỮ NGUYÊN ở nơi có chỗ —
+   trên 1.700px nhãn vẫn hiện. Dưới ngưỡng, nó bị đổi lấy ba con số vận hành, và
+   phần "loại trừ nhau" chuyển sang hình dạng: hai nút sát nhau, một tô nền vàng
+   `aria-pressed=true`, một viền trơ — đúng khuôn segmented control.
+
+   # Vì sao truy vấn `.trans` chứ không `.dai`
+
+   Đây là thứ duy nhất trong thang không hỏi được bề rộng dải số: nó SỬA bề rộng
+   cụm nút, mà bề rộng dải số lại bằng cửa sổ trừ cụm nút. Hỏi `.dai` là hỏi một
+   con số phụ thuộc chính câu trả lời. Nên nó hỏi cả thanh — tức ngân sách thật.
+
+   1.700px = 1.172 (dải cần, chưa thu) + 538 (cụm nút chưa thu). Trên mức đó
+   không có gì phải nhường. */
+.trans {
+  container-type: inline-size;
+  container-name: trans;
+}
+
+@container trans (max-width: 1700px) {
+  .dkChonDe {
+    display: none;
+  }
+  .dkChonNut {
+    max-width: 104px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Hai nút DÍNH LIỀN thành một công tắc, và đây là vế thứ hai của phép đổi —
+     không phải trang trí.
+     ĐO ĐƯỢC lúc mới chỉ ẩn nhãn: `Tự chạy` và `Nghiệm thu t…` nằm ngay cạnh
+     `Đóng máy` và `▶ Chạy tiếp`, thành BỐN nút ngang hàng, và không có gì nói
+     hai cái đầu là một cặp loại trừ còn hai cái sau là hai hành động rời. Cảnh
+     báo của DESIGN.md đúng nguyên văn.
+     Nên phần "loại trừ nhau" mà nhãn nhóm từng nói bằng CHỮ giờ được nói bằng
+     HÌNH: viền dùng chung, hai đầu bo tròn còn giữa vuông — khuôn segmented
+     control mà không cần học thêm gì.
+     Chỉ áp dưới ngưỡng: trên 1.700px nhãn còn đó nên hình không phải gánh, và
+     giữ nguyên hình dạng cũ là giữ nguyên sức nặng thị giác cũ cho thanh. */
+  .dkChon {
+    gap: 0;
+  }
+  .dkChonDe + .dkChonNut,
+  .dkChon > .dkChonNut:first-of-type {
+    border-radius: var(--r) 0 0 var(--r);
+  }
+  .dkChon > .dkChonNut:last-of-type {
+    border-radius: 0 var(--r) var(--r) 0;
+  }
+  /* Nút TẮT cũng phải có viền ở đây, khác luật chung (`transparent` cho tới khi
+     hover): một công tắc chỉ có nửa bên bật là có viền thì nó đọc ra là một nút
+     đơn cộng một mẩu chữ, không phải hai lựa chọn. */
+  .dkChonNut:not(.dkBat) {
+    border-color: var(--line-2);
+  }
+  /* Viền dùng chung: nút sau đè 1px lên nút trước để hai đường kẻ thành một. */
+  .dkChonNut + .dkChonNut {
+    margin-left: -1px;
+  }
+  /* Nút đang bật nổi lên trên để viền vàng của nó không bị nút cạnh cắt mất. */
+  .dkChonNut.dkBat {
+    position: relative;
+    z-index: 1;
+  }
 }
