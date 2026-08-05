@@ -22,6 +22,19 @@ jobs:
         with:
           go-version: stable
 
+      # BẮT BUỘC kể từ khi `before.hooks` của goreleaser dựng giao diện web.
+      # Thiếu bước này thì `npm ci` không tìm thấy lệnh và cả lượt phát hành chết
+      # ở hook đầu tiên — trước khi có nhị phân nào được dựng.
+      #
+      # `cache-dependency-path` vì lockfile nằm trong `web/`, không ở gốc repo;
+      # `cache: npm` một mình sẽ không tìm thấy nó và bỏ cache trong im lặng.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
       - name: Generate release notes
         run: .github/scripts/gen-changelog.sh > release-notes.md
         env:

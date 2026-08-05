@@ -284,6 +284,32 @@ docker compose run --rm ainovel
 docker compose run --rm ainovel --headless --prompt "viết một truyện trinh thám ngắn"
 ```
 
+Ảnh Docker **đã mang sẵn giao diện web studio** ở `/usr/local/share/ainovel-cli/web`. Nó không nằm trong `/workspace` vì đó là chỗ bạn mount thư mục tác phẩm — một `web/` đặt ở đó sẽ bị chính volume ấy che đi:
+
+```bash
+docker run --rm -p 127.0.0.1:8420:8420 \
+  -v "$PWD/config:/root/.ainovel" \
+  -v "$PWD/workspace:/workspace" \
+  ghcr.io/voocel/ainovel-cli:latest \
+  serve --addr 0.0.0.0:8420 --web /usr/local/share/ainovel-cli/web
+```
+
+Hai điều phải biết trước khi dùng cách trên:
+
+- **Studio khi đó là CHỈ ĐỌC.** Đường ghi (tạo tác phẩm, chạy engine, can thiệp, đặt khóa API) chỉ bật khi địa chỉ lắng nghe là loopback — đó là thứ thay cho việc xác thực, vì studio không có mật khẩu. Trong container thì phải `0.0.0.0` mới ra được khỏi nó, nên hai điều kiện này loại trừ nhau.
+- **`-p 127.0.0.1:8420` không phải để cho đẹp.** Không có tiền tố `127.0.0.1:`, Docker mở cổng ra mọi giao diện của máy chủ — tức bản thảo chưa phát hành đọc được từ máy khác trong cùng mạng LAN.
+
+Muốn studio **ghi được**, chạy engine trực tiếp trên máy chủ (`ainovel-cli serve --web ./web`), hoặc trên Linux dùng `--network host` để container lắng nghe đúng loopback thật:
+
+```bash
+docker run --rm --network host \
+  -v "$PWD/config:/root/.ainovel" -v "$PWD/workspace:/workspace" \
+  ghcr.io/voocel/ainovel-cli:latest \
+  serve --addr 127.0.0.1:8420 --web /usr/local/share/ainovel-cli/web
+```
+
+`--network host` chỉ làm đúng việc này trên Linux; Docker Desktop (macOS/Windows) chạy container trong một VM nên `127.0.0.1` ở đó là loopback của VM, không phải của máy bạn.
+
 Sau khi vào TUI, ở giai đoạn khởi động có hai kiểu tương tác trước khi vào việc:
 
 - `Bắt đầu nhanh`: một câu là vào sáng tác ngay
@@ -299,12 +325,19 @@ Ngoài TUI, bản fork này có một **bề mặt vận hành trên web** đọ
 # Chỉ API (127.0.0.1:8420), đọc các tác phẩm trong ./output
 ainovel-cli serve
 
-# Kèm giao diện đã build
+# Kèm giao diện — gói phát hành đã có sẵn `web/` cạnh nhị phân
+ainovel-cli serve --web ./web
+
+# Dựng từ nguồn thì giao diện nằm ở web/out
 ainovel-cli serve --web ./web/out
 
 # Chọn thư mục gốc khác, hoặc chỉ phục vụ đúng một tác phẩm
 ainovel-cli serve --root ./output --book ten-tac-pham --addr 127.0.0.1:8420
 ```
+
+> `--web` nhận **thư mục đã dựng**, không phải mã nguồn: `.tsx` phải qua `npm run build` mới thành HTML/JS/CSS, đúng như `.go` phải qua `go build`. Gói phát hành đã dựng sẵn nên chỉ cần trỏ vào `./web`; dựng từ nguồn thì chạy `cd web && npm ci && npm run build` một lần.
+>
+> Nhị phân **không nhúng** giao diện — nó đọc thư mục ấy từ đĩa ở từng lượt yêu cầu. Nên sửa giao diện rồi dựng lại `web/` là đủ, không phải dựng lại nhị phân và không phải khởi động lại server.
 
 Studio cho xem: trục sản xuất tập/cung/chương theo tỉ lệ thật, bảng chương kèm trạng thái từng công đoạn, nhật ký phán quyết của Arbiter (mỗi dòng có lý do dựa trên sự thật), và dòng sự kiện realtime qua SSE.
 
