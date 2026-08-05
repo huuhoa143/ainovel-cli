@@ -62,6 +62,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -578,7 +579,14 @@ func writeErr(w http.ResponseWriter, code int, err error) {
 func webTinh(dir string) http.Handler {
 	tep := http.FileServer(http.Dir(dir))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/_next/static/") {
+		// So trên đường dẫn ĐÃ CHUẨN HÓA, không phải path thô.
+		//
+		// `http.ServeMux` chuẩn hóa và chuyển hướng trước khi tới đây, nên hôm nay path thô
+		// vẫn ra kết quả đúng. Nhưng đây là hàm công khai của package và nó không được dựa
+		// vào một tầng khác giữ đúng hành vi mãi mãi: gọi thẳng `webTinh` với
+		// `/_next/static/../index.html` thì bản trước gắn `immutable` MỘT NĂM lên đúng tệp
+		// phải luôn hỏi lại — đã đo. `path.Clean` đóng hẳn đường đó với một dòng.
+		if strings.HasPrefix(path.Clean(r.URL.Path), "/_next/static/") {
 			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 		} else {
 			w.Header().Set("Cache-Control", "no-cache")

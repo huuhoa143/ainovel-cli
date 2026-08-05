@@ -92,3 +92,63 @@ func TestWebCache_HaiLuatKhongDuocDoiCho(t *testing.T) {
 			"lợi ích của việc băm tên")
 	}
 }
+
+// TestWebCache_KhongThoatDuocSangLuatImmutable canh mục 1 của bản review.
+//
+// Đặt `immutable` lên `index.html` là hư hại NẶNG nhất mà tệp này có thể gây ra: người dùng
+// bị khoá vào bản cũ một năm, và tải lại cứng cũng không chắc gỡ được. Bản trước so tiền tố
+// trên path THÔ, nên một đường dẫn có `..` lách qua được — đo thật, không phải giả định.
+func TestWebCache_KhongThoatDuocSangLuatImmutable(t *testing.T) {
+	dir := webTam(t)
+	for _, duong := range []string{
+		"/_next/static/../index.html",
+		"/_next/static/../../index.html",
+		"/_next/static/chunks/../../../index.html",
+	} {
+		rec := httptest.NewRecorder()
+		webTinh(dir).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, duong, nil))
+		if got := rec.Header().Get("Cache-Control"); got != "no-cache" {
+			t.Errorf("%s: Cache-Control = %q, phải %q — đường dẫn thoát ra khỏi "+
+				"/_next/static/ thì không còn là tệp băm tên", duong, got, "no-cache")
+		}
+	}
+}
+
+// TestWebCache_DauDayQuaRoutes canh việc ĐẤU DÂY, không phải hành vi của handler.
+//
+// Ba bài trên gọi thẳng `webTinh`, nên chúng vẫn xanh nếu ai đó trả `http.FileServer` trần về
+// chỗ cũ trong `routes()` — đúng lớp hư hại mà cả tệp này sinh ra để chặn.
+func TestWebCache_DauDayQuaRoutes(t *testing.T) {
+	s := &server{webDir: webTam(t)}
+	rec := httptest.NewRecorder()
+	s.routes().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	if got := rec.Header().Get("Cache-Control"); got != "no-cache" {
+		t.Fatalf("qua routes(): Cache-Control = %q, phải %q — bản dựng web chưa đi qua webTinh",
+			got, "no-cache")
+	}
+}
+
+// TestWebCache_HoiLaiTraVe304: `no-cache` chỉ rẻ khi lượt hỏi lại trả 304 rỗng.
+//
+// Mất 304 thì mỗi lần mở trang là một lượt tải lại đầy đủ, và không có gì báo — chỉ có một
+// bề mặt chậm dần mà không ai biết vì sao.
+func TestWebCache_HoiLaiTraVe304(t *testing.T) {
+	dir := webTam(t)
+	dau := httptest.NewRecorder()
+	webTinh(dir).ServeHTTP(dau, httptest.NewRequest(http.MethodGet, "/", nil))
+	lm := dau.Header().Get("Last-Modified")
+	if lm == "" {
+		t.Fatal("thiếu Last-Modified — không có nó thì `no-cache` thành tải lại toàn bộ mỗi lần")
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("If-Modified-Since", lm)
+	lai := httptest.NewRecorder()
+	webTinh(dir).ServeHTTP(lai, req)
+	if lai.Code != http.StatusNotModified {
+		t.Errorf("hỏi lại = %d, phải 304", lai.Code)
+	}
+	if lai.Body.Len() != 0 {
+		t.Errorf("304 phải rỗng, nhận %d byte", lai.Body.Len())
+	}
+}
