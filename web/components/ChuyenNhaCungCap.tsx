@@ -35,6 +35,7 @@ export function ChuyenNhaCungCap({
   du,
   den,
   dangGui,
+  loi,
   onChiDoiMacDinh,
   onChuyenCaDay,
   onHuy,
@@ -43,7 +44,17 @@ export function ChuyenNhaCungCap({
   /** Nhà cung cấp đích và model mặc định của nó. */
   den: { provider: string; model: string };
   dangGui: boolean;
-  onChiDoiMacDinh: () => void;
+  /** Lỗi của lượt ghi vừa rồi. Hộp ở lại để người dùng đọc và thử tiếp. */
+  loi?: string | null;
+  /**
+   * Vắng mặt = lối ra thứ ba KHÔNG có nghĩa ở lối vào này.
+   *
+   * Bắt buộc phải truyền thì một lối vào không dùng tới nó sẽ truyền một hàm rỗng cho xong —
+   * và ĐO ĐƯỢC là đã xảy ra: từ dải kênh vai, nút "Chỉ đổi mặc định" chỉ đóng hộp và không
+   * ghi gì, trong khi cùng cái nhãn ấy mở từ thẻ nhà cung cấp thì CÓ ghi. Một nhãn hai nghĩa,
+   * tùy cửa nào mở nó. Kiểu tùy chọn làm chỗ không dùng phải nói ra là không dùng.
+   */
+  onChiDoiMacDinh?: () => void;
   onChuyenCaDay: (than: ReturnType<typeof thanChuyenCaDay>) => void;
   onHuy: () => void;
 }) {
@@ -53,9 +64,18 @@ export function ChuyenNhaCungCap({
 
   const khai = (du.providers.find((p) => p.name === den.provider)?.models ?? []).map((m) => m.name);
   const coVaiGhim = dong.some((d) => d.dangGhim);
-  // Mọi vai ĐÃ ở đúng nhà cung cấp đích → đây không phải lượt "chuyển", chỉ là chỉnh tên model
-  // cho khớp danh mục vừa sửa. Cùng bảng, cùng lượt ghi, khác cái tên gọi việc.
-  const chiDoiModel = dong.every((d) => d.tuProvider === den.provider);
+  /**
+   * MẶC ĐỊNH có dời chỗ không — đó mới là thứ quyết định gọi việc này là "chuyển" hay không.
+   *
+   * Bản trước hỏi `dong.every(d => d.tuProvider === den.provider)`, tức "mọi vai đã ở đích
+   * chưa". Hai câu hỏi khác nhau, và ĐO ĐƯỢC là chúng lệch nhau ở một trạng thái tới được:
+   * mặc định đã là `9Router`, chỉ mỗi `writer` ghim ở `openai`. Một vai lạc chỗ lật cả hộp
+   * sang giọng "Chuyển sang 9Router?" trong khi 9Router VỐN ĐÃ là mặc định.
+   *
+   * Ở ca ấy tiêu đề hỏi một câu mà biến trả lời một câu khác. Người dùng đứng ở dải kênh vai
+   * chỉ muốn sửa các vai; bảng bên dưới vẫn cho họ thấy `writer` dời chỗ.
+   */
+  const chiDoiModel = den.provider === du.provider;
 
   return (
     <HopXacNhan
@@ -66,11 +86,11 @@ export function ChuyenNhaCungCap({
          việc nó làm là hứa quá; và bày hai nút cho một hành động là mời người dùng đi tìm
          khác biệt không có thật. */
       nhanLam={chiDoiModel ? CHU.capNhatModel : coVaiGhim ? CHU.chuyenCaDay : CHU.doiMacDinh}
-      onLam={() => onChuyenCaDay(thanChuyenCaDay(dong, den.provider))}
+      onLam={() => onChuyenCaDay(thanChuyenCaDay(dong, den.provider, du.roles))}
       /* Lối ra thứ ba chỉ có nghĩa khi CÓ vai đặt riêng để mà giữ lại. Không có thì hộp này
          chỉ còn là bảng xác nhận của một lượt đổi mặc định bình thường. */
-      nhanPhu={!chiDoiModel && coVaiGhim ? CHU.chiDoiMacDinh : undefined}
-      onPhu={!chiDoiModel && coVaiGhim ? onChiDoiMacDinh : undefined}
+      nhanPhu={onChiDoiMacDinh && !chiDoiModel && coVaiGhim ? CHU.chiDoiMacDinh : undefined}
+      onPhu={onChiDoiMacDinh && !chiDoiModel && coVaiGhim ? onChiDoiMacDinh : undefined}
       onHuy={onHuy}
       dangLam={dangGui}
       nhanDangLam={CHU.dangChuyen}
@@ -115,6 +135,9 @@ export function ChuyenNhaCungCap({
               <option key={m} value={m} />
             ))}
           </datalist>
+          {/* Lỗi ghi đứng TRONG hộp, ngay trên hàng nút: người dùng vừa bấm ở đó. Đóng hộp
+              rồi báo ở đâu đó phía sau là bắt họ đoán xem có chuyện gì xảy ra. */}
+          {loi ? <p className="loiDoc">{loi}</p> : null}
         </>
       }
     />

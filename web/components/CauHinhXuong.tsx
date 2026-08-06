@@ -386,8 +386,10 @@ function MotNhaCungCap({
                 goi({
                   provider_config: {
                     name: n.name,
+                    // Trải mục cũ rồi mới đè cửa sổ — cùng luật với biểu mẫu: một lượt ghi
+                    // chỉ được đổi thứ nó nói là đổi, `json_schema` không đi theo.
                     models: (n.models ?? []).map((m) => ({
-                      name: m.name,
+                      ...m,
                       context_window: napVe.cuaSoCua(n.name, m.name) || m.context_window,
                     })),
                   },
@@ -513,6 +515,22 @@ function FormNhaCungCap({
    */
   const trungTen = !cu && du.providers.some((x) => x.name === ten.trim());
 
+  /**
+   * Bản gốc của từng mục model, giữ nguyên vẹn để lượt ghi không làm rơi trường nào.
+   *
+   * Ô "Danh sách model" chỉ mang TÊN — đó là đúng cho một ô chữ. Nhưng `ModelConfig` còn mang
+   * `context_window` và `json_schema`, và server thay NGUYÊN mảng, nên dựng lại mục từ tên là
+   * xóa sạch hai trường kia.
+   *
+   * Vòng tự hủy đo được: bấm Kiểm tra → cảnh báo lệch cửa sổ → "Ghi lại cửa sổ" ghi 272.000
+   * cho `cx/gpt-5.6-luna`, cảnh báo tắt. Vài hôm sau bấm Sửa để chữa một ký tự trong
+   * `base_url` rồi Lưu — cửa sổ biến mất, engine quay lại đọc 1.050.000 từ registry toàn cục.
+   * Đúng lỗi mà lượt ghi kia sinh ra để diệt, và không dấu hiệu nào trên màn hình.
+   *
+   * Luật rút ra: KHÔNG dựng lại một mục cấu hình từ mảnh. Giữ bản gốc rồi chỉ đè phần đổi.
+   */
+  const mucCu = new Map((cu?.models ?? []).map((m) => [m.name, m]));
+
   const dungMau = (tenMau: string) => {
     const m = du.presets.find((p) => p.label === tenMau);
     if (!m) return;
@@ -528,7 +546,8 @@ function FormNhaCungCap({
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean)
-      .map((name) => ({ name }));
+      // Tên còn sống giữ NGUYÊN mục cũ; chỉ tên mới mới sinh ra mục trần.
+      .map((name) => mucCu.get(name) ?? { name });
 
     const sua: SuaCauHinh = {
       provider_config: {

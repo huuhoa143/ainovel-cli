@@ -145,3 +145,36 @@ test('vai ĐÃ ghim từ trước thì giữ nguyên là mục riêng, kể cả
   // của nó là lặng lẽ đổi ý định của người dùng theo chiều ngược lại.
   expect(Object.keys(than.roles).sort()).toEqual(['architect', 'editor', 'writer']);
 });
+
+/* ── ghi cả map nghĩa là GIỮ cả map ─────────────────────────────────────── */
+
+/**
+ * Vai có trong `cfg.Roles` mà KHÔNG có trong `role_names` phải sống sót lượt ghi.
+ *
+ * `PUT /api/config` thay cả map `roles`, còn `dong` chỉ dựng từ `du.role_names` — bốn vai
+ * server khai là đổi được. Bắt đầu từ map rỗng nên mọi khóa ngoài bốn cái đó bị xoá lặng lẽ.
+ *
+ * `MotKenhChung` bên cạnh đi từ `Object.entries(du.roles)` đúng vì lý do này. Hai đường ghi
+ * trên cùng một bề mặt mà hiểu "ghi cả map" khác nhau là một quả mìn hẹn giờ: nó chưa nổ hôm
+ * nay chỉ vì `vaiCoTheDoi` phía Go cũng đúng bốn vai ấy, và nó sẽ nổ vào ngày danh sách kia
+ * dài ra — ngày mà không ai còn nhớ tới chỗ này.
+ */
+test('vai ngoài role_names không bị lượt chuyển xoá mất', () => {
+  const roleCu = {
+    writer: { provider: 'openai', model: 'cx/gpt-5.5' },
+    // Vai server chưa khai là đổi được — giao diện không vẽ nó, nhưng nó CÓ trong cấu hình.
+    reviewer: { provider: 'openai', model: 'cx/gpt-5.4-mini' },
+  };
+  const than = thanChuyenCaDay(
+    duKienChuyen({ ...DU, roles: roleCu }, 'moi', 'claude-opus-5'),
+    'moi',
+    roleCu,
+  );
+
+  expect(than.roles.reviewer, 'lượt chuyển đã xoá một vai mà bề mặt còn không vẽ ra').toEqual({
+    provider: 'openai',
+    model: 'cx/gpt-5.4-mini',
+  });
+  // Và vai NẰM TRONG danh sách vẫn phải bị đè bằng giá trị mới, không phải giữ nguyên bản cũ.
+  expect(than.roles.writer!.provider).toBe('moi');
+});

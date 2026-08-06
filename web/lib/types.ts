@@ -722,7 +722,21 @@ export interface NhaCungCap {
   base_url?: string;
   api_key_set: boolean;
   api_key_masked?: string;
-  models?: { name: string; context_window?: number }[];
+  /**
+   * Một mục model mang NHIỀU HƠN cái tên, và mọi chỗ ghi lại nó phải giữ đủ.
+   *
+   * `context_window` là ưu tiên số một của phép phân giải cửa sổ ngữ cảnh; `json_schema` là
+   * khai báo ba trạng thái quyết định request có kèm `response_format` hay không. Dựng lại
+   * mục từ mỗi cái tên — điều biểu mẫu từng làm — là xóa sạch cả hai, vì server thay NGUYÊN
+   * mảng (`caidat_ghi.go`: `if n.Models != nil`).
+   */
+  models?: MucModel[];
+}
+
+export interface MucModel {
+  name: string;
+  context_window?: number;
+  json_schema?: boolean;
 }
 
 export interface MauNhaCungCap {

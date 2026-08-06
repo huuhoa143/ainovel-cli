@@ -94,10 +94,22 @@ export function coVaiLacCho(du: CauHinhDoc, denProvider: string): boolean {
 export function thanChuyenCaDay(
   dong: DongChuyen[],
   denProvider: string,
+  roleCu?: Record<string, { provider: string; model: string }> | null,
 ): { provider: string; model: string; roles: Record<string, { provider: string; model: string }> } {
   const macDinh = dong.find((d) => d.vai === 'default');
   const modelMacDinh = macDinh?.denModel ?? '';
-  const roles: Record<string, { provider: string; model: string }> = {};
+  /**
+   * Bắt đầu từ map CŨ chứ không từ rỗng.
+   *
+   * `dong` chỉ dựng từ `du.role_names` — bốn vai server khai là đổi được. Nhưng lượt ghi thay
+   * CẢ map, nên khóa nào có trong `cfg.Roles` mà không nằm trong danh sách ấy sẽ lặng lẽ biến
+   * mất. `MotKenhChung` bên cạnh đã đi từ `Object.entries(du.roles)` đúng vì lý do này; hai
+   * đường ghi trên cùng một bề mặt phải hiểu "ghi cả map" giống nhau.
+   *
+   * Chưa gây hại hôm nay vì `vaiCoTheDoi` phía Go cũng đúng bốn vai ấy. Nó thành thật ngày
+   * danh sách kia dài ra, và ngày đó không ai nhớ tới chỗ này.
+   */
+  const roles: Record<string, { provider: string; model: string }> = { ...(roleCu ?? {}) };
   for (const d of dong) {
     if (d.vai === 'default') continue;
     // KHÔNG đẻ ra ghim mới.

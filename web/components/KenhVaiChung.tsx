@@ -74,6 +74,7 @@ export function KenhVaiChung({
   const nccLac = vaiLac.length > 0 ? hieuLucCua(du, vaiLac[0]!).provider : '';
   const [hoiSua, datHoiSua] = useState(false);
   const [dangGhi, datDangGhi] = useState(false);
+  const [loiSua, datLoiSua] = useState<string | null>(null);
 
   return (
     <section className="sect">
@@ -93,17 +94,27 @@ export function KenhVaiChung({
           du={du}
           den={{ provider: nccLac, model: khaiCua(nccLac)[0] ?? '' }}
           dangGui={dangGhi}
-          onHuy={() => datHoiSua(false)}
-          onChiDoiMacDinh={() => datHoiSua(false)}
+          loi={loiSua}
+          onHuy={() => {
+            datLoiSua(null);
+            datHoiSua(false);
+          }}
+          /* KHÔNG truyền `onChiDoiMacDinh`: ở lối vào này người dùng bấm "Sửa các vai theo X",
+             tức họ xin sửa VAI. "Chỉ đổi mặc định" không phải một đáp án của câu hỏi đó. */
           onChuyenCaDay={(than) => {
             datDangGhi(true);
+            datLoiSua(null);
             luuCauHinh(than)
-              .catch(() => undefined)
-              .finally(() => {
-                datDangGhi(false);
+              .then(() => {
                 datHoiSua(false);
                 onXong();
-              });
+              })
+              /* Nuốt lỗi ở đây là ca hỏng đã đo được: `PUT /api/config` hoàn nguyên tệp rồi
+                 trả 400 kèm lý do, hộp đóng, cảnh báo "vai lạc" VẪN CÒN, và không một chữ
+                 nào trên màn hình. Người dùng bấm lại, lại thấy y hệt. Giữ hộp mở và in
+                 nguyên văn lý do — mọi đường ghi khác trên bề mặt này đều đã làm thế. */
+              .catch((e: unknown) => datLoiSua(e instanceof LoiApi ? e.message : String(e)))
+              .finally(() => datDangGhi(false));
           }}
         />
       ) : null}
