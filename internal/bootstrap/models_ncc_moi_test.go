@@ -154,6 +154,72 @@ func TestModelSet_ThemTenModelKhongDungLaiClient(t *testing.T) {
 	}
 }
 
+/*
+Đổi `json_schema` PHẢI tới được engine đang mở, dù nó nằm trong `Models`.
+
+# Vì sao dễ lọt
+
+`doiCachGoi` cố ý bỏ `Models` khỏi phép so, và lý do đó đúng cho phần DANH MỤC: thêm một tên
+model không đổi cách gọi. Nhưng mỗi mục còn mang `json_schema` — trường quyết định request có
+kèm `response_format: json_schema` hay không, tức đúng vế CÁCH GỌI.
+
+Bỏ cả cụm là chôn nó: `sw.jsonSchema` chỉ được làm mới trong `sw.Swap`, mà `Swap` chỉ tới được
+khi `doiCachGoi` trả true. Người dùng sửa cấu hình, không gì xảy ra, và không lời nào nói ra.
+*/
+func TestModelSet_DoiJSONSchemaThiToiDuocEngine(t *testing.T) {
+	that := true
+	cfg := Config{
+		Provider: "g", ModelName: "m",
+		Providers: map[string]ProviderConfig{
+			"g": {Type: "openai", APIKey: "k", Models: []ModelConfig{{Name: "m"}}},
+		},
+	}
+	ms, err := NewModelSet(cfg)
+	if err != nil {
+		t.Fatalf("dựng model set: %v", err)
+	}
+	if got := ms.Default.JSONSchemaOverride(); got != nil {
+		t.Fatalf("khai ban đầu = %v, muốn chưa khai", *got)
+	}
+
+	ms.CapNhatNhaCungCap(map[string]ProviderConfig{
+		"g": {Type: "openai", APIKey: "k", Models: []ModelConfig{{Name: "m", JSONSchema: &that}}},
+	})
+
+	got := ms.Default.JSONSchemaOverride()
+	if got == nil || !*got {
+		t.Fatal("khai `json_schema: true` xong engine vẫn không biết — nó sẽ gọi bằng giao thức cũ")
+	}
+}
+
+// Nhưng chỉ ĐỔI TÊN/thêm model thì vẫn không được dựng lại: đó vẫn là danh mục thuần. Bài kiểm
+// này giữ cho lượt vá trên không nới tay quá đà.
+func TestModelSet_ThemModelCoKhaiJSONSchemaKhongDungKhac(t *testing.T) {
+	that := true
+	cfg := Config{
+		Provider: "g", ModelName: "m",
+		Providers: map[string]ProviderConfig{
+			"g": {Type: "openai", APIKey: "k", Models: []ModelConfig{{Name: "m", JSONSchema: &that}}},
+		},
+	}
+	ms, err := NewModelSet(cfg)
+	if err != nil {
+		t.Fatalf("dựng model set: %v", err)
+	}
+	truoc := ms.Default.SwappableModel.Current()
+
+	// Thêm một model KHÁC, khai của model đang dùng không đổi.
+	ms.CapNhatNhaCungCap(map[string]ProviderConfig{
+		"g": {Type: "openai", APIKey: "k", Models: []ModelConfig{
+			{Name: "m", JSONSchema: &that}, {Name: "m2"},
+		}},
+	})
+
+	if ms.Default.SwappableModel.Current() != truoc {
+		t.Fatal("dựng lại client chỉ vì danh sách model dài thêm một dòng")
+	}
+}
+
 // Nhà cung cấp KHÁC đổi khóa thì vai đang dùng nhà cung cấp này phải đứng yên.
 func TestModelSet_DoiKhoaNoiKhacKhongDungLaiNoiNay(t *testing.T) {
 	cfg := Config{

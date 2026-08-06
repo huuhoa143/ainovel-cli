@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -108,21 +110,36 @@ func (s *server) handleLietKeModel(w http.ResponseWriter, r *http.Request) {
 	//
 	// Ba hình dạng đã gặp: `capabilities.contextWindow` (9Router), `context_window`,
 	// `context_length` (OpenRouter). Đọc cả ba, lấy cái đầu tiên khác 0.
-	type suc struct {
-		ContextWindow int `json:"contextWindow"`
-	}
+	//
+	// # Vì sao mọi trường cửa sổ đều là `json.RawMessage`
+	//
+	// Cửa sổ là thứ ta MUỐN; danh sách model là thứ ta CẦN — nó bắt cái typo `cx/gpt-5.5` vs
+	// `gpt-5.5` kể trên. Khai kiểu chặt cho phần muốn là cho phép nó giết phần cần: một lỗi
+	// giải mã ở BẤT KỲ trường nào cũng làm cả lượt đọc hỏng và trả về danh sách rỗng.
+	//
+	// ĐO ĐƯỢC, 5 trong 7 hình dạng thật gãy khi khai `int`/struct — trong khi bản chỉ có
+	// `id`/`name` đọc trôi cả 7:
+	//
+	//	"capabilities": ["vision","tools"]   → cannot unmarshal array into ... type suc
+	//	"capabilities": true                 → cannot unmarshal bool into ... type suc
+	//	"context_length": "128000"           → cannot unmarshal string into ... type int
+	//	"context_length": 128000.0           → cannot unmarshal number into ... type int
+	//
+	// `capabilities` dạng mảng là hình dạng phổ biến, nên đây không phải ca hiếm. Luật rút ra:
+	// một trường phụ đọc từ payload của người khác không bao giờ được phép làm rơi trường
+	// chính. Hình dạng lạ thì mất CỬA SỔ, không mất DANH SÁCH.
 	var than struct {
 		Data []struct {
-			ID            string `json:"id"`
-			Name          string `json:"name"`
-			ContextWindow int    `json:"context_window"`
-			ContextLength int    `json:"context_length"`
-			Capabilities  suc    `json:"capabilities"`
+			ID            string          `json:"id"`
+			Name          string          `json:"name"`
+			ContextWindow json.RawMessage `json:"context_window"`
+			ContextLength json.RawMessage `json:"context_length"`
+			Capabilities  json.RawMessage `json:"capabilities"`
 		} `json:"data"`
 		// Anthropic trả cùng dạng `data[]`, Gemini trả `models[]`.
 		Models []struct {
-			Name          string `json:"name"`
-			ContextWindow int    `json:"context_window"`
+			Name          string          `json:"name"`
+			ContextWindow json.RawMessage `json:"context_window"`
 		} `json:"models"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&than); err != nil {
@@ -145,11 +162,11 @@ func (s *server) handleLietKeModel(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	for _, m := range than.Data {
-		ghiCua(m.ID, m.Capabilities.ContextWindow, m.ContextWindow, m.ContextLength)
+		ghiCua(m.ID, cuaTrongNang(m.Capabilities), soMem(m.ContextWindow), soMem(m.ContextLength))
 	}
 	for _, m := range than.Models {
 		// Gemini trả "models/gemini-2.5-pro"; cắt tiền tố cho khớp thứ người dùng gõ.
-		ghiCua(strings.TrimPrefix(m.Name, "models/"), m.ContextWindow)
+		ghiCua(strings.TrimPrefix(m.Name, "models/"), soMem(m.ContextWindow))
 	}
 
 	ds := make([]string, 0, len(ten2))
@@ -167,6 +184,55 @@ func (s *server) handleLietKeModel(w http.ResponseWriter, r *http.Request) {
 		"models":   ds,
 		"count":    len(ds),
 	})
+}
+
+// soMem đọc một con số từ JSON thô, và trả 0 thay vì LỖI khi hình dạng không phải số.
+//
+// Nhận cả `272000`, `272000.0` và `"272000"` — ba cách các gateway đã dùng để nói cùng một
+// điều. Không nhận thì mất cửa sổ ở gateway đó; khai kiểu chặt để bắt nhận thì mất cả danh
+// sách model, vì một lỗi giải mã làm hỏng nguyên lượt đọc.
+func soMem(raw json.RawMessage) int {
+	s := strings.TrimSpace(string(raw))
+	if s == "" || s == "null" {
+		return 0
+	}
+	// Chuỗi bọc số: `"context_length": "128000"`.
+	if s[0] == '"' {
+		var trong string
+		if json.Unmarshal(raw, &trong) != nil {
+			return 0
+		}
+		s = strings.TrimSpace(trong)
+	}
+	// `ParseFloat` chứ không `Atoi`: `128000.0` là số hợp lệ trong JSON và đã gặp thật.
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil || f <= 0 || f > math.MaxInt32 {
+		return 0
+	}
+	return int(f)
+}
+
+// cuaTrongNang moi cửa sổ ra khỏi khối `capabilities` khi khối đó là một ĐỐI TƯỢNG.
+//
+// 9Router để cửa sổ ở đây. Nhiều gateway khác lại dùng đúng tên khóa ấy cho một MẢNG năng lực
+// (`["vision","tools"]`) hoặc một cờ bool — với chúng câu trả lời đúng là "không khai cửa sổ",
+// không phải "payload hỏng".
+func cuaTrongNang(raw json.RawMessage) int {
+	s := strings.TrimSpace(string(raw))
+	if s == "" || s[0] != '{' {
+		return 0
+	}
+	var nang struct {
+		ContextWindow json.RawMessage `json:"contextWindow"`
+		CuaSo         json.RawMessage `json:"context_window"`
+	}
+	if json.Unmarshal(raw, &nang) != nil {
+		return 0
+	}
+	if w := soMem(nang.ContextWindow); w > 0 {
+		return w
+	}
+	return soMem(nang.CuaSo)
 }
 
 // diaChiLietKe trả về địa chỉ liệt kê model và hàm đặt header xác thực cho từng giao thức.

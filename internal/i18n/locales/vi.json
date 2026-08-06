@@ -1785,6 +1785,7 @@
  "项目级配置 ./.ainovel/config.json 解析失败（请检查 JSON 语法）: %w": "cấu hình cấp dự án ./.ainovel/config.json phân tích thất bại (vui lòng kiểm tra cú pháp JSON): %w",
  "预算": "Ngân sách",
  "重建模型失败": "dựng lại model thất bại",
+ "重新加载供应商目录失败": "nạp lại danh mục nhà cung cấp thất bại",
  "释放目录写锁失败": "nhả khóa ghi thư mục thất bại",
  "预算停机: 已花费 $%.2f，超出预算 $%.2f；上调 budget.book_usd 后关闭引擎再打开才生效": "Dừng do hết ngân sách: đã chi $%.2f, vượt ngân sách $%.2f; tăng budget.book_usd rồi ĐÓNG MÁY và mở lại thì mới có hiệu lực",
  "预算告警: 已花费 $%.2f，达到预算 $%.2f 的 %.0f%%": "Cảnh báo ngân sách: đã chi $%.2f, ngân sách $%.2f, đã đạt %.0f%%",

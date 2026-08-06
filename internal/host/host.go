@@ -490,6 +490,15 @@ func (h *Host) Resume() (string, error) {
 		h.mu.Unlock()
 		return "", fmt.Errorf("already running")
 	}
+	if h.cocreating {
+		h.mu.Unlock()
+		return "", errors.New(i18n.F("阶段共创进行中，请先结束共创"))
+	}
+	if h.exclusive != "" {
+		ex := h.exclusive
+		h.mu.Unlock()
+		return "", fmt.Errorf(i18n.F("%s进行中，请先完成后再恢复创作"), ex)
+	}
 	// Lấy CÁCH GỌI mới nhất trước mỗi lượt chạy: khóa API, địa chỉ gốc, timeout.
 	//
 	// Ranh giới ở đây là có chủ ý và nó chia đôi cấu hình thành hai loại:
@@ -507,16 +516,11 @@ func (h *Host) Resume() (string, error) {
 	//
 	// Đặt ở `Resume` chứ không ở một nút riêng: đây đúng là khoảnh khắc engine sắp tiêu tiền,
 	// và là chỗ một engine ĐANG MỞ khớp lại được với một engine vừa mở (`mo` đọc tệp mới).
+	//
+	// SAU hai cửa chặn chứ không trước: một lượt Resume bị từ chối không tiêu đồng nào, nên
+	// nó cũng không nên đọc hai tệp và dựng lại mọi client. Tác dụng phụ trên một thao tác đã
+	// hỏng là thứ về sau không ai đoán ra.
 	h.napLaiNhaCungCap()
-	if h.cocreating {
-		h.mu.Unlock()
-		return "", errors.New(i18n.F("阶段共创进行中，请先结束共创"))
-	}
-	if h.exclusive != "" {
-		ex := h.exclusive
-		h.mu.Unlock()
-		return "", fmt.Errorf(i18n.F("%s进行中，请先完成后再恢复创作"), ex)
-	}
 	h.mu.Unlock()
 
 	label, err := resumeLabel(h.store)
@@ -1347,17 +1351,31 @@ func deriveStatusLabel(s UISnapshot) string {
 // sang đó — ô chọn không có nó, và nếu có thì `Swap` cũng chết vì `ms.config` chưa biết nó.
 //
 // Người gọi phải đang giữ `h.mu`.
+// # Hai đích, hai luật — và đó không phải mâu thuẫn
+//
+// `h.cfg.Providers` bị THAY: nó nuôi danh sách trên giao diện, và nó là thứ `SwitchModel` ghi
+// ngược ra đĩa (`SaveConfig(h.configPath, h.cfg)`). Trộn ở đây làm một nhà cung cấp ĐÃ XÓA
+// sống lại — người dùng xóa nó khỏi tệp, rồi chỉ cần đổi model của một vai bất kỳ là nó quay
+// về đĩa NGUYÊN KHÓA API. Tệp là nguồn sự thật của cấu hình, nên chiều này phải là thay.
+//
+// `ModelSet` vẫn TRỘN: nó cầm những client đang được một lượt chạy dùng dở, và rút một nhà
+// cung cấp khỏi nó là cắt ngang engine đang sống. Xóa khỏi cấu hình nghĩa là "đừng dùng nó
+// cho lượt sau", không phải "giết lượt đang chạy".
 func (h *Host) napLaiNhaCungCap() {
 	cfg, err := bootstrap.LoadConfig()
-	if err != nil || len(cfg.Providers) == 0 {
+	if err != nil {
+		// Nói ra chứ không nuốt: một tệp cấu hình sai cú pháp làm MỌI lượt nạp lại thành
+		// không-làm-gì, và triệu chứng ở đầu kia là "đổi khóa rồi mà vẫn lỗi" — đúng câu đã
+		// tốn của người dùng cả buổi.
+		slog.Warn(i18n.F("重新加载供应商目录失败"), "module", "config", "err", err)
 		return
 	}
-	if h.cfg.Providers == nil {
-		h.cfg.Providers = make(map[string]bootstrap.ProviderConfig, len(cfg.Providers))
+	if len(cfg.Providers) == 0 {
+		// Danh mục rỗng gần như luôn là đọc hỏng chứ không phải chủ ý; giữ nguyên thứ đang
+		// dùng được vẫn hơn là xóa trắng.
+		return
 	}
-	for ten, pc := range cfg.Providers {
-		h.cfg.Providers[ten] = pc
-	}
+	h.cfg.Providers = cfg.Providers
 	h.models.CapNhatNhaCungCap(cfg.Providers)
 }
 

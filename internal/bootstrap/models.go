@@ -310,9 +310,39 @@ func (ms *ModelSet) CapNhatNhaCungCap(providers map[string]ProviderConfig) {
 // bỏ `Models`: danh sách model là một danh mục để gợi ý, nó không đổi cách gọi. Không bỏ nó thì
 // mỗi lần người dùng thêm một tên vào ô "Danh sách model" là một lượt dựng lại client cho mọi
 // vai — tốn công và vứt mất kết nối đang ấm.
+//
+// NHƯNG `Models` không thuần là danh mục: mỗi mục còn mang `json_schema`, và trường đó quyết
+// định request có kèm `response_format: json_schema` hay không — tức nó là CÁCH GỌI, đúng vế
+// bên kia của đường ranh mà hàm này vạch ra. Bỏ cả cụm là chôn nó luôn: `sw.jsonSchema` chỉ
+// được làm mới trong `sw.Swap`, mà `Swap` chỉ tới được khi hàm này trả true.
+//
+// Nên tách hai vế: `json_schema` đem so riêng, phần còn lại của `Models` (tên, cửa sổ) vẫn bị
+// bỏ qua như cũ.
 func doiCachGoi(a, b ProviderConfig) bool {
+	if !reflect.DeepEqual(khaiJSONSchema(a), khaiJSONSchema(b)) {
+		return true
+	}
 	a.Models, b.Models = nil, nil
 	return !reflect.DeepEqual(a, b)
+}
+
+// khaiJSONSchema gom khai báo `json_schema` của từng model thành một bản đồ so sánh được.
+//
+// Chỉ giữ mục có khai (`nil` = "để adapter tự quyết", tức KHÔNG phải một lựa chọn của người
+// dùng), nên thêm một tên model trần vào danh mục không làm bản đồ này đổi. `reflect.DeepEqual`
+// đi xuyên con trỏ nên `*bool` so được theo giá trị.
+func khaiJSONSchema(p ProviderConfig) map[string]bool {
+	var ra map[string]bool
+	for _, m := range p.Models {
+		if m.JSONSchema == nil {
+			continue
+		}
+		if ra == nil {
+			ra = make(map[string]bool, len(p.Models))
+		}
+		ra[m.Name] = *m.JSONSchema
+	}
+	return ra
 }
 
 // dungLaiTheoNhaCungCap dựng lại MỌI model đang trỏ vào một nhà cung cấp vừa đổi cách gọi.
