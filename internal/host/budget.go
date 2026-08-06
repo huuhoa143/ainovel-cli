@@ -12,6 +12,21 @@ import (
 
 // 预算状态机：单调递进，每次迁移恰好触发一次副作用，不回退。
 // 上调预算 = 用户重新授权 = 改配置后重启/新 Host 实例，不在本实例内回退状态。
+//
+// GHI CHO NGƯỜI SAU — vì sao hai câu thông báo phía dưới phải nói tới "mở lại máy":
+//
+// `limit` chụp một lần ở `NewBudgetSentinel`, gọi từ `host.New`. Đó là hệ quả TRỰC TIẾP của
+// quyết định ngay trên: nâng ngân sách là một lượt ủy quyền mới, và nó đòi một Host mới.
+//
+// Nhưng hai câu cũ ("上调 budget.book_usd 后可恢复续跑" / "…后重试") KHÔNG nói ra vế đó. Người
+// vận hành đọc chúng, sửa tệp, bấm Chạy, và đâm vào đúng bức tường cũ — engine vẫn cầm hạn mức
+// của lúc mở máy. Cùng lớp lỗi với khóa API đã đo được: sửa cấu hình mà thực thể đang chạy
+// không biết, và câu chữ thì hứa ngược lại.
+//
+// Khác khóa API ở chỗ CÁCH CHỮA: khóa là "cách gọi" nên `Resume` nạp lại được (xem
+// `Host.napLaiNhaCungCap`); ngân sách là một trần AN TOÀN người dùng đã ký, nên nới nó lặng lẽ
+// giữa chừng là làm yếu đúng thứ nó sinh ra để bảo vệ. Ở đây sửa CÂU CHỮ cho khớp thiết kế,
+// không đổi thiết kế.
 const (
 	budgetNormal      int32 = iota // 未到告警水位
 	budgetWarned                   // 已发告警，未越线
@@ -114,7 +129,7 @@ func (s *BudgetSentinel) HandleBoundary() bool {
 
 func (s *BudgetSentinel) stop(total float64) {
 	if s.state.CompareAndSwap(budgetStopPending, budgetStopped) {
-		s.abort(fmt.Sprintf(i18n.F("预算停机: 已花费 $%.2f，超出预算 $%.2f；上调 budget.book_usd 后可恢复续跑"), total, s.limit))
+		s.abort(fmt.Sprintf(i18n.F("预算停机: 已花费 $%.2f，超出预算 $%.2f；上调 budget.book_usd 后关闭引擎再打开才生效"), total, s.limit))
 	}
 }
 
@@ -125,7 +140,7 @@ func (s *BudgetSentinel) Refuse() error {
 		return nil
 	}
 	if cost := s.costNow(); cost >= s.limit {
-		return fmt.Errorf(i18n.F("本书已花费 $%.2f，达到预算上限 $%.2f；请上调配置 budget.book_usd 后重试"), cost, s.limit)
+		return fmt.Errorf(i18n.F("本书已花费 $%.2f，达到预算上限 $%.2f；请上调 budget.book_usd 后关闭引擎再打开"), cost, s.limit)
 	}
 	return nil
 }
