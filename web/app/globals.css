@@ -2917,6 +2917,56 @@ body.dangKeoNgang * {
    phẩm mới. Cùng cỡ chữ với h3 của các bảng hồ sơ để không sinh thêm một cấp tiêu đề nữa,
    nhưng khai riêng chứ không ghép vào bộ chọn dưới: ba lớp kia là thân của một hồ sơ, còn
    cái này đứng giữa một biểu mẫu, và gộp chúng sẽ dạy người sau rằng chúng cùng ngữ cảnh. */
+/* Bảng đối chiếu trong hộp chuyển nhà cung cấp. Không dùng `.kv` vì đây là ba CỘT so theo
+   hàng (vai → đang dùng → sẽ thành), còn `.kv` là danh sách khóa-giá trị hai cột. */
+.bangChuyen {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0 4px;
+  font: 400 12px/1.5 var(--ui);
+}
+.bangChuyen th,
+.bangChuyen td {
+  text-align: left;
+  padding: 5px 10px 5px 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: baseline;
+}
+.bangChuyen thead th {
+  font: 500 10.5px/1.4 var(--ui);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.bangChuyen tbody th {
+  font-weight: 500;
+  white-space: nowrap;
+}
+.bangChuyen td.m {
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+.bangChuyen input {
+  width: 100%;
+  min-width: 150px;
+  font: inherit;
+  font-family: var(--mono);
+  padding: 3px 6px;
+  background: var(--panel-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+/* Dòng phải chọn lại: viền trái amber, cùng ngôn ngữ với `.vphacap` — đây là chỗ cần mắt. */
+.bangChuyen tr.phaiChon th[scope='row'] {
+  box-shadow: inset 2px 0 0 var(--amber);
+  padding-left: 8px;
+}
+.bangChuyen .mo {
+  color: var(--ink-3);
+  font-size: 10.5px;
+}
+
 .deNho {
   font: 500 11px/1.4 var(--ui);
   color: var(--ink-3);

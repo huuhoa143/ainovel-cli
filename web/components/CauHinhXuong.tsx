@@ -5,8 +5,10 @@ import { useEffect, useState } from 'react';
 import { LoiApi, layCauHinh, luuCauHinh, type SuaCauHinh } from '@/lib/api';
 import { useModelNapVe, type ModelNapVe } from '@/lib/modelNapVe';
 import { CHU, GIAI_THICH, nhanKenhVai } from '@/lib/nhan';
+import { coVaiLacCho } from '@/lib/chuyenNhaCungCap';
 import type { CauHinhDoc, NhaCungCap } from '@/lib/types';
 
+import { ChuyenNhaCungCap } from './ChuyenNhaCungCap';
 import { KenhVaiChung } from './KenhVaiChung';
 
 /**
@@ -291,6 +293,10 @@ function MotNhaCungCap({
     Object.entries(du.roles ?? {}).filter(([, v]) => v.provider !== n.name),
   );
 
+  // Hộp chuyển dây chuyền. Mở khi bấm "Dùng làm mặc định" mà còn vai đặt riêng ở nơi khác —
+  // đó là lúc câu hỏi thật sự có ba đáp án chứ không một.
+  const [hoiChuyen, datHoiChuyen] = useState(false);
+
   const dangKiem = daBam && napVe.dangNapCua(n.name);
   const loiKiem = daBam ? napVe.loiCua(n.name) : null;
   const daKiem = daBam && napVe.daHoi(n.name);
@@ -381,12 +387,16 @@ function MotNhaCungCap({
             type="button"
             className="nutPhu"
             disabled={dangGui}
-            onClick={() =>
-              goi({
-                provider: n.name,
-                model: n.models?.[0]?.name ?? '',
-              })
-            }
+            onClick={() => {
+              // Còn vai ĐẶT RIÊNG ở nhà cung cấp khác thì đổi mặc định là một câu hỏi, không
+              // phải một lượt ghi: những vai đó ở lại và sẽ gọi tới một nơi khác chỗ mặc
+              // định — hoặc tệ hơn, mang một tên model không có ở nơi chúng đang trỏ.
+              if (coVaiLacCho(du, n.name)) {
+                datHoiChuyen(true);
+                return;
+              }
+              goi({ provider: n.name, model: n.models?.[0]?.name ?? '' });
+            }}
           >
             {CHU.dungLamMacDinh}
           </button>
@@ -406,6 +416,23 @@ function MotNhaCungCap({
           </button>
         ) : null}
       </div>
+
+      {hoiChuyen ? (
+        <ChuyenNhaCungCap
+          du={du}
+          den={{ provider: n.name, model: n.models?.[0]?.name ?? '' }}
+          dangGui={dangGui}
+          onHuy={() => datHoiChuyen(false)}
+          onChiDoiMacDinh={() => {
+            datHoiChuyen(false);
+            goi({ provider: n.name, model: n.models?.[0]?.name ?? '' });
+          }}
+          onChuyenCaDay={(than) => {
+            datHoiChuyen(false);
+            goi(than);
+          }}
+        />
+      ) : null}
     </>
   );
 }

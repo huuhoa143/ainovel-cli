@@ -736,6 +736,15 @@ export const CHU = {
   /** Những mặc định KHÔNG thuộc về vai nào — sau khi model đã dọn hết sang dải kênh vai. */
   macDinhKhac: 'Mặc định khác',
   doiOCauHinh: 'Đổi ở Cấu hình máy',
+  chuyenCaDay: 'Chuyển cả dây chuyền',
+  chiDoiMacDinh: 'Chỉ đổi mặc định',
+  dangChuyen: 'Đang chuyển…',
+  // `vai: 'Vai'` đã có sẵn ở khối nhân vật và mang đúng nghĩa cần ở đây — khai lại là hai
+  // chuỗi cho một nhãn, và `tsc` bắt ngay vì object literal không cho trùng khóa.
+  dangDung: 'Đang dùng',
+  seThanh: 'Sẽ thành',
+  phaiChonLai: '· chọn lại',
+  modelMoiCua: (vai: string) => `Model mới của ${vai}`,
   seVietBang: 'Sẽ viết bằng',
   /** Nhãn dòng "vai nào đang dùng nhà cung cấp này" trên thẻ nhà cung cấp. */
   dungBoi: 'Đang dùng bởi',
@@ -1495,6 +1504,18 @@ export const GIAI_THICH = {
    * Chỉ đường sang nút Sửa thay vì chỉ nói "trùng": người dùng gõ trùng tên hầu như luôn vì họ
    * ĐANG MUỐN đổi cái cũ (gateway riêng nói giao thức openai nên họ đặt luôn tên `openai`).
    */
+  /**
+   * Tiêu đề và thân của hộp chuyển nhà cung cấp.
+   *
+   * Nói ra vì sao phải NHÌN bảng: tên model chỉ có nghĩa bên trong một nhà cung cấp, nên sang
+   * nơi mới có vai giữ được tên và có vai không. Đây đúng là chỗ đã đẻ ra ca hỏng đo được —
+   * ba vai trỏ `openai · cx/gpt-5.5` trong khi `openai` chỉ khai `claude-opus-5`.
+   */
+  chuyenDe: (ten: string) => `Chuyển sang ${ten}?`,
+  chuyenThan: (ten: string) =>
+    `Tên model chỉ có nghĩa bên trong một nhà cung cấp, nên không phải vai nào cũng mang được ` +
+    `tên cũ sang ${ten}. Dòng ghi "chọn lại" là dòng cần mắt bạn — sửa ngay trong bảng.`,
+
   nccTrungTen: (ten: string) =>
     `Đã có nhà cung cấp tên "${ten}". Muốn đổi nó thì bấm Sửa trên thẻ đó — lưu đè ở đây sẽ ` +
     `xóa mất khóa và danh sách model của nó. Muốn thêm một cái riêng thì đặt tên khác.`,
@@ -1531,6 +1552,17 @@ export const GIAI_THICH = {
    * `No active credentials for provider` — một câu về KHÓA, trong khi khóa hoàn toàn đúng
    * và thứ sai là tên model.
    */
+  /**
+   * Model của một vai không nằm trong danh sách mà nhà cung cấp của nó KHAI.
+   *
+   * Yếu hơn `modelKhongCoThat` một bậc và đó là chủ ý: nguồn ở đây là danh sách người dùng tự
+   * gõ, không phải câu trả lời của nhà cung cấp. Nhưng nó KHÔNG cần mạng, nên nó bật ngay —
+   * và ca hỏng đo được lộ ra đúng ở phép so này, nhiều giờ trước khi ai đó bấm nạp.
+   */
+  modelChuaKhai: (model: string, ncc: string) =>
+    `${ncc} chưa khai model "${model}". Bấm Kiểm tra trên thẻ ${ncc} để hỏi thẳng nó, hoặc ` +
+    `thêm tên này vào danh sách model của thẻ nếu bạn chắc nó có.`,
+
   modelKhongCoThat: (model: string, ncc: string) =>
     `${ncc} không có model tên "${model}". Lượt chạy tới sẽ dừng ngay ở Arbiter, và ` +
     `thông báo lúc đó sẽ nói về khóa API chứ không nói về tên model. Chọn một tên trong ô trên.`,

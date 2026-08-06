@@ -147,6 +147,20 @@ function MotKenhChung({
   // rỗng: rỗng nghĩa gateway không liệt kê, không phải mọi tên đều sai.
   const modelLa =
     napVe.daHoi(p) && napVe.modelCua(p).length > 0 && !napVe.modelCua(p).includes(m);
+
+  /**
+   * Lưới an toàn LUÔN BẬT: model không nằm trong danh sách mà chính nhà cung cấp đó KHAI.
+   *
+   * Khác `modelLa` ở nguồn và ở lúc: `modelLa` hỏi nhà cung cấp qua mạng nên chỉ bật sau khi
+   * người dùng bấm nạp. Cái này so hai vế đều đã nằm sẵn trong tệp cấu hình, nên nó nói được
+   * NGAY — và ca hỏng đo được của người dùng lộ ra đúng ở phép so này.
+   *
+   * Nói "chưa khai" chứ không nói "không có": danh sách khai là do người dùng gõ và thường
+   * không đầy đủ. Và chỉ bật khi có ít nhất một tên để mà mâu thuẫn — nhà cung cấp không khai
+   * model nào thì không có cơ sở nói gì.
+   */
+  const khaiCuaP = (du.providers.find((x) => x.name === p)?.models ?? []).map((x) => x.name);
+  const chuaKhai = khaiCuaP.length > 0 && !!m && !khaiCuaP.includes(m);
   const dsModel = Array.from(
     new Set([
       ...(du.providers.find((x) => x.name === p)?.models ?? []).map((x) => x.name),
@@ -213,7 +227,24 @@ function MotKenhChung({
 
       <label className="oNhap">
         <span>{CHU.nhaCungCap}</span>
-        <select value={p} onChange={(e) => datP(e.target.value)}>
+        {/* Đổi nhà cung cấp thì ô Model ĐỔI THEO — hai ô này không độc lập.
+            Một tên model chỉ có nghĩa BÊN TRONG một nhà cung cấp: `cx/gpt-5.5` là model của
+            9Router, ở `gateway.dichvuright.ai` nó không mang nghĩa gì. Giữ nguyên ô Model khi
+            đổi ô này là cho phép dựng ra một cặp KHÔNG TỒN TẠI, và đó chính là ca hỏng đo
+            được trên máy người dùng — ba vai trỏ `openai · cx/gpt-5.5` trong khi `openai` chỉ
+            khai `claude-opus-5`, rồi lượt chạy chết ở Arbiter với một thông báo về khóa API.
+
+            Giữ tên khi nhà cung cấp mới CÓ khai đúng tên đó: nhiều gateway phục vụ chung một
+            danh mục, nên ép về model đầu tiên trong mọi ca sẽ xóa mất lựa chọn đang đúng. */}
+        <select
+          value={p}
+          onChange={(e) => {
+            const ncc = e.target.value;
+            datP(ncc);
+            const khai = (du.providers.find((x) => x.name === ncc)?.models ?? []).map((x) => x.name);
+            if (!khai.includes(m)) datM(khai[0] ?? '');
+          }}
+        >
           {dsProvider.map((ten) => (
             <option key={ten} value={ten}>
               {ten}
@@ -265,6 +296,13 @@ function MotKenhChung({
             ■
           </span>
           <span>{GIAI_THICH.modelKhongCoThat(m, p)}</span>
+        </p>
+      ) : chuaKhai ? (
+        <p className="vphacap">
+          <span className="ky" aria-hidden="true">
+            ■
+          </span>
+          <span>{GIAI_THICH.modelChuaKhai(m, p)}</span>
         </p>
       ) : null}
 

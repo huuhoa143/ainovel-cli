@@ -23,7 +23,9 @@ import type { CauHinhDoc } from '@/lib/types';
 
 const LIET_KE = vi.fn<(p: string) => Promise<{ provider: string; models: string[]; count: number }>>();
 
-const LUU_CAU_HINH = vi.fn(() => Promise.resolve({ saved: true, path: '', reopen_to_apply: [] }));
+const LUU_CAU_HINH = vi.fn((_than?: Record<string, unknown>) =>
+  Promise.resolve({ saved: true, path: '', reopen_to_apply: [] }),
+);
 
 vi.mock('@/lib/api', async (goc) => ({
   ...(await goc<typeof import('@/lib/api')>()),
@@ -39,7 +41,11 @@ const CAU_HINH: CauHinhDoc = {
   model: 'cx/gpt-5.5',
   style: '',
   styles: [],
-  role_names: ['default', 'writer'],
+  role_names: ['default', 'architect', 'writer', 'editor'],
+  // `writer` ĐẶT RIÊNG ở `openai`, ba vai kia thừa hưởng mặc định. Đây là điều kiện để đổi
+  // mặc định trở thành một CÂU HỎI — không có nó thì mọi lượt đổi đều ghi thẳng, và bộ kiểm
+  // không chạm được vào hộp chuyển dây chuyền.
+  roles: { writer: { provider: 'openai', model: 'cx/gpt-5.5' } },
   providers: [
     {
       name: 'openai',
@@ -270,4 +276,102 @@ test('tên chưa ai dùng thì lưu được bình thường', () => {
   const luu = Array.from(form.querySelectorAll('button')).find((b) => /^Lưu/.test(b.textContent ?? ''))!;
   expect((luu as HTMLButtonElement).disabled).toBe(false);
   expect(form.textContent).not.toMatch(/Đã có nhà cung cấp tên/);
+});
+
+/* ── đổi nhà cung cấp mặc định khi còn vai đặt riêng ────────────────────── */
+
+/**
+ * Người dùng: *"nếu mà chuyển nhà cung cấp mặc định thì Model theo vai cũng đổi theo chứ nhỉ,
+ * sẽ có trường hợp đang dùng nhà cung cấp A, xong hết tiền, mua nhà cung cấp B để dùng"*.
+ *
+ * Bản trước ghi thẳng: mặc định sang B, ba vai đặt riêng ở lại A. Không câu hỏi, không dấu
+ * vết. Và nếu A vừa bị đổi ruột thì ba vai đó mang tên model không còn tồn tại — engine chết
+ * ở lượt Writer đầu với một thông báo nói về khóa API.
+ */
+test('còn vai đặt riêng ở nơi khác thì HỎI, chưa ghi gì cả', async () => {
+  fireEvent.click(
+    Array.from(theCua('kiraai').querySelectorAll('button')).find(
+      (b) => b.textContent === 'Dùng làm mặc định',
+    )!,
+  );
+
+  await waitFor(() => expect(document.querySelector('dialog')).not.toBeNull());
+  expect(LUU_CAU_HINH, 'ghi thẳng, không hỏi — vai đặt riêng ở lại lặng lẽ').not.toHaveBeenCalled();
+
+  const hop = document.querySelector('dialog')!;
+  expect(hop.textContent).toMatch(/Chuyển sang kiraai\?/);
+  // Bảng phải nói ra vai nào KHÔNG mang được tên model cũ sang.
+  expect(hop.querySelectorAll('tr.phaiChon').length, 'không dòng nào bị đánh dấu phải chọn lại').toBeGreaterThan(0);
+  // Và phải có đủ BA lối ra, không hai.
+  for (const nhan of ['Hủy', 'Chỉ đổi mặc định', 'Chuyển cả dây chuyền']) {
+    expect(
+      Array.from(hop.querySelectorAll('button')).some((b) => b.textContent === nhan),
+      `thiếu lối ra "${nhan}"`,
+    ).toBe(true);
+  }
+});
+
+test('"Chuyển cả dây chuyền" ghi CẢ mặc định lẫn mọi vai trong MỘT lượt', async () => {
+  fireEvent.click(
+    Array.from(theCua('kiraai').querySelectorAll('button')).find(
+      (b) => b.textContent === 'Dùng làm mặc định',
+    )!,
+  );
+  await waitFor(() => expect(document.querySelector('dialog')).not.toBeNull());
+
+  const hop = document.querySelector('dialog')!;
+  fireEvent.click(
+    Array.from(hop.querySelectorAll('button')).find((b) => b.textContent === 'Chuyển cả dây chuyền')!,
+  );
+
+  await waitFor(() => expect(LUU_CAU_HINH).toHaveBeenCalled());
+  const than = LUU_CAU_HINH.mock.calls[0]![0] as unknown as {
+    provider: string;
+    roles: Record<string, { provider: string }>;
+  };
+  expect(than.provider).toBe('kiraai');
+  expect(
+    Object.values(than.roles).every((r) => r.provider === 'kiraai'),
+    'còn vai trỏ về nhà cung cấp cũ sau khi chuyển cả dây chuyền',
+  ).toBe(true);
+  expect(LUU_CAU_HINH, 'chia thành nhiều lượt ghi — nửa chừng hỏng là cấu hình lệch').toHaveBeenCalledTimes(1);
+});
+
+test('"Chỉ đổi mặc định" giữ nguyên vai đặt riêng', async () => {
+  fireEvent.click(
+    Array.from(theCua('kiraai').querySelectorAll('button')).find(
+      (b) => b.textContent === 'Dùng làm mặc định',
+    )!,
+  );
+  await waitFor(() => expect(document.querySelector('dialog')).not.toBeNull());
+
+  fireEvent.click(
+    Array.from(document.querySelector('dialog')!.querySelectorAll('button')).find(
+      (b) => b.textContent === 'Chỉ đổi mặc định',
+    )!,
+  );
+
+  await waitFor(() => expect(LUU_CAU_HINH).toHaveBeenCalled());
+  const than = LUU_CAU_HINH.mock.calls[0]![0] as unknown as { provider: string; roles?: unknown };
+  expect(than.provider).toBe('kiraai');
+  expect(than.roles, 'đụng vào roles trong khi người dùng chọn CHỈ đổi mặc định').toBeUndefined();
+});
+
+/* ── model buộc theo nhà cung cấp ───────────────────────────────────────── */
+
+test('đổi ô Nhà cung cấp của một kênh thì ô Model ĐỔI THEO', async () => {
+  const kenh = Array.from(document.querySelectorAll('.kenhDai .kenh')).find(
+    (f) => f.querySelector('.kenhTen')?.textContent === 'Chấp bút',
+  )!;
+  const oNcc = kenh.querySelector('select')!;
+  const oModel = kenh.querySelector('input')!;
+  expect(oModel.value).toBe('cx/gpt-5.5');
+
+  fireEvent.change(oNcc, { target: { value: 'kiraai' } });
+
+  expect(
+    oModel.value,
+    'giữ nguyên tên model của nhà cung cấp CŨ — đúng cách dựng ra một cặp không tồn tại',
+  ).not.toBe('cx/gpt-5.5');
+  expect(oModel.value).toBe('kira-mini-1.0');
 });
