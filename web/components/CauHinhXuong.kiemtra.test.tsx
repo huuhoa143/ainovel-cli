@@ -153,6 +153,14 @@ test('kiểm xong thì nói số model, và chỉ tên KHAI mà nhà cung cấp 
 
   await waitFor(() => expect(theCua('kiraai').textContent).toMatch(/2 model/));
 
+  // Nhãn KHÔNG được hứa quá phạm vi lượt gọi. `GET /v1/models` chạy ngon cả khi hạn mức sinh
+  // chữ đã cạn — đo được trên gateway của người dùng: models 200, chat 429 "token quota
+  // exceeded". Một chữ "dùng được" ở đây dẫn thẳng tới một lượt chạy chết.
+  expect(theCua('kiraai').textContent, 'nhãn hứa khóa "dùng được" trong khi chưa kiểm hạn mức').not.toMatch(
+    /khóa còn dùng được/,
+  );
+  expect(theCua('kiraai').textContent).toMatch(/chưa kiểm hạn mức/);
+
   // Nhắm đúng Ô CẢNH BÁO, không phải cả thẻ. Đo bằng đột biến: `kira-mini-1.0` đã có sẵn ở
   // dòng "Danh sách model" của thẻ, nên một phép khớp trên `the.textContent` vẫn xanh sau khi
   // gỡ sạch phần cảnh báo — tức bài kiểm không canh gì cả.

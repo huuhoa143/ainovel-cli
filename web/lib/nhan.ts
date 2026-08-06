@@ -1478,10 +1478,27 @@ export const GIAI_THICH = {
   xoaKhongHoanTac:
     'Xóa hẳn tác phẩm này khỏi đĩa — bản thảo và nhật ký phán quyết mất theo, không hoàn tác được.',
 
+  /**
+   * Kết quả của nút Kiểm tra — nói ĐÚNG phạm vi đã chứng minh, không hơn.
+   *
+   * # "khóa còn dùng được" là một lời hứa quá rộng, và nó đã lừa người dùng
+   *
+   * Nút này gọi `GET /v1/models`. ĐO ĐƯỢC trên gateway của người dùng, cùng một khóa:
+   *
+   *     GET  /v1/models           → 200, liệt kê đủ model
+   *     POST /v1/chat/completions → 429 "token quota exceeded for this API key"
+   *
+   * Liệt kê là đường METADATA; nó vẫn chạy ngon khi hạn mức sinh chữ đã cạn. Người dùng bấm
+   * Kiểm tra, đọc "khóa còn dùng được", bấm Chạy, và engine chết ở lượt Writer đầu tiên.
+   *
+   * Ba điều lượt gọi này thật sự chứng minh: địa chỉ gốc đúng, mạng thông, khóa được nhận
+   * diện (401/403 thì không), và tên model có thật. HẠN MỨC không nằm trong đó — nên nhãn
+   * phải nói ra chỗ nó không với tới, thay vì để người đọc tự suy ra một bảo đảm không có.
+   */
   napModelXong: (n: number) =>
     n === 0
       ? 'Gọi được nhà cung cấp, nhưng nó không trả model nào — gõ tay tên model.'
-      : `Gọi được nhà cung cấp · ${n} model · khóa còn dùng được`,
+      : `Gọi được nhà cung cấp · ${n} model · khóa hợp lệ — chưa kiểm hạn mức`,
 
   /**
    * Chưa lưu khóa thì chưa kiểm được — nói TRƯỚC thay vì để người dùng bấm rồi nhận lỗi.
