@@ -22,7 +22,7 @@ import {
   layWorkshop,
 } from './api';
 import { nhanSuKienUi } from './dongSuKien';
-import { KHU_MAC_DINH, laKhu, type Khu } from './khu';
+import { KHU_MAC_DINH, chuanKhu, laKhu, type Khu } from './khu';
 import { KHU_DAU_MAN, manCuaKhu, type Man } from './man';
 import type { Profile, Snapshot, StreamEvent, Workshop } from './types';
 import { BO_DEM_RONG, moLuot, nhanVach, themChu, type BoDemVan } from './vanSong';
@@ -231,8 +231,9 @@ function chuongTuUrl(): number | undefined {
  */
 function khuTuUrl(): Khu | undefined {
   if (typeof window === 'undefined') return undefined;
-  const v = new URLSearchParams(window.location.search).get('khu');
-  return laKhu(v) ? v : undefined;
+  // `chuanKhu` chứ không `laKhu`: mã khu cũ trong dấu trang của người dùng phải đi tới bề mặt
+  // đã gộp, và phải đi dưới TÊN MỚI để rail biết mục nào đang sáng.
+  return chuanKhu(new URLSearchParams(window.location.search).get('khu'));
 }
 
 export function useStudio(): Studio {

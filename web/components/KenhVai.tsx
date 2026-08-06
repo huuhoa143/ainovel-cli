@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { LoiApi, doiVaiModel, layVaiModel, moMay } from '@/lib/api';
-import { CHU, GIAI_THICH } from '@/lib/nhan';
+import { CHU, GIAI_THICH, nhanKenhVai } from '@/lib/nhan';
 import type { KenhVaiMuc, VaiModelDoc } from '@/lib/types';
 
 /**
@@ -27,7 +27,14 @@ import type { KenhVaiMuc, VaiModelDoc } from '@/lib/types';
  * `arbiter` cố ý KHÔNG có kênh: `host.arbiterModel` luôn dùng model mặc định, nên một
  * ô chọn cho nó là ô người dùng đổi mà không có tác dụng.
  */
-export function KenhVai({ tacPham }: { tacPham: string | undefined }) {
+export function KenhVai({
+  tacPham,
+  khoiDong,
+}: {
+  tacPham: string | undefined;
+  /** `provider · model` mà engine ĐÃ khởi động, để nói ra khi nó đã lệch so với hiện tại. */
+  khoiDong?: string;
+}) {
   const [du, datDu] = useState<VaiModelDoc | null>(null);
   const [loi, datLoi] = useState<{ thongDiep: string; chuaMoMay: boolean } | null>(null);
 
@@ -51,7 +58,8 @@ export function KenhVai({ tacPham }: { tacPham: string | undefined }) {
   if (loi?.chuaMoMay) {
     return (
       <section className="sect">
-        <h2>{CHU.kenhVai}</h2>
+        {/* KHÔNG dùng "Đang chạy với" ở đây: chưa có gì chạy. Xem `CHU.mayDangDong`. */}
+        <h2>{CHU.mayDangDong}</h2>
         <p className="trongSect">{GIAI_THICH.kenhVaiCanMayMo}</p>
         {/* Nút MỞ, không phải nút Chạy. Mở engine không gọi LLM lần nào; gộp hai việc
             lại sẽ khiến người dùng phải tiêu tiền để đổi một ô cấu hình. */}
@@ -70,10 +78,29 @@ export function KenhVai({ tacPham }: { tacPham: string | undefined }) {
   if (!du || !tacPham) return null;
 
   const coThuaHuong = du.channels.some((k) => !k.explicit);
+  // Kênh mặc định là thứ so được với `run.json`: `host.arbiterModel` và mọi vai thừa hưởng
+  // đều theo nó.
+  const macDinh = du.channels.find((k) => k.role === 'default');
+  const dangChay = macDinh ? `${macDinh.provider} · ${macDinh.model}` : undefined;
+  const daDoi = !!khoiDong && !!dangChay && khoiDong !== dangChay;
 
   return (
     <section className="sect">
       <h2>{CHU.kenhVai}</h2>
+      {/* Hai hệ quả của một cú Lưu ở đây, và cái thứ hai là thứ người dùng không đoán được:
+          `Host.SwitchModel` ghi luôn `cfg.Roles` xuống tệp, nên "đổi cho lượt này" dính vĩnh
+          viễn. Ba dòng ghim lạ trong tệp cấu hình ra đời đúng theo đường đó. */}
+      <p className="steerhint">{GIAI_THICH.kenhVaiAnNgayVaGhi}</p>
+      {/* Khối trên in giá trị LÚC KHỞI ĐỘNG. Khi nó đã khác giá trị đang chạy, màn hình có hai
+          con số cho cùng một câu hỏi — nên nói thẳng ra thay vì để người đọc tự phát hiện. */}
+      {daDoi ? (
+        <p className="vphacap">
+          <span className="ky" aria-hidden="true">
+            ■
+          </span>
+          <span>{GIAI_THICH.kenhVaiDaDoiSoVoiKhoiDong(khoiDong!, dangChay!)}</span>
+        </p>
+      ) : null}
       {coThuaHuong ? <p className="steerhint">{GIAI_THICH.kenhVaiThuaHuong}</p> : null}
       <div className="kenhDai">
         {du.channels.map((k) => (
@@ -110,13 +137,6 @@ function MoMayNut({ tacPham, onXong }: { tacPham: string | undefined; onXong: ()
     </>
   );
 }
-
-const NHAN_VAI: Record<string, string> = {
-  default: CHU.vaiMacDinh,
-  architect: CHU.vaiArchitect,
-  writer: CHU.vaiWriter,
-  editor: CHU.vaiEditor,
-};
 
 function MotKenh({
   tacPham,
@@ -170,7 +190,7 @@ function MotKenh({
       }}
     >
       <div className="kenhDau">
-        <span className="kenhTen">{NHAN_VAI[k.role] ?? k.role}</span>
+        <span className="kenhTen">{nhanKenhVai(k.role)}</span>
         <span className="kenhNguon">{k.explicit ? CHU.datRieng : CHU.thuaHuong}</span>
       </div>
 

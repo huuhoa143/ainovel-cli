@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import {
   LoiApi,
@@ -64,32 +64,6 @@ export function DieuKhien({
 }) {
   const [dangGui, datDangGui] = useState<string | null>(null);
   const [loi, datLoi] = useState<string | null>(null);
-  const [maMoy, datMoMay] = useState<boolean | null>(null);
-
-  // Engine có đang mở hay không: suy từ việc `/settings` có `advance_mode` thì KHÔNG đủ
-  // (tệp run.json còn lại từ lượt trước). Hỏi thẳng `/api/engine` là câu trả lời thật.
-  //
-  // GHI CHO NGƯỜI SAU: `snapshot.advance !== null` bây giờ TRẢ LỜI ĐƯỢC chính câu này —
-  // `serve.go:325` chỉ gán trường đó khi `may.dangMo(id)` thành công, tức đúng điều kiện mà
-  // `/api/engine` đang được hỏi để biết. Nên `maMoy` là nguồn thứ hai của "engine có mở
-  // không", cùng lớp với nguồn thứ hai của `advance_mode` mà Task 6 vừa bỏ. KHÔNG gộp ở đây:
-  // nhánh `maMoy === false` mang một sửa lỗi vòng đời có lời người dùng kèm theo ("không biết
-  // luồng chạy như nào… rời rạc"), và gộp nó là đổi luồng Chạy/Mở máy — việc mà cụm này không
-  // sở hữu và Task 8 không có E2E cho. Ghi ra để ai sở hữu luồng đó nhặt.
-  useEffect(() => {
-    if (!tacPham || !choGhi) return;
-    let huy = false;
-    fetch('/api/engine', { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d: { open?: { book: string }[] } | null) => {
-        if (huy || !d) return;
-        datMoMay((d.open ?? []).some((m) => m.book === tacPham));
-      })
-      .catch(() => {});
-    return () => {
-      huy = true;
-    };
-  }, [tacPham, choGhi, dangChay]);
 
   if (!choGhi || !tacPham || !snapshot) return null;
 
@@ -105,19 +79,28 @@ export function DieuKhien({
   const khoa = dangGui !== null;
 
   /**
-   * Chế độ có ĐO ĐƯỢC hay không — khác hẳn với "chế độ là auto".
+   * Engine có đang mở cho cuốn này không — MỘT nguồn duy nhất.
    *
-   * `advance === null` nghĩa engine ĐÓNG cho cuốn này, nên không có chế độ nào để nói. Nhãn
-   * chế độ vì thế KHÔNG được vẽ ở ca đó: in "Tự chạy liên tục" lên một engine đã đóng là
-   * khẳng định một điều chưa ai đo, và người vận hành đọc nó thành "nó sẽ viết liên tục".
+   * `serve.go:325` chỉ gán `advance` khi `may.dangMo(id)` thành công, nên trường này TRẢ LỜI
+   * ĐƯỢC câu ấy. Bản trước còn hỏi thêm `/api/engine` trong một `useEffect` và giữ kết quả ở
+   * `maMoy` — một nguồn sự thật thứ hai, và chú thích cũ ngay tại đây đã ghi nhận điều đó rồi
+   * để lại cho người sau.
    *
-   * Cái nút ấy còn không bấm được ở ca đó: `PUT /advance-mode` tự đòi `may.dangMo(book)`
-   * (`vongdoi.go:41`), nên trên engine đóng nó chắc chắn trả lỗi. Ẩn nó là nói thật hai lần.
+   * Hư hại của nguồn thứ hai KHÔNG chỉ là trùng lặp, nó nhìn thấy được: `maMoy` khởi tạo
+   * `null` và chỉ có giá trị sau một lượt gọi mạng, mà `null` rơi vào nhánh "engine đang mở".
+   * Nên với một cuốn ĐÃ ĐÓNG máy, thanh điều khiển vẽ ra bộ nút của engine đang mở — có cả
+   * `Đóng máy` — rồi vài trăm mili-giây sau mới đổi hình thành `[Mở máy][▶ Chạy]`. Đó đúng là
+   * cái "khựng" mà người vận hành thấy mỗi lần đổi cuốn.
    *
-   * Ẩn chứ không vẽ một dấu "không đo được": nhánh `maMoy === false` ngay dưới đã là bề mặt
-   * cho ca engine đóng, và nó nói ra bằng nút `Mở máy` — một câu rõ hơn một dấu gạch.
+   * Đọc từ snapshot thì nó đúng ngay từ khung hình đầu tiên, và mỗi lệnh đã tự nạp lại
+   * snapshot qua `onDoi` nên không cần ai tự nhớ trạng thái nữa.
+   *
+   * Kèm theo: chế độ đi tiếp chỉ có nghĩa khi máy mở. In "Tự chạy liên tục" lên một engine đã
+   * đóng là khẳng định một điều chưa ai đo, và `PUT /advance-mode` cũng tự đòi
+   * `may.dangMo(book)` (`vongdoi.go:41`) nên nút ấy chắc chắn lỗi. Cùng một điều kiện, nên giờ
+   * là cùng một biến.
    */
-  const bietCheDo = snapshot.advance !== null;
+  const mayDangMo = snapshot.advance !== null;
   const choNghiemThu = snapshot.advance?.mode === 'review';
 
   // Trạng thái engine đã hợp nhất — CÙNG hàm mà thanh transport và `mayDangChay` dùng. Đọc
@@ -139,7 +122,7 @@ export function DieuKhien({
         </span>
       ) : null}
 
-      {maMoy === false ? (
+      {!mayDangMo ? (
         // Chưa mở máy: CHẠY vẫn là nút hạng nhất, và "Mở máy" hạ xuống hàng phụ.
         //
         // Bản trước chỉ hiện đúng một nút "Mở máy cho tác phẩm này", và đó là một ngõ chết
@@ -160,7 +143,7 @@ export function DieuKhien({
             className="dkNut dkPhu"
             disabled={khoa}
             title={GIAI_THICH.vongDoiCanMoMay}
-            onClick={() => goi('mo', () => moMay(tacPham).then(() => datMoMay(true)))}
+            onClick={() => goi('mo', () => moMay(tacPham))}
           >
             {dangGui === 'mo' ? CHU.dangGui : CHU.moMay}
           </button>
@@ -169,9 +152,7 @@ export function DieuKhien({
             className="dkNut dkChay"
             disabled={khoa}
             title={GIAI_THICH.taoSachSeTieuTien}
-            onClick={() =>
-              goi('chay', () => chaySach(tacPham).then(() => datMoMay(true)))
-            }
+            onClick={() => goi('chay', () => chaySach(tacPham))}
           >
             {dangGui === 'chay' ? CHU.dangGui : `▶ ${nhanChay}`}
           </button>
@@ -204,8 +185,9 @@ export function DieuKhien({
               Hiện cả hai lựa chọn cùng lúc thì không còn chỗ để hiểu nhầm: thấy được cái nào
               đang bật, và bấm là CHỌN chứ không phải đảo. Nhãn nhóm nói ra đây là chế độ,
               vì "tự chạy" và "nghiệm thu" đứng trơ thì không tự nói chúng loại trừ nhau. */}
-          {bietCheDo ? (
-            <div className="dkChon" role="group" aria-label={CHU.cheDoDiTiep}>
+          {/* Không còn `bietCheDo` ở đây: nhánh này CHÍNH LÀ ca máy đang mở, nên điều kiện cũ
+              luôn đúng. Giữ nó lại chỉ để lại một câu hỏi đã được trả lời ở tầng trên. */}
+          <div className="dkChon" role="group" aria-label={CHU.cheDoDiTiep}>
               <span className="dkChonDe">{CHU.cheDoDiTiep}</span>
               {(
                 [
@@ -227,9 +209,8 @@ export function DieuKhien({
                     {dangGui === 'chedo' && !dangBat ? CHU.dangGui : nhan}
                   </button>
                 );
-              })}
-            </div>
-          ) : null}
+            })}
+          </div>
 
           {/* Đóng máy nhả khóa tệp và nhả suất engine cho cuốn khác. Không có nó thì mở
               cuốn A rồi không bao giờ mở được cuốn B mà không tắt cả studio. */}
@@ -238,7 +219,7 @@ export function DieuKhien({
             className="dkNut dkPhu"
             disabled={khoa || dangChay}
             title={dangChay ? GIAI_THICH.vongDoiCanMoMay : undefined}
-            onClick={() => goi('dong', () => dongMay(tacPham).then(() => datMoMay(false)))}
+            onClick={() => goi('dong', () => dongMay(tacPham))}
           >
             {dangGui === 'dong' ? CHU.dangGui : CHU.dongMay}
           </button>

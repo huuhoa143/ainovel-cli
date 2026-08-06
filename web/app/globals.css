@@ -2913,6 +2913,16 @@ body.dangKeoNgang * {
    nếu chỉ .ibody có luật h3 thì khu Kiểm định nhận h3 mặc định của trình duyệt —
    32px đậm đen giữa một bề mặt 11px, và không có lỗi nào để bắt vì HTML vẫn
    đúng. Thêm bề mặt mới mà quên thêm vào đây là gặp lại đúng lỗi đó. */
+/* Nhãn của một khối nhỏ NẰM TRONG một biểu mẫu — hiện dùng cho "Sẽ viết bằng" ở màn Tác
+   phẩm mới. Cùng cỡ chữ với h3 của các bảng hồ sơ để không sinh thêm một cấp tiêu đề nữa,
+   nhưng khai riêng chứ không ghép vào bộ chọn dưới: ba lớp kia là thân của một hồ sơ, còn
+   cái này đứng giữa một biểu mẫu, và gộp chúng sẽ dạy người sau rằng chúng cùng ngữ cảnh. */
+.deNho {
+  font: 500 11px/1.4 var(--ui);
+  color: var(--ink-3);
+  margin: 4px 0 6px;
+}
+
 .ibody h3,
 .duyetthan h3,
 .hangthan h3 {

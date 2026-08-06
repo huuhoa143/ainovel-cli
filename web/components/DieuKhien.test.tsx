@@ -131,6 +131,35 @@ test('`advance === null` KHÔNG làm mất nút Chạy — bề mặt vẫn đi�
   expect(screen.getByRole('button', { name: `▶ ${CHU.chay}` })).toBeDefined();
 });
 
+test('engine đóng thì bộ nút ĐÚNG NGAY khung hình đầu — không đổi hình sau một lượt gọi mạng', () => {
+  // Cái "khựng" mà người vận hành thấy mỗi lần đổi cuốn, ĐO ĐƯỢC:
+  //
+  // Bản trước hỏi `/api/engine` trong một `useEffect` và giữ kết quả ở `maMoy`, khởi tạo `null`.
+  // Mà `null` rơi vào nhánh "engine đang mở", nên một cuốn ĐÃ ĐÓNG máy được vẽ với bộ nút của
+  // engine đang mở — có cả `Đóng máy` — rồi vài trăm mili-giây sau mới đổi hình thành
+  // `[Mở máy][▶ Chạy]`.
+  //
+  // `FETCH` ở tệp này KHÔNG BAO GIỜ resolve, nên trạng thái ở đây đúng là khung hình đầu tiên:
+  // nếu component còn chờ mạng thì `Mở máy` chưa thể có mặt.
+  ve();
+
+  expect(
+    screen.getByRole('button', { name: CHU.moMay }),
+    'khung hình đầu chưa có Mở máy — thanh vẫn đang chờ một lượt gọi mạng',
+  ).toBeDefined();
+  expect(
+    screen.queryByRole('button', { name: CHU.dongMay }),
+    'engine đóng mà vẽ nút Đóng máy — đúng bộ nút sai của khung hình đầu',
+  ).toBeNull();
+});
+
+test('KHÔNG gọi mạng để biết engine có mở không', () => {
+  // Cùng lớp hàng rào với hai bài "chế độ suy từ snapshot": chặn ngày ai đó thêm lại
+  // `fetch('/api/engine')` cho chắc. Một nguồn sự thật, không phải hai.
+  ve({ advance: AUTO });
+  expect(FETCH, `thanh điều khiển gọi mạng: ${FETCH.mock.calls.length} lượt`).not.toHaveBeenCalled();
+});
+
 /* ── đổi chế độ ────────────────────────────────────────────────────────── */
 
 test('bấm một lựa chọn gửi ĐÚNG chế độ đó, rồi nạp lại snapshot', async () => {

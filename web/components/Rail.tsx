@@ -253,14 +253,9 @@ export function Rail({
               onChonKhu={onChonKhu}
               chuGiai={GIAI_THICH.cauHinhLaMucMay}
             />
-            <MucDi
-              nhan={CHU.kenhVaiChung}
-              ky="⌗"
-              di="kenh-vai-chung"
-              khu={khu}
-              onChonKhu={onChonKhu}
-              chuGiai={GIAI_THICH.kenhVaiChungGiaiThich}
-            />
+            {/* KHÔNG còn mục "Model theo vai" ở đây: dải kênh vai đã nhập vào chính bề mặt
+                Cấu hình máy ngay trên. Hai mục rail cho một quyết định là đúng thứ làm người
+                dùng phải nhớ rằng còn một màn nữa mới dùng được nhà cung cấp vừa thêm. */}
             <MucDi
               nhan={CHU.chiPhiXuong}
               ky="$"

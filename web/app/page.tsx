@@ -7,7 +7,6 @@ import { CaiDat } from '@/components/CaiDat';
 import { ChiPhiXuong } from '@/components/ChiPhiXuong';
 import { CauHinhXuong } from '@/components/CauHinhXuong';
 import { CungDung } from '@/components/CungDung';
-import { KenhVaiChung } from '@/components/KenhVaiChung';
 import { DieuKhien } from '@/components/DieuKhien';
 import { HoiChan } from '@/components/HoiChan';
 import { NhapXuat } from '@/components/NhapXuat';
@@ -391,8 +390,6 @@ export function Khu({
           onXoaXong={onXoaXong}
         />
       );
-    case 'kenh-vai-chung':
-      return <KenhVaiChung onDoiCauHinh={onDoiCauHinh} />;
     case 'chi-phi-xuong':
       return <ChiPhiXuong tong={tong} />;
     case 'ban-thao':
@@ -446,7 +443,7 @@ export function Khu({
     case 'cau-hinh':
       return <CauHinhXuong onDoiCauHinh={onDoiCauHinh} />;
     case 'tac-pham-moi':
-      return <TacPhamMoi onXong={onXongTaoSach} nhapSan={nhapSan} />;
+      return <TacPhamMoi onXong={onXongTaoSach} nhapSan={nhapSan} onChonKhu={onChonKhu} />;
     // Cùng dựng giai đoạn cần tác phẩm; cùng dựng mở sách thì không. Một khu cho cả hai,
     // chế độ suy từ việc có tác phẩm đang xem hay không.
     case 'cung-dung':
