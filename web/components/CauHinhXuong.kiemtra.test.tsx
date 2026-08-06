@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import type { CauHinhDoc } from '@/lib/types';
@@ -27,9 +27,12 @@ const LUU_CAU_HINH = vi.fn((_than?: Record<string, unknown>) =>
   Promise.resolve({ saved: true, path: '', reopen_to_apply: [] }),
 );
 
+/** Bật ở hai bài kiểm ca "mọi vai thừa hưởng" — trạng thái mà người dùng vấp. */
+let KHONG_GHIM = false;
+
 vi.mock('@/lib/api', async (goc) => ({
   ...(await goc<typeof import('@/lib/api')>()),
-  layCauHinh: () => Promise.resolve(CAU_HINH),
+  layCauHinh: () => Promise.resolve(KHONG_GHIM ? { ...CAU_HINH, roles: undefined } : CAU_HINH),
   lietKeModel: (p: string) => LIET_KE(p),
   luuCauHinh: (...a: unknown[]) => LUU_CAU_HINH(...(a as [])),
 }));
@@ -111,6 +114,7 @@ function nutKiemCua(ten: string): HTMLButtonElement {
 beforeEach(async () => {
   LIET_KE.mockReset();
   LUU_CAU_HINH.mockClear();
+  KHONG_GHIM = false;
   render(<CauHinhXuong />);
   await waitFor(() => expect(document.querySelectorAll('li.nccMuc').length).toBe(3));
 });
@@ -288,7 +292,7 @@ test('tên chưa ai dùng thì lưu được bình thường', () => {
  * vết. Và nếu A vừa bị đổi ruột thì ba vai đó mang tên model không còn tồn tại — engine chết
  * ở lượt Writer đầu với một thông báo nói về khóa API.
  */
-test('còn vai đặt riêng ở nơi khác thì HỎI, chưa ghi gì cả', async () => {
+test('đổi mặc định LUÔN mở bảng đối chiếu, chưa ghi gì cả', async () => {
   fireEvent.click(
     Array.from(theCua('kiraai').querySelectorAll('button')).find(
       (b) => b.textContent === 'Dùng làm mặc định',
@@ -374,4 +378,58 @@ test('đổi ô Nhà cung cấp của một kênh thì ô Model ĐỔI THEO', as
     'giữ nguyên tên model của nhà cung cấp CŨ — đúng cách dựng ra một cặp không tồn tại',
   ).not.toBe('cx/gpt-5.5');
   expect(oModel.value).toBe('kira-mini-1.0');
+});
+
+/**
+ * Ca im lặng nhất, và là ca người dùng vấp: KHÔNG vai nào đặt riêng.
+ *
+ * Bản đầu chỉ hỏi khi có vai lạc chỗ, nên ở trạng thái này một cú bấm dời CẢ BỐN vai sang một
+ * nhà cung cấp khác với một model khác hẳn về giá — không hộp, không dòng xác nhận. Người dùng
+ * bấm rồi hỏi *"sao không thấy có hỏi gì nhỉ, vẫn không có gì xảy ra"*.
+ */
+test('không vai nào đặt riêng thì VẪN hỏi, và chỉ có HAI lối ra', async () => {
+  cleanup();
+  KHONG_GHIM = true;
+  render(<CauHinhXuong />);
+  await waitFor(() => expect(document.querySelectorAll('li.nccMuc').length).toBe(3));
+
+  fireEvent.click(
+    Array.from(theCua('kiraai').querySelectorAll('button')).find(
+      (b) => b.textContent === 'Dùng làm mặc định',
+    )!,
+  );
+  await waitFor(() => expect(document.querySelector('dialog')).not.toBeNull());
+
+  const nut = Array.from(document.querySelector('dialog')!.querySelectorAll('.hopxnNut button')).map(
+    (b) => b.textContent,
+  );
+  // "Chỉ đổi mặc định" và "Chuyển cả dây chuyền" là CÙNG một lượt ghi khi mọi vai thừa hưởng.
+  // Bày cả hai là mời người dùng đi tìm một khác biệt không có thật.
+  expect(nut).toEqual(['Hủy', 'Đổi mặc định']);
+});
+
+test('xác nhận khi không có vai ghim thì KHÔNG đẻ ra mục roles nào', async () => {
+  cleanup();
+  KHONG_GHIM = true;
+  render(<CauHinhXuong />);
+  await waitFor(() => expect(document.querySelectorAll('li.nccMuc').length).toBe(3));
+
+  fireEvent.click(
+    Array.from(theCua('kiraai').querySelectorAll('button')).find(
+      (b) => b.textContent === 'Dùng làm mặc định',
+    )!,
+  );
+  await waitFor(() => expect(document.querySelector('dialog')).not.toBeNull());
+  fireEvent.click(
+    Array.from(document.querySelector('dialog')!.querySelectorAll('button')).find(
+      (b) => b.textContent === 'Đổi mặc định',
+    )!,
+  );
+
+  await waitFor(() => expect(LUU_CAU_HINH).toHaveBeenCalled());
+  const than = LUU_CAU_HINH.mock.calls[0]![0] as unknown as { roles: Record<string, unknown> };
+  expect(
+    Object.keys(than.roles),
+    'ghim luôn ba vai vốn đang thừa hưởng — từ lần sau chúng thôi đi theo mặc định',
+  ).toEqual([]);
 });

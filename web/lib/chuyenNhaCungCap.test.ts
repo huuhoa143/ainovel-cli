@@ -107,3 +107,41 @@ test('không vai nào đặt riêng thì cũng không hỏi', () => {
   expect(coVaiLacCho({ ...DU, roles: undefined }, 'moi')).toBe(false);
   expect(coVaiLacCho({ ...DU, roles: {} }, 'moi')).toBe(false);
 });
+
+/* ── không đẻ ra ghim mới ───────────────────────────────────────────────── */
+
+/**
+ * Vai đang THỪA HƯỞNG mà sau lượt chuyển vẫn dùng đúng cặp của mặc định thì phải tiếp tục
+ * thừa hưởng.
+ *
+ * Ghi nó vào `cfg.Roles` là biến nó thành ĐẶT RIÊNG, và từ đó nó thôi đi theo mọi lần đổi mặc
+ * định về sau — người dùng mất đúng thứ họ vừa dựng, mà không bấm gì để yêu cầu điều đó. Hỏng
+ * này im lặng hoàn toàn: cấu hình vẫn chạy đúng NGAY LÚC ĐÓ, chỉ sai ở lần đổi mặc định kế.
+ */
+const KHONG_GHIM: CauHinhDoc = { ...DU, roles: undefined };
+
+test('vai thừa hưởng vẫn thừa hưởng sau lượt chuyển — không sinh mục roles nào', () => {
+  const than = thanChuyenCaDay(duKienChuyen(KHONG_GHIM, 'moi', 'claude-opus-5'), 'moi');
+  expect(than.provider).toBe('moi');
+  expect(than.model).toBe('claude-opus-5');
+  expect(
+    Object.keys(than.roles),
+    'biến vai thừa hưởng thành đặt riêng — chúng thôi đi theo mặc định từ lần sau',
+  ).toEqual([]);
+});
+
+test('nhưng vai thừa hưởng ĐƯỢC CHỌN model khác thì buộc phải thành mục riêng', () => {
+  const dong = duKienChuyen(KHONG_GHIM, 'moi', 'claude-opus-5').map((d) =>
+    d.vai === 'editor' ? { ...d, denModel: 'cx/gpt-5.4-mini' } : d,
+  );
+  const than = thanChuyenCaDay(dong, 'moi');
+  expect(Object.keys(than.roles)).toEqual(['editor']);
+  expect(than.roles.editor!.model).toBe('cx/gpt-5.4-mini');
+});
+
+test('vai ĐÃ ghim từ trước thì giữ nguyên là mục riêng, kể cả khi trùng model mặc định', () => {
+  const than = thanChuyenCaDay(duKienChuyen(DU, 'moi', 'claude-opus-5'), 'moi');
+  // `writer` được đề xuất `claude-opus-5` — trùng mặc định — nhưng nó ĐANG ghim, nên xoá mục
+  // của nó là lặng lẽ đổi ý định của người dùng theo chiều ngược lại.
+  expect(Object.keys(than.roles).sort()).toEqual(['architect', 'editor', 'writer']);
+});

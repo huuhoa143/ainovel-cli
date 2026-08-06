@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import { LoiApi, layCauHinh, luuCauHinh, type SuaCauHinh } from '@/lib/api';
 import { useModelNapVe, type ModelNapVe } from '@/lib/modelNapVe';
 import { CHU, GIAI_THICH, nhanKenhVai } from '@/lib/nhan';
-import { coVaiLacCho } from '@/lib/chuyenNhaCungCap';
 import type { CauHinhDoc, NhaCungCap } from '@/lib/types';
 
 import { ChuyenNhaCungCap } from './ChuyenNhaCungCap';
@@ -387,16 +386,12 @@ function MotNhaCungCap({
             type="button"
             className="nutPhu"
             disabled={dangGui}
-            onClick={() => {
-              // Còn vai ĐẶT RIÊNG ở nhà cung cấp khác thì đổi mặc định là một câu hỏi, không
-              // phải một lượt ghi: những vai đó ở lại và sẽ gọi tới một nơi khác chỗ mặc
-              // định — hoặc tệ hơn, mang một tên model không có ở nơi chúng đang trỏ.
-              if (coVaiLacCho(du, n.name)) {
-                datHoiChuyen(true);
-                return;
-              }
-              goi({ provider: n.name, model: n.models?.[0]?.name ?? '' });
-            }}
+            /* MỌI lần đổi mặc định đều mở bảng, không chỉ khi có vai đặt riêng.
+               Bản đầu chỉ hỏi ở ca có vai lạc chỗ, và ĐO ĐƯỢC là nó im lặng đúng lúc hệ quả
+               lớn nhất: khi mọi vai đang thừa hưởng, một cú bấm dời CẢ BỐN vai sang một nhà
+               cung cấp khác với một model khác hẳn về giá. Người dùng bấm rồi hỏi "sao không
+               thấy có hỏi gì nhỉ, vẫn không có gì xảy ra". */
+            onClick={() => datHoiChuyen(true)}
           >
             {CHU.dungLamMacDinh}
           </button>

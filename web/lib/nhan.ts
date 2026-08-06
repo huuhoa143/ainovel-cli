@@ -737,6 +737,7 @@ export const CHU = {
   macDinhKhac: 'Mặc định khác',
   doiOCauHinh: 'Đổi ở Cấu hình máy',
   chuyenCaDay: 'Chuyển cả dây chuyền',
+  doiMacDinh: 'Đổi mặc định',
   chiDoiMacDinh: 'Chỉ đổi mặc định',
   dangChuyen: 'Đang chuyển…',
   // `vai: 'Vai'` đã có sẵn ở khối nhân vật và mang đúng nghĩa cần ở đây — khai lại là hai

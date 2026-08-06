@@ -96,10 +96,20 @@ export function thanChuyenCaDay(
   denProvider: string,
 ): { provider: string; model: string; roles: Record<string, { provider: string; model: string }> } {
   const macDinh = dong.find((d) => d.vai === 'default');
+  const modelMacDinh = macDinh?.denModel ?? '';
   const roles: Record<string, { provider: string; model: string }> = {};
   for (const d of dong) {
     if (d.vai === 'default') continue;
+    // KHÔNG đẻ ra ghim mới.
+    //
+    // Một vai đang THỪA HƯỞNG mà sau lượt chuyển vẫn dùng đúng cặp của mặc định thì phải tiếp
+    // tục thừa hưởng — ghi nó vào `cfg.Roles` là biến nó thành đặt riêng, và từ đó nó thôi đi
+    // theo mọi lần đổi mặc định về sau. Người dùng không bấm gì để yêu cầu điều đó.
+    //
+    // Chỉ ghi khi vai ĐÃ ghim từ trước (giữ nguyên ý định của họ), hoặc khi model chọn cho nó
+    // khác model mặc định (lúc đó nó buộc phải là một mục riêng mới nói được điều khác).
+    if (!d.dangGhim && d.denModel === modelMacDinh) continue;
     roles[d.vai] = { provider: denProvider, model: d.denModel };
   }
-  return { provider: denProvider, model: macDinh?.denModel ?? '', roles };
+  return { provider: denProvider, model: modelMacDinh, roles };
 }

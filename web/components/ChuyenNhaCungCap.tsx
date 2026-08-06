@@ -58,7 +58,11 @@ export function ChuyenNhaCungCap({
     <HopXacNhan
       moRa
       tieuDe={GIAI_THICH.chuyenDe(den.provider)}
-      nhanLam={CHU.chuyenCaDay}
+      /* Không vai nào ĐẶT RIÊNG thì "chuyển cả dây chuyền" và "chỉ đổi mặc định" là CÙNG một
+         lượt ghi — mọi vai đang thừa hưởng nên chúng tự đi theo. Gọi nó bằng cái tên lớn hơn
+         việc nó làm là hứa quá; và bày hai nút cho một hành động là mời người dùng đi tìm
+         khác biệt không có thật. */
+      nhanLam={coVaiGhim ? CHU.chuyenCaDay : CHU.doiMacDinh}
       onLam={() => onChuyenCaDay(thanChuyenCaDay(dong, den.provider))}
       /* Lối ra thứ ba chỉ có nghĩa khi CÓ vai đặt riêng để mà giữ lại. Không có thì hộp này
          chỉ còn là bảng xác nhận của một lượt đổi mặc định bình thường. */
