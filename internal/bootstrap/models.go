@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"reflect"
 	"strings"
 	"sync"
 
@@ -294,7 +295,64 @@ func (ms *ModelSet) CapNhatNhaCungCap(providers map[string]ProviderConfig) {
 		ms.config.Providers = make(map[string]ProviderConfig, len(providers))
 	}
 	for ten, pc := range providers {
+		cu, daCo := ms.config.Providers[ten]
 		ms.config.Providers[ten] = pc
+		if daCo && !doiCachGoi(cu, pc) {
+			continue
+		}
+		ms.dungLaiTheoNhaCungCap(ten, pc)
+	}
+}
+
+// doiCachGoi nói hai bản cấu hình của MỘT nhà cung cấp có dựng ra hai client khác nhau không.
+//
+// So đúng những trường đi vào `llm.NewModel` (khóa, địa chỉ gốc, loại, timeout, extra) và CỐ Ý
+// bỏ `Models`: danh sách model là một danh mục để gợi ý, nó không đổi cách gọi. Không bỏ nó thì
+// mỗi lần người dùng thêm một tên vào ô "Danh sách model" là một lượt dựng lại client cho mọi
+// vai — tốn công và vứt mất kết nối đang ấm.
+func doiCachGoi(a, b ProviderConfig) bool {
+	a.Models, b.Models = nil, nil
+	return !reflect.DeepEqual(a, b)
+}
+
+// dungLaiTheoNhaCungCap dựng lại MỌI model đang trỏ vào một nhà cung cấp vừa đổi cách gọi.
+//
+// # Vì sao cần, và vì sao trộn danh mục thôi là chưa đủ
+//
+// `NewModelSet` dựng client MỘT LẦN lúc `host.New`, mang theo khóa API tại thời điểm đó. Trộn
+// danh mục (phần trên) chỉ chữa được đường `Swap` — nó không chạm tới những client ĐÃ dựng.
+//
+// ĐO ĐƯỢC trên máy người dùng: khóa của gateway hết hạn mức, họ mua khóa mới và lưu vào cấu
+// hình, `POST /chat/completions` bằng khóa mới trả 200 trong 5,3 giây — nhưng engine đang mở
+// vẫn 429 với đúng câu cũ, vì nó cầm client dựng từ khóa cũ lúc 14:14. Không dấu hiệu nào trên
+// màn hình nói ra điều đó; người dùng chỉ thấy "đổi khóa rồi mà vẫn lỗi".
+//
+// Lượt gọi ĐANG BAY giữ client cũ (`agentcore.SwappableModel` đọc `Current()` lúc gọi), nên
+// đây là thay êm: lượt kế tiếp dùng khóa mới, lượt đang chạy không bị cắt ngang.
+//
+// Người gọi phải đang giữ `ms.mu`.
+func (ms *ModelSet) dungLaiTheoNhaCungCap(ten string, pc ProviderConfig) {
+	cache := make(map[string]agentcore.ChatModel)
+	dung := func(sw *SwappableModel) {
+		if sw == nil {
+			return
+		}
+		p, m := sw.Current()
+		if p != ten {
+			return
+		}
+		moi, err := createModelFromConfig(ten, m, pc, cache)
+		if err != nil {
+			// Bỏ qua chứ không hoảng: cấu hình mới hỏng thì giữ client cũ vẫn hơn là để lượt
+			// chạy mất model. `PUT /api/config` đã kiểm và hoàn nguyên bản không dùng được.
+			slog.Warn(i18n.F("重建模型失败"), "module", "config", "provider", ten, "model", m, "err", err)
+			return
+		}
+		sw.Swap(ten, m, moi, ms.config.ModelJSONSchema(ten, m))
+	}
+	dung(ms.Default)
+	for _, sw := range ms.models {
+		dung(sw)
 	}
 }
 

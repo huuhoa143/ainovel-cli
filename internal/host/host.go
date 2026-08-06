@@ -490,6 +490,24 @@ func (h *Host) Resume() (string, error) {
 		h.mu.Unlock()
 		return "", fmt.Errorf("already running")
 	}
+	// Lấy CÁCH GỌI mới nhất trước mỗi lượt chạy: khóa API, địa chỉ gốc, timeout.
+	//
+	// Ranh giới ở đây là có chủ ý và nó chia đôi cấu hình thành hai loại:
+	//
+	//	DANH TÍNH model (vai nào dùng model nào) — thuộc LƯỢT MỞ MÁY. Đổi nó giữa chừng là
+	//	đổi cây bút giữa một chương, nên nó chỉ ăn từ lần mở sau.
+	//	CÁCH GỌI (khóa, địa chỉ, timeout) — lấy mới ở MỖI LƯỢT CHẠY. Nó không đổi engine viết
+	//	bằng gì, chỉ đổi đường đi tới đó.
+	//
+	// ĐO ĐƯỢC vì sao phải tách: gateway của người dùng hết hạn mức, họ mua khóa mới và lưu
+	// vào cấu hình; `POST /chat/completions` bằng khóa mới trả 200 trong 5,3 giây. Nhưng engine
+	// mở từ trước vẫn 429 với đúng câu cũ, vì client của nó dựng bằng khóa cũ. Không dấu hiệu
+	// nào nói ra điều đó — chỉ là "đổi khóa rồi mà vẫn lỗi", và mỗi lần bấm Chạy lại đâm vào
+	// đúng bức tường ấy.
+	//
+	// Đặt ở `Resume` chứ không ở một nút riêng: đây đúng là khoảnh khắc engine sắp tiêu tiền,
+	// và là chỗ một engine ĐANG MỞ khớp lại được với một engine vừa mở (`mo` đọc tệp mới).
+	h.napLaiNhaCungCap()
 	if h.cocreating {
 		h.mu.Unlock()
 		return "", errors.New(i18n.F("阶段共创进行中，请先结束共创"))
