@@ -155,12 +155,13 @@ func Xet(err error, lanThu int, daCho time.Duration, cs ChinhSach) PhanQuyet {
 
 	// Luật 1 — MỐC XA. Xét TRƯỚC hai luật kia, vì đây là thông tin do chính provider đưa ra:
 	// nó biết chắc khi nào mở lại, còn hai luật kia chỉ là phỏng đoán từ số lần thất bại.
-	moc := MocChoLai(err)
-	if moc > cs.MocXaLaBo {
-		return PhanQuyet{
-			Quyet: QuyetBoCuoc,
-			LyDo:  fmt.Sprintf(i18n.F("提供方要求等待 %s 后才能再次调用"), gonGang(moc)),
-		}
+	//
+	// Phép so sánh nằm trong `choQuaLau` (cholau.go) chứ không viết tại chỗ: đường thử lại của
+	// agentcore cưỡng chế CÙNG luật này qua `ChanChoLau`, và hai bản chép của một ngưỡng là hai
+	// tầng bỏ cuộc ở hai mốc khác nhau — một triệu chứng gần như không đọc ra được từ màn hình.
+	moc, qua := choQuaLau(err, cs)
+	if qua {
+		return PhanQuyet{Quyet: QuyetBoCuoc, LyDo: lyDoChoLau(moc)}
 	}
 
 	// Luật 2 — HẾT LƯỢT.
@@ -218,6 +219,17 @@ func (e *LoiBoCuoc) Error() string {
 }
 
 func (e *LoiBoCuoc) Unwrap() error { return e.Cuoi }
+
+// Retryable luôn FALSE, và đó là cách lỗi này nói chuyện được với vòng lặp của agentcore.
+//
+// `agentcore.callLLMWithRetry` hỏi đúng một câu trước khi thử lại: `isRetryable(err)`, cài bằng
+// `errors.As` nên nó bắt lớp NGOÀI CÙNG của chuỗi lỗi. Khai false ở đây là lối duy nhất để dừng
+// vòng lặp ấy mà không phải chẻ nhánh agentcore — xem `ChanChoLau` trong cholau.go.
+//
+// Không mất gì: `Unwrap` vẫn trả lỗi gốc, nên `errors.Is` với các sentinel provider vẫn thấy
+// đủ, và `IsFailoverEligible` (phân loại bằng văn bản + sentinel, không hỏi `Retryable`) cho ra
+// đúng kết quả như trước.
+func (e *LoiBoCuoc) Retryable() bool { return false }
 
 // Generator là giao diện tối thiểu mà hạt nhân cần ở một model.
 type Generator interface {

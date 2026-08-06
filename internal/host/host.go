@@ -1320,9 +1320,33 @@ func deriveStatusLabel(s UISnapshot) string {
 
 // ── 模型管理 ──
 
+// napLaiNhaCungCap kéo danh mục nhà cung cấp mới nhất từ tệp cấu hình vào engine ĐANG CHẠY.
+//
+// Engine giữ ảnh chụp cấu hình từ lúc `host.New`, và với hầu hết mọi thứ thì đó là điều đúng —
+// một lượt chạy không nên đổi model giữa chừng vì ai đó vừa sửa tệp. Nhưng DANH MỤC nhà cung
+// cấp không phải cấu hình đang có hiệu lực, nó là danh sách những nơi CÓ THỂ gọi tới. Đóng băng
+// nó làm hỏng đúng một việc người dùng hay làm: thêm nhà cung cấp rồi chuyển cuốn đang chạy
+// sang đó — ô chọn không có nó, và nếu có thì `Swap` cũng chết vì `ms.config` chưa biết nó.
+//
+// Người gọi phải đang giữ `h.mu`.
+func (h *Host) napLaiNhaCungCap() {
+	cfg, err := bootstrap.LoadConfig()
+	if err != nil || len(cfg.Providers) == 0 {
+		return
+	}
+	if h.cfg.Providers == nil {
+		h.cfg.Providers = make(map[string]bootstrap.ProviderConfig, len(cfg.Providers))
+	}
+	for ten, pc := range cfg.Providers {
+		h.cfg.Providers[ten] = pc
+	}
+	h.models.CapNhatNhaCungCap(cfg.Providers)
+}
+
 func (h *Host) ConfiguredProviders() []string {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	h.napLaiNhaCungCap()
 	providers := make([]string, 0, len(h.cfg.Providers))
 	for name := range h.cfg.Providers {
 		providers = append(providers, name)
@@ -1334,6 +1358,7 @@ func (h *Host) ConfiguredProviders() []string {
 func (h *Host) ConfiguredModels(provider string) []string {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	h.napLaiNhaCungCap()
 	return h.cfg.CandidateModels(provider)
 }
 
@@ -1347,6 +1372,9 @@ func (h *Host) SwitchModel(role, provider, model string) error {
 	if provider == "" || model == "" {
 		return fmt.Errorf("provider and model are required")
 	}
+	// Nạp lại TRƯỚC khi tra: người dùng vừa thêm nhà cung cấp ở màn Cấu hình rồi sang đây đổi
+	// ngay là đường đi thường gặp nhất, và không có dòng này thì nó chết ở `ms.config`.
+	h.napLaiNhaCungCap()
 	if err := h.models.Swap(role, provider, model); err != nil {
 		return err
 	}

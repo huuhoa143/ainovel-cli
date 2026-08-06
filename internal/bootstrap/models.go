@@ -13,6 +13,7 @@ import (
 	"github.com/voocel/ainovel-cli/internal/errs"
 	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/llmcontract"
+	"github.com/voocel/ainovel-cli/internal/llmretry"
 )
 
 // FailoverEvent 表示一次显式 provider 切换。
@@ -56,6 +57,38 @@ func NewSwappableModel(provider, name string, model agentcore.ChatModel, jsonSch
 		name:           name,
 		jsonSchema:     jsonSchema,
 	}
+}
+
+// Generate và GenerateStream ghi đè bản nhúng CHỈ để cắm luật "cửa còn đóng lâu thì thôi gõ".
+//
+// # Vì sao ở đây, không phải ở `ForRole`
+//
+// Mọi vai đều cầm một `*SwappableModel` (`ForRole` trả nó; `failoverModel.currentTarget` cũng
+// trỏ vào chính nó), nên đây là nút cổ chai thật của cả bốn vai. Quan trọng hơn: kiểu này ĐÃ
+// cài đủ sáu giao diện năng lực tùy chọn mà tầng trên ép kiểu (`Capabilities`, `Info`,
+// `ProviderName`, `ModelName`, `StructuredOutputFacts`, `JSONSchemaOverride`). Bọc một kiểu
+// MỚI quanh `ForRole` sẽ che hết chúng — vẫn biên dịch, chỉ là độ suy luận và giao thức đầu ra
+// có cấu trúc lặng lẽ rơi về mặc định. Thêm hai phương thức vào kiểu sẵn có thì không có gì
+// để che.
+//
+// Luật nằm trong `llmretry`, không phải ở đây: xem `ChanChoLau` cho lý do đầy đủ và cho phần
+// đo được của ca "Thử lại (6/7)".
+func (m *SwappableModel) Generate(ctx context.Context, messages []agentcore.Message, tools []agentcore.ToolSpec, opts ...agentcore.CallOption) (*agentcore.LLMResponse, error) {
+	resp, err := m.SwappableModel.Generate(ctx, messages, tools, opts...)
+	if err != nil {
+		return nil, llmretry.ChanChoLau(err, llmretry.ChinhSach{})
+	}
+	return resp, nil
+}
+
+func (m *SwappableModel) GenerateStream(ctx context.Context, messages []agentcore.Message, tools []agentcore.ToolSpec, opts ...agentcore.CallOption) (<-chan agentcore.StreamEvent, error) {
+	ch, err := m.SwappableModel.GenerateStream(ctx, messages, tools, opts...)
+	if err != nil {
+		return nil, llmretry.ChanChoLau(err, llmretry.ChinhSach{})
+	}
+	// Lọc CẢ dòng sự kiện, không chỉ lỗi trả ngay: `callLLMStream` biến `StreamEventError`
+	// thành lỗi của lượt gọi, và đó là đường mà 429 của Writer đi qua.
+	return llmretry.LocChoLau(ctx, ch, llmretry.ChinhSach{}), nil
 }
 
 func (m *SwappableModel) ProviderName() string {
@@ -238,6 +271,33 @@ func (ms *ModelSet) Swap(role, provider, model string) error {
 	return nil
 }
 
+// CapNhatNhaCungCap trộn danh mục nhà cung cấp mới đọc từ đĩa vào một ModelSet ĐANG CHẠY.
+//
+// # Vì sao cần
+//
+// `Swap` tra `ms.config.Providers` để dựng model mới, mà `ms.config` là ảnh chụp lúc engine
+// được mở. Thêm một nhà cung cấp trong studio rồi đổi model cho cuốn đang chạy vì thế chết với
+// `provider %q is not configured` — người dùng vừa lưu nó xong và nhìn thấy nó trong danh sách.
+//
+// # Vì sao TRỘN chứ không thay
+//
+// Một nhà cung cấp bị xóa khỏi tệp vẫn có thể đang được engine này dùng dở. Thay trắng danh mục
+// sẽ rút thảm dưới chân một lượt chạy đang sống; trộn thì chỉ thêm đường ra, không cắt đường
+// nào đang đi.
+func (ms *ModelSet) CapNhatNhaCungCap(providers map[string]ProviderConfig) {
+	if len(providers) == 0 {
+		return
+	}
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+	if ms.config.Providers == nil {
+		ms.config.Providers = make(map[string]ProviderConfig, len(providers))
+	}
+	for ten, pc := range providers {
+		ms.config.Providers[ten] = pc
+	}
+}
+
 // ResolveContextWindow 使用 ModelSet 的最新配置解析窗口，供运行时热切换后的
 // ContextManagerFactory 使用，避免捕获启动时的 Config 副本。
 func (ms *ModelSet) ResolveContextWindow(provider, model string) (int, ContextWindowSource) {
@@ -416,7 +476,14 @@ func (m *failoverModel) Generate(ctx context.Context, messages []agentcore.Messa
 		return nil, err
 	}
 	m.reportFailover(current, next, reason, err)
-	return next.model.Generate(ctx, messages, tools, opts...)
+	// Nhà cung cấp dự phòng là model THÔ (`modelTarget.model` dựng thẳng từ cấu hình), không
+	// phải `*SwappableModel`, nên luật không tự đi theo — phải chặn ở chính lối ra này. Lượt
+	// chính thì đã qua `SwappableModel` rồi, và `ChanChoLau` lũy đẳng nên chặn lại vô hại.
+	resp, err = next.model.Generate(ctx, messages, tools, opts...)
+	if err != nil {
+		return nil, llmretry.ChanChoLau(err, llmretry.ChinhSach{})
+	}
+	return resp, nil
 }
 
 func (m *failoverModel) GenerateStream(ctx context.Context, messages []agentcore.Message, tools []agentcore.ToolSpec, opts ...agentcore.CallOption) (<-chan agentcore.StreamEvent, error) {
@@ -439,7 +506,11 @@ func (m *failoverModel) GenerateStream(ctx context.Context, messages []agentcore
 					goto retry
 				}
 			}
-			out <- agentcore.StreamEvent{Type: agentcore.StreamEventError, Err: err}
+			// Cùng lý do như ở `Generate`: lối ra này mang được lỗi của một model dự phòng thô.
+			out <- agentcore.StreamEvent{
+				Type: agentcore.StreamEventError,
+				Err:  llmretry.ChanChoLau(err, llmretry.ChinhSach{}),
+			}
 			return
 		}
 		if resp != nil {
@@ -463,6 +534,7 @@ func (m *failoverModel) GenerateStream(ctx context.Context, messages []agentcore
 						goto retry
 					}
 				}
+				ev.Err = llmretry.ChanChoLau(ev.Err, llmretry.ChinhSach{})
 				out <- ev
 				return
 			case agentcore.StreamEventDone:
