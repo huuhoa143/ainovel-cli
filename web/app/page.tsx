@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+import { CHU, GIAI_THICH } from '@/lib/nhan';
+
 import { BuongLai } from '@/components/BuongLai';
 import { CaiDat } from '@/components/CaiDat';
 import { ChiPhiXuong } from '@/components/ChiPhiXuong';
@@ -133,6 +135,20 @@ export default function Trang() {
        đáy — một vùng giao diện không nói gì, đúng thứ mà `khung.rong` đã tồn tại để tránh ở
        cột inspector. */
     <div className={`khung${coInsp ? '' : ' rong'}${theoTacPham ? '' : ' khongTrans'}`}>
+      {/* Dải báo bản dựng đứng TRÊN CÙNG, ngoài mọi khu: nó nói về chính cái tab, không về
+          tác phẩm nào — và nó phải thấy được dù người dùng đang ở bề mặt nào. */}
+      {s.banDungDaDoi ? (
+        <div className="daiBanDung" role="status">
+          <span className="ky" aria-hidden="true">
+            ■
+          </span>
+          <span>{GIAI_THICH.banDungDaDoi}</span>
+          <button type="button" onClick={() => window.location.reload()}>
+            {CHU.taiLaiNgay}
+          </button>
+        </div>
+      ) : null}
+
       <ThanhTren
         workshop={s.workshop}
         dangXem={sachDangXem}

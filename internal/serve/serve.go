@@ -281,12 +281,38 @@ func (s *server) bookDir(id string) (string, error) {
 	return dir, nil
 }
 
+// maBanDung nhận diện bản dựng giao diện đang nằm trên đĩa.
+//
+// Đọc tên thư mục `_next/static/<id>` mà `next build` sinh mới ở mỗi lượt dựng. Không có nó
+// (chạy chế độ chỉ-API, hoặc một bộ dựng khác) thì lùi về dấu vân của `index.html` — kích
+// thước cộng mốc sửa đổi, đủ để phát hiện "tệp đã đổi" mà không phải băm cả thư mục.
+//
+// Trả rỗng khi không có thư mục web: lúc đó giao diện không do ta phục vụ, và một mã bịa sẽ
+// làm mọi tab báo "bản dựng đã đổi" ở lần đầu tiên.
+func (s *server) maBanDung() string {
+	if s.webDir == "" {
+		return ""
+	}
+	if muc, err := os.ReadDir(filepath.Join(s.webDir, "_next", "static")); err == nil {
+		for _, m := range muc {
+			if m.IsDir() && m.Name() != "chunks" && m.Name() != "media" {
+				return m.Name()
+			}
+		}
+	}
+	if st, err := os.Stat(filepath.Join(s.webDir, "index.html")); err == nil {
+		return fmt.Sprintf("%d-%d", st.Size(), st.ModTime().UnixNano())
+	}
+	return ""
+}
+
 func (s *server) handleWorkshop(w http.ResponseWriter, r *http.Request) {
 	ws, err := scanWorkshop(s.root, s.onlyBook)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, err)
 		return
 	}
+	ws.WebBuild = s.maBanDung()
 	// EngineOpen cần s.may — một trường của server, không phải của store — nên nó được đặt
 	// ở đây chứ không trong scanWorkshop/bookFrom, cùng lý lẽ với Capabilities.Steer ở
 	// handleStudio. `s.may == nil` (bản chỉ-đọc) thì mọi cuốn đều engine_open=false, đúng

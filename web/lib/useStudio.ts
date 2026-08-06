@@ -186,6 +186,16 @@ export interface Studio {
    */
   lamMoi: () => void;
   taiLai: () => void;
+  /**
+   * Bản dựng giao diện trên đĩa đã KHÁC bản mà tab này đang chạy.
+   *
+   * `next build` thay toàn bộ tệp chunk. JS đã tải vẫn chạy — nên dòng sự kiện vẫn chảy —
+   * nhưng mảnh nào nạp về sau sẽ nhận 404, và bề mặt hỏng nửa vời trong im lặng. Người dùng
+   * đã phải tự đoán ra rằng cần F5 ("hơi bị phiền" — nguyên văn).
+   *
+   * Không tự tải lại: có thể họ đang đọc dở hoặc đang gõ can thiệp. Chỉ nói ra.
+   */
+  banDungDaDoi: boolean;
 }
 
 /** Đọc/ghi tác phẩm đang xem vào query string, để tải lại trang không mất chỗ. */
@@ -288,6 +298,7 @@ export function useStudio(): Studio {
       .then((ws) => {
         if (huy) return;
         setWorkshop(ws);
+        soBanDung(ws);
         const muon = tacPhamTuUrl();
         const co = ws.books.find((b) => b.id === muon);
         const chon = co?.id ?? ws.books[0]?.id;
@@ -355,13 +366,42 @@ export function useStudio(): Studio {
    *
    * Lỗi im lặng: không có gì đỏ, chỉ có một danh sách nói thiếu.
    */
+  /**
+   * Mã bản dựng THẤY LẦN ĐẦU trong phiên xem này — mốc để so.
+   *
+   * Ref chứ không state: nó chỉ là mốc, và một `setState` ở đây sẽ vẽ lại cả bề mặt ở mỗi
+   * nhịp nền mà không đổi gì trên màn hình.
+   *
+   * Không lấy mã lúc BUILD nhúng vào bó JS: làm thế thì phải bơm biến lúc dựng, và một bản
+   * dựng lỗi cấu hình sẽ báo "đã đổi" vĩnh viễn. Mốc "cái đầu tiên tab này thấy" luôn đúng
+   * mà không cần ai nhúng gì.
+   */
+  const banDungRef = useRef<string | undefined>(undefined);
+  const [banDungDaDoi, setBanDungDaDoi] = useState(false);
+
+  /**
+   * So mã bản dựng của MỌI lượt đọc xưởng — cả lần nạp đầu lẫn nhịp nền.
+   *
+   * Một hàm, hai chỗ gọi. Bản đầu chỉ so trong `napLaiXuong`, và lượt nạp đầu (effect §1) đi
+   * đường khác — nên mốc chỉ được đặt ở nhịp nền, và một tab mở đúng lúc bản dựng vừa đổi có
+   * thể bỏ lỡ. Bài kiểm "mã đổi giữa hai nhịp" bắt đúng lỗ đó.
+   */
+  const soBanDung = useCallback((ws: Workshop) => {
+    const ma = ws.web_build;
+    if (!ma) return;
+    if (banDungRef.current === undefined) banDungRef.current = ma;
+    else if (banDungRef.current !== ma) setBanDungDaDoi(true);
+  }, []);
+
   const napLaiXuong = useCallback(async () => {
     try {
-      setWorkshop(await layWorkshop());
+      const ws = await layWorkshop();
+      setWorkshop(ws);
+      soBanDung(ws);
     } catch {
       // Danh sách cũ còn dùng được; một lần đọc lỗi không được xóa bề mặt đang xem.
     }
-  }, []);
+  }, [soBanDung]);
 
   /**
    * Nạp lại HỒ SƠ truyện (số nhân vật, luật thế giới, phục bút) cho cuốn đang xem.
@@ -736,6 +776,7 @@ export function useStudio(): Studio {
       docChuong,
       lamMoi,
       taiLai,
+      banDungDaDoi,
     }),
     [
       workshop,
@@ -759,6 +800,7 @@ export function useStudio(): Studio {
       docChuong,
       lamMoi,
       taiLai,
+      banDungDaDoi,
     ],
   );
 }

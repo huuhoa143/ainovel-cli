@@ -89,6 +89,12 @@ export interface Workshop {
   root: string;
   /** Server luôn trả mảng; rỗng = xưởng chưa có tác phẩm nào. */
   books: Book[];
+  /**
+   * Mã bản dựng giao diện mà server ĐANG phục vụ.
+   *
+   * Đổi nghĩa là tệp JS trên đĩa đã bị thay dưới chân tab này. Vắng mặt ở bản chỉ-API.
+   */
+  web_build?: string;
 }
 
 /**

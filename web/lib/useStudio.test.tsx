@@ -285,3 +285,57 @@ test('tab ẩn thì nhịp nền không gọi gì', async () => {
     vi.useRealTimers();
   }
 });
+
+/* ── bản dựng đổi dưới chân tab ─────────────────────────────────────────── */
+
+/**
+ * `next build` thay toàn bộ tệp chunk. JS đã tải vẫn chạy — dòng sự kiện vẫn chảy — nhưng mảnh
+ * nào nạp VỀ SAU thì nhận 404, và bề mặt hỏng nửa vời TRONG IM LẶNG.
+ *
+ * ĐO ĐƯỢC trên máy người dùng: khu "Máy đang nói" trống suốt trong khi server phát 1.182
+ * `stream_delta` và một tab mới hiển thị chúng bình thường. Họ phải tự đoán ra là cần F5 —
+ * nguyên văn: "phải F5 thì mới thấy được… hơi bị phiền".
+ *
+ * Không tự tải lại hộ: có thể họ đang đọc dở hoặc đang gõ can thiệp.
+ */
+test('mã bản dựng đổi giữa hai nhịp thì báo ra', async () => {
+  const r = await mo('/', { ...xuong(2), web_build: 'cu' });
+  expect(r.result.current.banDungDaDoi, 'báo ngay lần đầu — chưa có gì để so').toBe(false);
+
+  LAY_WORKSHOP.mockResolvedValue({ ...xuong(2), web_build: 'moi' });
+  await act(async () => {
+    await r.result.current.taiLai();
+  });
+  await waitFor(() => expect(r.result.current.banDungDaDoi).toBe(true));
+});
+
+test('cùng mã bản dựng thì KHÔNG báo — một dải thừa là nhiễu', async () => {
+  const r = await mo('/', { ...xuong(2), web_build: 'cu' });
+  LAY_WORKSHOP.mockResolvedValue({ ...xuong(2), web_build: 'cu' });
+  await act(async () => {
+    await r.result.current.taiLai();
+  });
+  expect(r.result.current.banDungDaDoi).toBe(false);
+});
+
+test('server không khai mã (bản chỉ-API) thì không bao giờ báo', async () => {
+  const r = await mo('/', xuong(2));
+  LAY_WORKSHOP.mockResolvedValue(xuong(2));
+  await act(async () => {
+    await r.result.current.taiLai();
+  });
+  expect(r.result.current.banDungDaDoi).toBe(false);
+});
+
+test('mã RỖNG nghĩa là KHÔNG BIẾT, không phải đã đổi', async () => {
+  // `maBanDung()` trả rỗng khi không có thư mục web — chẳng hạn server được khởi động lại ở
+  // chế độ chỉ-API. Coi rỗng là "đã đổi" sẽ bắn dải cho một tab hoàn toàn lành, và người dùng
+  // tải lại để nhận đúng bản họ đang chạy. Một cảnh báo sai làm hỏng niềm tin vào mọi cảnh
+  // báo sau nó.
+  const r = await mo('/', { ...xuong(2), web_build: 'co-that' });
+  LAY_WORKSHOP.mockResolvedValue({ ...xuong(2), web_build: '' });
+  await act(async () => {
+    await r.result.current.taiLai();
+  });
+  expect(r.result.current.banDungDaDoi, 'mã rỗng bị đọc thành một bản dựng khác').toBe(false);
+});

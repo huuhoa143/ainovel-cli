@@ -2967,6 +2967,46 @@ body.dangKeoNgang * {
   font-size: 10.5px;
 }
 
+/* Dải báo bản dựng cũ — đứng trên cùng, ngoài lưới, chiếm cả bề ngang.
+   Tông amber như mọi cảnh báo khác của hệ (`.vphacap`), nhưng đây là dải toàn trang chứ
+   không phải một dòng trong khối, nên nó tự khai nền và khoảng đệm. */
+.daiBanDung {
+  /* NGOÀI lưới `.khung`.
+     `.khung` là grid 3×3 với vùng đặt tên cố định, và nó có ba biến thể (mặc định, `.rong`,
+     và media ≤1240px). Một phần tử con thứ tư bị tự đặt vào ô trống giữa màn — ĐO ĐƯỢC:
+     `top=401, cao=319`. Sửa cả ba biến thể template cho một dải hiếm khi hiện là trả giá
+     cao ở nơi dễ trôi nhất; `fixed` thì đúng ở mọi biến thể mà không đụng vào lưới.
+
+     Phủ lên thanh trên chứ không đẩy nó xuống: đây là trạng thái CẦN HÀNH ĐỘNG và sống rất
+     ngắn (bấm Tải lại là xong), nên che 44px trong chốc lát rẻ hơn là làm cả bố cục nhảy. */
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  background: color-mix(in oklch, var(--amber) 14%, var(--panel));
+  border-bottom: 1px solid color-mix(in oklch, var(--amber) 35%, var(--line));
+  font: 400 12.5px/1.5 var(--ui);
+  color: var(--ink);
+}
+.daiBanDung .ky {
+  color: var(--amber);
+  font-size: 9px;
+}
+.daiBanDung button {
+  margin-left: auto;
+  flex: none;
+  font: 500 12px var(--ui);
+  padding: 5px 14px;
+  border-radius: 4px;
+  border: 1px solid var(--amber);
+  background: var(--amber);
+  color: var(--tren-mau);
+  cursor: pointer;
+}
+
 .deNho {
   font: 500 11px/1.4 var(--ui);
   color: var(--ink-3);

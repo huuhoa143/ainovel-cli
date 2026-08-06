@@ -779,6 +779,7 @@ export const CHU = {
   /** Nhãn hành động khi các vai đang trỏ vào model mà nhà cung cấp của chúng không khai. */
   suaCaBonVai: (ncc: string) => `Sửa các vai theo ${ncc}`,
   ghiLaiCuaSo: 'Ghi lại cửa sổ',
+  taiLaiNgay: 'Tải lại',
   luu: 'Lưu',
   dangLuu: 'Đang lưu…',
   daLuu: 'Đã lưu',
@@ -1518,6 +1519,20 @@ export const GIAI_THICH = {
    * `handleLietKeModel` chặn ca này ở server với đúng câu ấy, nên nút vẫn an toàn nếu bật.
    * Nhưng một nút bấm được rồi luôn báo lỗi là một nút nói dối; tắt nó kèm lý do thì không.
    */
+  /**
+   * Bản dựng giao diện trên đĩa đã khác bản tab này đang chạy.
+   *
+   * `next build` thay toàn bộ tệp chunk. JS đã tải vẫn chạy — dòng sự kiện vẫn chảy — nhưng
+   * mảnh nào nạp VỀ SAU thì nhận 404, và bề mặt hỏng nửa vời trong im lặng. Người dùng phải
+   * tự đoán ra rằng cần F5; lời nguyên văn: "phải F5 thì mới thấy được… hơi bị phiền".
+   *
+   * Nói ra HẬU QUẢ chứ không chỉ nói "có bản mới": "có bản mới" đọc như một lời mời nâng cấp
+   * có thể để sau, còn sự thật là tab này đã hỏng một nửa rồi.
+   */
+  banDungDaDoi:
+    'Giao diện đã được dựng lại — tab này đang chạy bản cũ và có thể thiếu chữ hoặc kẹt ở ' +
+    'vài chỗ. Tải lại để dùng bản mới; lượt chạy của engine không bị ảnh hưởng.',
+
   nccChuaCoKhoaDeKiem: 'Lưu khóa API cho nhà cung cấp này rồi mới kiểm tra được.',
 
   /**
