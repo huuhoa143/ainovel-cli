@@ -1482,6 +1482,24 @@ export const GIAI_THICH = {
   nccChuaCoKhoaDeKiem: 'Lưu khóa API cho nhà cung cấp này rồi mới kiểm tra được.',
 
   /**
+   * Thêm một nhà cung cấp TRÙNG TÊN với thẻ đã có.
+   *
+   * ĐO ĐƯỢC trên máy người dùng, và đây là hỏng câm nguy hiểm nhất của bề mặt này: tên nhà
+   * cung cấp là KHÓA trong `cfg.Providers`, nên lưu một tên đã tồn tại ghi đè thẳng lên thẻ cũ
+   * — mất địa chỉ gốc, mất khóa API, mất cả danh sách model. Trên màn hình thì không có thẻ
+   * mới nào hiện ra, nên nó đọc ra là "bấm Lưu chả thấy gì".
+   *
+   * Hư hại còn kéo dài: các vai vẫn ghim vào tên model của nhà cung cấp CŨ, mà model đó không
+   * còn trong danh sách nữa — lượt chạy tới chết ở Arbiter với một thông báo nói về khóa API.
+   *
+   * Chỉ đường sang nút Sửa thay vì chỉ nói "trùng": người dùng gõ trùng tên hầu như luôn vì họ
+   * ĐANG MUỐN đổi cái cũ (gateway riêng nói giao thức openai nên họ đặt luôn tên `openai`).
+   */
+  nccTrungTen: (ten: string) =>
+    `Đã có nhà cung cấp tên "${ten}". Muốn đổi nó thì bấm Sửa trên thẻ đó — lưu đè ở đây sẽ ` +
+    `xóa mất khóa và danh sách model của nó. Muốn thêm một cái riêng thì đặt tên khác.`,
+
+  /**
    * Xóa nhà cung cấp còn vai ghim vào nó.
    *
    * Nói ra HỆ QUẢ đã được xử lý, không hỏi "bạn có chắc không": lượt xóa tự gỡ những vai đó về

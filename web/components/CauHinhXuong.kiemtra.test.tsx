@@ -23,10 +23,13 @@ import type { CauHinhDoc } from '@/lib/types';
 
 const LIET_KE = vi.fn<(p: string) => Promise<{ provider: string; models: string[]; count: number }>>();
 
+const LUU_CAU_HINH = vi.fn(() => Promise.resolve({ saved: true, path: '', reopen_to_apply: [] }));
+
 vi.mock('@/lib/api', async (goc) => ({
   ...(await goc<typeof import('@/lib/api')>()),
   layCauHinh: () => Promise.resolve(CAU_HINH),
   lietKeModel: (p: string) => LIET_KE(p),
+  luuCauHinh: (...a: unknown[]) => LUU_CAU_HINH(...(a as [])),
 }));
 
 const CAU_HINH: CauHinhDoc = {
@@ -101,6 +104,7 @@ function nutKiemCua(ten: string): HTMLButtonElement {
 
 beforeEach(async () => {
   LIET_KE.mockReset();
+  LUU_CAU_HINH.mockClear();
   render(<CauHinhXuong />);
   await waitFor(() => expect(document.querySelectorAll('li.nccMuc').length).toBe(3));
 });
@@ -214,4 +218,56 @@ test('chưa lưu khóa thì nút tắt — không mời bấm để nhận một
     'nút Kiểm tra bật khi chưa có khóa; server sẽ từ chối và người dùng đọc thành "nhà cung cấp hỏng"',
   ).toBe(true);
   expect(nutKiemCua('kiraai').disabled).toBe(false);
+});
+
+/* ── thêm nhà cung cấp trùng tên ────────────────────────────────────────── */
+
+/**
+ * ĐO ĐƯỢC trên máy người dùng: thêm một nhà cung cấp trùng tên GHI ĐÈ thẳng lên thẻ cũ — mất
+ * địa chỉ gốc, mất khóa API, mất danh sách model — và không thẻ mới nào hiện ra, nên nó đọc
+ * ra là "bấm Lưu chả thấy gì". Người dùng thử lại mấy lần, mỗi lần lại phá thêm.
+ *
+ * Tên nhà cung cấp là KHÓA trong `cfg.Providers`, nên đây không phải chuyện nhắc nhở cho đẹp:
+ * không có hàng rào thì một cú gõ trùng tên là một lượt xóa dữ liệu không hoàn tác được.
+ */
+function moFormThemMoi() {
+  fireEvent.click(screen.getByRole('button', { name: /Thêm nhà cung cấp/ }));
+  return document.querySelector('.nccMuc.dangSua form') as HTMLFormElement;
+}
+
+function goTen(form: HTMLFormElement, v: string) {
+  fireEvent.change(form.querySelector('input[placeholder="openrouter"]')!, { target: { value: v } });
+}
+
+test('gõ trùng tên một thẻ đã có thì KHÔNG lưu đè được', () => {
+  const form = moFormThemMoi();
+  goTen(form, 'openai');
+
+  const luu = Array.from(form.querySelectorAll('button')).find((b) => /^Lưu/.test(b.textContent ?? ''))!;
+  expect(
+    (luu as HTMLButtonElement).disabled,
+    'nút Lưu còn bấm được với tên trùng — một cú bấm là xóa mất khóa và model của thẻ cũ',
+  ).toBe(true);
+  expect(form.textContent, 'không nói ra vì sao, người dùng chỉ thấy nút chết').toMatch(
+    /Đã có nhà cung cấp tên "openai"/,
+  );
+  expect(form.textContent, 'không chỉ đường sang nút Sửa').toMatch(/bấm Sửa/);
+});
+
+test('Enter cũng không lách qua được hàng rào trùng tên', () => {
+  LIET_KE.mockResolvedValue({ provider: 'x', models: [], count: 0 });
+  const form = moFormThemMoi();
+  goTen(form, 'openai');
+
+  fireEvent.submit(form);
+  expect(LUU_CAU_HINH, 'submit bằng Enter vẫn gửi lượt ghi đè').not.toHaveBeenCalled();
+});
+
+test('tên chưa ai dùng thì lưu được bình thường', () => {
+  const form = moFormThemMoi();
+  goTen(form, 'mot-cai-ten-khac');
+
+  const luu = Array.from(form.querySelectorAll('button')).find((b) => /^Lưu/.test(b.textContent ?? ''))!;
+  expect((luu as HTMLButtonElement).disabled).toBe(false);
+  expect(form.textContent).not.toMatch(/Đã có nhà cung cấp tên/);
 });

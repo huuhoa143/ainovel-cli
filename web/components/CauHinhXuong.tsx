@@ -436,6 +436,14 @@ function FormNhaCungCap({
   const [dangGui, datDangGui] = useState(false);
   const [loi, datLoi] = useState<string | null>(null);
 
+  /**
+   * Tên đã có thẻ khác chiếm — CHỈ xét ở chế độ thêm mới.
+   *
+   * Ở chế độ sửa, `ten` chính là tên thẻ đang sửa nên nó luôn "trùng" với chính nó; ô tên cũng
+   * `readOnly` ở đó, nên không có gì để chặn.
+   */
+  const trungTen = !cu && du.providers.some((x) => x.name === ten.trim());
+
   const dungMau = (tenMau: string) => {
     const m = du.presets.find((p) => p.label === tenMau);
     if (!m) return;
@@ -445,6 +453,8 @@ function FormNhaCungCap({
   };
 
   const gui = () => {
+    // Hàng rào thứ hai, sau `disabled` của nút: biểu mẫu còn submit được bằng phím Enter.
+    if (trungTen) return;
     const dsModel = models
       .split(',')
       .map((s) => s.trim())
@@ -554,12 +564,20 @@ function FormNhaCungCap({
         />
       </label>
 
+      {trungTen ? (
+        <p className="vphacap">
+          <span className="ky" aria-hidden="true">
+            ■
+          </span>
+          <span>{GIAI_THICH.nccTrungTen(ten.trim())}</span>
+        </p>
+      ) : null}
       {loi ? <p className="loiDoc">{loi}</p> : null}
 
       <div className="nccNut">
         {/* `disabled` khi đang gửi là bắt buộc, không phải trang trí: bấm hai lần ở đây
             là hai lượt ghi cấu hình chồng nhau. */}
-        <button type="submit" className="nutChinh" disabled={dangGui || !ten.trim()}>
+        <button type="submit" className="nutChinh" disabled={dangGui || !ten.trim() || trungTen}>
           {dangGui ? CHU.dangLuu : CHU.luu}
         </button>
         <button type="button" className="nutPhu" onClick={onHuy} disabled={dangGui}>
