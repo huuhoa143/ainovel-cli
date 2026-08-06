@@ -739,6 +739,7 @@ export const CHU = {
   chuyenCaDay: 'Chuyển cả dây chuyền',
   doiMacDinh: 'Đổi mặc định',
   chiDoiMacDinh: 'Chỉ đổi mặc định',
+  capNhatModel: 'Cập nhật model',
   dangChuyen: 'Đang chuyển…',
   // `vai: 'Vai'` đã có sẵn ở khối nhân vật và mang đúng nghĩa cần ở đây — khai lại là hai
   // chuỗi cho một nhãn, và `tsc` bắt ngay vì object literal không cho trùng khóa.
@@ -766,7 +767,17 @@ export const CHU = {
   loaiGiaoThuc: 'Giao thức',
   diaChiGoc: 'Địa chỉ gốc',
   khoaApi: 'Khóa API',
-  danhSachModel: 'Model',
+  /**
+   * Nhãn của `providers[].models` — DANH MỤC, không phải lựa chọn đang có hiệu lực.
+   *
+   * Chuỗi cũ là 'Model' (số ít), và nó nói dối đúng kiểu "khóa còn dùng được": người dùng đọc
+   * "Model: cx/gpt-5.6-luna" trên thẻ thành "nhà cung cấp này ĐANG dùng model này", sửa nó,
+   * rồi hỏi vì sao bốn vai không đổi theo. Sự thật là trường này chỉ nạp gợi ý vào ô chọn;
+   * model có hiệu lực nằm ở dải kênh vai bên dưới.
+   */
+  danhSachModel: 'Danh sách model',
+  /** Nhãn hành động khi các vai đang trỏ vào model mà nhà cung cấp của chúng không khai. */
+  suaCaBonVai: (ncc: string) => `Sửa các vai theo ${ncc}`,
   luu: 'Lưu',
   dangLuu: 'Đang lưu…',
   daLuu: 'Đã lưu',
@@ -1530,6 +1541,14 @@ export const GIAI_THICH = {
    * ba vai trỏ `openai · cx/gpt-5.5` trong khi `openai` chỉ khai `claude-opus-5`.
    */
   chuyenDe: (ten: string) => `Chuyển sang ${ten}?`,
+  /**
+   * Cùng hộp, nhưng khi MỌI vai đã ở đúng nhà cung cấp rồi thì đây không phải một lượt
+   * "chuyển" — chỉ là cập nhật tên model cho khớp danh mục vừa sửa. Gọi đúng tên việc.
+   */
+  capNhatModelDe: (ten: string) => `Cập nhật model theo ${ten}?`,
+  capNhatModelThan: (ten: string) =>
+    `Các vai dưới đây đang trỏ vào model mà ${ten} không khai. Chọn tên đúng rồi xác nhận — ` +
+    `một lượt ghi cho tất cả.`,
   chuyenThan: (ten: string) =>
     `Tên model chỉ có nghĩa bên trong một nhà cung cấp, nên không phải vai nào cũng mang được ` +
     `tên cũ sang ${ten}. Dòng ghi "chọn lại" là dòng cần mắt bạn — sửa ngay trong bảng.`,

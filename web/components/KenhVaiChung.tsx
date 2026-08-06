@@ -4,8 +4,11 @@ import { useEffect, useState } from 'react';
 
 import { LoiApi, luuCauHinh } from '@/lib/api';
 import { CHU, GIAI_THICH, nhanKenhVai } from '@/lib/nhan';
+import { hieuLucCua } from '@/lib/chuyenNhaCungCap';
 import { type ModelNapVe } from '@/lib/modelNapVe';
 import type { CauHinhDoc } from '@/lib/types';
+
+import { ChuyenNhaCungCap } from './ChuyenNhaCungCap';
 
 /**
  * Model theo vai — MẶC ĐỊNH cho mọi tác phẩm.
@@ -51,10 +54,59 @@ export function KenhVaiChung({
   // "bốn kênh đổi được", và việc kênh đầu ghi vào một trường khác là chuyện của tầng ghi.
   const vaiRieng = du.role_names.filter((v) => v !== 'default');
 
+  /**
+   * Vai đang trỏ vào model mà nhà cung cấp CỦA NÓ không khai.
+   *
+   * Ca thật: người dùng sửa ô "Danh sách model" trên thẻ `9Router` từ `cx/gpt-5.5` sang
+   * `cx/gpt-5.6-luna`, và cả bốn vai đứng im — vì danh mục chỉ nạp gợi ý, còn model có hiệu
+   * lực nằm ở đây. Bốn ô cảnh báo giống hệt nhau hiện lên, không ô nào làm được gì.
+   *
+   * Cảnh báo mà không có lối ra thì chỉ là nhiễu. Nút dưới đây mở CHÍNH bảng đối chiếu đã
+   * dùng cho lượt đổi nhà cung cấp — một hộp, giờ là ba đường vào, vẫn một lượt ghi.
+   */
+  const khaiCua = (p: string) =>
+    (du.providers.find((x) => x.name === p)?.models ?? []).map((m) => m.name);
+  const vaiLac = du.role_names.filter((v) => {
+    const { provider, model } = hieuLucCua(du, v);
+    const khai = khaiCua(provider);
+    return khai.length > 0 && !!model && !khai.includes(model);
+  });
+  const nccLac = vaiLac.length > 0 ? hieuLucCua(du, vaiLac[0]!).provider : '';
+  const [hoiSua, datHoiSua] = useState(false);
+  const [dangGhi, datDangGhi] = useState(false);
+
   return (
     <section className="sect">
       <h2>{CHU.kenhVaiChung}</h2>
       <p className="steerhint">{GIAI_THICH.kenhVaiChungThuaHuong}</p>
+
+      {vaiLac.length > 0 ? (
+        <div className="hangBo">
+          <button type="button" className="nutPhu" onClick={() => datHoiSua(true)}>
+            {CHU.suaCaBonVai(nccLac)}
+          </button>
+        </div>
+      ) : null}
+
+      {hoiSua ? (
+        <ChuyenNhaCungCap
+          du={du}
+          den={{ provider: nccLac, model: khaiCua(nccLac)[0] ?? '' }}
+          dangGui={dangGhi}
+          onHuy={() => datHoiSua(false)}
+          onChiDoiMacDinh={() => datHoiSua(false)}
+          onChuyenCaDay={(than) => {
+            datDangGhi(true);
+            luuCauHinh(than)
+              .catch(() => undefined)
+              .finally(() => {
+                datDangGhi(false);
+                datHoiSua(false);
+                onXong();
+              });
+          }}
+        />
+      ) : null}
 
       {/* Cuốn đang mở engine KHÔNG nhận cấu hình mới cho tới lần mở lại — engine giữ bản
           `cfg` từ lúc `host.New`. Nói ra ở đây, cạnh chỗ bấm lưu, chứ không ở đầu trang:

@@ -441,3 +441,18 @@ test('xác nhận khi không có vai ghim thì KHÔNG đẻ ra mục roles nào'
     'ghim luôn ba vai vốn đang thừa hưởng — từ lần sau chúng thôi đi theo mặc định',
   ).toEqual([]);
 });
+
+/**
+ * Nhãn của `providers[].models` phải đọc ra là DANH MỤC, không phải lựa chọn đang có hiệu lực.
+ *
+ * ĐO ĐƯỢC: chuỗi cũ là 'Model' (số ít). Người dùng đọc "Model: cx/gpt-5.6-luna" trên thẻ thành
+ * "nhà cung cấp này ĐANG dùng model này", sửa nó, rồi hỏi *"Model theo vai cũng thay đổi theo
+ * chứ nhỉ"*. Sự thật là trường này chỉ nạp gợi ý vào ô chọn.
+ *
+ * Cùng lớp lỗi với "khóa còn dùng được": một nhãn hứa rộng hơn thứ trường đó thật sự là.
+ */
+test('thẻ gọi danh mục model là DANH SÁCH, không phải "Model"', () => {
+  const nhan = Array.from(theCua('openai').querySelectorAll('dt')).map((d) => d.textContent);
+  expect(nhan, 'nhãn số ít đọc ra thành "nhà cung cấp này dùng model này"').not.toContain('Model');
+  expect(nhan).toContain('Danh sách model');
+});

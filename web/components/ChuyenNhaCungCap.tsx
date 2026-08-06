@@ -53,27 +53,30 @@ export function ChuyenNhaCungCap({
 
   const khai = (du.providers.find((p) => p.name === den.provider)?.models ?? []).map((m) => m.name);
   const coVaiGhim = dong.some((d) => d.dangGhim);
+  // Mọi vai ĐÃ ở đúng nhà cung cấp đích → đây không phải lượt "chuyển", chỉ là chỉnh tên model
+  // cho khớp danh mục vừa sửa. Cùng bảng, cùng lượt ghi, khác cái tên gọi việc.
+  const chiDoiModel = dong.every((d) => d.tuProvider === den.provider);
 
   return (
     <HopXacNhan
       moRa
-      tieuDe={GIAI_THICH.chuyenDe(den.provider)}
+      tieuDe={chiDoiModel ? GIAI_THICH.capNhatModelDe(den.provider) : GIAI_THICH.chuyenDe(den.provider)}
       /* Không vai nào ĐẶT RIÊNG thì "chuyển cả dây chuyền" và "chỉ đổi mặc định" là CÙNG một
          lượt ghi — mọi vai đang thừa hưởng nên chúng tự đi theo. Gọi nó bằng cái tên lớn hơn
          việc nó làm là hứa quá; và bày hai nút cho một hành động là mời người dùng đi tìm
          khác biệt không có thật. */
-      nhanLam={coVaiGhim ? CHU.chuyenCaDay : CHU.doiMacDinh}
+      nhanLam={chiDoiModel ? CHU.capNhatModel : coVaiGhim ? CHU.chuyenCaDay : CHU.doiMacDinh}
       onLam={() => onChuyenCaDay(thanChuyenCaDay(dong, den.provider))}
       /* Lối ra thứ ba chỉ có nghĩa khi CÓ vai đặt riêng để mà giữ lại. Không có thì hộp này
          chỉ còn là bảng xác nhận của một lượt đổi mặc định bình thường. */
-      nhanPhu={coVaiGhim ? CHU.chiDoiMacDinh : undefined}
-      onPhu={coVaiGhim ? onChiDoiMacDinh : undefined}
+      nhanPhu={!chiDoiModel && coVaiGhim ? CHU.chiDoiMacDinh : undefined}
+      onPhu={!chiDoiModel && coVaiGhim ? onChiDoiMacDinh : undefined}
       onHuy={onHuy}
       dangLam={dangGui}
       nhanDangLam={CHU.dangChuyen}
       than={
         <>
-          <p>{GIAI_THICH.chuyenThan(den.provider)}</p>
+          <p>{chiDoiModel ? GIAI_THICH.capNhatModelThan(den.provider) : GIAI_THICH.chuyenThan(den.provider)}</p>
           <table className="bangChuyen">
             <thead>
               <tr>

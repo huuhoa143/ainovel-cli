@@ -1,5 +1,5 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import { expect, test, vi } from 'vitest';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, expect, test, vi } from 'vitest';
 
 import type { CauHinhDoc } from '@/lib/types';
 
@@ -36,15 +36,23 @@ const CAU_HINH: CauHinhDoc = {
   engine_open: [],
 };
 
+/** Bộ dữ liệu cho lần dựng kế tiếp — mặc định là cấu hình lành. */
+let DU_HIEN: CauHinhDoc;
+
 vi.mock('@/lib/api', async (goc) => ({
   ...(await goc<typeof import('@/lib/api')>()),
-  layCauHinh: () => Promise.resolve(CAU_HINH),
+  layCauHinh: () => Promise.resolve(DU_HIEN ?? CAU_HINH),
 }));
 
 // Dựng qua CHỦ SỞ HỮU dữ liệu, không dựng dải kênh trần: từ bản gộp, `KenhVaiChung` nhận `du`
 // sẵn nên tự nó không còn lần vẽ "chưa có dữ liệu" — tức không còn tái tạo được lỗi #310. Bề
 // mặt thật mới là chỗ có hai lần vẽ, và đó là chỗ phải canh.
 const { CauHinhXuong } = await import('./CauHinhXuong');
+
+beforeEach(() => {
+  cleanup();
+  DU_HIEN = CAU_HINH;
+});
 
 test('vẽ được bốn kênh sau khi cấu hình về — không ném lỗi thứ tự hook', async () => {
   render(<CauHinhXuong onDoiCauHinh={() => {}} />);
@@ -76,4 +84,55 @@ test('thẻ nhà cung cấp nói ĐÚNG vai nào đang gọi tới nó, kể c�
   expect(the('kiraai').textContent).toMatch(/Mặc định, Kiến trúc, Biên tập/);
   expect(the('kiraai').textContent).not.toMatch(/Chấp bút/);
   expect(the('openai').textContent).toMatch(/Chấp bút/);
+});
+
+/* ── vai trỏ vào model nhà cung cấp không khai ──────────────────────────── */
+
+/**
+ * Ca thật: người dùng sửa ô "Danh sách model" trên thẻ `9Router` từ `cx/gpt-5.5` sang
+ * `cx/gpt-5.6-luna`, rồi hỏi *"Model theo vai cũng thay đổi theo chứ nhỉ"*.
+ *
+ * Danh mục chỉ nạp GỢI Ý; model có hiệu lực nằm ở dải kênh. Nên bốn vai đứng im và bốn ô cảnh
+ * báo giống hệt nhau hiện lên — không ô nào làm được gì. Cảnh báo không có lối ra là nhiễu.
+ */
+const LAC: CauHinhDoc = {
+  ...CAU_HINH,
+  provider: '9Router',
+  model: 'cx/gpt-5.5',
+  roles: undefined,
+  providers: [
+    // Thẻ khai `luna`, trong khi mọi vai đang trỏ `cx/gpt-5.5`.
+    { name: '9Router', api_key_set: true, models: [{ name: 'cx/gpt-5.6-luna' }] },
+  ],
+};
+
+test('có vai lạc model thì hiện LỐI RA, không chỉ báo động', async () => {
+  DU_HIEN = LAC;
+  render(<CauHinhXuong onDoiCauHinh={() => {}} />);
+  await waitFor(() => expect(document.querySelector('.kenhDai')).not.toBeNull());
+
+  const nut = screen.getByRole('button', { name: 'Sửa các vai theo 9Router' });
+  expect(nut, 'bốn ô cảnh báo mà không nút nào sửa được').toBeDefined();
+
+  nut.click();
+  await waitFor(() => expect(document.querySelector('dialog')).not.toBeNull());
+  const hop = document.querySelector('dialog')!;
+
+  // Cùng nhà cung cấp thì đây KHÔNG phải lượt "chuyển" — gọi đúng tên việc.
+  expect(hop.querySelector('h2')?.textContent).toBe('Cập nhật model theo 9Router?');
+  expect(
+    Array.from(hop.querySelectorAll('.hopxnNut button')).map((b) => b.textContent),
+    'bày nút "chỉ đổi mặc định" trong khi không có nhà cung cấp nào để đổi',
+  ).toEqual(['Hủy', 'Cập nhật model']);
+  // Và bảng đề xuất đúng tên model mà thẻ đang khai.
+  expect(Array.from(hop.querySelectorAll('tbody input')).map((i) => (i as HTMLInputElement).value)).toEqual(
+    ['cx/gpt-5.6-luna', 'cx/gpt-5.6-luna', 'cx/gpt-5.6-luna', 'cx/gpt-5.6-luna'],
+  );
+});
+
+test('mọi vai khớp danh mục thì KHÔNG hiện nút — một lối ra thừa là nhiễu', async () => {
+  DU_HIEN = { ...LAC, model: 'cx/gpt-5.6-luna' };
+  render(<CauHinhXuong onDoiCauHinh={() => {}} />);
+  await waitFor(() => expect(document.querySelector('.kenhDai')).not.toBeNull());
+  expect(screen.queryByRole('button', { name: /^Sửa các vai theo/ })).toBeNull();
 });
