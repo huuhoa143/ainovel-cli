@@ -32,6 +32,8 @@ import { LoiApi, lietKeModel } from './api';
 export function useModelNapVe() {
   const [theoNcc, datTheoNcc] = useState<Record<string, string[]>>({});
   const [loiTheoNcc, datLoiTheoNcc] = useState<Record<string, string>>({});
+  // Cửa sổ ngữ cảnh nhà cung cấp tự khai, nhớ theo cùng khóa với danh sách model.
+  const [cuaTheoNcc, datCuaTheoNcc] = useState<Record<string, Record<string, number>>>({});
   const [dangNap, datDangNap] = useState<Record<string, true>>({});
   // Cờ đang-bay đọc bằng ref, KHÔNG bằng state: hai cú bấm liên tiếp trên cùng một nút xảy ra
   // trước khi React vẽ lại, nên đọc state ở đây sẽ thấy giá trị cũ và bắn hai lượt gọi.
@@ -48,7 +50,10 @@ export function useModelNapVe() {
       return con;
     });
     lietKeModel(provider)
-      .then((r) => datTheoNcc((cu) => ({ ...cu, [provider]: r.models })))
+      .then((r) => {
+        datTheoNcc((cu) => ({ ...cu, [provider]: r.models }));
+        if (r.windows) datCuaTheoNcc((cu) => ({ ...cu, [provider]: r.windows! }));
+      })
       .catch((e: unknown) => {
         datLoiTheoNcc((cu) => ({
           ...cu,
@@ -87,6 +92,17 @@ export function useModelNapVe() {
     modelCua: useCallback((provider: string) => theoNcc[provider] ?? [], [theoNcc]),
     /** Đã hỏi được nhà cung cấp này chưa — điều kiện để dám nói "model không có thật". */
     daHoi: useCallback((provider: string) => theoNcc[provider] !== undefined, [theoNcc]),
+    /**
+     * Cửa sổ ngữ cảnh nhà cung cấp tự khai cho một model, `0` khi không khai.
+     *
+     * Nguồn ĐÚNG cho việc nén ngữ cảnh: registry toàn cục nói về model gốc của hãng, còn
+     * gateway có trần riêng — `cx/gpt-5.6-luna` là 272.000 ở 9Router nhưng 1.050.000 ở
+     * registry, và engine tin registry thì nó không nén cho tới một ngưỡng không bao giờ tới.
+     */
+    cuaSoCua: useCallback(
+      (provider: string, model: string) => cuaTheoNcc[provider]?.[model] ?? 0,
+      [cuaTheoNcc],
+    ),
     /** Lỗi của lượt hỏi gần nhất cho một nhà cung cấp, `null` khi lượt đó xuôi. */
     loiCua: useCallback((provider: string) => loiTheoNcc[provider] ?? null, [loiTheoNcc]),
   };

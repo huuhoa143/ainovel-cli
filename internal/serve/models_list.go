@@ -94,14 +94,35 @@ func (s *server) handleLietKeModel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// CỬA SỔ NGỮ CẢNH được đọc luôn, và đó là sửa một lỗ hổng đo được.
+	//
+	// Bản trước chỉ lấy `id`/`name` rồi vứt phần còn lại. Hệ quả: `ResolveContextWindow` không
+	// có nguồn nào cho nhà cung cấp này nên rơi xuống registry TOÀN CỤC — thứ nói về model
+	// GỐC của hãng, không phải về cái gateway đang phục vụ.
+	//
+	// ĐO ĐƯỢC trên máy người dùng: `9Router` khai `cx/gpt-5.6-luna` có cửa sổ 272.000, nhưng
+	// registry khớp `gpt-5.6-luna` của openai và trả 1.050.000. Engine tưởng mình có gấp bốn
+	// lần chỗ thật, nên bộ nén ngữ cảnh không nén cho tới một ngưỡng không bao giờ tới —
+	// còn gateway thì chặn ở 272.000. Cùng một tên model có thể có trần khác nhau ở hai
+	// gateway, nên nguồn ĐÚNG luôn là chính gateway đang gọi.
+	//
+	// Ba hình dạng đã gặp: `capabilities.contextWindow` (9Router), `context_window`,
+	// `context_length` (OpenRouter). Đọc cả ba, lấy cái đầu tiên khác 0.
+	type suc struct {
+		ContextWindow int `json:"contextWindow"`
+	}
 	var than struct {
 		Data []struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
+			ID            string `json:"id"`
+			Name          string `json:"name"`
+			ContextWindow int    `json:"context_window"`
+			ContextLength int    `json:"context_length"`
+			Capabilities  suc    `json:"capabilities"`
 		} `json:"data"`
 		// Anthropic trả cùng dạng `data[]`, Gemini trả `models[]`.
 		Models []struct {
-			Name string `json:"name"`
+			Name          string `json:"name"`
+			ContextWindow int    `json:"context_window"`
 		} `json:"models"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&than); err != nil {
@@ -110,14 +131,25 @@ func (s *server) handleLietKeModel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ten2 := map[string]bool{}
-	for _, m := range than.Data {
-		if m.ID != "" {
-			ten2[m.ID] = true
+	cua := map[string]int{}
+	ghiCua := func(ten string, ws ...int) {
+		if ten == "" {
+			return
 		}
+		ten2[ten] = true
+		for _, w := range ws {
+			if w > 0 {
+				cua[ten] = w
+				return
+			}
+		}
+	}
+	for _, m := range than.Data {
+		ghiCua(m.ID, m.Capabilities.ContextWindow, m.ContextWindow, m.ContextLength)
 	}
 	for _, m := range than.Models {
 		// Gemini trả "models/gemini-2.5-pro"; cắt tiền tố cho khớp thứ người dùng gõ.
-		ten2[strings.TrimPrefix(m.Name, "models/")] = true
+		ghiCua(strings.TrimPrefix(m.Name, "models/"), m.ContextWindow)
 	}
 
 	ds := make([]string, 0, len(ten2))
@@ -127,6 +159,10 @@ func (s *server) handleLietKeModel(w http.ResponseWriter, r *http.Request) {
 	sort.Strings(ds)
 
 	writeJSON(w, map[string]any{
+		// `windows` đi RIÊNG khỏi `models` chứ không gộp thành mảng đối tượng: `models` đang
+		// nạp thẳng vào `datalist` của giao diện, và đổi hình dạng của nó là bắt mọi chỗ đọc
+		// phải sửa theo cho một thông tin mà phần lớn trong số đó không cần.
+		"windows":  cua,
 		"provider": ten,
 		"models":   ds,
 		"count":    len(ds),

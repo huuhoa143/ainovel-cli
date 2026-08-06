@@ -778,6 +778,7 @@ export const CHU = {
   danhSachModel: 'Danh sách model',
   /** Nhãn hành động khi các vai đang trỏ vào model mà nhà cung cấp của chúng không khai. */
   suaCaBonVai: (ncc: string) => `Sửa các vai theo ${ncc}`,
+  ghiLaiCuaSo: 'Ghi lại cửa sổ',
   luu: 'Lưu',
   dangLuu: 'Đang lưu…',
   daLuu: 'Đã lưu',
@@ -1518,6 +1519,18 @@ export const GIAI_THICH = {
    * Nhưng một nút bấm được rồi luôn báo lỗi là một nút nói dối; tắt nó kèm lý do thì không.
    */
   nccChuaCoKhoaDeKiem: 'Lưu khóa API cho nhà cung cấp này rồi mới kiểm tra được.',
+
+  /**
+   * Nhà cung cấp khai một cửa sổ ngữ cảnh khác thứ đang ghi trong thẻ.
+   *
+   * Không ghi thì `ResolveContextWindow` rơi xuống registry toàn cục — thứ mô tả model GỐC
+   * của hãng, không phải trần của gateway đang gọi. ĐO ĐƯỢC: 9Router khai 272.000 cho
+   * `cx/gpt-5.6-luna`, registry trả 1.050.000, và engine in `ngữ cảnh 0% (5/1050000)`. Bộ nén
+   * khi ấy chờ một ngưỡng không bao giờ tới, còn gateway chặn từ lâu trước đó.
+   */
+  cuaSoLech: (ncc: string, ds: string[]) =>
+    `${ncc} khai cửa sổ ngữ cảnh khác thứ đang ghi: ${ds.join(', ')}. Chưa ghi lại thì engine ` +
+    `dùng con số của registry chung — có thể lớn hơn trần thật, và bộ nén sẽ không kịp nén.`,
 
   /**
    * Thêm một nhà cung cấp TRÙNG TÊN với thẻ đã có.

@@ -307,6 +307,24 @@ function MotNhaCungCap({
       ? (n.models ?? []).map((m) => m.name).filter((ten) => !dsThat.includes(ten))
       : [];
 
+  /**
+   * Model mà nhà cung cấp khai một CỬA SỔ NGỮ CẢNH khác thứ thẻ đang ghi.
+   *
+   * ĐO ĐƯỢC và đây là hỏng nguy hiểm nhất trong cả cụm: `9Router` khai `cx/gpt-5.6-luna` có
+   * 272.000, nhưng thẻ không ghi gì nên `ResolveContextWindow` rơi xuống registry TOÀN CỤC —
+   * thứ mô tả model gốc của hãng — và trả 1.050.000. Engine tưởng mình có gấp bốn chỗ thật:
+   * bộ nén ngữ cảnh không nén cho tới một ngưỡng không bao giờ tới, còn gateway chặn ở
+   * 272.000. Nhật ký thật đã in `writer ngữ cảnh 0% (5/1050000)`.
+   *
+   * Ghi vào `providers[].models[].context_window` là ưu tiên SỐ MỘT của chuỗi phân giải, nên
+   * nó thắng registry — đúng như nó nên thế: gateway đang gọi mới là nguồn thật.
+   */
+  const cuaLech = daKiem
+    ? (n.models ?? [])
+        .map((m) => ({ ten: m.name, moi: napVe.cuaSoCua(n.name, m.name), cu: m.context_window ?? 0 }))
+        .filter((x) => x.moi > 0 && x.moi !== x.cu)
+    : [];
+
   return (
     <>
       <div className="nccDau">
@@ -353,6 +371,35 @@ function MotNhaCungCap({
           vừa rồi. */}
       {loiKiem ? <p className="loiDoc">{loiKiem}</p> : null}
       {daKiem ? <p className="steerhint">{GIAI_THICH.napModelXong(dsThat.length)}</p> : null}
+      {cuaLech.length > 0 ? (
+        <p className="vphacap">
+          <span className="ky" aria-hidden="true">
+            ■
+          </span>
+          <span>
+            {GIAI_THICH.cuaSoLech(n.name, cuaLech.map((x) => `${x.ten} → ${x.moi.toLocaleString('vi')}`))}{' '}
+            <button
+              type="button"
+              className="nutPhu"
+              disabled={dangGui}
+              onClick={() =>
+                goi({
+                  provider_config: {
+                    name: n.name,
+                    models: (n.models ?? []).map((m) => ({
+                      name: m.name,
+                      context_window: napVe.cuaSoCua(n.name, m.name) || m.context_window,
+                    })),
+                  },
+                })
+              }
+            >
+              {CHU.ghiLaiCuaSo}
+            </button>
+          </span>
+        </p>
+      ) : null}
+
       {khaiLa.length > 0 ? (
         <p className="vphacap">
           <span className="ky" aria-hidden="true">
