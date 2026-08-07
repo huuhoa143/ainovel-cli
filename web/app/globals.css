@@ -3999,6 +3999,110 @@ div:has(> .qcrow) {
   margin-bottom: 0;
 }
 
+/* ══ khối gập ═════════════════════════════════════════════════════════════
+   Dùng cho phần NỀN đứng chắn trước phần đọc-mỗi-lần. Dòng tóm mang tên khối và
+   số đo của nó, nên đóng là xếp lại theo tần suất dùng chứ không phải giấu đi. */
+.hopGap > summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  padding: 2px 0;
+  border-radius: var(--r);
+  transition: color 0.14s var(--ease);
+}
+/* Bỏ tam giác mặc định của WebKit, thay bằng một dấu tự vẽ để nó cùng hệ ký hiệu
+   mảnh với phần còn lại của studio và xoay được theo trạng thái. */
+.hopGap > summary::-webkit-details-marker {
+  display: none;
+}
+.hopGap > summary::before {
+  content: "";
+  flex: none;
+  width: 0;
+  height: 0;
+  /* Tam giác 4×6, cùng cỡ với dấu nhóm của rail. */
+  border-left: 4px solid var(--ink-3);
+  border-top: 3.5px solid transparent;
+  border-bottom: 3.5px solid transparent;
+  transform: translateY(-1px);
+  transition: transform 0.14s var(--ease);
+}
+.hopGap[open] > summary::before {
+  transform: translateY(-1px) rotate(90deg);
+}
+.hopGap > summary > h2 {
+  font: 500 11.5px/1.4 var(--ui);
+  color: var(--ink-3);
+  margin: 0;
+}
+.hopGap > summary:hover > h2,
+.hopGap > summary:focus-visible > h2 {
+  color: var(--ink-2);
+}
+.hopGap > summary:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+.hopPhu {
+  color: var(--ink-3);
+  font-size: 11.5px;
+}
+
+/* Gập ở CÂY DÀN Ý — cùng lối, khác chỗ: dòng tóm ở đây là một nhánh của cây nên
+   nó giữ nguyên `.nhanhdau`, chỉ thêm dấu và vùng bấm. */
+.capGap > summary {
+  list-style: none;
+  cursor: pointer;
+  border-radius: var(--r);
+  margin: 0 -8px;
+  padding: 2px 8px;
+  transition: background 0.14s var(--ease);
+}
+.capGap > summary::-webkit-details-marker {
+  display: none;
+}
+.capGap > summary:hover {
+  background: var(--panel);
+}
+.capGap > summary:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+/* Dấu chỉ mọc trên nhánh GẬP ĐƯỢC. `.nhanhdau` còn dùng cho hàng chương — nơi
+   không có gì để bung — nên bộ chọn phải đi qua `.capGap > summary`. */
+.capGap > summary.nhanhdau::before {
+  content: "";
+  flex: none;
+  align-self: center;
+  width: 0;
+  height: 0;
+  margin-right: 1px;
+  border-left: 4px solid var(--ink-3);
+  border-top: 3.5px solid transparent;
+  border-bottom: 3.5px solid transparent;
+  transition: transform 0.14s var(--ease);
+}
+.capGap[open] > summary.nhanhdau::before {
+  transform: rotate(90deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .capGap > summary,
+  .capGap > summary.nhanhdau::before {
+    transition-duration: 0.01ms;
+  }
+}
+.hopThan {
+  margin-top: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hopGap > summary,
+  .hopGap > summary::before {
+    transition-duration: 0.01ms;
+  }
+}
+
 /* ── tiền đề: bản đặc tả, không phải áng văn ──────────────────────────────
    `premise.md` là markdown CÓ TIÊU ĐỀ, và bản trước nối mọi xuống dòng đơn nên
    tiêu đề bị dán vào câu ngay sau nó — ĐO ĐƯỢC 15/15 đoạn còn nguyên `#`/`##`
@@ -4198,11 +4302,65 @@ div:has(> .qcrow) {
 .nguoi:last-child {
   border-bottom: 0;
 }
+/* Hồ sơ nhân vật GẬP ĐƯỢC — dòng tóm là cả một hàng bấm được, không chỉ cái tên.
+   Vùng bấm nhỏ hơn dòng chữ là một cái bẫy: mắt thấy cả hàng, tay bấm trượt. */
+.nguoiHop > summary {
+  list-style: none;
+  cursor: pointer;
+  border-radius: var(--r);
+  margin: -3px -8px;
+  padding: 3px 8px;
+  transition: background 0.14s var(--ease);
+}
+.nguoiHop > summary::-webkit-details-marker {
+  display: none;
+}
+.nguoiHop > summary:hover {
+  background: var(--panel);
+}
+.nguoiHop > summary:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
 .nguoidau {
   display: flex;
   align-items: baseline;
   gap: 9px;
   flex-wrap: wrap;
+}
+/* Dấu mở/đóng đứng TRƯỚC tên, cùng hệ với khối gập kia. */
+.nguoidau::before {
+  content: "";
+  flex: none;
+  align-self: center;
+  width: 0;
+  height: 0;
+  border-left: 4px solid var(--ink-3);
+  border-top: 3.5px solid transparent;
+  border-bottom: 3.5px solid transparent;
+  transition: transform 0.14s var(--ease);
+}
+.nguoiHop[open] > .nguoidau::before {
+  transform: rotate(90deg);
+}
+/* Bí danh nằm trên dòng tóm nhưng KHÔNG tranh chỗ với tên: nó lùi về `--ink-3`
+   và co lại trước khi hàng phải xuống dòng. */
+.nguoidau .biDanh {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nguoiThan {
+  margin-top: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nguoiHop > summary,
+  .nguoidau::before {
+    transition-duration: 0.01ms;
+  }
 }
 .nguoidau h3 {
   font: 500 14px/1.3 var(--ui);
@@ -4424,13 +4582,31 @@ div:has(> .qcrow) {
    `auto-fit` chứ không điểm ngắt cứng: bề rộng canvas đổi theo cả rail lẫn việc
    inspector có mặt hay không, nên một con số viewport không tả đúng chỗ thật sự
    còn lại. Trần 1060px giữ nó dừng ở HAI cột — ba cột thì mỗi mục hẹp tới mức
-   một câu ranh giới xé thành năm dòng. */
+   một câu ranh giới xé thành năm dòng.
+
+   KHÔNG áp cho `.dsLuat`. Luật thế giới nhóm theo thể loại, và ĐO ĐƯỢC trên tác
+   phẩm thật: cả 10 nhóm đều có ĐÚNG MỘT luật. `auto-fit` với một mục thì mục ấy
+   lĩnh trọn 1060px, nên dòng chữ nở ra 87–172 ký tự — tệ hơn hẳn bản trước
+   (86ch). Một danh sách "dài" theo số nhóm không phải một danh sách dài theo số
+   mục, và chỉ vế sau mới được lợi từ hai cột. */
 .dsPhucBut,
-.dsLuat,
 .dsQuanHe {
   grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   column-gap: 36px;
   max-width: 1060px;
+}
+
+/* CHỮ TỰ MANG KHỔ ĐỌC, không nhờ vào hộp chứa.
+   Đây là luật rút ra từ chính lỗi trên: `.dsLuat` giữ khổ bằng `max-width` đặt
+   trên DANH SÁCH, nên đổi bố cục của danh sách là thổi bay khổ đọc của mọi dòng
+   bên trong — im lặng, và chỉ lộ ra khi nhìn bằng mắt. Đặt trần ngay trên phần
+   tử chữ thì không lượt đổi bố cục nào về sau chạm tới được nó.
+   `.tavan` của phục bút đã làm đúng thế từ trước, và đó là lý do phục bút không
+   bị ảnh hưởng trong khi luật thế giới thì có. */
+.dsLuat .luat,
+.dsLuat .ranh,
+.dsQuanHe .phu {
+  max-width: 74ch;
 }
 /* Khoảng NGOÀI > khoảng TRONG cũng đúng theo chiều NGANG: 36px giữa hai cột so
    với 6–7px giữa các dòng trong một mục. Hẹp hơn thì mục ở cột phải đọc ra như
@@ -4450,14 +4626,10 @@ div:has(> .qcrow) {
 .dsPhucBut li:first-child {
   padding-top: 12px;
 }
-.dsLuat li:first-child {
-  padding-top: 11px;
-}
 .dsQuanHe li:first-child {
   padding-top: 10px;
 }
 .dsPhucBut li:last-child,
-.dsLuat li:last-child,
 .dsQuanHe li:last-child {
   border-bottom: 1px solid var(--line-2);
 }

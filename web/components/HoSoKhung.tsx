@@ -40,6 +40,46 @@ export function HoSoKhung({
 }
 
 /**
+ * Một khối gập được, dùng cho phần NỀN của bề mặt.
+ *
+ * # Khi nào gập, và vì sao mặc định là đóng
+ *
+ * Gập dành cho khối đọc-một-lần đứng chắn trước khối đọc-mỗi-lần. Ca đã đo: khu
+ * "Dàn ý phân tầng" mở ra là hai màn hình Tiền đề, còn cây Tập → Cung → Chương —
+ * thứ mang tên cho cả khu và đổi ở mỗi cung — nằm dưới đáy cuộn.
+ *
+ * Đóng KHÔNG phải giấu: dòng tóm mang tên khối và số đo của nó, nên người dùng
+ * biết trong đó có gì trước khi quyết định mở. Cái bị bỏ đi chỉ là việc phải cuộn
+ * qua nó mỗi lần vào khu.
+ *
+ * `<details>` chứ không phải state React: nó cho sẵn bàn phím (Enter/Space),
+ * `aria-expanded` đúng, và tìm-trong-trang của trình duyệt mở được khối đang
+ * đóng — thứ mà một bản dựng tay gần như luôn thiếu.
+ */
+export function HopGap({
+  tieuDe,
+  phu,
+  moSan,
+  children,
+}: {
+  tieuDe: string;
+  /** Số đo của khối, hiện ngay trên dòng tóm — nó là lý do để mở hoặc để bỏ qua. */
+  phu?: string;
+  moSan?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <details className="hopGap" open={moSan}>
+      <summary>
+        <h2>{tieuDe}</h2>
+        {phu ? <span className="hopPhu">{phu}</span> : null}
+      </summary>
+      <div className="hopThan">{children}</div>
+    </details>
+  );
+}
+
+/**
  * Trạng thái tải/lỗi dùng chung. Trả về `null` khi dữ liệu đã sẵn sàng, để chỗ
  * gọi vẽ nội dung thật.
  *

@@ -7,7 +7,7 @@ import { CHU, GIAI_THICH } from '@/lib/nhan';
 import type { ArcOutline, OutlineEntry, Snapshot, VolumeOutline } from '@/lib/types';
 import { useHoSo } from '@/lib/useHoSo';
 
-import { HoSoKhung, MucRong, tinhTrangHoSo } from './HoSoKhung';
+import { HopGap, HoSoKhung, MucRong, tinhTrangHoSo } from './HoSoKhung';
 
 /**
  * Dàn ý phân tầng: Tập → Cung → Chương.
@@ -32,13 +32,26 @@ export function DanY({
   const tai = useHoSo(tacPham, layDanY);
   const tt = tinhTrangHoSo(tai);
 
+  // Bóc MỘT lần ở đây: dòng tóm của khối gập cần số mục, và phần thân cần chính
+  // kết quả ấy. Bóc hai lần là hai chỗ có thể lệch nhau.
+  const bocPremise = bocTienDe(tai.du?.premise ?? '');
+  const soMucTienDe = bocPremise.khoi.filter((k) => k.than.length > 0).length;
+
   return (
     <HoSoKhung tieuDe={CHU.danYPhanTang} motTa={motTa(snapshot, tai.du?.volumes ?? null)}>
       {tt ?? (
         <>
+          {/* TIỀN ĐỀ GẬP LẠI, và mặc định là ĐÓNG.
+              Màn này tên là "Dàn ý phân tầng", nhưng tiền đề chiếm trọn hai màn
+              hình đầu — thứ người dùng mở khu này để xem (cây Tập → Cung →
+              Chương) nằm dưới đáy cuộn. Tiền đề là NỀN, đọc một lần lúc dựng
+              sách rồi hiếm khi đọc lại; cây dàn ý là thứ đổi mỗi cung.
+              Dòng tóm vẫn nói ra nó có bao nhiêu mục, nên đóng không phải là
+              giấu — nó là xếp lại theo tần suất dùng. */}
           <section className="sect">
-            <h2>{CHU.tienDe}</h2>
-            <TienDe raw={tai.du!.premise} />
+            <HopGap tieuDe={CHU.tienDe} phu={soMucTienDe > 0 ? CHU.demMucTienDe(soMucTienDe) : undefined}>
+              <TienDe boc={bocPremise} />
+            </HopGap>
           </section>
 
           <section className="sect">
@@ -207,8 +220,8 @@ function VeThan({ than, lop }: { than: PhanTienDe[]; lop?: string }) {
   );
 }
 
-function TienDe({ raw }: { raw: string }) {
-  const { mo, ten, khoi } = bocTienDe(raw);
+function TienDe({ boc }: { boc: ReturnType<typeof bocTienDe> }) {
+  const { mo, ten, khoi } = boc;
   const muc = khoi.filter((k) => k.than.length > 0);
 
   if (mo.length === 0 && khoi.length === 0) {
@@ -259,32 +272,63 @@ function motTa(snap: Snapshot, volumes: VolumeOutline[] | null): string | undefi
   return `${volumes.length} tập · ${moRa} tập đã mở cung`;
 }
 
+/**
+ * TẬP MỞ SẴN, CUNG ĐÓNG — và tỉ lệ giữa hai mức là lý do.
+ *
+ * ĐO ĐƯỢC trên tác phẩm thật: mở toàn bộ thì cây này cao **52.589px — 81,2 màn
+ * hình** (4 tập, 16 cung, 216 chương, mỗi chương còn kèm trọng tâm, móc cuối và
+ * danh sách cảnh). Câu hỏi rẻ nhất của khu — *"Tập 3 có những cung nào"* — trả
+ * lời được bằng cách cuộn qua hơn ba mươi màn hình chương của Tập 1 và 2.
+ *
+ * Gập ở mức CUNG cắt đúng chỗ tốn: 4 dòng tập + 16 dòng cung vừa một màn rưỡi, và
+ * đó chính là bản đồ sản xuất mà `PRODUCT.md` đòi ("nhìn vào phải thấy được đang ở
+ * đâu trong toàn bộ công trình"). Chương là mức chi tiết, và nó tốn một cú bấm.
+ *
+ * Tập KHÔNG đóng theo: bốn dòng tập rỗng không nói gì hơn con số đã có ở đầu khu,
+ * còn dòng chủ đề và danh sách cung mới là thứ phân biệt tập này với tập kia.
+ */
 function Tap({ v }: { v: VolumeOutline }) {
   const cung = v.arcs ?? [];
   const daMo = cung.length > 0;
+  const dau = (
+    <>
+      <span className="ma">T{v.index}</span>
+      <span className="ten">{v.title}</span>
+      {v.final ? <span className="cot">{CHU.tapChot}</span> : null}
+    </>
+  );
+
+  // Tập chưa mở cung thì KHÔNG có gì để bung — không vẽ nút gập ở đó. Một mũi tên
+  // bấm vào chẳng mở ra gì là một lời hứa suông.
+  if (!daMo) {
+    return (
+      <li className="ntap chuamo">
+        <div className="nhanhdau">{dau}</div>
+        {v.theme ? (
+          <p className="phu">
+            {CHU.chuDe}: {v.theme}
+          </p>
+        ) : null}
+        <p className="chuamoNoi">{GIAI_THICH.tapChuaMo}</p>
+      </li>
+    );
+  }
 
   return (
-    <li className={`ntap${daMo ? '' : ' chuamo'}`}>
-      <div className="nhanhdau">
-        <span className="ma">T{v.index}</span>
-        <span className="ten">{v.title}</span>
-        {v.final ? <span className="cot">{CHU.tapChot}</span> : null}
-      </div>
-      {v.theme ? (
-        <p className="phu">
-          {CHU.chuDe}: {v.theme}
-        </p>
-      ) : null}
-
-      {daMo ? (
+    <li className="ntap">
+      <details className="capGap" open>
+        <summary className="nhanhdau">{dau}</summary>
+        {v.theme ? (
+          <p className="phu">
+            {CHU.chuDe}: {v.theme}
+          </p>
+        ) : null}
         <ol className="cayCung">
           {cung.map((a) => (
             <Cung key={a.index} a={a} tap={v.index} />
           ))}
         </ol>
-      ) : (
-        <p className="chuamoNoi">{GIAI_THICH.tapChuaMo}</p>
-      )}
+      </details>
     </li>
   );
 }
@@ -292,37 +336,53 @@ function Tap({ v }: { v: VolumeOutline }) {
 function Cung({ a, tap }: { a: ArcOutline; tap: number }) {
   const chuong = a.chapters ?? [];
   const daMo = chuong.length > 0;
+  const dau = (
+    <>
+      <span className="ma">
+        T{tap}·C{a.index}
+      </span>
+      <span className="ten">{a.title}</span>
+      {/* Số chương ở lại DÒNG TÓM: khi cung đóng, đây là thứ duy nhất nói cung này
+          đã chạy tới đâu — tức chính lý do để mở nó hay bỏ qua. */}
+      <span className="dem">
+        {daMo
+          ? CHU.soChuongDaMo(chuong.length)
+          : a.estimated_chapters
+            ? CHU.soChuongDuKien(a.estimated_chapters)
+            : GIAI_THICH.chuaBietPhamVi}
+      </span>
+    </>
+  );
+
+  if (!daMo) {
+    return (
+      <li className="ncung chuamo">
+        <div className="nhanhdau">{dau}</div>
+        {a.goal ? (
+          <p className="phu">
+            {CHU.mucTieuCung}: {a.goal}
+          </p>
+        ) : null}
+        <p className="chuamoNoi">{GIAI_THICH.cungChuaMo}</p>
+      </li>
+    );
+  }
 
   return (
-    <li className={`ncung${daMo ? '' : ' chuamo'}`}>
-      <div className="nhanhdau">
-        <span className="ma">
-          T{tap}·C{a.index}
-        </span>
-        <span className="ten">{a.title}</span>
-        <span className="dem">
-          {daMo
-            ? CHU.soChuongDaMo(chuong.length)
-            : a.estimated_chapters
-              ? CHU.soChuongDuKien(a.estimated_chapters)
-              : GIAI_THICH.chuaBietPhamVi}
-        </span>
-      </div>
-      {a.goal ? (
-        <p className="phu">
-          {CHU.mucTieuCung}: {a.goal}
-        </p>
-      ) : null}
-
-      {daMo ? (
+    <li className="ncung">
+      <details className="capGap">
+        <summary className="nhanhdau">{dau}</summary>
+        {a.goal ? (
+          <p className="phu">
+            {CHU.mucTieuCung}: {a.goal}
+          </p>
+        ) : null}
         <ol className="cayChuong">
           {chuong.map((c) => (
             <ChuongDanY key={c.chapter} c={c} />
           ))}
         </ol>
-      ) : (
-        <p className="chuamoNoi">{GIAI_THICH.cungChuaMo}</p>
-      )}
+      </details>
     </li>
   );
 }
