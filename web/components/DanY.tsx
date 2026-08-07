@@ -1,5 +1,7 @@
 'use client';
 
+import { Fragment } from 'react';
+
 import { layDanY } from '@/lib/api';
 import { CHU, GIAI_THICH } from '@/lib/nhan';
 import type { ArcOutline, OutlineEntry, Snapshot, VolumeOutline } from '@/lib/types';
@@ -70,29 +72,180 @@ export function DanY({
   );
 }
 
-/**
- * Tiền đề — `premise.md` là markdown thô, nên xuống dòng phải xử lý như markdown.
- *
- * Bản trước dùng `white-space: pre-line` và giữ nguyên mọi ký tự xuống dòng của
- * tệp. ĐO ĐƯỢC ở 400px: dòng nguồn được ngắt ở cột 80 rồi lại bị ngắt tiếp theo
- * bề rộng màn hình, ra một đoạn văn răng cưa — "…ba lần một năm: một / lần gọi
- * người sống, một lần / tiễn người chết…". Xuống dòng đơn trong markdown là định
- * dạng của TỆP, không phải của văn; chỉ dòng trống mới là ranh giới đoạn.
- */
-function TienDe({ raw }: { raw: string }) {
-  const doan = raw
-    .split(/\n{2,}/)
-    .map((d) => d.replace(/\s*\n\s*/g, ' ').trim())
-    .filter(Boolean);
+/** Một phần thân: đoạn văn, hoặc một chùm gạch đầu dòng. */
+type PhanTienDe = { loai: 'doan'; chu: string } | { loai: 'gach'; muc: string[] };
 
-  if (doan.length === 0) return <p className="trongSect">{GIAI_THICH.chuaCoTienDe}</p>;
+/** Một mục của tiền đề: tiêu đề markdown + phần thân thuộc về nó. */
+interface KhoiTienDe {
+  nhan: string;
+  than: PhanTienDe[];
+}
+
+const DAU_MUC = /^\s*#{1,6}\s+(.*\S)\s*$/;
+/* Gạch đầu dòng markdown. `-`, `*`, `+` cho danh sách không thứ tự; `1.`/`1)` cho
+   có thứ tự. Cả hai đều xuất hiện trong `premise.md` thật. */
+const DAU_GACH = /^\s*(?:[-*+]|\d+[.)])\s+(.*\S)\s*$/;
+
+/**
+ * Bóc `premise.md` thành mục có nhãn.
+ *
+ * # Vì sao phải đọc TỪNG DÒNG, không tách đoạn rồi mới nối
+ *
+ * Bản trước tách theo dòng trống rồi nối mọi xuống dòng đơn thành dấu cách. Cách
+ * đó đúng cho văn xuôi, nhưng `premise.md` không phải văn xuôi — nó là một bản
+ * đặc tả có tiêu đề:
+ *
+ *	## Thể loại và tông điệu
+ *	Mạt thế zombie, đô thị thương chiến, dị năng giao dịch hai thế giới…
+ *
+ * Hai dòng ấy cách nhau đúng MỘT xuống dòng, nên phép nối dán chúng làm một câu
+ * và ký tự `##` ở lại giữa đoạn văn. ĐO ĐƯỢC trên tác phẩm thật: **15/15 đoạn**
+ * của bề mặt này bắt đầu bằng `#` hoặc `##`, tức toàn bộ cấu trúc của tiền đề
+ * biến mất và người đọc nhận một khối chữ có rác markdown rải đều.
+ *
+ * Tiêu đề là RANH GIỚI, mạnh hơn cả dòng trống. Nên phép bóc chạy theo dòng: gặp
+ * `#{1,6}` thì chốt đoạn đang gom và mở mục mới.
+ *
+ * # Gạch đầu dòng cũng là ranh giới
+ *
+ * Cùng một lỗi ở cấp thấp hơn, và nó chỉ lộ ra sau khi tiêu đề đã được bóc: mục
+ * "Điểm bán khác biệt" viết bằng gạch đầu dòng, nên phép nối dán cả chùm thành
+ * một câu chạy dài có dấu `-` rải giữa — "…theo từng giai đoạn. - Hậu cung không
+ * chỉ là tình cảm; …". Một danh sách bị đọc thành một câu thì mất luôn phần tin
+ * mà việc tách dòng mang: đây là những mục NGANG HÀNG nhau.
+ */
+function bocTienDe(raw: string): { mo: PhanTienDe[]; ten: string[]; khoi: KhoiTienDe[] } {
+  const mo: PhanTienDe[] = [];
+  const khoi: KhoiTienDe[] = [];
+  let dem: string[] = [];
+  let gach: string[] | null = null;
+  let trong = false;
+  let hien: KhoiTienDe | null = null;
+
+  const day = (p: PhanTienDe) => (hien ? hien.than : mo).push(p);
+  const xaDoan = () => {
+    const d = dem.join(' ').replace(/\s+/g, ' ').trim();
+    dem = [];
+    if (d) day({ loai: 'doan', chu: d });
+  };
+  const xaGach = () => {
+    if (gach && gach.length > 0) day({ loai: 'gach', muc: gach });
+    gach = null;
+  };
+
+  for (const dong of raw.split('\n')) {
+    const dauMuc = dong.match(DAU_MUC);
+    if (dauMuc) {
+      xaDoan();
+      xaGach();
+      hien = { nhan: dauMuc[1]!, than: [] };
+      khoi.push(hien);
+      trong = false;
+      continue;
+    }
+    if (dong.trim() === '') {
+      // Dòng trống chốt ĐOẠN nhưng KHÔNG chốt danh sách: markdown cho phép gạch
+      // đầu dòng cách nhau một dòng trống mà vẫn là một danh sách.
+      xaDoan();
+      trong = true;
+      continue;
+    }
+    const dauGach = dong.match(DAU_GACH);
+    if (dauGach) {
+      xaDoan();
+      if (!gach) gach = [];
+      gach.push(dauGach[1]!);
+      trong = false;
+      continue;
+    }
+    // Dòng thường ngay dưới một gạch đầu dòng là phần GÓI TIẾP của chính mục đó,
+    // không phải một đoạn mới — trừ khi có dòng trống chen vào giữa.
+    if (gach && gach.length > 0 && !trong) {
+      gach[gach.length - 1] += ' ' + dong.trim();
+      continue;
+    }
+    xaGach();
+    dem.push(dong.trim());
+    trong = false;
+  }
+  xaDoan();
+  xaGach();
+
+  // Tiêu đề KHÔNG có thân là tên của chính bản đặc tả (`# Ông Trùm Hai Cõi`), không
+  // phải một mục rỗng. Nó đứng riêng ở trên chứ không thành một hàng nhãn trống.
+  return { mo, ten: khoi.filter((k) => k.than.length === 0).map((k) => k.nhan), khoi };
+}
+
+/**
+ * Tiền đề — bản đặc tả tác phẩm, trình bày như một bảng nhãn → giá trị.
+ *
+ * Đây là cùng ngôn ngữ mà `.kv` đã dùng khắp studio, và nó đúng với bản chất của
+ * dữ liệu: tiền đề là một tập câu trả lời có nhãn (thể loại, xung đột cốt lõi,
+ * hướng kết cục, vùng cấm), không phải một áng văn. Đọc dọc cột nhãn là quét
+ * được cả bản đặc tả mà không phải đọc hết.
+ *
+ * Vẫn có đường lui: tiền đề viết bằng văn xuôi thuần — không tiêu đề nào — rơi về
+ * cách vẽ đoạn như cũ. Ép một bản không có nhãn vào lưới nhãn là bịa ra cấu trúc.
+ */
+function VeThan({ than, lop }: { than: PhanTienDe[]; lop?: string }) {
   return (
     <>
-      {doan.map((d, i) => (
-        <p className="tiende" key={i}>
-          {d}
+      {than.map((p, i) =>
+        p.loai === 'gach' ? (
+          <ul className="tiendeGach" key={i}>
+            {p.muc.map((m, j) => (
+              <li key={j}>{m}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className={lop} key={i}>
+            {p.chu}
+          </p>
+        ),
+      )}
+    </>
+  );
+}
+
+function TienDe({ raw }: { raw: string }) {
+  const { mo, ten, khoi } = bocTienDe(raw);
+  const muc = khoi.filter((k) => k.than.length > 0);
+
+  if (mo.length === 0 && khoi.length === 0) {
+    return <p className="trongSect">{GIAI_THICH.chuaCoTienDe}</p>;
+  }
+
+  if (muc.length === 0) {
+    return (
+      <>
+        {ten.map((t, i) => (
+          <p className="tiende" key={`t${i}`}>
+            {t}
+          </p>
+        ))}
+        <VeThan than={mo} lop="tiende" />
+      </>
+    );
+  }
+
+  return (
+    <>
+      {ten.map((t, i) => (
+        <p className="tiendeTen" key={`t${i}`}>
+          {t}
         </p>
       ))}
+      <VeThan than={mo} lop="tiende" />
+      <dl className="kv kvtiende">
+        {muc.map((k, i) => (
+          <Fragment key={i}>
+            <dt>{k.nhan}</dt>
+            <dd>
+              <VeThan than={k.than} />
+            </dd>
+          </Fragment>
+        ))}
+      </dl>
     </>
   );
 }

@@ -3057,11 +3057,18 @@ body.dangKeoNgang * {
   color: var(--ink-3);
   line-height: 1.72;
 }
+/* Ô GIÁ TRỊ CÓ KHỔ ĐỌC, và đây là một lỗi đo được chứ không phải phòng xa.
+   Cột thứ hai của `.kv` là `1fr`, nên trên canvas 1318px nó nở tới **1107px** —
+   khoảng 180 ký tự một dòng. Mắt mất dấu dòng ở quãng đó: đọc hết dòng rồi phải
+   quét ngược cả nửa màn hình mới tìm được đầu dòng sau.
+   74ch là cùng khổ đọc mà `.tiende` và `.tavan` đã dùng; đặt ở đây thì MỌI bảng
+   nhãn→giá trị của studio nhận nó, không phải nhớ thêm ở từng chỗ. */
 .kv dd {
   margin: 0;
   color: var(--ink);
   line-height: 1.72;
   min-width: 0;
+  max-width: 74ch;
   overflow-wrap: anywhere;
 }
 .kv dd.m {
@@ -3972,15 +3979,87 @@ div:has(> .qcrow) {
 /* Không `white-space: pre-line`: xuống dòng đơn trong premise.md là định dạng
    của tệp, không phải của văn — giữ nó lại làm đoạn văn răng cưa ở màn hình hẹp.
    Phía JS tách đoạn theo dòng trống và nối các dòng đơn lại. */
+/* `--ui`, KHÔNG serif — và đây là sửa một chỗ lệch với chính DESIGN.md.
+   Phép thử ở đó: "chữ này có nằm trong bộ truyện xuất bản không?". Tiền đề thì
+   không: nó là bản đặc tả người vận hành viết cho engine, cùng loại với mô tả
+   nhân vật và ghi chú luật thế giới — mà hai thứ ấy đã dùng `--ui`. Serif là dấu
+   hiệu ngữ nghĩa "đây là văn của tác phẩm"; tiêu tốn nó ở đây làm nó nhạt đi
+   đúng chỗ cần sắc nhất (trích đoạn, bản thảo, dẫn chứng của Editor).
+   Thêm một lý do từ lượt này: phần lớn tiền đề giờ vẽ bằng lưới nhãn `--ui`, nên
+   giữ serif ở nhánh lui sẽ cho cùng một nội dung hai loại chữ tuỳ nó có tiêu đề
+   hay không. */
 .khuhoso .tiende {
   margin: 0 0 0.9em;
   max-width: 74ch;
-  font: 400 14px/1.8 var(--serif);
+  font: 400 13px/1.78 var(--ui);
   color: var(--ink-2);
   text-wrap: pretty;
 }
 .khuhoso .tiende:last-child {
   margin-bottom: 0;
+}
+
+/* ── tiền đề: bản đặc tả, không phải áng văn ──────────────────────────────
+   `premise.md` là markdown CÓ TIÊU ĐỀ, và bản trước nối mọi xuống dòng đơn nên
+   tiêu đề bị dán vào câu ngay sau nó — ĐO ĐƯỢC 15/15 đoạn còn nguyên `#`/`##`
+   giữa văn. Bóc ra rồi thì cấu trúc thật lộ ra: một tập câu trả lời có nhãn.
+   Nên nó dùng đúng lưới nhãn→giá trị của cả studio thay vì một cột chữ dài.
+
+   Cột nhãn 178px, không 104px như `.kv` mặc định: nhãn ở đây là câu ("Thể loại
+   và tông điệu", "Mục tiêu nhân vật chính"), dài hơn hẳn nhãn một-hai từ mà
+   104px được tính cho. Đây là luật 2 của DESIGN.md — cột nhãn tiếng Việt rộng
+   hơn phản xạ. */
+.kvtiende {
+  grid-template-columns: 178px minmax(0, 1fr);
+  gap: 15px 18px;
+  margin-top: 2px;
+}
+/* Khoảng NGOÀI (15px giữa hai mục) lớn hơn khoảng TRONG (đoạn kế trong cùng một
+   mục, 0.55em) — nếu không thì hai mục khác nhau đọc ra gắn bó hơn hai đoạn của
+   cùng một mục. Cùng luật đã ghi ở DESIGN.md cho hàng bảng và danh sách nhân vật. */
+.kvtiende dd p {
+  margin: 0 0 0.55em;
+  text-wrap: pretty;
+}
+.kvtiende dd p:last-child {
+  margin-bottom: 0;
+}
+/* Gạch đầu dòng của tiền đề. Dấu là một ký hiệu MẢNH `–` chứ không phải chấm
+   tròn: cả bề mặt này đã dùng ký hiệu hình học mảnh (■ ◆ ◇), và một chấm tròn
+   đậm ở đây sẽ là hệ ký hiệu thứ hai cho cùng một việc. */
+.tiendeGach {
+  margin: 0 0 0.55em;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 5px;
+}
+.tiendeGach:last-child {
+  margin-bottom: 0;
+}
+.tiendeGach li {
+  position: relative;
+  padding-left: 15px;
+  text-wrap: pretty;
+}
+.tiendeGach li::before {
+  content: "–";
+  position: absolute;
+  left: 0;
+  color: var(--ink-3);
+}
+/* Nhãn neo lên đỉnh ô: giá trị nhiều dòng mà nhãn căn giữa thì mắt mất mốc hàng. */
+.kvtiende dt {
+  color: var(--ink-2);
+}
+
+/* Tên của chính bản đặc tả (`# Ông Trùm Hai Cõi`). Nó KHÔNG to: tên cuốn đã có ở
+   thanh trên, và nhắc lại to hơn tiêu đề khu là để một dòng lặp lại át một dòng
+   mang tin. Ở đây nó chỉ xác nhận bản đặc tả này thuộc về cuốn nào. */
+.khuhoso .tiendeTen {
+  margin: 0 0 12px;
+  font: 400 12px/1.72 var(--ui);
+  color: var(--ink-3);
 }
 
 /* ── dàn ý: ba mức thụt lồng nhau ── */
@@ -4331,6 +4410,56 @@ div:has(> .qcrow) {
   color: var(--ink-2);
   max-width: 74ch;
   text-wrap: pretty;
+}
+
+/* ══ sổ hai cột ═══════════════════════════════════════════════════════════
+   Ba danh sách này là SỔ: mục ngắn, đồng dạng, và dài (phục bút 158 mục trên tác
+   phẩm đang chạy). ĐO ĐƯỢC: canvas 1318px trong khi cột nội dung 607px — 54% bề
+   mặt bỏ trống, và người vận hành cuộn gấp đôi số vòng cần thiết.
+
+   Cách chữa KHÔNG phải kéo dòng chữ dài ra cho đầy: 74ch là khổ đọc, nới nó ra
+   là đổi một lỗi lấy một lỗi nặng hơn. Cách chữa là xếp hai cột — mỗi cột giữ
+   nguyên khổ đọc, và bề rộng thừa dùng để chứa THÊM MỤC.
+
+   `auto-fit` chứ không điểm ngắt cứng: bề rộng canvas đổi theo cả rail lẫn việc
+   inspector có mặt hay không, nên một con số viewport không tả đúng chỗ thật sự
+   còn lại. Trần 1060px giữ nó dừng ở HAI cột — ba cột thì mỗi mục hẹp tới mức
+   một câu ranh giới xé thành năm dòng. */
+.dsPhucBut,
+.dsLuat,
+.dsQuanHe {
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  column-gap: 36px;
+  max-width: 1060px;
+}
+/* Khoảng NGOÀI > khoảng TRONG cũng đúng theo chiều NGANG: 36px giữa hai cột so
+   với 6–7px giữa các dòng trong một mục. Hẹp hơn thì mục ở cột phải đọc ra như
+   phần tiếp theo của mục bên trái.
+
+   ĐỆM TRÊN GIỮ ĐỀU Ở MỌI MỤC, kể cả mục đầu. Luật `:first-child { padding-top: 0 }`
+   đúng khi danh sách có một cột — nó kéo mục đầu lên sát tiêu đề. Với `auto-fit`
+   thì số cột không biết trước, và `:first-child` chỉ trúng cột TRÁI: mục thứ hai
+   nằm cùng hàng nhưng tụt xuống 12px, ngay đỉnh bề mặt, đúng chỗ mắt lấy mốc
+   hàng. Không có bộ chọn CSS nào hỏi được "phần tử này có ở hàng đầu không", nên
+   cách đúng là bỏ ngoại lệ chứ không đoán số cột.
+
+   Cùng lập luận cho `:last-child { border-bottom: 0 }`: ở hai cột nó xoá gạch của
+   ĐÚNG MỘT trong hai mục hàng cuối, và một hàng cụt nửa bên đọc ra như hỏng. Mọi
+   mục giữ gạch; gạch cuối cách viền `.sect` một quãng đệm nên không đọc ra là hai
+   đường chồng nhau. */
+.dsPhucBut li:first-child {
+  padding-top: 12px;
+}
+.dsLuat li:first-child {
+  padding-top: 11px;
+}
+.dsQuanHe li:first-child {
+  padding-top: 10px;
+}
+.dsPhucBut li:last-child,
+.dsLuat li:last-child,
+.dsQuanHe li:last-child {
+  border-bottom: 1px solid var(--line-2);
 }
 
 /* ══ trạng thái dùng chung cho các bề mặt mới ═════════════════════════ */
@@ -4707,6 +4836,24 @@ div:has(> .qcrow) {
    `.bangwrap` cuộn ngang, và cột hẹp nhất gánh phần co đó — "gemini-2.5-pro" bị
    xé thành "gemi / 2.5-" giữa token. `.bangwrap` đã mang `overflow-x: auto`, nên
    để bảng giữ bề rộng tự nhiên là đủ: hẹp thì cuộn, đúng như bảng chương. */
+/* Bảng + chú giải đứng cạnh nhau khi còn chỗ.
+   `auto-fit` trên hai phần tử: đủ rộng thì hai cột, hẹp thì chú giải tự tụt
+   xuống dưới bảng — không cần điểm ngắt, và cũng không thể chọn nhầm điểm ngắt
+   vì bề rộng canvas còn phụ thuộc rail và inspector. */
+.toBo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), auto));
+  align-items: start;
+  gap: 14px 34px;
+  max-width: 1060px;
+}
+.toChu {
+  max-width: 42ch;
+}
+.toChu .steerhint + .steerhint {
+  margin-top: 9px;
+}
+
 .bangto {
   width: max-content;
 }
@@ -4745,6 +4892,12 @@ div:has(> .qcrow) {
   color: var(--ink-3);
   text-transform: none;
   letter-spacing: 0;
+  /* Chia đều hai dòng thay vì để dòng cuối còn một chữ lẻ. ĐO ĐƯỢC ở bản trước:
+     "theo chu kỳ gần nhất của mỗi / chương" — chữ "chương" đứng một mình thành
+     dòng thứ ba, kéo cả hàng tiêu đề lên 74px trong khi thân bảng chỉ có chữ số.
+     Đây cũng chính là lý do `max-width` phải nới từ 22ch lên 26ch trước đây; cân
+     dòng chữa đúng nguyên nhân đó nên 26ch ở lại mà không còn dòng lẻ. */
+  text-wrap: balance;
   /* Nhãn phụ dài hơn nhãn cột nên nó là thứ quyết định bề rộng cột. 26ch giữ nó
      xuống hai dòng thay vì kéo cột ngang ra chiếm cả bảng.
      26 chứ không 22: ở 22ch nhãn "trong 20 phán quyết gần nhất" (28 ký tự) rơi
@@ -4989,13 +5142,20 @@ div:has(> .qcrow) {
 /* Không phải danh sách cấm mà là HẠN MỨC, nên mỗi hàng phải mang con số của nó.
    Xếp cùng kiểu chip với cụm từ cấm rồi để người đọc tự suy là cách một hạn mức
    bị đọc thành một lệnh cấm. */
+/* Từ mỏi là những CẶP: một từ và hạn mức của nó. Chúng phải đọc ra là cặp.
+   ĐO ĐƯỢC ở một cột: hàng rộng 426px với 284–310px trống giữa chữ và hạn mức —
+   mắt không nối được hai đầu, và 27 cặp thành 27 dòng phải dò ngang từng dòng.
+   Xếp thành cột hẹp thì quãng trống co lại còn chưa tới 100px, hạn mức vẫn canh
+   phải nên vẫn thành một cột số đọc dọc được, và cả bộ vừa sáu hàng thay vì 27. */
 .vpmoi {
   margin: 0;
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 5px;
-  max-width: 52ch;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 230px));
+  justify-content: start;
+  gap: 0 28px;
+  max-width: 1060px;
 }
 .vpmoi li {
   display: flex;
@@ -5006,8 +5166,10 @@ div:has(> .qcrow) {
   font-size: 12.5px;
   line-height: 1.72;
 }
+/* Nhiều cột thì "mục cuối" chỉ là mục cuối của MỘT cột — xoá gạch của riêng nó
+   để lại một hàng cụt nửa bên. Mọi cặp giữ gạch. */
 .vpmoi li:last-child {
-  border-bottom: 0;
+  border-bottom: 1px solid var(--line-2);
 }
 .vpmoi .tu {
   color: var(--ink);
@@ -5233,6 +5395,21 @@ div:has(> .qcrow) {
   .kvcd {
     grid-template-columns: minmax(0, 1fr);
     gap: 2px 0;
+  }
+  /* Cùng luật, và ở đây nó gắt hơn: cột nhãn của tiền đề là 178px, nên ở 500px
+     giá trị chỉ còn 253px trong khi nhãn ("Mạch chính quan hệ/trưởng thành") xé
+     thành BẢY dòng — đo được. Xếp dọc thì cả nhãn lẫn giá trị được cả bề rộng.
+     Khe 4px chứ không 2px như ba bảng kia: giá trị ở đây là nhiều đoạn văn, nên
+     nhãn cần tách khỏi đoạn ngay trên nó rõ hơn. */
+  .kvtiende {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px 0;
+  }
+  .kvtiende dt {
+    margin-top: 14px;
+  }
+  .kvtiende dt:first-child {
+    margin-top: 0;
   }
   .kvvp dt,
   .kvcp dt,

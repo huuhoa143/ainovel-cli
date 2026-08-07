@@ -74,7 +74,8 @@ export function ToSanXuat({ snapshot }: { snapshot: Snapshot }) {
         {dong.length === 0 ? (
           <p className="trongSect">{GIAI_THICH.toChuaCoVaiNao}</p>
         ) : (
-          <div className="bangwrap">
+          <div className="toBo">
+            <div className="bangwrap">
             <table className="bang bangto">
               <thead>
                 <tr>
@@ -138,15 +139,26 @@ export function ToSanXuat({ snapshot }: { snapshot: Snapshot }) {
                     </td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Chú giải đứng CẠNH bảng, không dưới bảng.
+                Cả hai câu đều nói về giới hạn của những con số bên trái — cột nào
+                không đo được, vì sao không có cột chi phí. Đặt dưới thì chúng rơi
+                ra ngoài tầm mắt của người đang đọc số, trong khi 694px bên phải
+                bảng bỏ trống. Đặt cạnh thì lời chú và thứ nó chú ở cùng một tầm
+                nhìn — và bề rộng thừa được dùng cho việc thay vì để trống. */}
+            <aside className="toChu">
+              {!doDuocVai ? <p className="steerhint">{GIAI_THICH.toKhongDoDuocVai}</p> : null}
+              <p className="steerhint">{GIAI_THICH.toKhongCoChiPhiTheoVai}</p>
+            </aside>
           </div>
         )}
 
-        {!doDuocVai && dong.length > 0 ? (
-          <p className="steerhint">{GIAI_THICH.toKhongDoDuocVai}</p>
+        {dong.length === 0 ? (
+          <p className="steerhint">{GIAI_THICH.toKhongCoChiPhiTheoVai}</p>
         ) : null}
-        <p className="steerhint">{GIAI_THICH.toKhongCoChiPhiTheoVai}</p>
       </section>
     </main>
   );
