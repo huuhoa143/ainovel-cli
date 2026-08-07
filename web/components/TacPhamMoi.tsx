@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { LoiApi, taoSach } from '@/lib/api';
-import { CHU, GIAI_THICH } from '@/lib/nhan';
+import { LoiApi, layCauHinh, taoSach } from '@/lib/api';
+import { CHU, GIAI_THICH, nhanKenhVai } from '@/lib/nhan';
+import type { CauHinhDoc } from '@/lib/types';
 
 /**
  * Tạo tác phẩm mới — một câu yêu cầu là đủ.
@@ -30,8 +31,11 @@ import { CHU, GIAI_THICH } from '@/lib/nhan';
 export function TacPhamMoi({
   onXong,
   nhapSan = '',
+  onChonKhu,
 }: {
   onXong: (book: string) => void;
+  /** Đưa người dùng sang Cấu hình máy khi model sắp dùng không phải cái họ muốn. */
+  onChonKhu?: (khu: 'cau-hinh') => void;
   /**
    * Bản yêu cầu chuyển sang từ Cùng dựng.
    *
@@ -44,6 +48,31 @@ export function TacPhamMoi({
   const [yeuCau, datYeuCau] = useState(nhapSan);
   const [dangGui, datDangGui] = useState(false);
   const [loi, datLoi] = useState<string | null>(null);
+
+  /**
+   * Cấu hình máy — CHỈ để nói trước bản này sẽ viết bằng model nào.
+   *
+   * # Vì sao bề mặt tạo sách phải biết điều đó
+   *
+   * Đây là chỗ quyết định ở Cấu hình máy được TIÊU: cuốn mới nhận `cfg.Provider` và `cfg.Roles`
+   * lúc engine mở, và từ đó không đổi được nữa trừ khi đóng máy. Nhưng màn này im lặng hoàn
+   * toàn về model — nên người dùng vừa đổi nhà cung cấp ở màn kia xong, sang đây bấm Bắt đầu,
+   * và không có gì xác nhận cái vừa đổi đã ăn hay chưa.
+   *
+   * Hỏng thì im lặng, không chặn: một dòng thông tin không đáng để chặn cả luồng tạo sách.
+   */
+  const [cauHinh, datCauHinh] = useState<CauHinhDoc | null>(null);
+  useEffect(() => {
+    let huy = false;
+    layCauHinh()
+      .then((d) => {
+        if (!huy) datCauHinh(d);
+      })
+      .catch(() => undefined);
+    return () => {
+      huy = true;
+    };
+  }, []);
 
   // Gợi tên thư mục từ câu yêu cầu để người dùng không phải tự nghĩ: bỏ dấu, hạ chữ, thay
   // mọi thứ còn lại bằng gạch ngang. Chỉ GỢI Ý — họ sửa được, vì tên thư mục là thứ họ sẽ
@@ -137,6 +166,12 @@ export function TacPhamMoi({
 
           {loi ? <p className="loiDoc">{loi}</p> : null}
 
+          {/* Model sẽ viết cuốn này, đặt TRƯỚC câu cam kết tiêu tiền.
+              Thứ tự có lý do: câu cam kết phải là dòng SÁT NÚT nhất — đó là chủ đích đã ghi
+              ngay dưới đây, và bản đầu của khối này chen vào giữa nó với nút, tức phá đúng
+              điều nó tồn tại để giữ. Đọc xuôi thành: sẽ viết bằng gì → tốn tiền thật → bấm. */}
+          {cauHinh ? <SeVietBang du={cauHinh} onChonKhu={onChonKhu} /> : null}
+
           {/* Câu cam kết đứng NGAY TRÊN nút, không nằm ở đầu trang: người dùng đọc dòng
               gần nút nhất trước khi bấm, và đây là dòng phải được đọc. */}
           <p className="vphacap">
@@ -174,5 +209,47 @@ export function TacPhamMoi({
 
       <div style={{ height: 8 }} />
     </main>
+  );
+}
+
+
+/**
+ * "Sẽ viết bằng" — vai Chấp bút và vai Kiến trúc, hai vai tiêu gần hết token của một cuốn.
+ *
+ * Không liệt kê cả bốn vai: đây là một dòng xác nhận trước khi bấm, không phải một bảng cấu
+ * hình. Bảng đầy đủ ở Cấu hình máy, và liên kết ngay đây dẫn tới đó.
+ */
+function SeVietBang({
+  du,
+  onChonKhu,
+}: {
+  du: CauHinhDoc;
+  onChonKhu?: (khu: 'cau-hinh') => void;
+}) {
+  const cua = (vai: string) => {
+    const r = du.roles?.[vai];
+    return `${r?.provider ?? du.provider} · ${r?.model ?? du.model}`;
+  };
+  return (
+    <>
+      {/* Khối này PHẢI có nhãn. Không có nó, hai dòng khóa-giá trị treo giữa câu cảnh báo tiêu
+          tiền và nút Bắt đầu mà không nói chúng là gì — người dùng thấy hai tên model không rõ
+          để làm gì. Đo được khi rà lại bề mặt: đúng loại "thiếu và không mượt". */}
+      <h3 className="deNho">{CHU.seVietBang}</h3>
+      <dl className="kv kvcd">
+        <dt>{nhanKenhVai('writer')}</dt>
+        <dd className="m">{cua('writer')}</dd>
+        <dt>{nhanKenhVai('architect')}</dt>
+        <dd className="m">{cua('architect')}</dd>
+      </dl>
+      {/* Nút đứng NGOÀI `<dl>`: nhét nó vào một cặp `<dt/><dd>` với thẻ `<dt>` rỗng để lại một
+          hàng thuật ngữ trống trong danh sách định nghĩa — vô nghĩa cho cả mắt lẫn trình đọc
+          màn hình. */}
+      {onChonKhu ? (
+        <button type="button" className="nutPhu" onClick={() => onChonKhu('cau-hinh')}>
+          {CHU.doiOCauHinh}
+        </button>
+      ) : null}
+    </>
   );
 }

@@ -2913,6 +2913,106 @@ body.dangKeoNgang * {
    nếu chỉ .ibody có luật h3 thì khu Kiểm định nhận h3 mặc định của trình duyệt —
    32px đậm đen giữa một bề mặt 11px, và không có lỗi nào để bắt vì HTML vẫn
    đúng. Thêm bề mặt mới mà quên thêm vào đây là gặp lại đúng lỗi đó. */
+/* Nhãn của một khối nhỏ NẰM TRONG một biểu mẫu — hiện dùng cho "Sẽ viết bằng" ở màn Tác
+   phẩm mới. Cùng cỡ chữ với h3 của các bảng hồ sơ để không sinh thêm một cấp tiêu đề nữa,
+   nhưng khai riêng chứ không ghép vào bộ chọn dưới: ba lớp kia là thân của một hồ sơ, còn
+   cái này đứng giữa một biểu mẫu, và gộp chúng sẽ dạy người sau rằng chúng cùng ngữ cảnh. */
+/* Bảng đối chiếu trong hộp chuyển nhà cung cấp. Không dùng `.kv` vì đây là ba CỘT so theo
+   hàng (vai → đang dùng → sẽ thành), còn `.kv` là danh sách khóa-giá trị hai cột. */
+.bangChuyen {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0 4px;
+  font: 400 12px/1.5 var(--ui);
+}
+.bangChuyen th,
+.bangChuyen td {
+  text-align: left;
+  padding: 5px 10px 5px 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: baseline;
+}
+.bangChuyen thead th {
+  font: 500 10.5px/1.4 var(--ui);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.bangChuyen tbody th {
+  font-weight: 500;
+  white-space: nowrap;
+}
+.bangChuyen td.m {
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+.bangChuyen input {
+  width: 100%;
+  min-width: 150px;
+  font: inherit;
+  font-family: var(--mono);
+  padding: 3px 6px;
+  background: var(--panel-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+/* Dòng phải chọn lại: viền trái amber, cùng ngôn ngữ với `.vphacap` — đây là chỗ cần mắt. */
+.bangChuyen tr.phaiChon th[scope='row'] {
+  box-shadow: inset 2px 0 0 var(--amber);
+  padding-left: 8px;
+}
+.bangChuyen .mo {
+  color: var(--ink-3);
+  font-size: 10.5px;
+}
+
+/* Dải báo bản dựng cũ — đứng trên cùng, ngoài lưới, chiếm cả bề ngang.
+   Tông amber như mọi cảnh báo khác của hệ (`.vphacap`), nhưng đây là dải toàn trang chứ
+   không phải một dòng trong khối, nên nó tự khai nền và khoảng đệm. */
+.daiBanDung {
+  /* NGOÀI lưới `.khung`.
+     `.khung` là grid 3×3 với vùng đặt tên cố định, và nó có ba biến thể (mặc định, `.rong`,
+     và media ≤1240px). Một phần tử con thứ tư bị tự đặt vào ô trống giữa màn — ĐO ĐƯỢC:
+     `top=401, cao=319`. Sửa cả ba biến thể template cho một dải hiếm khi hiện là trả giá
+     cao ở nơi dễ trôi nhất; `fixed` thì đúng ở mọi biến thể mà không đụng vào lưới.
+
+     Phủ lên thanh trên chứ không đẩy nó xuống: đây là trạng thái CẦN HÀNH ĐỘNG và sống rất
+     ngắn (bấm Tải lại là xong), nên che 44px trong chốc lát rẻ hơn là làm cả bố cục nhảy. */
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  background: color-mix(in oklch, var(--amber) 14%, var(--panel));
+  border-bottom: 1px solid color-mix(in oklch, var(--amber) 35%, var(--line));
+  font: 400 12.5px/1.5 var(--ui);
+  color: var(--ink);
+}
+.daiBanDung .ky {
+  color: var(--amber);
+  font-size: 9px;
+}
+.daiBanDung button {
+  margin-left: auto;
+  flex: none;
+  font: 500 12px var(--ui);
+  padding: 5px 14px;
+  border-radius: 4px;
+  border: 1px solid var(--amber);
+  background: var(--amber);
+  color: var(--tren-mau);
+  cursor: pointer;
+}
+
+.deNho {
+  font: 500 11px/1.4 var(--ui);
+  color: var(--ink-3);
+  margin: 4px 0 6px;
+}
+
 .ibody h3,
 .duyetthan h3,
 .hangthan h3 {

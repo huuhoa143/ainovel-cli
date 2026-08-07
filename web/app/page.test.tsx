@@ -52,6 +52,7 @@ const STUDIO_GIA: Studio = {
   docChuong: () => {},
   lamMoi: () => {},
   taiLai: () => {},
+  banDungDaDoi: false,
 };
 
 vi.mock('@/lib/useStudio', () => ({ useStudio: () => STUDIO_GIA }));

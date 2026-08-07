@@ -499,6 +499,28 @@ func (h *Host) Resume() (string, error) {
 		h.mu.Unlock()
 		return "", fmt.Errorf(i18n.F("%s进行中，请先完成后再恢复创作"), ex)
 	}
+	// Lấy CÁCH GỌI mới nhất trước mỗi lượt chạy: khóa API, địa chỉ gốc, timeout.
+	//
+	// Ranh giới ở đây là có chủ ý và nó chia đôi cấu hình thành hai loại:
+	//
+	//	DANH TÍNH model (vai nào dùng model nào) — thuộc LƯỢT MỞ MÁY. Đổi nó giữa chừng là
+	//	đổi cây bút giữa một chương, nên nó chỉ ăn từ lần mở sau.
+	//	CÁCH GỌI (khóa, địa chỉ, timeout) — lấy mới ở MỖI LƯỢT CHẠY. Nó không đổi engine viết
+	//	bằng gì, chỉ đổi đường đi tới đó.
+	//
+	// ĐO ĐƯỢC vì sao phải tách: gateway của người dùng hết hạn mức, họ mua khóa mới và lưu
+	// vào cấu hình; `POST /chat/completions` bằng khóa mới trả 200 trong 5,3 giây. Nhưng engine
+	// mở từ trước vẫn 429 với đúng câu cũ, vì client của nó dựng bằng khóa cũ. Không dấu hiệu
+	// nào nói ra điều đó — chỉ là "đổi khóa rồi mà vẫn lỗi", và mỗi lần bấm Chạy lại đâm vào
+	// đúng bức tường ấy.
+	//
+	// Đặt ở `Resume` chứ không ở một nút riêng: đây đúng là khoảnh khắc engine sắp tiêu tiền,
+	// và là chỗ một engine ĐANG MỞ khớp lại được với một engine vừa mở (`mo` đọc tệp mới).
+	//
+	// SAU hai cửa chặn chứ không trước: một lượt Resume bị từ chối không tiêu đồng nào, nên
+	// nó cũng không nên đọc hai tệp và dựng lại mọi client. Tác dụng phụ trên một thao tác đã
+	// hỏng là thứ về sau không ai đoán ra.
+	h.napLaiNhaCungCap()
 	h.mu.Unlock()
 
 	label, err := resumeLabel(h.store)
@@ -1320,9 +1342,47 @@ func deriveStatusLabel(s UISnapshot) string {
 
 // ── 模型管理 ──
 
+// napLaiNhaCungCap kéo danh mục nhà cung cấp mới nhất từ tệp cấu hình vào engine ĐANG CHẠY.
+//
+// Engine giữ ảnh chụp cấu hình từ lúc `host.New`, và với hầu hết mọi thứ thì đó là điều đúng —
+// một lượt chạy không nên đổi model giữa chừng vì ai đó vừa sửa tệp. Nhưng DANH MỤC nhà cung
+// cấp không phải cấu hình đang có hiệu lực, nó là danh sách những nơi CÓ THỂ gọi tới. Đóng băng
+// nó làm hỏng đúng một việc người dùng hay làm: thêm nhà cung cấp rồi chuyển cuốn đang chạy
+// sang đó — ô chọn không có nó, và nếu có thì `Swap` cũng chết vì `ms.config` chưa biết nó.
+//
+// Người gọi phải đang giữ `h.mu`.
+// # Hai đích, hai luật — và đó không phải mâu thuẫn
+//
+// `h.cfg.Providers` bị THAY: nó nuôi danh sách trên giao diện, và nó là thứ `SwitchModel` ghi
+// ngược ra đĩa (`SaveConfig(h.configPath, h.cfg)`). Trộn ở đây làm một nhà cung cấp ĐÃ XÓA
+// sống lại — người dùng xóa nó khỏi tệp, rồi chỉ cần đổi model của một vai bất kỳ là nó quay
+// về đĩa NGUYÊN KHÓA API. Tệp là nguồn sự thật của cấu hình, nên chiều này phải là thay.
+//
+// `ModelSet` vẫn TRỘN: nó cầm những client đang được một lượt chạy dùng dở, và rút một nhà
+// cung cấp khỏi nó là cắt ngang engine đang sống. Xóa khỏi cấu hình nghĩa là "đừng dùng nó
+// cho lượt sau", không phải "giết lượt đang chạy".
+func (h *Host) napLaiNhaCungCap() {
+	cfg, err := bootstrap.LoadConfig()
+	if err != nil {
+		// Nói ra chứ không nuốt: một tệp cấu hình sai cú pháp làm MỌI lượt nạp lại thành
+		// không-làm-gì, và triệu chứng ở đầu kia là "đổi khóa rồi mà vẫn lỗi" — đúng câu đã
+		// tốn của người dùng cả buổi.
+		slog.Warn(i18n.F("重新加载供应商目录失败"), "module", "config", "err", err)
+		return
+	}
+	if len(cfg.Providers) == 0 {
+		// Danh mục rỗng gần như luôn là đọc hỏng chứ không phải chủ ý; giữ nguyên thứ đang
+		// dùng được vẫn hơn là xóa trắng.
+		return
+	}
+	h.cfg.Providers = cfg.Providers
+	h.models.CapNhatNhaCungCap(cfg.Providers)
+}
+
 func (h *Host) ConfiguredProviders() []string {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	h.napLaiNhaCungCap()
 	providers := make([]string, 0, len(h.cfg.Providers))
 	for name := range h.cfg.Providers {
 		providers = append(providers, name)
@@ -1334,6 +1394,7 @@ func (h *Host) ConfiguredProviders() []string {
 func (h *Host) ConfiguredModels(provider string) []string {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	h.napLaiNhaCungCap()
 	return h.cfg.CandidateModels(provider)
 }
 
@@ -1347,6 +1408,9 @@ func (h *Host) SwitchModel(role, provider, model string) error {
 	if provider == "" || model == "" {
 		return fmt.Errorf("provider and model are required")
 	}
+	// Nạp lại TRƯỚC khi tra: người dùng vừa thêm nhà cung cấp ở màn Cấu hình rồi sang đây đổi
+	// ngay là đường đi thường gặp nhất, và không có dòng này thì nó chết ở `ms.config`.
+	h.napLaiNhaCungCap()
 	if err := h.models.Swap(role, provider, model); err != nil {
 		return err
 	}

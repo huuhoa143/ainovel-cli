@@ -92,6 +92,32 @@ export function laKhu(v: string | null | undefined): v is Khu {
 }
 
 /**
+ * Mã khu CŨ → mã khu hiện hành.
+ *
+ * `kenh-vai-chung` đã nhập vào `cau-hinh` (dải kênh vai giờ là một khối của bề mặt Cấu hình
+ * máy). Mã khu đi vào thanh địa chỉ nên nó nằm trong dấu trang và lịch sử của người dùng —
+ * bỏ nó là để một liên kết cũ rơi vào khu mặc định, tức bật sang buồng lái của một cuốn nào
+ * đó thay vì màn họ định mở.
+ *
+ * # Vì sao chuẩn hóa ở đây chứ không thêm một `case` trong `page.tsx`
+ *
+ * ĐO ĐƯỢC: một `case 'kenh-vai-chung'` vẽ đúng bề mặt, nhưng `khu` vẫn giữ giá trị cũ nên
+ * rail so `di="cau-hinh"` với nó và KHÔNG mục nào sáng. Người dùng vào bằng liên kết cũ thấy
+ * đúng nội dung nhưng không biết mình đang đứng ở đâu. Đổi ngay lúc đọc URL thì mọi thứ
+ * xuôi theo: rail sáng đúng mục, và `ghiUrl` viết lại địa chỉ thành mã mới.
+ */
+const KHU_DOI_TEN: Record<string, Khu> = {
+  'kenh-vai-chung': 'cau-hinh',
+};
+
+export function chuanKhu(v: string | null | undefined): Khu | undefined {
+  if (!v) return undefined;
+  const doi = KHU_DOI_TEN[v];
+  if (doi) return doi;
+  return laKhu(v) ? v : undefined;
+}
+
+/**
  * Khu mức MÁY: bề mặt của nó không đọc `tacPham`, và nội dung không đổi khi người dùng
  * chuyển tác phẩm.
  *

@@ -714,7 +714,19 @@ export function xoaSach(book: string): Promise<{ book: string; deleted: boolean 
  */
 export function lietKeModel(
   provider?: string,
-): Promise<{ provider: string; models: string[]; count: number }> {
+): Promise<{
+  provider: string;
+  models: string[];
+  count: number;
+  /**
+   * Cửa sổ ngữ cảnh do CHÍNH nhà cung cấp khai, theo tên model.
+   *
+   * Đây là nguồn đúng duy nhất: cùng một tên model có trần khác nhau ở hai gateway
+   * (`cx/gpt-5.6-luna` là 272.000 ở 9Router, còn registry toàn cục nói 1.050.000 vì nó
+   * mô tả model GỐC của hãng). Vắng mặt khi nhà cung cấp không khai.
+   */
+  windows?: Record<string, number>;
+}> {
   // Qua đường GHI dù là GET: server đặt `/api/models` sau hàng rào chống CSRF vì nó phát
   // một yêu cầu ra ngoài kèm khóa API. `doc()` không gắn header rào nên sẽ ăn 403.
   const q = provider ? `?provider=${encodeURIComponent(provider)}` : '';

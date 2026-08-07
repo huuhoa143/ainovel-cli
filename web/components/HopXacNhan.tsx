@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 
 import { CHU } from '@/lib/nhan';
 
@@ -33,17 +33,38 @@ export function HopXacNhan({
   nhanLam,
   onLam,
   onHuy,
+  nhanPhu,
+  onPhu,
   dangLam = false,
+  nhanDangLam,
 }: {
   moRa: boolean;
   /** Câu hỏi, một dòng. */
   tieuDe: string;
-  /** Nói ra CÁI MẤT — số chương, số tiền. Đây là phần buộc phải đọc. */
-  than: string;
+  /**
+   * Nói ra CÁI MẤT — số chương, số tiền. Đây là phần buộc phải đọc.
+   *
+   * Nhận cả `ReactNode` chứ không riêng chuỗi: có hộp cần một BẢNG đối chiếu (chuyển cả dây
+   * chuyền sang nhà cung cấp khác — vai nào giữ được tên model, vai nào phải chọn lại). Dựng
+   * một vỏ hộp thứ hai cho ca đó là chép lại cả ba thứ mà `<dialog>` gốc cho sẵn: bẫy focus,
+   * `Escape`, và `::backdrop`.
+   */
+  than: ReactNode;
   nhanLam: string;
   onLam: () => void;
   onHuy: () => void;
+  /**
+   * Hành động THAY THẾ, đứng giữa Hủy và hành động chính.
+   *
+   * Có ca mà câu hỏi thật sự có ba lối ra, không hai: đổi nhà cung cấp mặc định khi còn vai
+   * đặt riêng — hủy, chỉ đổi mặc định, hoặc chuyển cả dây chuyền. Ép nó thành hai lối là bắt
+   * người dùng đoán xem "Đồng ý" nghĩa là lối nào.
+   */
+  nhanPhu?: string;
+  onPhu?: () => void;
   dangLam?: boolean;
+  /** Nhãn lúc đang gửi. Mặc định là câu của lượt xóa — hộp này ra đời cho nút Xóa. */
+  nhanDangLam?: string;
 }) {
   const hop = useRef<HTMLDialogElement>(null);
   const nutHuy = useRef<HTMLButtonElement>(null);
@@ -76,13 +97,18 @@ export function HopXacNhan({
       aria-labelledby="hopxn-de"
     >
       <h2 id="hopxn-de">{tieuDe}</h2>
-      <p>{than}</p>
+      {typeof than === 'string' ? <p>{than}</p> : than}
       <div className="hopxnNut">
         <button type="button" ref={nutHuy} onClick={onHuy} disabled={dangLam}>
           {CHU.huy}
         </button>
+        {nhanPhu && onPhu ? (
+          <button type="button" onClick={onPhu} disabled={dangLam}>
+            {nhanPhu}
+          </button>
+        ) : null}
         <button type="button" className="hopxnLam" onClick={onLam} disabled={dangLam}>
-          {dangLam ? CHU.dangXoa : nhanLam}
+          {dangLam ? (nhanDangLam ?? CHU.dangXoa) : nhanLam}
         </button>
       </div>
     </dialog>

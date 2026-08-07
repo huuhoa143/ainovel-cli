@@ -343,6 +343,32 @@ export function nhanCheDoTien(mode: string | undefined): string | undefined {
 }
 
 /**
+ * Nhãn tiếng Việt của một KÊNH MODEL.
+ *
+ * Một bảng, ba nơi dùng: dải kênh vai ở Cấu hình máy, dải kênh ở Phiên chạy, và dòng "đang
+ * dùng bởi" trên thẻ nhà cung cấp. Ba bản chép sẽ trôi khỏi nhau, và lúc đó cùng một vai mang
+ * hai cái tên trên cùng một màn hình.
+ *
+ * KHÁC `nhanVai` ở trên: cái đó là tên hiển thị của một TÁC TỬ trong dòng sự kiện và bảng tổ
+ * sản xuất (`Architect`, `Writer` — giữ nguyên tiếng Anh vì engine phát ra đúng chuỗi đó).
+ * Cái này là nhãn của một ô chọn model, và nó có thêm `default` — thứ không phải tác tử nào.
+ */
+export function nhanKenhVai(vai: string): string {
+  switch (vai) {
+    case 'default':
+      return CHU.vaiMacDinh;
+    case 'architect':
+      return CHU.vaiArchitect;
+    case 'writer':
+      return CHU.vaiWriter;
+    case 'editor':
+      return CHU.vaiEditor;
+    default:
+      return vai;
+  }
+}
+
+/**
  * `domain.PlanningTier`: short / mid / long (internal/domain/runtime.go:35–37).
  * Không kèm số chương vào nhãn — ngưỡng chương của mỗi mức nằm ở tầng quy hoạch
  * và không đọc được từ đây, nên viết ra là bịa. Số chương thật đã có ở thanh
@@ -698,8 +724,33 @@ export const CHU = {
   phienChayKhu: 'Phiên chạy',
 
   /* cấu hình máy — mức MÁY, không phải mức tác phẩm */
-  cauHinh: 'Nhà cung cấp & khóa',
+  /**
+   * Tên bề mặt, KHÔNG còn là 'Nhà cung cấp & khóa'.
+   *
+   * Từ bản gộp, màn này giữ ba khối: nhà cung cấp & khóa, model theo vai, và các mặc định
+   * khác. Giữ tên cũ là để tiêu đề chỉ nói về khối ĐẦU TIÊN — người dùng đọc H1 rồi thấy hai
+   * khối họ không được báo trước, và mục rail cũng hứa hụt như vậy.
+   */
+  cauHinh: 'Cấu hình máy',
   kenhVaiChung: 'Model theo vai',
+  /** Những mặc định KHÔNG thuộc về vai nào — sau khi model đã dọn hết sang dải kênh vai. */
+  macDinhKhac: 'Mặc định khác',
+  doiOCauHinh: 'Đổi ở Cấu hình máy',
+  chuyenCaDay: 'Chuyển cả dây chuyền',
+  doiMacDinh: 'Đổi mặc định',
+  chiDoiMacDinh: 'Chỉ đổi mặc định',
+  capNhatModel: 'Cập nhật model',
+  dangChuyen: 'Đang chuyển…',
+  // `vai: 'Vai'` đã có sẵn ở khối nhân vật và mang đúng nghĩa cần ở đây — khai lại là hai
+  // chuỗi cho một nhãn, và `tsc` bắt ngay vì object literal không cho trùng khóa.
+  dangDung: 'Đang dùng',
+  seThanh: 'Sẽ thành',
+  phaiChonLai: '· chọn lại',
+  modelMoiCua: (vai: string) => `Model mới của ${vai}`,
+  seVietBang: 'Sẽ viết bằng',
+  /** Nhãn dòng "vai nào đang dùng nhà cung cấp này" trên thẻ nhà cung cấp. */
+  dungBoi: 'Đang dùng bởi',
+  khongVaiNaoDung: 'chưa vai nào dùng',
   /* "Gỡ" chứ không "Xóa": không có gì bị mất, vai chỉ quay về thừa hưởng mặc định. */
   goDatRieng: 'Gỡ, dùng mặc định',
   chiPhiXuong: 'Chi phí toàn xưởng',
@@ -716,7 +767,19 @@ export const CHU = {
   loaiGiaoThuc: 'Giao thức',
   diaChiGoc: 'Địa chỉ gốc',
   khoaApi: 'Khóa API',
-  danhSachModel: 'Model',
+  /**
+   * Nhãn của `providers[].models` — DANH MỤC, không phải lựa chọn đang có hiệu lực.
+   *
+   * Chuỗi cũ là 'Model' (số ít), và nó nói dối đúng kiểu "khóa còn dùng được": người dùng đọc
+   * "Model: cx/gpt-5.6-luna" trên thẻ thành "nhà cung cấp này ĐANG dùng model này", sửa nó,
+   * rồi hỏi vì sao bốn vai không đổi theo. Sự thật là trường này chỉ nạp gợi ý vào ô chọn;
+   * model có hiệu lực nằm ở dải kênh vai bên dưới.
+   */
+  danhSachModel: 'Danh sách model',
+  /** Nhãn hành động khi các vai đang trỏ vào model mà nhà cung cấp của chúng không khai. */
+  suaCaBonVai: (ncc: string) => `Sửa các vai theo ${ncc}`,
+  ghiLaiCuaSo: 'Ghi lại cửa sổ',
+  taiLaiNgay: 'Tải lại',
   luu: 'Lưu',
   dangLuu: 'Đang lưu…',
   daLuu: 'Đã lưu',
@@ -728,7 +791,25 @@ export const CHU = {
   chuaDatKhoa: 'chưa có khóa',
   giuKhoaCu: 'để trống = giữ khóa hiện tại',
   tepCauHinh: 'Tệp cấu hình',
-  kenhVai: 'Model theo vai',
+  /**
+   * Tiêu đề dải kênh trong Phiên chạy.
+   *
+   * KHÔNG còn trùng tên với dải ở Cấu hình máy ("Model theo vai"), và đó là sửa một chỗ nói
+   * dối: hai dải cùng tên nhưng một cái ăn NGAY vào engine đang chạy, cái kia chỉ ăn từ lượt
+   * mở sau. Trên chính màn này, khối ngay trên lại in model LÚC KHỞI ĐỘNG — cũng nhãn "Model".
+   * Ba thứ khác nghĩa mang hai cái tên.
+   */
+  kenhVai: 'Đang chạy với',
+  /** Khối đọc từ `run.json` — giá trị LÚC KHỞI ĐỘNG, không phải giá trị đang có hiệu lực. */
+  khoiDongVoi: 'Khởi động với',
+  /**
+   * Tiêu đề của chính khối đó khi engine ĐÓNG.
+   *
+   * "Đang chạy với" trên một máy đã đóng là một khẳng định không đo được — cùng lớp lỗi mà
+   * `DieuKhien` đã tránh khi từ chối in "Tự chạy liên tục" lúc `advance === null`. Nói đúng
+   * trạng thái, và nút ngay dưới ("Mở máy") khớp với nó.
+   */
+  mayDangDong: 'Máy đang đóng',
   vaiMacDinh: 'Mặc định',
   vaiArchitect: 'Kiến trúc',
   vaiWriter: 'Chấp bút',
@@ -1224,6 +1305,16 @@ export const CHU = {
   model: 'Model',
   napModel: 'Nạp danh sách model',
   dangNapModel: 'Đang hỏi nhà cung cấp…',
+  /**
+   * Nhãn trên THẺ nhà cung cấp — cùng một lượt gọi với `napModel`, khác tên vì khác câu hỏi.
+   *
+   * Ở khối Mặc định, người dùng hỏi "cho tôi tên model để chọn". Ở thẻ nhà cung cấp, người
+   * dùng vừa gõ xong địa chỉ gốc với khóa và hỏi "cái này có sống không". Cùng một câu trả
+   * lời phục vụ cả hai, nhưng gọi nó là "Nạp danh sách model" ở đây thì không ai bấm —
+   * không ai đang tìm danh sách model.
+   */
+  kiemTraNcc: 'Kiểm tra',
+  dangKiemTraNcc: 'Đang kiểm tra…',
   xoaTacPham: 'Xóa',
   /** Tiêu đề hộp xác nhận. Câu hỏi ở đây, phần MẤT GÌ ở thân — không lặp lại nhau. */
   xacNhanXoaDe: (ten: string) => `Xóa "${ten}"?`,
@@ -1400,10 +1491,123 @@ export const GIAI_THICH = {
   xoaKhongHoanTac:
     'Xóa hẳn tác phẩm này khỏi đĩa — bản thảo và nhật ký phán quyết mất theo, không hoàn tác được.',
 
+  /**
+   * Kết quả của nút Kiểm tra — nói ĐÚNG phạm vi đã chứng minh, không hơn.
+   *
+   * # "khóa còn dùng được" là một lời hứa quá rộng, và nó đã lừa người dùng
+   *
+   * Nút này gọi `GET /v1/models`. ĐO ĐƯỢC trên gateway của người dùng, cùng một khóa:
+   *
+   *     GET  /v1/models           → 200, liệt kê đủ model
+   *     POST /v1/chat/completions → 429 "token quota exceeded for this API key"
+   *
+   * Liệt kê là đường METADATA; nó vẫn chạy ngon khi hạn mức sinh chữ đã cạn. Người dùng bấm
+   * Kiểm tra, đọc "khóa còn dùng được", bấm Chạy, và engine chết ở lượt Writer đầu tiên.
+   *
+   * Ba điều lượt gọi này thật sự chứng minh: địa chỉ gốc đúng, mạng thông, khóa được nhận
+   * diện (401/403 thì không), và tên model có thật. HẠN MỨC không nằm trong đó — nên nhãn
+   * phải nói ra chỗ nó không với tới, thay vì để người đọc tự suy ra một bảo đảm không có.
+   */
   napModelXong: (n: number) =>
     n === 0
       ? 'Gọi được nhà cung cấp, nhưng nó không trả model nào — gõ tay tên model.'
-      : `Gọi được nhà cung cấp · ${n} model · khóa còn dùng được`,
+      : `Gọi được nhà cung cấp · ${n} model · khóa hợp lệ — chưa kiểm hạn mức`,
+
+  /**
+   * Chưa lưu khóa thì chưa kiểm được — nói TRƯỚC thay vì để người dùng bấm rồi nhận lỗi.
+   *
+   * `handleLietKeModel` chặn ca này ở server với đúng câu ấy, nên nút vẫn an toàn nếu bật.
+   * Nhưng một nút bấm được rồi luôn báo lỗi là một nút nói dối; tắt nó kèm lý do thì không.
+   */
+  /**
+   * Bản dựng giao diện trên đĩa đã khác bản tab này đang chạy.
+   *
+   * `next build` thay toàn bộ tệp chunk. JS đã tải vẫn chạy — dòng sự kiện vẫn chảy — nhưng
+   * mảnh nào nạp VỀ SAU thì nhận 404, và bề mặt hỏng nửa vời trong im lặng. Người dùng phải
+   * tự đoán ra rằng cần F5; lời nguyên văn: "phải F5 thì mới thấy được… hơi bị phiền".
+   *
+   * Nói ra HẬU QUẢ chứ không chỉ nói "có bản mới": "có bản mới" đọc như một lời mời nâng cấp
+   * có thể để sau, còn sự thật là tab này đã hỏng một nửa rồi.
+   */
+  banDungDaDoi:
+    'Giao diện đã được dựng lại — tab này đang chạy bản cũ và có thể thiếu chữ hoặc kẹt ở ' +
+    'vài chỗ. Tải lại để dùng bản mới; lượt chạy của engine không bị ảnh hưởng.',
+
+  nccChuaCoKhoaDeKiem: 'Lưu khóa API cho nhà cung cấp này rồi mới kiểm tra được.',
+
+  /**
+   * Nhà cung cấp khai một cửa sổ ngữ cảnh khác thứ đang ghi trong thẻ.
+   *
+   * Không ghi thì `ResolveContextWindow` rơi xuống registry toàn cục — thứ mô tả model GỐC
+   * của hãng, không phải trần của gateway đang gọi. ĐO ĐƯỢC: 9Router khai 272.000 cho
+   * `cx/gpt-5.6-luna`, registry trả 1.050.000, và engine in `ngữ cảnh 0% (5/1050000)`. Bộ nén
+   * khi ấy chờ một ngưỡng không bao giờ tới, còn gateway chặn từ lâu trước đó.
+   */
+  cuaSoLech: (ncc: string, ds: string[]) =>
+    `${ncc} khai cửa sổ ngữ cảnh khác thứ đang ghi: ${ds.join(', ')}. Chưa ghi lại thì engine ` +
+    `dùng con số của registry chung — có thể lớn hơn trần thật, và bộ nén sẽ không kịp nén.`,
+
+  /**
+   * Thêm một nhà cung cấp TRÙNG TÊN với thẻ đã có.
+   *
+   * ĐO ĐƯỢC trên máy người dùng, và đây là hỏng câm nguy hiểm nhất của bề mặt này: tên nhà
+   * cung cấp là KHÓA trong `cfg.Providers`, nên lưu một tên đã tồn tại ghi đè thẳng lên thẻ cũ
+   * — mất địa chỉ gốc, mất khóa API, mất cả danh sách model. Trên màn hình thì không có thẻ
+   * mới nào hiện ra, nên nó đọc ra là "bấm Lưu chả thấy gì".
+   *
+   * Hư hại còn kéo dài: các vai vẫn ghim vào tên model của nhà cung cấp CŨ, mà model đó không
+   * còn trong danh sách nữa — lượt chạy tới chết ở Arbiter với một thông báo nói về khóa API.
+   *
+   * Chỉ đường sang nút Sửa thay vì chỉ nói "trùng": người dùng gõ trùng tên hầu như luôn vì họ
+   * ĐANG MUỐN đổi cái cũ (gateway riêng nói giao thức openai nên họ đặt luôn tên `openai`).
+   */
+  /**
+   * Tiêu đề và thân của hộp chuyển nhà cung cấp.
+   *
+   * Nói ra vì sao phải NHÌN bảng: tên model chỉ có nghĩa bên trong một nhà cung cấp, nên sang
+   * nơi mới có vai giữ được tên và có vai không. Đây đúng là chỗ đã đẻ ra ca hỏng đo được —
+   * ba vai trỏ `openai · cx/gpt-5.5` trong khi `openai` chỉ khai `claude-opus-5`.
+   */
+  chuyenDe: (ten: string) => `Chuyển sang ${ten}?`,
+  /**
+   * Cùng hộp, nhưng khi MỌI vai đã ở đúng nhà cung cấp rồi thì đây không phải một lượt
+   * "chuyển" — chỉ là cập nhật tên model cho khớp danh mục vừa sửa. Gọi đúng tên việc.
+   */
+  capNhatModelDe: (ten: string) => `Cập nhật model theo ${ten}?`,
+  capNhatModelThan: (ten: string) =>
+    `Các vai dưới đây đang trỏ vào model mà ${ten} không khai. Chọn tên đúng rồi xác nhận — ` +
+    `một lượt ghi cho tất cả.`,
+  chuyenThan: (ten: string) =>
+    `Tên model chỉ có nghĩa bên trong một nhà cung cấp, nên không phải vai nào cũng mang được ` +
+    `tên cũ sang ${ten}. Dòng ghi "chọn lại" là dòng cần mắt bạn — sửa ngay trong bảng.`,
+
+  nccTrungTen: (ten: string) =>
+    `Đã có nhà cung cấp tên "${ten}". Muốn đổi nó thì bấm Sửa trên thẻ đó — lưu đè ở đây sẽ ` +
+    `xóa mất khóa và danh sách model của nó. Muốn thêm một cái riêng thì đặt tên khác.`,
+
+  /**
+   * Xóa nhà cung cấp còn vai ghim vào nó.
+   *
+   * Nói ra HỆ QUẢ đã được xử lý, không hỏi "bạn có chắc không": lượt xóa tự gỡ những vai đó về
+   * mặc định, vì để lại một vai trỏ vào nhà cung cấp không còn sẽ làm `NewModelSet` lỗi và
+   * KHÔNG MỞ ĐƯỢC MÁY cho bất kỳ cuốn nào.
+   */
+  xoaNccGoLuonGhim: (vai: string[]) =>
+    `Xóa cả phần đặt riêng của ${vai.join(', ')} — những vai đó quay về dùng model mặc định.`,
+
+  /**
+   * Tên model KHAI trong thẻ mà nhà cung cấp không có.
+   *
+   * Đây đúng là lỗi đã xảy ra trên máy thật (`cx/gpt-5.5` khai đúng, ô mặc định gõ `gpt-5.5`),
+   * chỉ khác chỗ phát hiện: bắt được ngay trên thẻ thì sửa được lúc còn đang gõ, thay vì đợi
+   * tới lượt chạy đầu tiên và nhận một thông báo nói về khóa API.
+   *
+   * Nói "không thấy" chứ không nói "sai": có gateway không liệt kê hết model qua `/v1/models`,
+   * nên đây là nghi vấn đáng kiểm, không phải một phán quyết.
+   */
+  nccKhaiModelLa: (thieu: string[], ncc: string) =>
+    `${ncc} không liệt kê: ${thieu.join(', ')}. Kiểm lại chính tả — hoặc bỏ qua nếu bạn ` +
+    `biết gateway này không trả hết model qua danh sách.`,
 
   /**
    * Model đang đặt không nằm trong danh sách nhà cung cấp vừa trả về.
@@ -1413,6 +1617,17 @@ export const GIAI_THICH = {
    * `No active credentials for provider` — một câu về KHÓA, trong khi khóa hoàn toàn đúng
    * và thứ sai là tên model.
    */
+  /**
+   * Model của một vai không nằm trong danh sách mà nhà cung cấp của nó KHAI.
+   *
+   * Yếu hơn `modelKhongCoThat` một bậc và đó là chủ ý: nguồn ở đây là danh sách người dùng tự
+   * gõ, không phải câu trả lời của nhà cung cấp. Nhưng nó KHÔNG cần mạng, nên nó bật ngay —
+   * và ca hỏng đo được lộ ra đúng ở phép so này, nhiều giờ trước khi ai đó bấm nạp.
+   */
+  modelChuaKhai: (model: string, ncc: string) =>
+    `${ncc} chưa khai model "${model}". Bấm Kiểm tra trên thẻ ${ncc} để hỏi thẳng nó, hoặc ` +
+    `thêm tên này vào danh sách model của thẻ nếu bạn chắc nó có.`,
+
   modelKhongCoThat: (model: string, ncc: string) =>
     `${ncc} không có model tên "${model}". Lượt chạy tới sẽ dừng ngay ở Arbiter, và ` +
     `thông báo lúc đó sẽ nói về khóa API chứ không nói về tên model. Chọn một tên trong ô trên.`,
@@ -1437,9 +1652,6 @@ export const GIAI_THICH = {
   cauHinhCuonDangMo: (ten: string) =>
     `${ten} đang mở engine — engine giữ cấu hình từ lúc nó được mở, nên thay đổi ở đây chỉ ` +
     'ăn vào lượt sau. Đóng rồi mở lại cuốn đó để áp ngay.',
-  kenhVaiChungGiaiThich:
-    'Model mặc định cho từng vai, áp cho mọi lượt chạy sau. Khác với Model theo vai trong ' +
-    'Phiên chạy: chỗ đó đổi model của một engine ĐANG MỞ và chỉ sống hết lượt đó.',
   kenhVaiChungThuaHuong:
     'Vai không đặt riêng thì thừa hưởng model mặc định ở trên. Gỡ một vai là cho nó ' +
     'thừa hưởng lại.',
@@ -1476,6 +1688,21 @@ export const GIAI_THICH = {
   kenhVaiCanMayMo:
     'Đổi model theo vai tác động lên engine ĐANG MỞ, nên nó chỉ hiện khi tác phẩm này ' +
     'đang mở máy. Muốn đổi mặc định cho mọi lượt sau thì sửa ở Cấu hình máy.',
+  /**
+   * Dải kênh ở Phiên chạy ăn ngay VÀ ghi vĩnh viễn — hai hệ quả, và cái thứ hai hay bị bỏ sót.
+   *
+   * `Host.SwitchModel` dựng lại model set của engine đang chạy RỒI ghi `cfg.Roles` xuống tệp
+   * (`host.go:1352-1360`). Nên một lần đổi "cho lượt này thôi" thật ra dính vĩnh viễn — đúng
+   * cách ba dòng ghim trong tệp của người dùng ra đời mà họ không nhớ đã đặt bao giờ.
+   */
+  kenhVaiAnNgayVaGhi:
+    'Đổi ở đây ăn ngay từ lượt gọi model kế tiếp — không cần mở lại máy. Nó cũng được ghi ' +
+    'thành mặc định cho mọi lượt sau; muốn bỏ thì gỡ ở Cấu hình máy.',
+
+  /** Model lúc khởi động đã KHÁC model đang chạy — nói ra thay vì để hai con số cãi nhau. */
+  kenhVaiDaDoiSoVoiKhoiDong: (cu: string, moi: string) =>
+    `Đã đổi giữa chừng: khởi động với ${cu}, hiện đang chạy ${moi}.`,
+
   kenhVaiThuaHuong:
     'Vai chưa đặt riêng thì dùng model mặc định. Đổi mặc định sẽ đổi luôn các vai này.',
   /** capabilities.steer === false */

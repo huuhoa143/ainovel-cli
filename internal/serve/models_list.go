@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -94,14 +96,50 @@ func (s *server) handleLietKeModel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// CỬA SỔ NGỮ CẢNH được đọc luôn, và đó là sửa một lỗ hổng đo được.
+	//
+	// Bản trước chỉ lấy `id`/`name` rồi vứt phần còn lại. Hệ quả: `ResolveContextWindow` không
+	// có nguồn nào cho nhà cung cấp này nên rơi xuống registry TOÀN CỤC — thứ nói về model
+	// GỐC của hãng, không phải về cái gateway đang phục vụ.
+	//
+	// ĐO ĐƯỢC trên máy người dùng: `9Router` khai `cx/gpt-5.6-luna` có cửa sổ 272.000, nhưng
+	// registry khớp `gpt-5.6-luna` của openai và trả 1.050.000. Engine tưởng mình có gấp bốn
+	// lần chỗ thật, nên bộ nén ngữ cảnh không nén cho tới một ngưỡng không bao giờ tới —
+	// còn gateway thì chặn ở 272.000. Cùng một tên model có thể có trần khác nhau ở hai
+	// gateway, nên nguồn ĐÚNG luôn là chính gateway đang gọi.
+	//
+	// Ba hình dạng đã gặp: `capabilities.contextWindow` (9Router), `context_window`,
+	// `context_length` (OpenRouter). Đọc cả ba, lấy cái đầu tiên khác 0.
+	//
+	// # Vì sao mọi trường cửa sổ đều là `json.RawMessage`
+	//
+	// Cửa sổ là thứ ta MUỐN; danh sách model là thứ ta CẦN — nó bắt cái typo `cx/gpt-5.5` vs
+	// `gpt-5.5` kể trên. Khai kiểu chặt cho phần muốn là cho phép nó giết phần cần: một lỗi
+	// giải mã ở BẤT KỲ trường nào cũng làm cả lượt đọc hỏng và trả về danh sách rỗng.
+	//
+	// ĐO ĐƯỢC, 5 trong 7 hình dạng thật gãy khi khai `int`/struct — trong khi bản chỉ có
+	// `id`/`name` đọc trôi cả 7:
+	//
+	//	"capabilities": ["vision","tools"]   → cannot unmarshal array into ... type suc
+	//	"capabilities": true                 → cannot unmarshal bool into ... type suc
+	//	"context_length": "128000"           → cannot unmarshal string into ... type int
+	//	"context_length": 128000.0           → cannot unmarshal number into ... type int
+	//
+	// `capabilities` dạng mảng là hình dạng phổ biến, nên đây không phải ca hiếm. Luật rút ra:
+	// một trường phụ đọc từ payload của người khác không bao giờ được phép làm rơi trường
+	// chính. Hình dạng lạ thì mất CỬA SỔ, không mất DANH SÁCH.
 	var than struct {
 		Data []struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
+			ID            string          `json:"id"`
+			Name          string          `json:"name"`
+			ContextWindow json.RawMessage `json:"context_window"`
+			ContextLength json.RawMessage `json:"context_length"`
+			Capabilities  json.RawMessage `json:"capabilities"`
 		} `json:"data"`
 		// Anthropic trả cùng dạng `data[]`, Gemini trả `models[]`.
 		Models []struct {
-			Name string `json:"name"`
+			Name          string          `json:"name"`
+			ContextWindow json.RawMessage `json:"context_window"`
 		} `json:"models"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&than); err != nil {
@@ -110,14 +148,25 @@ func (s *server) handleLietKeModel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ten2 := map[string]bool{}
-	for _, m := range than.Data {
-		if m.ID != "" {
-			ten2[m.ID] = true
+	cua := map[string]int{}
+	ghiCua := func(ten string, ws ...int) {
+		if ten == "" {
+			return
 		}
+		ten2[ten] = true
+		for _, w := range ws {
+			if w > 0 {
+				cua[ten] = w
+				return
+			}
+		}
+	}
+	for _, m := range than.Data {
+		ghiCua(m.ID, cuaTrongNang(m.Capabilities), soMem(m.ContextWindow), soMem(m.ContextLength))
 	}
 	for _, m := range than.Models {
 		// Gemini trả "models/gemini-2.5-pro"; cắt tiền tố cho khớp thứ người dùng gõ.
-		ten2[strings.TrimPrefix(m.Name, "models/")] = true
+		ghiCua(strings.TrimPrefix(m.Name, "models/"), soMem(m.ContextWindow))
 	}
 
 	ds := make([]string, 0, len(ten2))
@@ -127,10 +176,63 @@ func (s *server) handleLietKeModel(w http.ResponseWriter, r *http.Request) {
 	sort.Strings(ds)
 
 	writeJSON(w, map[string]any{
+		// `windows` đi RIÊNG khỏi `models` chứ không gộp thành mảng đối tượng: `models` đang
+		// nạp thẳng vào `datalist` của giao diện, và đổi hình dạng của nó là bắt mọi chỗ đọc
+		// phải sửa theo cho một thông tin mà phần lớn trong số đó không cần.
+		"windows":  cua,
 		"provider": ten,
 		"models":   ds,
 		"count":    len(ds),
 	})
+}
+
+// soMem đọc một con số từ JSON thô, và trả 0 thay vì LỖI khi hình dạng không phải số.
+//
+// Nhận cả `272000`, `272000.0` và `"272000"` — ba cách các gateway đã dùng để nói cùng một
+// điều. Không nhận thì mất cửa sổ ở gateway đó; khai kiểu chặt để bắt nhận thì mất cả danh
+// sách model, vì một lỗi giải mã làm hỏng nguyên lượt đọc.
+func soMem(raw json.RawMessage) int {
+	s := strings.TrimSpace(string(raw))
+	if s == "" || s == "null" {
+		return 0
+	}
+	// Chuỗi bọc số: `"context_length": "128000"`.
+	if s[0] == '"' {
+		var trong string
+		if json.Unmarshal(raw, &trong) != nil {
+			return 0
+		}
+		s = strings.TrimSpace(trong)
+	}
+	// `ParseFloat` chứ không `Atoi`: `128000.0` là số hợp lệ trong JSON và đã gặp thật.
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil || f <= 0 || f > math.MaxInt32 {
+		return 0
+	}
+	return int(f)
+}
+
+// cuaTrongNang moi cửa sổ ra khỏi khối `capabilities` khi khối đó là một ĐỐI TƯỢNG.
+//
+// 9Router để cửa sổ ở đây. Nhiều gateway khác lại dùng đúng tên khóa ấy cho một MẢNG năng lực
+// (`["vision","tools"]`) hoặc một cờ bool — với chúng câu trả lời đúng là "không khai cửa sổ",
+// không phải "payload hỏng".
+func cuaTrongNang(raw json.RawMessage) int {
+	s := strings.TrimSpace(string(raw))
+	if s == "" || s[0] != '{' {
+		return 0
+	}
+	var nang struct {
+		ContextWindow json.RawMessage `json:"contextWindow"`
+		CuaSo         json.RawMessage `json:"context_window"`
+	}
+	if json.Unmarshal(raw, &nang) != nil {
+		return 0
+	}
+	if w := soMem(nang.ContextWindow); w > 0 {
+		return w
+	}
+	return soMem(nang.CuaSo)
 }
 
 // diaChiLietKe trả về địa chỉ liệt kê model và hàm đặt header xác thực cho từng giao thức.

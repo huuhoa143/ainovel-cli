@@ -58,6 +58,24 @@ type Book struct {
 type Workshop struct {
 	Root  string `json:"root"`
 	Books []Book `json:"books"`
+	// WebBuild là mã của bản dựng giao diện ĐANG ĐƯỢC PHỤC VỤ.
+	//
+	// # Vì sao nó đi kèm toàn cảnh xưởng, không có nhịp riêng
+	//
+	// Giao diện đã hỏi `/api/workshop` mỗi 8 giây (nhịp nền của `useStudio`). Cho mã bản dựng
+	// đi nhờ chuyến ấy thì việc phát hiện là miễn phí; một endpoint riêng là một lượt gọi nữa
+	// mỗi 8 giây cho một chuỗi hầu như không bao giờ đổi.
+	//
+	// # Vì sao cần
+	//
+	// `next build` thay toàn bộ tệp chunk. Một tab đang mở giữ JS đã tải trong bộ nhớ nên phần
+	// cũ vẫn chạy — dòng sự kiện vẫn chảy — nhưng mảnh nào nó nạp VỀ SAU thì trỏ vào tệp đã bị
+	// thay và nhận 404. Bề mặt hỏng nửa vời mà im lặng, và người dùng phải TỰ ĐOÁN ra rằng
+	// cần tải lại. Đó là lời nguyên văn: "phải F5 thì mới thấy được… hơi bị phiền".
+	//
+	// Không tự tải lại hộ: người dùng có thể đang đọc dở hoặc đang gõ can thiệp. Nói ra rồi để
+	// họ bấm.
+	WebBuild string `json:"web_build,omitempty"`
 }
 
 // LaneBlock là một khối trên trục sản xuất (tập hoặc cung).

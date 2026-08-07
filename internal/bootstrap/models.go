@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"reflect"
 	"strings"
 	"sync"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/voocel/ainovel-cli/internal/errs"
 	"github.com/voocel/ainovel-cli/internal/i18n"
 	"github.com/voocel/ainovel-cli/internal/llmcontract"
+	"github.com/voocel/ainovel-cli/internal/llmretry"
 )
 
 // FailoverEvent 表示一次显式 provider 切换。
@@ -56,6 +58,38 @@ func NewSwappableModel(provider, name string, model agentcore.ChatModel, jsonSch
 		name:           name,
 		jsonSchema:     jsonSchema,
 	}
+}
+
+// Generate và GenerateStream ghi đè bản nhúng CHỈ để cắm luật "cửa còn đóng lâu thì thôi gõ".
+//
+// # Vì sao ở đây, không phải ở `ForRole`
+//
+// Mọi vai đều cầm một `*SwappableModel` (`ForRole` trả nó; `failoverModel.currentTarget` cũng
+// trỏ vào chính nó), nên đây là nút cổ chai thật của cả bốn vai. Quan trọng hơn: kiểu này ĐÃ
+// cài đủ sáu giao diện năng lực tùy chọn mà tầng trên ép kiểu (`Capabilities`, `Info`,
+// `ProviderName`, `ModelName`, `StructuredOutputFacts`, `JSONSchemaOverride`). Bọc một kiểu
+// MỚI quanh `ForRole` sẽ che hết chúng — vẫn biên dịch, chỉ là độ suy luận và giao thức đầu ra
+// có cấu trúc lặng lẽ rơi về mặc định. Thêm hai phương thức vào kiểu sẵn có thì không có gì
+// để che.
+//
+// Luật nằm trong `llmretry`, không phải ở đây: xem `ChanChoLau` cho lý do đầy đủ và cho phần
+// đo được của ca "Thử lại (6/7)".
+func (m *SwappableModel) Generate(ctx context.Context, messages []agentcore.Message, tools []agentcore.ToolSpec, opts ...agentcore.CallOption) (*agentcore.LLMResponse, error) {
+	resp, err := m.SwappableModel.Generate(ctx, messages, tools, opts...)
+	if err != nil {
+		return nil, llmretry.ChanChoLau(err, llmretry.ChinhSach{})
+	}
+	return resp, nil
+}
+
+func (m *SwappableModel) GenerateStream(ctx context.Context, messages []agentcore.Message, tools []agentcore.ToolSpec, opts ...agentcore.CallOption) (<-chan agentcore.StreamEvent, error) {
+	ch, err := m.SwappableModel.GenerateStream(ctx, messages, tools, opts...)
+	if err != nil {
+		return nil, llmretry.ChanChoLau(err, llmretry.ChinhSach{})
+	}
+	// Lọc CẢ dòng sự kiện, không chỉ lỗi trả ngay: `callLLMStream` biến `StreamEventError`
+	// thành lỗi của lượt gọi, và đó là đường mà 429 của Writer đi qua.
+	return llmretry.LocChoLau(ctx, ch, llmretry.ChinhSach{}), nil
 }
 
 func (m *SwappableModel) ProviderName() string {
@@ -238,6 +272,120 @@ func (ms *ModelSet) Swap(role, provider, model string) error {
 	return nil
 }
 
+// CapNhatNhaCungCap trộn danh mục nhà cung cấp mới đọc từ đĩa vào một ModelSet ĐANG CHẠY.
+//
+// # Vì sao cần
+//
+// `Swap` tra `ms.config.Providers` để dựng model mới, mà `ms.config` là ảnh chụp lúc engine
+// được mở. Thêm một nhà cung cấp trong studio rồi đổi model cho cuốn đang chạy vì thế chết với
+// `provider %q is not configured` — người dùng vừa lưu nó xong và nhìn thấy nó trong danh sách.
+//
+// # Vì sao TRỘN chứ không thay
+//
+// Một nhà cung cấp bị xóa khỏi tệp vẫn có thể đang được engine này dùng dở. Thay trắng danh mục
+// sẽ rút thảm dưới chân một lượt chạy đang sống; trộn thì chỉ thêm đường ra, không cắt đường
+// nào đang đi.
+func (ms *ModelSet) CapNhatNhaCungCap(providers map[string]ProviderConfig) {
+	if len(providers) == 0 {
+		return
+	}
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+	if ms.config.Providers == nil {
+		ms.config.Providers = make(map[string]ProviderConfig, len(providers))
+	}
+	for ten, pc := range providers {
+		cu, daCo := ms.config.Providers[ten]
+		ms.config.Providers[ten] = pc
+		if daCo && !doiCachGoi(cu, pc) {
+			continue
+		}
+		ms.dungLaiTheoNhaCungCap(ten, pc)
+	}
+}
+
+// doiCachGoi nói hai bản cấu hình của MỘT nhà cung cấp có dựng ra hai client khác nhau không.
+//
+// So đúng những trường đi vào `llm.NewModel` (khóa, địa chỉ gốc, loại, timeout, extra) và CỐ Ý
+// bỏ `Models`: danh sách model là một danh mục để gợi ý, nó không đổi cách gọi. Không bỏ nó thì
+// mỗi lần người dùng thêm một tên vào ô "Danh sách model" là một lượt dựng lại client cho mọi
+// vai — tốn công và vứt mất kết nối đang ấm.
+//
+// NHƯNG `Models` không thuần là danh mục: mỗi mục còn mang `json_schema`, và trường đó quyết
+// định request có kèm `response_format: json_schema` hay không — tức nó là CÁCH GỌI, đúng vế
+// bên kia của đường ranh mà hàm này vạch ra. Bỏ cả cụm là chôn nó luôn: `sw.jsonSchema` chỉ
+// được làm mới trong `sw.Swap`, mà `Swap` chỉ tới được khi hàm này trả true.
+//
+// Nên tách hai vế: `json_schema` đem so riêng, phần còn lại của `Models` (tên, cửa sổ) vẫn bị
+// bỏ qua như cũ.
+func doiCachGoi(a, b ProviderConfig) bool {
+	if !reflect.DeepEqual(khaiJSONSchema(a), khaiJSONSchema(b)) {
+		return true
+	}
+	a.Models, b.Models = nil, nil
+	return !reflect.DeepEqual(a, b)
+}
+
+// khaiJSONSchema gom khai báo `json_schema` của từng model thành một bản đồ so sánh được.
+//
+// Chỉ giữ mục có khai (`nil` = "để adapter tự quyết", tức KHÔNG phải một lựa chọn của người
+// dùng), nên thêm một tên model trần vào danh mục không làm bản đồ này đổi. `reflect.DeepEqual`
+// đi xuyên con trỏ nên `*bool` so được theo giá trị.
+func khaiJSONSchema(p ProviderConfig) map[string]bool {
+	var ra map[string]bool
+	for _, m := range p.Models {
+		if m.JSONSchema == nil {
+			continue
+		}
+		if ra == nil {
+			ra = make(map[string]bool, len(p.Models))
+		}
+		ra[m.Name] = *m.JSONSchema
+	}
+	return ra
+}
+
+// dungLaiTheoNhaCungCap dựng lại MỌI model đang trỏ vào một nhà cung cấp vừa đổi cách gọi.
+//
+// # Vì sao cần, và vì sao trộn danh mục thôi là chưa đủ
+//
+// `NewModelSet` dựng client MỘT LẦN lúc `host.New`, mang theo khóa API tại thời điểm đó. Trộn
+// danh mục (phần trên) chỉ chữa được đường `Swap` — nó không chạm tới những client ĐÃ dựng.
+//
+// ĐO ĐƯỢC trên máy người dùng: khóa của gateway hết hạn mức, họ mua khóa mới và lưu vào cấu
+// hình, `POST /chat/completions` bằng khóa mới trả 200 trong 5,3 giây — nhưng engine đang mở
+// vẫn 429 với đúng câu cũ, vì nó cầm client dựng từ khóa cũ lúc 14:14. Không dấu hiệu nào trên
+// màn hình nói ra điều đó; người dùng chỉ thấy "đổi khóa rồi mà vẫn lỗi".
+//
+// Lượt gọi ĐANG BAY giữ client cũ (`agentcore.SwappableModel` đọc `Current()` lúc gọi), nên
+// đây là thay êm: lượt kế tiếp dùng khóa mới, lượt đang chạy không bị cắt ngang.
+//
+// Người gọi phải đang giữ `ms.mu`.
+func (ms *ModelSet) dungLaiTheoNhaCungCap(ten string, pc ProviderConfig) {
+	cache := make(map[string]agentcore.ChatModel)
+	dung := func(sw *SwappableModel) {
+		if sw == nil {
+			return
+		}
+		p, m := sw.Current()
+		if p != ten {
+			return
+		}
+		moi, err := createModelFromConfig(ten, m, pc, cache)
+		if err != nil {
+			// Bỏ qua chứ không hoảng: cấu hình mới hỏng thì giữ client cũ vẫn hơn là để lượt
+			// chạy mất model. `PUT /api/config` đã kiểm và hoàn nguyên bản không dùng được.
+			slog.Warn(i18n.F("重建模型失败"), "module", "config", "provider", ten, "model", m, "err", err)
+			return
+		}
+		sw.Swap(ten, m, moi, ms.config.ModelJSONSchema(ten, m))
+	}
+	dung(ms.Default)
+	for _, sw := range ms.models {
+		dung(sw)
+	}
+}
+
 // ResolveContextWindow 使用 ModelSet 的最新配置解析窗口，供运行时热切换后的
 // ContextManagerFactory 使用，避免捕获启动时的 Config 副本。
 func (ms *ModelSet) ResolveContextWindow(provider, model string) (int, ContextWindowSource) {
@@ -416,7 +564,14 @@ func (m *failoverModel) Generate(ctx context.Context, messages []agentcore.Messa
 		return nil, err
 	}
 	m.reportFailover(current, next, reason, err)
-	return next.model.Generate(ctx, messages, tools, opts...)
+	// Nhà cung cấp dự phòng là model THÔ (`modelTarget.model` dựng thẳng từ cấu hình), không
+	// phải `*SwappableModel`, nên luật không tự đi theo — phải chặn ở chính lối ra này. Lượt
+	// chính thì đã qua `SwappableModel` rồi, và `ChanChoLau` lũy đẳng nên chặn lại vô hại.
+	resp, err = next.model.Generate(ctx, messages, tools, opts...)
+	if err != nil {
+		return nil, llmretry.ChanChoLau(err, llmretry.ChinhSach{})
+	}
+	return resp, nil
 }
 
 func (m *failoverModel) GenerateStream(ctx context.Context, messages []agentcore.Message, tools []agentcore.ToolSpec, opts ...agentcore.CallOption) (<-chan agentcore.StreamEvent, error) {
@@ -439,7 +594,11 @@ func (m *failoverModel) GenerateStream(ctx context.Context, messages []agentcore
 					goto retry
 				}
 			}
-			out <- agentcore.StreamEvent{Type: agentcore.StreamEventError, Err: err}
+			// Cùng lý do như ở `Generate`: lối ra này mang được lỗi của một model dự phòng thô.
+			out <- agentcore.StreamEvent{
+				Type: agentcore.StreamEventError,
+				Err:  llmretry.ChanChoLau(err, llmretry.ChinhSach{}),
+			}
 			return
 		}
 		if resp != nil {
@@ -463,6 +622,7 @@ func (m *failoverModel) GenerateStream(ctx context.Context, messages []agentcore
 						goto retry
 					}
 				}
+				ev.Err = llmretry.ChanChoLau(ev.Err, llmretry.ChinhSach{})
 				out <- ev
 				return
 			case agentcore.StreamEventDone:

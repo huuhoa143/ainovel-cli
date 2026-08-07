@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 
+import { CHU, GIAI_THICH } from '@/lib/nhan';
+
 import { BuongLai } from '@/components/BuongLai';
 import { CaiDat } from '@/components/CaiDat';
 import { ChiPhiXuong } from '@/components/ChiPhiXuong';
 import { CauHinhXuong } from '@/components/CauHinhXuong';
 import { CungDung } from '@/components/CungDung';
-import { KenhVaiChung } from '@/components/KenhVaiChung';
 import { DieuKhien } from '@/components/DieuKhien';
 import { HoiChan } from '@/components/HoiChan';
 import { NhapXuat } from '@/components/NhapXuat';
@@ -134,6 +135,20 @@ export default function Trang() {
        đáy — một vùng giao diện không nói gì, đúng thứ mà `khung.rong` đã tồn tại để tránh ở
        cột inspector. */
     <div className={`khung${coInsp ? '' : ' rong'}${theoTacPham ? '' : ' khongTrans'}`}>
+      {/* Dải báo bản dựng đứng TRÊN CÙNG, ngoài mọi khu: nó nói về chính cái tab, không về
+          tác phẩm nào — và nó phải thấy được dù người dùng đang ở bề mặt nào. */}
+      {s.banDungDaDoi ? (
+        <div className="daiBanDung" role="status">
+          <span className="ky" aria-hidden="true">
+            ■
+          </span>
+          <span>{GIAI_THICH.banDungDaDoi}</span>
+          <button type="button" onClick={() => window.location.reload()}>
+            {CHU.taiLaiNgay}
+          </button>
+        </div>
+      ) : null}
+
       <ThanhTren
         workshop={s.workshop}
         dangXem={sachDangXem}
@@ -391,8 +406,6 @@ export function Khu({
           onXoaXong={onXoaXong}
         />
       );
-    case 'kenh-vai-chung':
-      return <KenhVaiChung onDoiCauHinh={onDoiCauHinh} />;
     case 'chi-phi-xuong':
       return <ChiPhiXuong tong={tong} />;
     case 'ban-thao':
@@ -446,7 +459,7 @@ export function Khu({
     case 'cau-hinh':
       return <CauHinhXuong onDoiCauHinh={onDoiCauHinh} />;
     case 'tac-pham-moi':
-      return <TacPhamMoi onXong={onXongTaoSach} nhapSan={nhapSan} />;
+      return <TacPhamMoi onXong={onXongTaoSach} nhapSan={nhapSan} onChonKhu={onChonKhu} />;
     // Cùng dựng giai đoạn cần tác phẩm; cùng dựng mở sách thì không. Một khu cho cả hai,
     // chế độ suy từ việc có tác phẩm đang xem hay không.
     case 'cung-dung':

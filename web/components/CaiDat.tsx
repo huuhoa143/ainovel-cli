@@ -80,10 +80,15 @@ export function CaiDat({ tacPham }: { tacPham: string | undefined }) {
           ) : (
             <>
               <PhienChay du={du} />
-              {/* Dải kênh model đứng ngay sau Phiên chạy vì nó là thứ DUY NHẤT trên bề
-                  mặt này đổi được, và nó đổi đúng cái vừa hiện phía trên (model). Đặt
-                  nó dưới cùng sẽ tách hành động khỏi con số mà hành động ấy sửa. */}
-              <KenhVai tacPham={tacPham} />
+              {/* Dải kênh model đứng ngay sau khối "Khởi động với" vì nó là thứ DUY NHẤT trên
+                  bề mặt này đổi được, và nó đổi đúng cái vừa hiện phía trên (model). Đặt nó
+                  dưới cùng sẽ tách hành động khỏi con số mà hành động ấy sửa.
+                  `khoiDong` cho nó biết engine đã KHỞI ĐỘNG với gì, để nó nói ra khi hai giá
+                  trị đã lệch nhau. */}
+              <KenhVai
+                tacPham={tacPham}
+                khoiDong={du.provider && du.model ? `${du.provider} · ${du.model}` : undefined}
+              />
               <TienChuong du={du} />
               <YeuCauKhoiTao du={du} />
               <CanThiepConTon du={du} />
@@ -99,7 +104,11 @@ export function CaiDat({ tacPham }: { tacPham: string | undefined }) {
 function PhienChay({ du }: { du: SettingsDoc }) {
   return (
     <section className="sect">
-      <h2>{CHU.phienChay}</h2>
+      {/* "Khởi động với", KHÔNG phải "Phiên chạy".
+          Khối này đọc `run.json` — giá trị lúc mở máy. Ngay dưới nó là dải kênh model ĐANG
+          SỐNG, cũng có nhãn "Model". Hai con số cho cùng một câu hỏi, và sau một lần đổi nóng
+          thì chúng khác nhau thật. Tên khối phải nói ra cái nào là quá khứ. */}
+      <h2>{CHU.khoiDongVoi}</h2>
       <dl className="kv kvcd">
         {du.started_at ? (
           <>
