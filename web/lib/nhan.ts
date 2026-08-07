@@ -1160,6 +1160,12 @@ export const CHU = {
 
   // dàn ý phân tầng
   tienDe: 'Tiền đề',
+  demMucTienDe: (n: number) => `${n} mục`,
+  /* Nhãn của nút gập, và nó phải nói ra thứ SẼ THẤY chứ không nói "mở/đóng":
+     người dùng đang quét một danh sách tên, thứ họ cần biết là bấm vào thì được
+     gì. */
+  moHoSoNguoi: 'Xem hồ sơ',
+  dongHoSoNguoi: 'Thu lại',
   chuDe: 'Chủ đề',
   mucTieuCung: 'Mục tiêu cung',
   tapChot: 'tập chốt',
